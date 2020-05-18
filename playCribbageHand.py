@@ -1,5 +1,8 @@
-for hand in range(115000):
-    hands = [[0, 1, 2, 3], [4, 5, 6, 7]]
+import random
+deck = range(52)
+for hand in range(43250):
+    handCards = random.sample(range(52), 8)
+    hands = [handCards[0:4], handCards[4:]]
     playerToPlay = 0
     while len(hands[0]) + len(hands[1]) > 0:
         if len(hands[playerToPlay]) > 0:
