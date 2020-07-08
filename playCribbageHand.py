@@ -1,6 +1,6 @@
 import random
 deck = range(52)
-for hand in range(43250):
+for hand in range(46000):
     handCards = random.sample(range(52), 8)
     hands = [handCards[0:4], handCards[4:]]
     playerToPlay = 0

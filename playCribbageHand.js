@@ -3,7 +3,7 @@ const randomJs = require('random-js');
 const mersenneTwisterEngine = randomJs.MersenneTwister19937.autoSeed();
 const deck = Array.from(Array(52).keys());
 
-[...Array(436000)].forEach(_ => {
+[...Array(500000)].forEach(_ => {
     const handCards = randomJs.sample(mersenneTwisterEngine, deck, 8);
     const hands = [handCards.slice(0, 4), handCards.slice(4)];
     let playerToPlay = 0;
