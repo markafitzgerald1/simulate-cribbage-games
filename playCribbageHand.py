@@ -1,9 +1,10 @@
 import sys
 import random
+import time
 
 deck = range(52)
 n_hands = int(sys.argv[1]) or 50000
-print(f"Simulating {n_hands} hands")
+start_time_ns = time.time_ns()
 for hand in range(n_hands):
     handCards = random.sample(range(52), 8)
     hands = [handCards[0:4], handCards[4:]]
@@ -13,3 +14,7 @@ for hand in range(n_hands):
             playerToPlayPlay = hands[playerToPlay].pop()
             # print(f"Player {playerToPlay} has a play: {playerToPlayPlay}.")
         playerToPlay = (playerToPlay + 1) % 2
+elapsed_time_ns = time.time_ns() - start_time_ns
+print(
+    f"Simulated {n_hands} hands in {elapsed_time_ns} ns for {elapsed_time_ns / n_hands} ns per hand"
+)
