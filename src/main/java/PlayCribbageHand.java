@@ -6,29 +6,37 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Random;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import org.apache.commons.math3.random.RandomDataGenerator;
 
 public class PlayCribbageHand {
     public static void main(String[] argv) {
-        final var deck = IntStream.range(0, 52).boxed().collect(Collectors.toCollection(ArrayList::new));
         final var nHands = argv.length >= 1 ? Integer.parseInt(argv[0]) : 1000;
-        final var randomDataGenerator = new RandomDataGenerator();
         final var random = new Random();
 
         final var startTimeNs = System.nanoTime();
         IntStream.range(0, nHands).forEach((number) -> {
-            var handsCards = dealTwoHands(random);
+            final var handsCards = dealTwoHands(random);
             // System.out.println(String.format("Deal: %s", Arrays.toString(handsCards)));
 
-            // TODO: split into two hands
+            final var handsCardsList = Arrays.asList(handsCards);
+            final var poneHand = new ArrayList<Integer>(handsCardsList.subList(0, 4));
+            final var dealerHand = new ArrayList<Integer>(handsCardsList.subList(4, 8));
 
-            // TODO: set player to play to 0
+            var poneToPlay = true;
 
-            // TODO: play cards from alternating hands until both hands empty (with
-            // System.out output)
+            while (!poneHand.isEmpty() && !dealerHand.isEmpty()) {
+                // TODO: merge blocks via hand array
+                if (poneToPlay && !poneHand.isEmpty()) {
+                    final var playerToPlayPlay = poneHand.get(poneHand.size() - 1);
+                    poneHand.remove(poneHand.size() - 1);
+                    // System.out.println(String.format("Pone has a play: %s", playerToPlayPlay));
+                } else if (!poneToPlay && !dealerHand.isEmpty()) {
+                    final var playerToPlayPlay = dealerHand.get(dealerHand.size() - 1);
+                    dealerHand.remove(dealerHand.size() - 1);
+                    // System.out.println(String.format("Dealer has a play: %s", playerToPlayPlay));
+                }
+                poneToPlay = !poneToPlay;
+            }
         });
 
         final var elapsedTimeNs = System.nanoTime() - startTimeNs;
