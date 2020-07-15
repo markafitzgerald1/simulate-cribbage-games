@@ -19,23 +19,16 @@ public class PlayCribbageHand {
             // System.out.println(String.format("Deal: %s", Arrays.toString(handsCards)));
 
             final var handsCardsList = Arrays.asList(handsCards);
-            final var poneHand = new ArrayList<Integer>(handsCardsList.subList(0, 4));
-            final var dealerHand = new ArrayList<Integer>(handsCardsList.subList(4, 8));
+            final var hands = new ArrayList[] { new ArrayList<Integer>(handsCardsList.subList(0, 4)),
+                    new ArrayList<Integer>(handsCardsList.subList(4, 8)) };
 
-            var poneToPlay = true;
-
-            while (!poneHand.isEmpty() && !dealerHand.isEmpty()) {
-                // TODO: merge blocks via hand array
-                if (poneToPlay && !poneHand.isEmpty()) {
-                    final var playerToPlayPlay = poneHand.get(poneHand.size() - 1);
-                    poneHand.remove(poneHand.size() - 1);
+            var playerToPlay = 0;
+            while (hands[0].size() + hands[1].size() > 0) {
+                if (hands[playerToPlay].size() > 0) {
+                    final var playerToPlayPlay = hands[playerToPlay].remove(hands[playerToPlay].size() - 1);
                     // System.out.println(String.format("Pone has a play: %s", playerToPlayPlay));
-                } else if (!poneToPlay && !dealerHand.isEmpty()) {
-                    final var playerToPlayPlay = dealerHand.get(dealerHand.size() - 1);
-                    dealerHand.remove(dealerHand.size() - 1);
-                    // System.out.println(String.format("Dealer has a play: %s", playerToPlayPlay));
                 }
-                poneToPlay = !poneToPlay;
+                playerToPlay = (playerToPlay + 1) % 2;
             }
         });
 
