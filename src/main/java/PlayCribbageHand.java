@@ -10,7 +10,7 @@ import java.util.stream.IntStream;
 
 public class PlayCribbageHand {
     public static void main(String[] argv) {
-        final var nHands = argv.length >= 1 ? Integer.parseInt(argv[0]) : 1000;
+        final var nHands = argv.length >= 1 ? Integer.parseInt(argv[0]) : 1370000;
         final var random = new Random();
 
         final var startTimeNs = System.nanoTime();
@@ -33,8 +33,8 @@ public class PlayCribbageHand {
         });
 
         final var elapsedTimeNs = System.nanoTime() - startTimeNs;
-        System.out.println(String.format("Simulated %d hands in %d ns for %f ns per hand", nHands, elapsedTimeNs,
-                ((double) elapsedTimeNs) / nHands));
+        System.out.println(String.format("Simulated %d hands in %f s for %f ns per hand", nHands,
+                elapsedTimeNs / 1000000000d, ((double) elapsedTimeNs) / nHands));
     }
 
     private static Integer[] dealTwoHands(final Random random) {

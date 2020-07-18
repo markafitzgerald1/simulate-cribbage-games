@@ -7,7 +7,7 @@ const randomJs = require("random-js");
 const mersenneTwisterEngine = randomJs.MersenneTwister19937.autoSeed();
 const deck = Array.from(Array(52).keys());
 
-const nHands = process.argv.length > 2 ? parseInt(process.argv[2]) : 750000;
+const nHands = process.argv.length > 2 ? parseInt(process.argv[2]) : 730000;
 const startTimeNs = process.hrtime.bigint();
 console.log(`Simulating ${nHands} hands`);
 [...Array(nHands)].forEach((_) => {
