@@ -1,13 +1,11 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-
 #include <iostream>
 #include <vector>
 #include <numeric>
 #include <algorithm>
 #include <random>
 #include <cstdlib>
+#include <random>
+#include <set>
 
 int main(int argc, char *argv[])
 {
@@ -25,12 +23,22 @@ int main(int argc, char *argv[])
     //     std::cout << *i << ' ';
     // std::cout << std::endl;
 
-    std::vector<int> deal(8);
+    // std::vector<int> deal(8);
+    std::set<int> deal;
 
-    auto mt19937 = std::mt19937{std::random_device{}()};
+    auto randomGenerator = std::mt19937{std::random_device{}()};
+    std::uniform_int_distribution<int> cardIndexDistribution(0, 52);
+
     for (auto hand = 0; hand < nHands; ++hand)
     {
-        std::sample(deck.begin(), deck.end(), deal.begin(), 8, mt19937);
+        // std::sample(deck.begin(), deck.end(), deal.begin(), 8, randomGenerator);
+        deal.clear();
+        do
+        {
+            auto randomCardIndex = cardIndexDistribution(randomGenerator);
+            // std::cout << "Single random card index is " << randomCardIndex << std::endl;
+            deal.insert(randomCardIndex);
+        } while (deal.size() < 8);
 
         // std::cout << "Deal is: ";
         // for (auto i = deal.begin(); i != deal.end(); ++i)
