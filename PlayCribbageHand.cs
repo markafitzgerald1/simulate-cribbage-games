@@ -3,6 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -19,21 +20,38 @@ namespace MarkAFitzgerald1
             Console.WriteLine($"About to simluate {totalHands} hands");
             var stopWatch = Stopwatch.StartNew();
 
+            var cardGenerator = StatisticsModule.UniformDiscrete(0, 51);
             var dealGenerator = UtilityModule.Choose(52, 8);
             var prngState = UtilityModule.CreateRandomState();
             foreach (int handNumber in Enumerable.Range(0, totalHands))
             {
-                // Console.WriteLine($"Simulating hand number {handNumber + 1}...");
-                var (deal, nextPrngState) = RandomModule.Next(dealGenerator, prngState);
-                var dealArray = deal.ToArray();
-                var (_, nextNextPrngState) = RandomModule.Next(ArrayModule.ShuffleInPlace<int>(dealArray), nextPrngState);
-                // Console.WriteLine($"Deal: {string.Join(",", dealArray)}");
-                prngState = nextNextPrngState;
+                // // Console.WriteLine($"Simulating hand number {handNumber + 1}...");
+                // var (deal, nextPrngState) = RandomModule.Next(dealGenerator, prngState);
+                // var dealArray = deal.ToArray();
+                // var (_, nextNextPrngState) = RandomModule.Next(ArrayModule.ShuffleInPlace<int>(dealArray), nextPrngState);
+                // // Console.WriteLine($"Deal: {string.Join(",", dealArray)}");
+                // prngState = nextNextPrngState;
+
+                var (deal, nextPrngState) = DealTwoHands(cardGenerator, prngState);
+                // Console.WriteLine($"Deal: {string.Join(",", deal)}");
+                prngState = nextPrngState;
             }
 
             stopWatch.Stop();
             // Console.WriteLine($"Stopwatch frequency = {Stopwatch.Frequency} Hz");
             Console.WriteLine($"Simulated {totalHands} hands in {1000000000L * stopWatch.ElapsedTicks / Stopwatch.Frequency} ns for {1000000000L * stopWatch.ElapsedTicks / Stopwatch.Frequency / totalHands} ns per hand");
+        }
+
+        private static (List<int>, RNG.PrngState) DealTwoHands(RNG.GeneratorFunction<int> cardGenerator, RNG.PrngState prngState)
+        {
+            var deal = new HashSet<int>();
+            do
+            {
+                var (card, nextPrngState) = RandomModule.Next(cardGenerator, prngState);
+                deal.Add(card);
+                prngState = nextPrngState;
+            } while (deal.Count() < 8);
+            return (deal.ToList(), prngState);
         }
     }
 }
