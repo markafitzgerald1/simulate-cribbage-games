@@ -26,7 +26,7 @@ public class PlayCribbageHand {
             while (hands[0].size() + hands[1].size() > 0) {
                 if (hands[playerToPlay].size() > 0) {
                     final var playerToPlayPlay = hands[playerToPlay].remove(hands[playerToPlay].size() - 1);
-                    // System.out.println(String.format("Pone has a play: %s", playerToPlayPlay));
+                    // System.out.println(String.format("Player %d has a play: %s", (playerToPlay + 1), playerToPlayPlay));
                 }
                 playerToPlay = (playerToPlay + 1) % 2;
             }
