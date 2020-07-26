@@ -14,7 +14,7 @@ public class PlayCribbageHand {
         final var random = new Random();
 
         final var startTimeNs = System.nanoTime();
-        IntStream.range(0, nHands).forEach((number) -> {
+        IntStream.range(0, nHands).parallel().forEach((number) -> {
             final var handsCards = dealTwoHands(random);
             // System.out.println(String.format("Deal: %s", Arrays.toString(handsCards)));
 
@@ -26,7 +26,8 @@ public class PlayCribbageHand {
             while (hands[0].size() + hands[1].size() > 0) {
                 if (hands[playerToPlay].size() > 0) {
                     final var playerToPlayPlay = hands[playerToPlay].remove(hands[playerToPlay].size() - 1);
-                    // System.out.println(String.format("Player %d has a play: %s", (playerToPlay + 1), playerToPlayPlay));
+                    // System.out.println(String.format("Player %d has a play: %s", (playerToPlay +
+                    // 1), playerToPlayPlay));
                 }
                 playerToPlay = (playerToPlay + 1) % 2;
             }
