@@ -6,3 +6,5 @@
 /\.project
 /\.settings/
 /playCribbageHand\.exe
+/obj/
+/bin/
