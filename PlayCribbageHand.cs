@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using FsRandom;
 using RNG = FsRandom.RandomNumberGenerator;
 
@@ -25,13 +24,6 @@ namespace MarkAFitzgerald1
             var prngState = UtilityModule.CreateRandomState();
             foreach (int handNumber in Enumerable.Range(0, totalHands))
             {
-                // // Console.WriteLine($"Simulating hand number {handNumber + 1}...");
-                // var (deal, nextPrngState) = RandomModule.Next(dealGenerator, prngState);
-                // var dealArray = deal.ToArray();
-                // var (_, nextNextPrngState) = RandomModule.Next(ArrayModule.ShuffleInPlace<int>(dealArray), nextPrngState);
-                // // Console.WriteLine($"Deal: {string.Join(",", dealArray)}");
-                // prngState = nextNextPrngState;
-
                 var (deal, nextPrngState) = DealTwoHands(cardGenerator, prngState);
                 // Console.WriteLine($"Deal: {string.Join(",", deal)}");
                 prngState = nextPrngState;
