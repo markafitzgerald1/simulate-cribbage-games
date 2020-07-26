@@ -26,6 +26,18 @@ namespace MarkAFitzgerald1
             {
                 var (deal, nextPrngState) = DealTwoHands(cardGenerator, prngState);
                 // Console.WriteLine($"Deal: {string.Join(",", deal)}");
+                var hands = new List<List<int>> { deal.GetRange(0, 4), deal.GetRange(4, 4) };
+                var playerToPlay = 0;
+                while (hands.ElementAt(0).Count() + hands.ElementAt(1).Count() > 0)
+                {
+                    if (hands.ElementAt(playerToPlay).Count() > 0)
+                    {
+                        var playerToPlayPlay = hands.ElementAt(playerToPlay).ElementAt(0);
+                        hands.ElementAt(playerToPlay).RemoveAt(0);
+                        // Console.WriteLine($"Player {playerToPlay + 1} has a play: {playerToPlayPlay}");
+                    }
+                    playerToPlay = (playerToPlay + 1) % 2;
+                }
                 prngState = nextPrngState;
             }
 
