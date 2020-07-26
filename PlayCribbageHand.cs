@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using FsRandom;
 using RNG = FsRandom.RandomNumberGenerator;
 
@@ -15,14 +16,15 @@ namespace MarkAFitzgerald1
     {
         static void Main(string[] args)
         {
-            int totalHands = args.Length >= 1 ? Int32.Parse(args[0]) : 255000;
+            int totalHands = args.Length >= 1 ? Int32.Parse(args[0]) : 375000;
             Console.WriteLine($"About to simluate {totalHands} hands");
             var stopWatch = Stopwatch.StartNew();
 
             var cardGenerator = StatisticsModule.UniformDiscrete(0, 51);
             var dealGenerator = UtilityModule.Choose(52, 8);
             var prngState = UtilityModule.CreateRandomState();
-            foreach (int handNumber in Enumerable.Range(0, totalHands))
+            // foreach (int handNumber in Enumerable.Range(0, totalHands))
+            ParallelEnumerable.Range(0, totalHands).ForAll((handNumber) =>
             {
                 var (deal, nextPrngState) = DealTwoHands(cardGenerator, prngState);
                 // Console.WriteLine($"Deal: {string.Join(",", deal)}");
@@ -40,6 +42,7 @@ namespace MarkAFitzgerald1
                 }
                 prngState = nextPrngState;
             }
+            );
 
             stopWatch.Stop();
             // Console.WriteLine($"Stopwatch frequency = {Stopwatch.Frequency} Hz");
