@@ -10,7 +10,8 @@ namespace MarkAFitzgerald1
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            var nHands = args.Length >= 1 ? Int64.Parse(args[0]) : 1000000;
+            Console.WriteLine($"About to simluate {nHands} hands");
         }
     }
 }
