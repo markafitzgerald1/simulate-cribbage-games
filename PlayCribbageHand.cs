@@ -15,7 +15,7 @@ namespace MarkAFitzgerald1
     {
         static void Main(string[] args)
         {
-            int totalHands = args.Length >= 1 ? Int32.Parse(args[0]) : 1000000;
+            int totalHands = args.Length >= 1 ? Int32.Parse(args[0]) : 255000;
             Console.WriteLine($"About to simluate {totalHands} hands");
             var stopWatch = Stopwatch.StartNew();
 
