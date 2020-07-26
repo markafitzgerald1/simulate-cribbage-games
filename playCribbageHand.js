@@ -13,6 +13,7 @@ console.log(`Simulating ${nHands} hands`);
 [...Array(nHands)].forEach((_) => {
   const handCards = randomJs.sample(mersenneTwisterEngine, deck, 8);
   const hands = [handCards.slice(0, 4), handCards.slice(4)];
+  // console.log(`Deal: ${hands}.`);
   let playerToPlay = 0;
   while (hands[0].length + hands[1].length > 0) {
     if (hands[playerToPlay].length > 0) {
