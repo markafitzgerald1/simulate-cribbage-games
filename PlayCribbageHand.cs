@@ -4,7 +4,10 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
+using FsRandom;
+using RNG = FsRandom.RandomNumberGenerator;
 
 namespace MarkAFitzgerald1
 {
@@ -12,13 +15,25 @@ namespace MarkAFitzgerald1
     {
         static void Main(string[] args)
         {
-            var nHands = args.Length >= 1 ? Int64.Parse(args[0]) : 1000000;
-            Console.WriteLine($"About to simluate {nHands} hands");
+            int totalHands = args.Length >= 1 ? Int32.Parse(args[0]) : 1000000;
+            Console.WriteLine($"About to simluate {totalHands} hands");
             var stopWatch = Stopwatch.StartNew();
-            Thread.Sleep(1000);
+
+            var dealGenerator = UtilityModule.Choose(52, 8);
+            var prngState = UtilityModule.CreateRandomState();
+            foreach (int handNumber in Enumerable.Range(0, totalHands))
+            {
+                // Console.WriteLine($"Simulating hand number {handNumber + 1}...");
+                var (deal, nextPrngState) = RandomModule.Next(dealGenerator, prngState);
+                var dealArray = deal.ToArray();
+                var (_, nextNextPrngState) = RandomModule.Next(ArrayModule.ShuffleInPlace<int>(dealArray), nextPrngState);
+                // Console.WriteLine($"Deal: {string.Join(",", dealArray)}");
+                prngState = nextNextPrngState;
+            }
+
             stopWatch.Stop();
             // Console.WriteLine($"Stopwatch frequency = {Stopwatch.Frequency} Hz");
-            Console.WriteLine($"RunTime {1000000000L * stopWatch.ElapsedTicks / Stopwatch.Frequency} ns");
+            Console.WriteLine($"Simulated {totalHands} hands in {1000000000L * stopWatch.ElapsedTicks / Stopwatch.Frequency} ns for {1000000000L * stopWatch.ElapsedTicks / Stopwatch.Frequency / totalHands} ns per hand");
         }
     }
 }

@@ -6,4 +6,8 @@
     <RootNamespace>MarkAFitzgerald1</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="FsRandom" Version="1.4.0.1" />
+  </ItemGroup>
+
 </Project>
