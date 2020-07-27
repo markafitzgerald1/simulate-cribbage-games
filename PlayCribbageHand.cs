@@ -6,41 +6,39 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
-using FsRandom;
-using RNG = FsRandom.RandomNumberGenerator;
 
 namespace MarkAFitzgerald1
 {
     class PlayCribbageHand
     {
+        [ThreadStatic] private static Random random;
+
         static void Main(string[] args)
         {
-            int totalHands = args.Length >= 1 ? Int32.Parse(args[0]) : 375000;
-            Console.WriteLine($"About to simluate {totalHands} hands");
+            int totalHands = args.Length >= 1 ? Int32.Parse(args[0]) : 1000000;
+            // Console.WriteLine($"About to simluate {totalHands} hands");
             var stopWatch = Stopwatch.StartNew();
 
-            var cardGenerator = StatisticsModule.UniformDiscrete(0, 51);
-            var dealGenerator = UtilityModule.Choose(52, 8);
-            var prngState = UtilityModule.CreateRandomState();
-            // foreach (int handNumber in Enumerable.Range(0, totalHands))
             ParallelEnumerable.Range(0, totalHands).ForAll((handNumber) =>
             {
-                var (deal, nextPrngState) = DealTwoHands(cardGenerator, prngState);
-                // Console.WriteLine($"Deal: {string.Join(",", deal)}");
-                var hands = new List<List<int>> { deal.GetRange(0, 4), deal.GetRange(4, 4) };
-                var playerToPlay = 0;
-                while (hands.ElementAt(0).Count() + hands.ElementAt(1).Count() > 0)
+                if (random == null)
                 {
-                    if (hands.ElementAt(playerToPlay).Count() > 0)
+                    random = new Random();
+                }
+                var deal = DealTwoHands(random);
+                // Console.WriteLine($"Deal: {string.Join(",", deal)}");
+                var hands = new List<int>[] { deal.Take(4).ToList(), deal.Skip(4).ToList() };
+                var playerToPlay = 0;
+                while (hands[0].Count() + hands[1].Count() > 0)
+                {
+                    if (hands[playerToPlay].Count() > 0)
                     {
-                        var playerToPlayPlay = hands.ElementAt(playerToPlay).ElementAt(0);
-                        hands.ElementAt(playerToPlay).RemoveAt(0);
+                        var playerToPlayPlay = hands[playerToPlay][0];
+                        hands[playerToPlay].RemoveAt(0);
                         // Console.WriteLine($"Player {playerToPlay + 1} has a play: {playerToPlayPlay}");
                     }
                     playerToPlay = (playerToPlay + 1) % 2;
                 }
-                prngState = nextPrngState;
             }
             );
 
@@ -49,16 +47,14 @@ namespace MarkAFitzgerald1
             Console.WriteLine($"Simulated {totalHands} hands in {1000000000L * stopWatch.ElapsedTicks / Stopwatch.Frequency} ns for {1000000000L * stopWatch.ElapsedTicks / Stopwatch.Frequency / totalHands} ns per hand");
         }
 
-        private static (List<int>, RNG.PrngState) DealTwoHands(RNG.GeneratorFunction<int> cardGenerator, RNG.PrngState prngState)
+        private static List<int> DealTwoHands(Random random)
         {
             var deal = new HashSet<int>();
             do
             {
-                var (card, nextPrngState) = RandomModule.Next(cardGenerator, prngState);
-                deal.Add(card);
-                prngState = nextPrngState;
+                deal.Add(random.Next(52));
             } while (deal.Count() < 8);
-            return (deal.ToList(), prngState);
+            return deal.ToList();
         }
     }
 }
