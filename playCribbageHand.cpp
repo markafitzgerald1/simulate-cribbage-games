@@ -9,6 +9,7 @@
 #include <random>
 #include <cstdlib>
 #include <chrono>
+#include <list>
 
 int main(int argc, char *argv[])
 {
@@ -32,12 +33,31 @@ int main(int argc, char *argv[])
     for (auto hand = 0; hand < nHands; ++hand)
     {
         std::sample(deck.begin(), deck.end(), deal.begin(), 8, mt19937);
-
+        std::shuffle(deal.begin(), deal.end(), mt19937);
         // std::cout << "Deal is: ";
-        // for (auto i = deal.begin(); i != deal.end(); ++i)
-        //     std::cout << *i << ' ';
+        // for (auto card = deal.begin(); card != deal.end(); ++card)
+        // {
+        //     std::cout << *card << ' ';
+        // }
         // std::cout << std::endl;
+
+        std::list<int> hands[] = {
+            std::list<int>(deal.begin(), deal.begin() + 4),
+            std::list<int>(deal.begin() + 4, deal.end())};
+        // std::cout << "Hands are: ";
+        // for (auto handNumber = 0; handNumber < 2; handNumber++)
+        // {
+        //     for (auto card = hands[handNumber].begin(); card != hands[handNumber].end(); ++card)
+        //     {
+        //         std::cout << *card << ' ';
+        //     }
+        //     std::cout << ';';
+        // }
+        // std::cout << std::endl;
+
+        // TODO: do the play!
     }
+
     std::chrono::duration<double> elapsedDuration = std::chrono::high_resolution_clock::now() - startTimeNs;
     auto elapsedSeconds = elapsedDuration.count();
     std::cout << "Simulated " << nHands << " hands in " << elapsedSeconds << " s for " << (elapsedSeconds * 1000000000 / nHands) << " ns per hand" << std::endl;
