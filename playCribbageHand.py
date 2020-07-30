@@ -11,7 +11,9 @@ n_hands = int(sys.argv[1]) if len(sys.argv) > 1 else 50000
 start_time_ns = time.time_ns()
 for hand in range(n_hands):
     handCards = random.sample(deck, 8)
+    # print(f"Deal is {handCards}.")
     hands = [handCards[0:4], handCards[4:]]
+    # print(f"Hands are {hands}.")
     playerToPlay = 0
     while len(hands[0]) + len(hands[1]) > 0:
         if len(hands[playerToPlay]) > 0:
