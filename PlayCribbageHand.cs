@@ -28,7 +28,7 @@ namespace MarkAFitzgerald1
                 var deal = DealTwoHands(random);
                 // Console.WriteLine($"Deal: {string.Join(",", deal)}");
                 var hands = new List<int>[] { deal.Take(4).ToList(), deal.Skip(4).ToList() };
-+                // Console.WriteLine($"Hands: {string.Join(",", hands[0])} and {string.Join(",", hands[1])}");                var playerToPlay = 0;
+                var playerToPlay = 0;
                 while (hands[0].Count() + hands[1].Count() > 0)
                 {
                     if (hands[playerToPlay].Count() > 0)
