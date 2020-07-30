@@ -55,7 +55,17 @@ int main(int argc, char *argv[])
         // }
         // std::cout << std::endl;
 
-        // TODO: do the play!
+        int playerToPlay = 0;
+        while (hands[0].size() + hands[1].size() > 0)
+        {
+            if (hands[playerToPlay].size() > 0)
+            {
+                int playerToPlayPlay = hands[playerToPlay].back();
+                hands[playerToPlay].pop_back();
+                // std::cout << "Player" << playerToPlay << "has a play:" << playerToPlayPlay << std::endl;
+            }
+            playerToPlay = (playerToPlay + 1) % 2;
+        }
     }
 
     std::chrono::duration<double> elapsedDuration = std::chrono::high_resolution_clock::now() - startTimeNs;
