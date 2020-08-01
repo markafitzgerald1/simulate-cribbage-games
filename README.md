@@ -8,4 +8,5 @@ in the expected play points differential - to end of hand - above opponent
 for different possible discards or plays.
 
 Current project toolchain versions: latest Python 3, latest Node.js 14,
-latest Java JDK 14, latest GCC 8, latest C# .NET Core 3.1.
+latest Java JDK 14, latest GCC 8 (non-parallel) or GCC 9.1+ (parallel),
+latest C# .NET Core 3.1.
