@@ -19,7 +19,9 @@ namespace MarkAFitzgerald1
             // Console.WriteLine($"About to simluate {totalHands} hands");
             var stopWatch = Stopwatch.StartNew();
 
-            ParallelEnumerable.Range(0, totalHands).ForAll((handNumber) =>
+            ParallelEnumerable.Range(0, totalHands)
+                // .WithDegreeOfParallelism(4)
+                .ForAll((handNumber) =>
             {
                 if (random == null)
                 {
