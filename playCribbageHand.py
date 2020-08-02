@@ -29,7 +29,7 @@ def simulate_hands(hand_count):
 
 
 if __name__ == "__main__":
-    hand_count = int(sys.argv[1]) if len(sys.argv) > 1 else 50000
+    hand_count = int(sys.argv[1]) if len(sys.argv) > 1 else 55500
     process_count = int(sys.argv[2]) if len(sys.argv) > 2 else cpu_count()
     if process_count == 1:
         simulate_hands(hand_count)
