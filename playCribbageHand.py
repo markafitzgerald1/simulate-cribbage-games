@@ -38,7 +38,7 @@ def simulate_hands(hand_count):
                     player_to_play_play = playable_cards[-1]
                     hands[player_to_play].remove(player_to_play_play)
                     this_play_count = min(counting_value(player_to_play_play), 10)
-                    play_count = play_count + this_play_count
+                    play_count += this_play_count
                     # print(
                     #     f"Player {player_to_play} plays {player_to_play_play} for {play_count}."
                     # )
