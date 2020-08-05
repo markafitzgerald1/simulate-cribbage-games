@@ -56,6 +56,7 @@ namespace MarkAFitzgerald1
             {
                 deal.Add(random.Next(52));
             } while (deal.Count() < 8);
+            // TODO: ensure HashSet to List conversion retains card distribution across hands randomness
             return deal.ToList();
         }
     }
