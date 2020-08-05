@@ -8,31 +8,29 @@ import time
 from multiprocessing import Process, cpu_count
 
 
-def counting_value(card):
-    return min((card % 13) + 1, 10)
+class Card:
+    """A French playing card"""
 
+    def __init__(self, index, suit):
+        self.index = index
+        self.index_str = "A23456789TJQK"[index % 13]
+        self.suit = suit
+        self.suit_str = "♣♦♥♠"[suit]
+        self.count = (index % 13) + 1
 
-def card_index(card):
-    return "A23456789TJQK"[card % 13]
-
-
-def card_suit(card):
-    return "♣♦♥♠"[card // 13]
-
-
-def card_string(card):
-    return card_index(card) + card_suit(card)
+    def __str__(self):
+        return f"{self.index_str}{self.suit_str}"
 
 
 def simulate_hands(hand_count):
-    deck = range(52)
+    deck = [Card(number % 13, number // 13) for number in range(52)]
     start_time_ns = time.time_ns()
     for hand in range(hand_count):
         hand_cards = random.sample(deck, 8)
-        # print(f"Deal is {','.join([ card_string(card) for card in hand_cards ])}.")
+        # print(f"Deal is {','.join([ str(card) for card in hand_cards ])}.")
         hands = [hand_cards[0:4], hand_cards[4:]]
         # print(
-        #     f"Hands are {'; '.join([ ','.join([ card_string(card) for card in hand ]) for hand in hands ])}."
+        #     f"Hands are {'; '.join([ ','.join([ str(card) for card in hand ]) for hand in hands ])}."
         # )
         player_to_play = 0
         play_count = 0
@@ -42,16 +40,16 @@ def simulate_hands(hand_count):
                 playable_cards = [
                     card
                     for card in hands[player_to_play]
-                    if play_count + counting_value(card) <= 31
+                    if play_count + card.count <= 31
                 ]
 
                 if playable_cards:
                     player_to_play_play = playable_cards[-1]
                     hands[player_to_play].remove(player_to_play_play)
-                    this_play_count = min(counting_value(player_to_play_play), 10)
+                    this_play_count = min(player_to_play_play.count, 10)
                     play_count += this_play_count
                     # print(
-                    #     f"Player {player_to_play} plays {card_string(player_to_play_play)} for {play_count}."
+                    #     f"Player {player_to_play} plays {player_to_play_play} for {play_count}."
                     # )
                     consecutive_go_count = 0
                 else:
@@ -70,7 +68,7 @@ def simulate_hands(hand_count):
 
 
 if __name__ == "__main__":
-    hand_count = int(sys.argv[1]) if len(sys.argv) > 1 else 25000
+    hand_count = int(sys.argv[1]) if len(sys.argv) > 1 else 37000
     process_count = int(sys.argv[2]) if len(sys.argv) > 2 else cpu_count()
     if process_count == 1:
         simulate_hands(hand_count)
