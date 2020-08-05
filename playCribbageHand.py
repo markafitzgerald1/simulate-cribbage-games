@@ -13,13 +13,12 @@ class Card:
 
     def __init__(self, index, suit):
         self.index = index
-        self.index_str = "A23456789TJQK"[index % 13]
         self.suit = suit
-        self.suit_str = "♣♦♥♠"[suit]
-        self.count = (index % 13) + 1
+        self.count = min(index + 1, 10)
+        self.str = f"{'A23456789TJQK'[index]}{'♣♦♥♠'[suit]}"
 
     def __str__(self):
-        return f"{self.index_str}{self.suit_str}"
+        return self.str
 
 
 def simulate_hands(hand_count):
@@ -46,7 +45,7 @@ def simulate_hands(hand_count):
                 if playable_cards:
                     player_to_play_play = playable_cards[-1]
                     hands[player_to_play].remove(player_to_play_play)
-                    this_play_count = min(player_to_play_play.count, 10)
+                    this_play_count = player_to_play_play.count
                     play_count += this_play_count
                     # print(
                     #     f"Player {player_to_play} plays {player_to_play_play} for {play_count}."
