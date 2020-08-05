@@ -11,7 +11,7 @@ namespace MarkAFitzgerald1
 {
     class PlayCribbageHand
     {
-        [ThreadStatic] private static Random random;
+        [ThreadStatic] private static Random? random;
 
         static void Main(string[] args)
         {
