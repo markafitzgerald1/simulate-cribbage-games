@@ -15,7 +15,7 @@ namespace MarkAFitzgerald1
 
         static void Main(string[] args)
         {
-            int totalHands = args.Length >= 1 ? Int32.Parse(args[0]) : 1000000;
+            int totalHands = args.Length >= 1 ? Int32.Parse(args[0]) : 973000;
             // Console.WriteLine($"About to simluate {totalHands} hands");
             var stopWatch = Stopwatch.StartNew();
 
@@ -51,13 +51,18 @@ namespace MarkAFitzgerald1
 
         private static List<int> DealTwoHands(Random random)
         {
-            var deal = new HashSet<int>();
+            var dealtCards = new HashSet<int>();
+            var deal = new List<int>();
             do
             {
-                deal.Add(random.Next(52));
-            } while (deal.Count() < 8);
-            // TODO: ensure HashSet to List conversion retains card distribution across hands randomness
-            return deal.ToList();
+                int item = random.Next(52);
+                if (!dealtCards.Contains(item))
+                {
+                    dealtCards.Add(item);
+                    deal.Add(item);
+                }
+            } while (dealtCards.Count() < 8);
+            return deal;
         }
     }
 }
