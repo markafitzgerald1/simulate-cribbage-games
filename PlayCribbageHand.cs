@@ -20,13 +20,13 @@ namespace MarkAFitzgerald1
             var stopWatch = Stopwatch.StartNew();
 
             ParallelEnumerable.Range(0, totalHands)
-                // .WithDegreeOfParallelism(4)
                 .ForAll((handNumber) =>
             {
                 if (random == null)
                 {
                     random = new Random();
                 }
+
                 var deal = DealTwoHands(random);
                 // Console.WriteLine($"Deal: {string.Join(",", deal)}");
                 var hands = new List<int>[] { deal.Take(4).ToList(), deal.Skip(4).ToList() };
