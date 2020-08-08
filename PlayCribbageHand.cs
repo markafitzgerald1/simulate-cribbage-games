@@ -19,6 +19,7 @@ namespace MarkAFitzgerald1
             // Console.WriteLine($"About to simluate {totalHands} hands");
             var stopWatch = Stopwatch.StartNew();
 
+            // foreach (int handNumber in Enumerable.Range(0, totalHands))
             ParallelEnumerable.Range(0, totalHands)
                 .ForAll((handNumber) =>
             {
@@ -30,6 +31,7 @@ namespace MarkAFitzgerald1
                 var deal = DealTwoHands(random);
                 // Console.WriteLine($"Deal: {string.Join(",", deal)}");
                 var hands = new List<int>[] { deal.Take(4).ToList(), deal.Skip(4).ToList() };
+                // Console.WriteLine($"Hands: {string.Join(",", hands[0])}; {string.Join(",", hands[1])}");
                 var playerToPlay = 0;
                 while (hands[0].Count() + hands[1].Count() > 0)
                 {
@@ -51,17 +53,15 @@ namespace MarkAFitzgerald1
 
         private static List<int> DealTwoHands(Random random)
         {
-            var dealtCards = new HashSet<int>();
             var deal = new List<int>();
             do
             {
                 int item = random.Next(52);
-                if (!dealtCards.Contains(item))
+                if (!deal.Contains(item))
                 {
-                    dealtCards.Add(item);
                     deal.Add(item);
                 }
-            } while (dealtCards.Count() < 8);
+            } while (deal.Count() < 8);
             return deal;
         }
     }
