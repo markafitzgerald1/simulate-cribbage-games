@@ -17,7 +17,7 @@ namespace MarkAFitzgerald1
         {
             int totalHands = args.Length >= 1 ? Int32.Parse(args[0]) : 973000;
             int degreeOfParallelism = args.Length >= 2 ? Int32.Parse(args[1]) : Environment.ProcessorCount;
-            Console.WriteLine($"Simluating {totalHands} hands with degree of parallelism {degreeOfParallelism}");
+            // Console.WriteLine($"Simluating {totalHands} hands with degree of parallelism {degreeOfParallelism}");
             var stopWatch = Stopwatch.StartNew();
 
             ParallelEnumerable.Range(0, totalHands)
@@ -35,15 +35,31 @@ namespace MarkAFitzgerald1
                 // Console.WriteLine($"Hands: {string.Join(",", hands[0].Select(card => CardString(card)))}; {string.Join(",", hands[1].Select(card => CardString(card)))}");
                 var playerToPlay = 0;
                 var playCount = 0;
+                var consecutiveGoCount = 0;
                 while (hands[0].Count() + hands[1].Count() > 0)
                 {
-                    if (hands[playerToPlay].Count() > 0)
+                    var playableCards = hands[playerToPlay].Where(card => playCount + CountingValue(card) <= 31).ToList();
+                    // Console.WriteLine($"Playable cards for player {playerToPlay}: {string.Join(",", playableCards.Select(card => CardString(card)))}");
+                    if (playableCards.Count() > 0)
                     {
-                        var playerToPlayPlay = hands[playerToPlay][0];
-                        hands[playerToPlay].RemoveAt(0);
+                        var playerToPlayPlay = playableCards[0];
+                        hands[playerToPlay].Remove(playerToPlayPlay);
                         playCount += CountingValue(playerToPlayPlay);
                         // Console.WriteLine($"Player {playerToPlay + 1} plays {CardString(playerToPlayPlay)} for {playCount}");
+                        consecutiveGoCount = 0;
                     }
+                    else
+                    {
+                        // Console.WriteLine($"Player {playerToPlay} says \"Go!\"");
+                        consecutiveGoCount++;
+                        if (consecutiveGoCount == 2)
+                        {
+                            // Console.WriteLine($"Resetting play count to 0.");
+                            consecutiveGoCount = 0;
+                            playCount = 0;
+                        }
+                    }
+
                     playerToPlay = (playerToPlay + 1) % 2;
                 }
             }
