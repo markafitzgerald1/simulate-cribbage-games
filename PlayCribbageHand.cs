@@ -16,11 +16,12 @@ namespace MarkAFitzgerald1
         static void Main(string[] args)
         {
             int totalHands = args.Length >= 1 ? Int32.Parse(args[0]) : 973000;
-            // Console.WriteLine($"About to simluate {totalHands} hands");
+            int degreeOfParallelism = args.Length >= 2 ? Int32.Parse(args[1]) : Environment.ProcessorCount;
+            Console.WriteLine($"Simluating {totalHands} hands with degree of parallelism {degreeOfParallelism}");
             var stopWatch = Stopwatch.StartNew();
 
-            // foreach (int handNumber in Enumerable.Range(0, totalHands))
             ParallelEnumerable.Range(0, totalHands)
+                .WithDegreeOfParallelism(degreeOfParallelism)
                 .ForAll((handNumber) =>
             {
                 if (random == null)
@@ -29,17 +30,19 @@ namespace MarkAFitzgerald1
                 }
 
                 var deal = DealTwoHands(random);
-                // Console.WriteLine($"Deal: {string.Join(",", deal)}");
+                // Console.WriteLine($"Deal: {string.Join(",", deal.Select(card => CardString(card)))}");
                 var hands = new List<int>[] { deal.Take(4).ToList(), deal.Skip(4).ToList() };
-                // Console.WriteLine($"Hands: {string.Join(",", hands[0])}; {string.Join(",", hands[1])}");
+                // Console.WriteLine($"Hands: {string.Join(",", hands[0].Select(card => CardString(card)))}; {string.Join(",", hands[1].Select(card => CardString(card)))}");
                 var playerToPlay = 0;
+                var playCount = 0;
                 while (hands[0].Count() + hands[1].Count() > 0)
                 {
                     if (hands[playerToPlay].Count() > 0)
                     {
                         var playerToPlayPlay = hands[playerToPlay][0];
                         hands[playerToPlay].RemoveAt(0);
-                        // Console.WriteLine($"Player {playerToPlay + 1} has a play: {playerToPlayPlay}");
+                        playCount += CountingValue(playerToPlayPlay);
+                        // Console.WriteLine($"Player {playerToPlay + 1} plays {CardString(playerToPlayPlay)} for {playCount}");
                     }
                     playerToPlay = (playerToPlay + 1) % 2;
                 }
@@ -63,6 +66,16 @@ namespace MarkAFitzgerald1
                 }
             } while (deal.Count() < 8);
             return deal;
+        }
+
+        private static int CountingValue(int playerToPlayPlay)
+        {
+            return Math.Min((playerToPlayPlay % 13) + 1, 10);
+        }
+
+        private static string CardString(int playerToPlayPlay)
+        {
+            return $"{"A23456789TJQK"[playerToPlayPlay % 13]}{"♣♦♥♠"[playerToPlayPlay / 13]}";
         }
     }
 }
