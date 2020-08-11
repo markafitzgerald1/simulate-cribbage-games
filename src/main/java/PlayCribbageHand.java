@@ -15,7 +15,7 @@ public class PlayCribbageHand {
         final var random = new Random();
 
         final var startTimeNs = System.nanoTime();
-        IntStream.range(0, nHands).forEach((number) -> {
+        IntStream.range(0, nHands).parallel().forEach((number) -> {
             final var handsCards = dealTwoHands(random);
             // System.out.println(String.format("Deal: %s",
             // Arrays.stream(handsCards).map(card ->
