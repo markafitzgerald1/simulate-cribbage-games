@@ -5,7 +5,7 @@
 import sys
 import random
 import time
-from multiprocessing import Process, cpu_count
+from multiprocessing import Process, cpu_count, Manager, Lock
 
 
 class Card:
@@ -21,9 +21,10 @@ class Card:
         return self.str
 
 
-def simulate_hands(hand_count):
+def simulate_hands(hand_count, grand_total_score, grand_total_score_lock):
     deck = [Card(number % 13, number // 13) for number in range(52)]
     start_time_ns = time.time_ns()
+    total_score = [0, 0]
     for hand in range(hand_count):
         hand_cards = random.sample(deck, 8)
         # print(f"Deal is {','.join([ str(card) for card in hand_cards ])}.")
@@ -34,6 +35,7 @@ def simulate_hands(hand_count):
         player_to_play = 0
         play_count = 0
         consecutive_go_count = 0
+        score = [0, 0]
         while hands[0] or hands[1]:
             if hands[player_to_play]:
                 playable_cards = [
@@ -48,36 +50,56 @@ def simulate_hands(hand_count):
                     this_play_count = player_to_play_play.count
                     play_count += this_play_count
                     # print(
-                    #     f"Player {player_to_play} plays {player_to_play_play} for {play_count}."
+                    #     f"Player {player_to_play + 1} plays {player_to_play_play} for {play_count}."
                     # )
+                    if play_count == 15:
+                        # print(f"Fifteen-two for player {player_to_play + 1}.")
+                        score[player_to_play] += 2
                     consecutive_go_count = 0
                 else:
-                    # print(f'Player {player_to_play} says "Go!"')
+                    # print(f'Player {player_to_play + 1} says "Go!"')
                     consecutive_go_count += 1
                     if consecutive_go_count == 2:
                         # print("Resetting play count to 0.")
                         consecutive_go_count = 0
                         play_count = 0
-
             player_to_play = (player_to_play + 1) % 2
+        # print(f"Hand score: {score}")
+        total_score[0] += score[0]
+        total_score[1] += score[1]
     elapsed_time_ns = time.time_ns() - start_time_ns
     print(
         f"Simulated {hand_count} hands in {elapsed_time_ns / 1000000000} seconds for {elapsed_time_ns / hand_count} ns per hand"
     )
+    # print(f"Total score: {total_score}")
+    grand_total_score_lock.acquire()
+    grand_total_score[0] += total_score[0]
+    grand_total_score[1] += total_score[1]
+    grand_total_score_lock.release()
 
 
 if __name__ == "__main__":
     hand_count = int(sys.argv[1]) if len(sys.argv) > 1 else 37000
     process_count = int(sys.argv[2]) if len(sys.argv) > 2 else cpu_count()
+    manager = Manager()
+    grand_total_score = manager.list([0, 0])
+    grand_total_score_lock = Lock()
     if process_count == 1:
-        simulate_hands(hand_count)
+        simulate_hands(hand_count, grand_total_score, grand_total_score_lock)
     else:
-        print(
-            f"Simulating {hand_count} hands across {process_count} worker processes",
-            flush=True,
-        )
+        # print(
+        #     f"Simulating {hand_count} hands across {process_count} worker processes",
+        #     flush=True,
+        # )
         processes = [
-            Process(target=simulate_hands, args=(hand_count // process_count,))
+            Process(
+                target=simulate_hands,
+                args=(
+                    hand_count // process_count,
+                    grand_total_score,
+                    grand_total_score_lock,
+                ),
+            )
             for process_number in range(process_count)
         ]
         start_time_ns = time.time_ns()
@@ -89,3 +111,4 @@ if __name__ == "__main__":
         print(
             f"Simulated {hand_count} total hands in {elapsed_time_ns / 1000000000} seconds for {elapsed_time_ns / hand_count} ns per hand"
         )
+    print(f"Grand total score: {grand_total_score}")
