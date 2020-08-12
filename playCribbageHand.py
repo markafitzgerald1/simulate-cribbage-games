@@ -71,7 +71,7 @@ def simulate_hands(hand_count, grand_total_score, grand_total_score_lock):
     print(
         f"Simulated {hand_count} hands in {elapsed_time_ns / 1000000000} seconds for {elapsed_time_ns / hand_count} ns per hand"
     )
-    # print(f"Total score: {total_score}")
+    # print(f"Average score: {[ total / hand_count for total in total_score ]}")
     grand_total_score_lock.acquire()
     grand_total_score[0] += total_score[0]
     grand_total_score[1] += total_score[1]
@@ -111,4 +111,6 @@ if __name__ == "__main__":
         print(
             f"Simulated {hand_count} total hands in {elapsed_time_ns / 1000000000} seconds for {elapsed_time_ns / hand_count} ns per hand"
         )
-    print(f"Grand total score: {grand_total_score}")
+    print(
+        f"Overall average score: {[ grand_total / hand_count for grand_total in grand_total_score ]}"
+    )
