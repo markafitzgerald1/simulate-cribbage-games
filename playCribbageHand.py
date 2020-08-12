@@ -6,6 +6,7 @@ import sys
 import random
 import time
 from multiprocessing import Process, cpu_count, Manager, Lock
+import math
 
 
 class Card:
@@ -119,6 +120,7 @@ if __name__ == "__main__":
     if process_count == 1:
         simulate_hands(hand_count, grand_total_score, grand_total_score_lock)
     else:
+        hand_count = math.ceil(hand_count / process_count) * process_count
         print(
             f"Simulating {hand_count} hands across {process_count} worker processes",
             flush=True,
