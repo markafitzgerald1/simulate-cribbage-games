@@ -35,6 +35,8 @@ def simulate_hands(hand_count, grand_total_score, grand_total_score_lock):
         player_to_play = 0
         play_count = 0
         consecutive_go_count = 0
+        most_recently_played_index = None
+        most_recently_played_index_count = 0
         score = [0, 0]
         while hands[0] or hands[1]:
             playable_cards = [
@@ -44,11 +46,30 @@ def simulate_hands(hand_count, grand_total_score, grand_total_score_lock):
             if playable_cards:
                 player_to_play_play = playable_cards[-1]
                 hands[player_to_play].remove(player_to_play_play)
-                this_play_count = player_to_play_play.count
-                play_count += this_play_count
+                play_count += player_to_play_play.count
                 # print(
                 #     f"Player {player_to_play + 1} plays {player_to_play_play} for {play_count}."
                 # )
+
+                if player_to_play_play.index == most_recently_played_index:
+                    most_recently_played_index_count += 1
+                    if most_recently_played_index_count == 4:
+                        # print(
+                        #     f"Double pairs royale for 12 points for player {player_to_play + 1}."
+                        # )
+                        score[player_to_play] += 12
+                    elif most_recently_played_index_count == 3:
+                        # print(
+                        #     f"Pairs royale for 6 points for player {player_to_play + 1}."
+                        # )
+                        score[player_to_play] += 6
+                    elif most_recently_played_index_count == 2:
+                        # print(f"Pair for 2 points for player {player_to_play + 1}.")
+                        score[player_to_play] += 2
+                else:
+                    most_recently_played_index = player_to_play_play.index
+                    most_recently_played_index_count = 1
+
                 if play_count == 15:
                     # print(f"15 for 2 points for player {player_to_play + 1}.")
                     score[player_to_play] += 2
@@ -60,18 +81,19 @@ def simulate_hands(hand_count, grand_total_score, grand_total_score_lock):
                 # print(f'Player {player_to_play + 1} says "Go!"')
                 consecutive_go_count += 1
                 if consecutive_go_count == 2:
-                    next_player_to_play = (player_to_play + 1) % 2
-                    # print(f"Go for 1 point for player {next_player_to_play + 1}.")
-                    score[next_player_to_play] += 1
+                    # print(f"Go for 1 point for player {player_to_play + 1}.")
+                    score[player_to_play] += 1
 
-                    # print("Resetting play count to 0.")
+                    # print("---resetting play count to 0---")
                     consecutive_go_count = 0
                     play_count = 0
+                    most_recently_played_index = None
+                    most_recently_played_index_count = 0
 
             player_to_play = (player_to_play + 1) % 2
 
         last_player_to_play = (player_to_play + 1) % 2
-        # print(f"Last card for player {last_player_to_play + 1} for 1.")
+        # print(f"Last card for 1 point for player {last_player_to_play + 1}.")
         score[last_player_to_play] += 1
 
         # print(f"Hand score: {score}")
