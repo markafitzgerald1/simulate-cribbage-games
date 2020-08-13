@@ -39,30 +39,29 @@ const startTimeNs = process.hrtime.bigint();
   let playCount = 0;
   let consecutiveGoCount = 0;
   while (hands[0].length + hands[1].length > 0) {
-    if (hands[playerToPlay].length > 0) {
-      const playableCards = hands[playerToPlay].filter(
-        (card) => playCount + card.count <= 31
+    const playableCards = hands[playerToPlay].filter(
+      (card) => playCount + card.count <= 31
+    );
+    if (playableCards.length > 0) {
+      const playerToPlayPlay = playableCards[0];
+      hands[playerToPlay] = hands[playerToPlay].filter(
+        (card) => card !== playerToPlayPlay
       );
-      if (playableCards.length > 0) {
-        const playerToPlayPlay = playableCards[0];
-        hands[playerToPlay] = hands[playerToPlay].filter(
-          (card) => card !== playerToPlayPlay
-        );
-        playCount += playerToPlayPlay.count;
-        // console.log(
-        //   `Player ${playerToPlay} plays ${playerToPlayPlay} for ${playCount}.`
-        // );
+      playCount += playerToPlayPlay.count;
+      // console.log(
+      //   `Player ${playerToPlay + 1} plays ${playerToPlayPlay} for ${playCount}.`
+      // );
+      consecutiveGoCount = 0;
+    } else {
+      // console.log(`Player ${playerToPlay + 1} says "Go!"`);
+      consecutiveGoCount++;
+      if (consecutiveGoCount == 2) {
+        // console.log("Resetting play count to 0.");
         consecutiveGoCount = 0;
-      } else {
-        // console.log(`Player ${playerToPlay} says "Go!"`);
-        consecutiveGoCount++;
-        if (consecutiveGoCount == 2) {
-          // console.log("Resetting play count to 0.");
-          consecutiveGoCount = 0;
-          playCount = 0;
-        }
+        playCount = 0;
       }
     }
+
     playerToPlay = (playerToPlay + 1) % 2;
   }
 });
