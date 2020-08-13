@@ -5,20 +5,23 @@
 const { Worker } = require("worker_threads");
 const os = require("os");
 
-const nHands = process.argv.length > 2 ? parseInt(process.argv[2]) : 730000;
-const nWorkers =
+const handCount = process.argv.length > 2 ? parseInt(process.argv[2]) : 730000;
+const workerCount =
   process.argv.length > 3 ? parseInt(process.argv[3]) : os.cpus().length;
 
-if (nWorkers === 1) {
+if (workerCount === 1) {
   require("./playCribbageHandWorker");
 } else {
-  console.log(`Simulating ${nHands} hands across ${nWorkers} worker threads`);
+  const evenHandCount = Math.ceil(handCount / workerCount) * workerCount;
+  console.log(
+    `Simulating ${evenHandCount} hands across ${workerCount} worker threads`
+  );
   const startTimeNs = process.hrtime.bigint();
   let nWorkersDone = 0;
-  const workers = Array.from(Array(nWorkers).keys()).map(
+  const workers = Array.from(Array(workerCount).keys()).map(
     (_) =>
       new Worker("./playCribbageHandWorker.js", {
-        argv: [Math.floor(nHands / nWorkers)],
+        argv: [Math.floor(evenHandCount / workerCount)],
       })
   );
   workers.forEach((worker) =>
@@ -27,8 +30,8 @@ if (nWorkers === 1) {
       if (nWorkersDone === workers.length) {
         const elapsedTimeNs = process.hrtime.bigint() - startTimeNs;
         console.log(
-          `Simulated ${nHands} total hands in ${elapsedTimeNs} ns for ${
-            elapsedTimeNs / BigInt(nHands)
+          `Simulated ${evenHandCount} total hands in ${elapsedTimeNs} ns for ${
+            elapsedTimeNs / BigInt(evenHandCount)
           } ns per hand`
         );
       }
