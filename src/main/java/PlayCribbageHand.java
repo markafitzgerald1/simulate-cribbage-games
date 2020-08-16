@@ -76,7 +76,7 @@ public class PlayCribbageHand {
         return Math.min((playerToPlayPlay % 13) + 1, 10);
     }
 
-    private static String getCardString(int card) {
-        return String.format("%c%c", "A23456789TJQK".charAt(card % 13), "♣♦♥♠".charAt(card / 13));
-    }
+    // private static String getCardString(int card) {
+    //     return String.format("%c%c", "A23456789TJQK".charAt(card % 13), "♣♦♥♠".charAt(card / 13));
+    // }
 }
