@@ -21,6 +21,9 @@ class Card:
     def __str__(self):
         return self.str
 
+    def __repr__(self):
+        return f"Card({self.index}, {self.suit})"
+
 
 def simulate_hands(hand_count, grand_total_score, grand_total_score_lock):
     deck = [Card(number % 13, number // 13) for number in range(52)]
@@ -39,6 +42,7 @@ def simulate_hands(hand_count, grand_total_score, grand_total_score_lock):
         most_recently_played_index = None
         most_recently_played_index_count = 0
         score = [0, 0]
+        current_play_plays = []
         while hands[0] or hands[1]:
             playable_cards = [
                 card for card in hands[player_to_play] if play_count + card.count <= 31
@@ -47,54 +51,85 @@ def simulate_hands(hand_count, grand_total_score, grand_total_score_lock):
             if playable_cards:
                 player_to_play_play = playable_cards[-1]
                 hands[player_to_play].remove(player_to_play_play)
+                current_play_plays.append(player_to_play_play)
                 play_count += player_to_play_play.count
                 # print(
-                #     f"Player {player_to_play + 1} plays {player_to_play_play} for {play_count}."
+                #     f"Player {player_to_play + 1} plays {player_to_play_play} for {play_count}; current play plays = {','.join([ str(play) for play in current_play_plays ])}"
                 # )
 
+                # Pairs points
                 if player_to_play_play.index == most_recently_played_index:
                     most_recently_played_index_count += 1
                     if most_recently_played_index_count == 4:
                         # print(
-                        #     f"Double pairs royale for 12 points for player {player_to_play + 1}."
+                        #     f"!Double pairs royale for 12 points for player {player_to_play + 1}."
                         # )
                         score[player_to_play] += 12
                     elif most_recently_played_index_count == 3:
                         # print(
-                        #     f"Pairs royale for 6 points for player {player_to_play + 1}."
+                        #     f"!Pairs royale for 6 points for player {player_to_play + 1}."
                         # )
                         score[player_to_play] += 6
                     elif most_recently_played_index_count == 2:
-                        # print(f"Pair for 2 points for player {player_to_play + 1}.")
+                        # print(f"!Pair for 2 points for player {player_to_play + 1}.")
                         score[player_to_play] += 2
                 else:
                     most_recently_played_index = player_to_play_play.index
                     most_recently_played_index_count = 1
 
+                # 15 and 31 count points
                 if play_count == 15:
-                    # print(f"15 for 2 points for player {player_to_play + 1}.")
+                    # print(f"!15 for 2 points for player {player_to_play + 1}.")
                     score[player_to_play] += 2
                 elif play_count == 31:
-                    # print(f"31 for 1 point for player {player_to_play + 1}.")
+                    # print(f"!31 for 1 point for player {player_to_play + 1}.")
                     score[player_to_play] += 1
+
+                # Runs points
+                for run_length in reversed(range(3, len(current_play_plays) + 1)):
+                    sorted_recent_play_indices = sorted(
+                        [play.index for play in current_play_plays[-run_length:]]
+                    )
+                    # print(
+                    #     f"run length {run_length} sorted indices: {sorted(sorted_recent_play_indices)}"
+                    # )
+                    is_run = all(
+                        [
+                            diff[1] - diff[0] == 1
+                            for diff in zip(
+                                sorted_recent_play_indices,
+                                sorted_recent_play_indices[1:],
+                            )
+                        ]
+                    )
+                    # print(f"run length {run_length} is a run: {is_run}")
+                    if is_run:
+                        # print(
+                        #     f"!Run for {run_length} points for player {player_to_play + 1}."
+                        # )
+                        score[player_to_play] += run_length
+                        break
+
                 consecutive_go_count = 0
             else:
                 # print(f'Player {player_to_play + 1} says "Go!"')
                 consecutive_go_count += 1
                 if consecutive_go_count == 2:
-                    # print(f"Go for 1 point for player {player_to_play + 1}.")
+                    # print(f"!Go for 1 point for player {player_to_play + 1}.")
                     score[player_to_play] += 1
 
                     # print("---resetting play count to 0---")
                     consecutive_go_count = 0
                     play_count = 0
+                    current_play_plays = []
                     most_recently_played_index = None
                     most_recently_played_index_count = 0
 
             player_to_play = (player_to_play + 1) % 2
 
+        # Last Card points
         last_player_to_play = (player_to_play + 1) % 2
-        # print(f"Last card for 1 point for player {last_player_to_play + 1}.")
+        # print(f"!Last card for 1 point for player {last_player_to_play + 1}.")
         score[last_player_to_play] += 1
 
         # print(f"Hand score: {score}")
@@ -121,10 +156,10 @@ if __name__ == "__main__":
         simulate_hands(hand_count, grand_total_score, grand_total_score_lock)
     else:
         hand_count = math.ceil(hand_count / process_count) * process_count
-        print(
-            f"Simulating {hand_count} hands across {process_count} worker processes",
-            flush=True,
-        )
+        # print(
+        #     f"Simulating {hand_count} hands across {process_count} worker processes",
+        #     flush=True,
+        # )
         processes = [
             Process(
                 target=simulate_hands,
