@@ -24,7 +24,12 @@ if (workerCount === 1) {
         argv: [Math.floor(evenHandCount / workerCount)],
       })
   );
-  workers.forEach((worker) =>
+  grandTotalScore = [0, 0];
+  workers.forEach((worker) => {
+    worker.once("message", (totalScore) => {
+      grandTotalScore[0] += totalScore[0];
+      grandTotalScore[1] += totalScore[1];
+    });
     worker.on("exit", (code) => {
       nWorkersDone++;
       if (nWorkersDone === workers.length) {
@@ -34,7 +39,12 @@ if (workerCount === 1) {
             elapsedTimeNs / BigInt(evenHandCount)
           } ns per hand`
         );
+        console.log(
+          `Overall average score: [${grandTotalScore.map(
+            (grandTotalPlayerScore) => grandTotalPlayerScore / evenHandCount
+          )}]`
+        );
       }
-    })
-  );
+    });
+  });
 }

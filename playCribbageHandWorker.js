@@ -3,6 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 const randomJs = require("random-js");
+const parentPort = require("worker_threads").parentPort;
 
 const mersenneTwisterEngine = randomJs.MersenneTwister19937.autoSeed();
 
@@ -23,10 +24,11 @@ const deck = Array.from(Array(52).keys()).map(
   (number) => new Card(number % 13, Math.floor(number / 13))
 );
 
-const nHands = process.argv.length > 2 ? parseInt(process.argv[2]) : 390000;
+const handCount = process.argv.length > 2 ? parseInt(process.argv[2]) : 390000;
 // console.log(`Worker simulating ${nHands} hands`);
+let totalScore = [0, 0];
 const startTimeNs = process.hrtime.bigint();
-[...Array(nHands)].forEach((_) => {
+[...Array(handCount)].forEach((_) => {
   const deal = randomJs.sample(mersenneTwisterEngine, deck, 8);
   // console.log(`Deal is ${deal}.`);
   const hands = [deal.slice(0, 4), deal.slice(4)];
@@ -38,6 +40,7 @@ const startTimeNs = process.hrtime.bigint();
   let playerToPlay = 0;
   let playCount = 0;
   let consecutiveGoCount = 0;
+  let score = [0, 0];
   while (hands[0].length + hands[1].length > 0) {
     const playableCards = hands[playerToPlay].filter(
       (card) => playCount + card.count <= 31
@@ -51,6 +54,13 @@ const startTimeNs = process.hrtime.bigint();
       // console.log(
       //   `Player ${playerToPlay + 1} plays ${playerToPlayPlay} for ${playCount}.`
       // );
+
+      // Fifteens points
+      if (playCount == 15) {
+        // console.log(`!15 for 2 points for player ${playerToPlay + 1}.`);
+        score[playerToPlay] += 2;
+      }
+
       consecutiveGoCount = 0;
     } else {
       // console.log(`Player ${playerToPlay + 1} says "Go!"`);
@@ -64,10 +74,19 @@ const startTimeNs = process.hrtime.bigint();
 
     playerToPlay = (playerToPlay + 1) % 2;
   }
+
+  totalScore[0] += score[0];
+  totalScore[1] += score[1];
 });
 const elapsedTimeNs = process.hrtime.bigint() - startTimeNs;
 console.log(
-  `Worker simulated ${nHands} hands in ${elapsedTimeNs} ns for ${
-    elapsedTimeNs / BigInt(nHands)
+  `Worker simulated ${handCount} hands in ${elapsedTimeNs} ns for ${
+    elapsedTimeNs / BigInt(handCount)
   } ns per hand`
 );
+console.log(
+  `Average score: [${totalScore.map(
+    (totalPlayerScore) => totalPlayerScore / handCount
+  )}]`
+);
+parentPort.postMessage(totalScore);

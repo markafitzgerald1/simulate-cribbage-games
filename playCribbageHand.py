@@ -27,8 +27,8 @@ class Card:
 
 def simulate_hands(hand_count, grand_total_score, grand_total_score_lock):
     deck = [Card(number % 13, number // 13) for number in range(52)]
-    start_time_ns = time.time_ns()
     total_score = [0, 0]
+    start_time_ns = time.time_ns()
     for hand in range(hand_count):
         hand_cards = random.sample(deck, 8)
         # print(f"Deal is {','.join([ str(card) for card in hand_cards ])}.")
