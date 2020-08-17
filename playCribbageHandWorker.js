@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 const randomJs = require("random-js");
-const parentPort = require("worker_threads").parentPort;
+const workerThreads = require("worker_threads");
 
 const mersenneTwisterEngine = randomJs.MersenneTwister19937.autoSeed();
 
@@ -55,10 +55,13 @@ const startTimeNs = process.hrtime.bigint();
       //   `Player ${playerToPlay + 1} plays ${playerToPlayPlay} for ${playCount}.`
       // );
 
-      // Fifteens points
+      // 15 and 31 count points
       if (playCount == 15) {
         // console.log(`!15 for 2 points for player ${playerToPlay + 1}.`);
         score[playerToPlay] += 2;
+      } else if (playCount == 31) {
+        // console.log(`!31 for 1 point for player ${playerToPlay + 1}.`);
+        score[playerToPlay] += 1;
       }
 
       consecutiveGoCount = 0;
@@ -84,9 +87,13 @@ console.log(
     elapsedTimeNs / BigInt(handCount)
   } ns per hand`
 );
-console.log(
-  `Average score: [${totalScore.map(
-    (totalPlayerScore) => totalPlayerScore / handCount
-  )}]`
-);
-parentPort.postMessage(totalScore);
+
+if (workerThreads.parentPort) {
+  workerThreads.parentPort.postMessage(totalScore);
+} else if (workerThreads.isMainThread) {
+  console.log(
+    `Average score: [${totalScore.map(
+      (totalPlayerScore) => totalPlayerScore / handCount
+    )}]`
+  );
+}
