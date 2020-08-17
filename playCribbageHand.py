@@ -93,17 +93,17 @@ def simulate_hands(hand_count, grand_total_score, grand_total_score_lock):
                     # print(
                     #     f"run length {run_length} sorted indices: {sorted(sorted_recent_play_indices)}"
                     # )
-                    is_run = all(
-                        [
-                            diff[1] - diff[0] == 1
-                            for diff in zip(
-                                sorted_recent_play_indices,
-                                sorted_recent_play_indices[1:],
-                            )
-                        ]
-                    )
-                    # print(f"run length {run_length} is a run: {is_run}")
-                    if is_run:
+                    adjacent_index_count = 0
+                    for play_index in range(run_length - 1):
+                        # print(f"play_index: {play_index}")
+                        diff_with_next = (
+                            sorted_recent_play_indices[play_index + 1]
+                            - sorted_recent_play_indices[play_index]
+                        )
+                        # print(f"diff with next: {diff_with_next}")
+                        if diff_with_next == 1:
+                            adjacent_index_count += 1
+                    if adjacent_index_count == run_length - 1:
                         # print(
                         #     f"!Run for {run_length} points for player {player_to_play + 1}."
                         # )
