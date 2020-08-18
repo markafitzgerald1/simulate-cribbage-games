@@ -81,6 +81,11 @@ const startTimeNs = process.hrtime.bigint();
     playerToPlay = (playerToPlay + 1) % 2;
   }
 
+  // Last Card points
+  lastPlayerToPlay = (playerToPlay + 1) % 2;
+  // console.log(`!Last card for 1 point for player ${lastPlayerToPlay + 1}.`);
+  score[lastPlayerToPlay] += 1;
+
   totalScore[0] += score[0];
   totalScore[1] += score[1];
 });
