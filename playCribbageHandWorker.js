@@ -69,7 +69,10 @@ const startTimeNs = process.hrtime.bigint();
       // console.log(`Player ${playerToPlay + 1} says "Go!"`);
       consecutiveGoCount++;
       if (consecutiveGoCount == 2) {
-        // console.log("Resetting play count to 0.");
+        // console.log(`!Go for 1 point for player ${playerToPlay + 1}.`);
+        score[playerToPlay] += 1;
+
+        // console.log("---resetting play count to 0---");
         consecutiveGoCount = 0;
         playCount = 0;
       }
