@@ -25,7 +25,7 @@ const deck = Array.from(Array(52).keys()).map(
 );
 
 const handCount = process.argv.length > 2 ? parseInt(process.argv[2]) : 390000;
-// console.log(`Worker simulating ${nHands} hands`);
+// console.log(`Worker simulating ${handCount} hands`);
 let totalScore = [0, 0];
 const startTimeNs = process.hrtime.bigint();
 [...Array(handCount)].forEach((_) => {
@@ -40,6 +40,8 @@ const startTimeNs = process.hrtime.bigint();
   let playerToPlay = 0;
   let playCount = 0;
   let consecutiveGoCount = 0;
+  let mostRecentlyPlayedIndex = undefined;
+  let mostRecentlyPlayedIndexCount = 0;
   let score = [0, 0];
   while (hands[0].length + hands[1].length > 0) {
     const playableCards = hands[playerToPlay].filter(
@@ -54,6 +56,28 @@ const startTimeNs = process.hrtime.bigint();
       // console.log(
       //   `Player ${playerToPlay + 1} plays ${playerToPlayPlay} for ${playCount}.`
       // );
+
+      // Pairs points
+      if (playerToPlayPlay.index === mostRecentlyPlayedIndex) {
+        mostRecentlyPlayedIndexCount++;
+        if (mostRecentlyPlayedIndexCount === 4) {
+          // console.log(
+          //   `!Double pairs royale for 12 points for player ${playerToPlay + 1}`
+          // );
+          score[playerToPlay] += 12;
+        } else if (mostRecentlyPlayedIndexCount === 3) {
+          // console.log(
+          //   `!Pairs royale for 6 points for player ${playerToPlay + 1}`
+          // );
+          score[playerToPlay] += 6;
+        } else if (mostRecentlyPlayedIndexCount === 2) {
+          // console.log(`!Pair for 2 points for player ${playerToPlay + 1}`);
+          score[playerToPlay] += 2;
+        }
+      } else {
+        mostRecentlyPlayedIndex = playerToPlayPlay.index;
+        mostRecentlyPlayedIndexCount = 1;
+      }
 
       // 15 and 31 count points
       if (playCount == 15) {
@@ -75,6 +99,8 @@ const startTimeNs = process.hrtime.bigint();
         // console.log("---resetting play count to 0---");
         consecutiveGoCount = 0;
         playCount = 0;
+        mostRecentlyPlayedIndex = undefined;
+        mostRecentlyPlayedIndexCount = 0;
       }
     }
 
