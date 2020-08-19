@@ -125,36 +125,6 @@ const startTimeNs = process.hrtime.bigint();
             break;
           }
         }
-        // [...Array(currentPlayPlays.length - 3 + 1).keys()]
-        //   .map((runLength) => currentPlayPlays.length - runLength)
-        //   .forEach((runLength) => {
-        //     console.log(`Checking for run of length ${runLength}...`);
-        //   const sortedRecentPlayIndices = currentPlayPlays
-        //     .slice(-runLength)
-        //     .map((play) => play.index);
-        //   sortedRecentPlayIndices.sort((a, b) => a - b);
-        //   console.log(
-        //     `run length ${runLength} sorted indices: ${sortedRecentPlayIndices}`
-        //   );
-        //   let adjacentIndexCount = 0;
-        //   for (playIndex in [...Array(runLength - 1)]) {
-        //     console.log(`playIndex: ${playIndex}`);
-        //     if (
-        //       sortedRecentPlayIndices[playIndex + 1] -
-        //         sortedRecentPlayIndices[playIndex] ===
-        //       1
-        //     ) {
-        //       adjacentIndexCount++;
-        //     }
-        //   }
-        //   if (adjacentIndexCount === runLength - 1) {
-        //     console.log(
-        //       `!Run for ${runLength} points for player ${playerToPlay + 1}.`
-        //     );
-        //     score[playerToPlay] += runLength;
-        //     break;
-        //   }
-        // });
       }
 
       consecutiveGoCount = 0;
