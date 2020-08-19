@@ -43,6 +43,7 @@ const startTimeNs = process.hrtime.bigint();
   let mostRecentlyPlayedIndex = undefined;
   let mostRecentlyPlayedIndexCount = 0;
   let score = [0, 0];
+  let currentPlayPlays = [];
   while (hands[0].length + hands[1].length > 0) {
     const playableCards = hands[playerToPlay].filter(
       (card) => playCount + card.count <= 31
@@ -52,9 +53,12 @@ const startTimeNs = process.hrtime.bigint();
       hands[playerToPlay] = hands[playerToPlay].filter(
         (card) => card !== playerToPlayPlay
       );
+      currentPlayPlays.push(playerToPlayPlay);
       playCount += playerToPlayPlay.count;
       // console.log(
-      //   `Player ${playerToPlay + 1} plays ${playerToPlayPlay} for ${playCount}.`
+      //   `Player ${
+      //     playerToPlay + 1
+      //   } plays ${playerToPlayPlay} for ${playCount}; current play plays = ${currentPlayPlays}.`
       // );
 
       // Pairs points
@@ -88,6 +92,71 @@ const startTimeNs = process.hrtime.bigint();
         score[playerToPlay] += 1;
       }
 
+      // Runs points
+      if (currentPlayPlays.length >= 3) {
+        for (
+          let runLength = currentPlayPlays.length;
+          runLength >= 3;
+          runLength--
+        ) {
+          // console.log(`Checking for run of length ${runLength}...`);
+          const sortedRecentPlayIndices = currentPlayPlays
+            .slice(-runLength)
+            .map((play) => play.index);
+          sortedRecentPlayIndices.sort((a, b) => a - b);
+          // console.log(
+          //   `run length ${runLength} sorted indices: ${sortedRecentPlayIndices}`
+          // );
+          let adjacentIndexCount = 0;
+          for (let playIndex = 0; playIndex < runLength - 1; playIndex++) {
+            if (
+              sortedRecentPlayIndices[playIndex + 1] -
+                sortedRecentPlayIndices[playIndex] ===
+              1
+            ) {
+              adjacentIndexCount++;
+            }
+          }
+          if (adjacentIndexCount === runLength - 1) {
+            // console.log(
+            //   `!Run for ${runLength} points for player ${playerToPlay + 1}.`
+            // );
+            score[playerToPlay] += runLength;
+            break;
+          }
+        }
+        // [...Array(currentPlayPlays.length - 3 + 1).keys()]
+        //   .map((runLength) => currentPlayPlays.length - runLength)
+        //   .forEach((runLength) => {
+        //     console.log(`Checking for run of length ${runLength}...`);
+        //   const sortedRecentPlayIndices = currentPlayPlays
+        //     .slice(-runLength)
+        //     .map((play) => play.index);
+        //   sortedRecentPlayIndices.sort((a, b) => a - b);
+        //   console.log(
+        //     `run length ${runLength} sorted indices: ${sortedRecentPlayIndices}`
+        //   );
+        //   let adjacentIndexCount = 0;
+        //   for (playIndex in [...Array(runLength - 1)]) {
+        //     console.log(`playIndex: ${playIndex}`);
+        //     if (
+        //       sortedRecentPlayIndices[playIndex + 1] -
+        //         sortedRecentPlayIndices[playIndex] ===
+        //       1
+        //     ) {
+        //       adjacentIndexCount++;
+        //     }
+        //   }
+        //   if (adjacentIndexCount === runLength - 1) {
+        //     console.log(
+        //       `!Run for ${runLength} points for player ${playerToPlay + 1}.`
+        //     );
+        //     score[playerToPlay] += runLength;
+        //     break;
+        //   }
+        // });
+      }
+
       consecutiveGoCount = 0;
     } else {
       // console.log(`Player ${playerToPlay + 1} says "Go!"`);
@@ -99,6 +168,7 @@ const startTimeNs = process.hrtime.bigint();
         // console.log("---resetting play count to 0---");
         consecutiveGoCount = 0;
         playCount = 0;
+        currentPlayPlays = [];
         mostRecentlyPlayedIndex = undefined;
         mostRecentlyPlayedIndexCount = 0;
       }

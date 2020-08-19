@@ -91,7 +91,7 @@ def simulate_hands(hand_count, grand_total_score, grand_total_score_lock):
                         [play.index for play in current_play_plays[-run_length:]]
                     )
                     # print(
-                    #     f"run length {run_length} sorted indices: {sorted(sorted_recent_play_indices)}"
+                    #     f"run length {run_length} sorted indices: {sorted_recent_play_indices}"
                     # )
                     adjacent_index_count = 0
                     for play_index in range(run_length - 1):
