@@ -7,6 +7,8 @@ import random
 import time
 from multiprocessing import Process, cpu_count, Manager, Lock
 import math
+import argparse
+import os
 
 
 class Card:
@@ -147,29 +149,58 @@ def simulate_hands(hand_count, grand_total_score, grand_total_score_lock):
 
 
 if __name__ == "__main__":
-    hand_count = int(sys.argv[1]) if len(sys.argv) > 1 else 37000
-    process_count = int(sys.argv[2]) if len(sys.argv) > 2 else cpu_count()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--process_count",
+        help="number of processes to use to simulate cribbage hand plays",
+        type=int,
+        default=cpu_count(),
+    )
+    parser.add_argument(
+        "--hand_count",
+        help="number of cribbage hand plays to simulate",
+        type=int,
+        default=1,
+    )
+    parser.add_argument(
+        "--hide_workers_start_message",
+        action="store_true",
+        help="hide the workers startup details message",
+    )
+    args = parser.parse_args()
+
     manager = Manager()
     grand_total_score = manager.list([0, 0])
     grand_total_score_lock = Lock()
-    if process_count == 1:
-        simulate_hands(hand_count, grand_total_score, grand_total_score_lock)
+    if not args.hide_workers_start_message:
+        print(
+            f"Simulating {args.hand_count} hands",
+            end="" if args.process_count > 1 else os.linesep,
+            flush=args.process_count == 1,
+        )
+        if args.process_count > 1:
+            print(
+                f" in {args.process_count} worker process{'es' if args.process_count > 1 else ''}",
+                flush=True,
+            )
+    if args.process_count == 1:
+        simulate_hands(
+            args.hand_count, grand_total_score, grand_total_score_lock,
+        )
     else:
-        hand_count = math.ceil(hand_count / process_count) * process_count
-        # print(
-        #     f"Simulating {hand_count} hands across {process_count} worker processes",
-        #     flush=True,
-        # )
+        args.hand_count = (
+            math.ceil(args.hand_count / args.process_count) * args.process_count
+        )
         processes = [
             Process(
                 target=simulate_hands,
                 args=(
-                    hand_count // process_count,
+                    args.hand_count // args.process_count,
                     grand_total_score,
                     grand_total_score_lock,
                 ),
             )
-            for process_number in range(process_count)
+            for process_number in range(args.process_count)
         ]
         start_time_ns = time.time_ns()
         for process in processes:
@@ -178,8 +209,8 @@ if __name__ == "__main__":
             process.join()
         elapsed_time_ns = time.time_ns() - start_time_ns
         print(
-            f"Simulated {hand_count} total hands in {elapsed_time_ns / 1000000000} seconds for {elapsed_time_ns / hand_count} ns per hand"
+            f"Simulated {args.hand_count} total hands in {elapsed_time_ns / 1000000000} seconds for {elapsed_time_ns / args.hand_count} ns per hand"
         )
     print(
-        f"Overall average score: {[ grand_total / hand_count for grand_total in grand_total_score ]}"
+        f"Overall average score: {[ grand_total / args.hand_count for grand_total in grand_total_score ]}"
     )
