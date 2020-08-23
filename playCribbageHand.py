@@ -27,17 +27,23 @@ class Card:
         return f"Card({self.index}, {self.suit})"
 
 
-def simulate_hands(hand_count, grand_total_score, grand_total_score_lock):
+def simulate_hands(
+    hand_count,
+    grand_total_score,
+    grand_total_score_lock,
+    hide_pone_hand,
+    hide_dealer_hand,
+):
     deck = [Card(number % 13, number // 13) for number in range(52)]
     total_score = [0, 0]
     start_time_ns = time.time_ns()
     for hand in range(hand_count):
         hand_cards = random.sample(deck, 8)
-        # print(f"Deal is {','.join([ str(card) for card in hand_cards ])}.")
         hands = [hand_cards[0:4], hand_cards[4:]]
-        # print(
-        #     f"Hands are {'; '.join([ ','.join([ str(card) for card in hand ]) for hand in hands ])}."
-        # )
+        if not hide_pone_hand:
+            print(f"Pone dealt {','.join([ str(card) for card in hands[0] ])}")
+        if not hide_dealer_hand:
+            print(f"Dealer dealt {','.join([ str(card) for card in hands[1] ])}")
         player_to_play = 0
         play_count = 0
         consecutive_go_count = 0
@@ -151,22 +157,33 @@ def simulate_hands(hand_count, grand_total_score, grand_total_score_lock):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--process_count",
+        "--process-count",
         help="number of processes to use to simulate cribbage hand plays",
         type=int,
         default=cpu_count(),
     )
     parser.add_argument(
-        "--hand_count",
+        "--hand-count",
         help="number of cribbage hand plays to simulate",
         type=int,
         default=1,
     )
     parser.add_argument(
-        "--hide_workers_start_message",
+        "--hide-workers-start-message",
         action="store_true",
         help="hide the workers startup details message",
     )
+    parser.add_argument(
+        "--hide-pone-hand",
+        action="store_true",
+        help="suppress deal-time output of pone hand contents",
+    )
+    parser.add_argument(
+        "--hide-dealer-hand",
+        action="store_true",
+        help="suppress deal-time output of dealer hand contents",
+    )
+
     args = parser.parse_args()
 
     manager = Manager()
@@ -185,7 +202,11 @@ if __name__ == "__main__":
             )
     if args.process_count == 1:
         simulate_hands(
-            args.hand_count, grand_total_score, grand_total_score_lock,
+            args.hand_count,
+            grand_total_score,
+            grand_total_score_lock,
+            args.hide_pone_hand,
+            args.hide_dealer_hand,
         )
     else:
         args.hand_count = (
@@ -198,6 +219,8 @@ if __name__ == "__main__":
                     args.hand_count // args.process_count,
                     grand_total_score,
                     grand_total_score_lock,
+                    args.hide_pone_hand,
+                    args.hide_dealer_hand,
                 ),
             )
             for process_number in range(args.process_count)
