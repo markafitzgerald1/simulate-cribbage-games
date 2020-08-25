@@ -27,6 +27,13 @@ class Card:
         return f"Card({self.index}, {self.suit})"
 
 
+def get_player_name(player_number):
+    if player_number == 0:
+        return "Pone"
+    else:
+        return "Dealer"
+
+
 def simulate_hands(
     hand_count,
     grand_total_score,
@@ -41,11 +48,14 @@ def simulate_hands(
     for hand in range(hand_count):
         hand_cards = random.sample(deck, 8)
         hands = [hand_cards[0:4], hand_cards[4:]]
-        # TODO: resolve output inconsistency: Pone/Dealer here, Player 1/2 elsewhere
         if not hide_pone_hand:
-            print(f"Pone dealt {','.join([ str(card) for card in hands[0] ])}")
+            print(
+                f"{get_player_name(0):6} dealt {','.join([ str(card) for card in hands[0] ])}"
+            )
         if not hide_dealer_hand:
-            print(f"Dealer dealt {','.join([ str(card) for card in hands[1] ])}")
+            print(
+                f"{get_player_name(1):6} dealt {','.join([ str(card) for card in hands[1] ])}"
+            )
         player_to_play = 0
         play_count = 0
         consecutive_go_count = 0
@@ -65,7 +75,7 @@ def simulate_hands(
                 play_count += player_to_play_play.count
                 if not hide_play_actions:
                     print(
-                        f"Player {player_to_play + 1} plays {player_to_play_play} for {play_count}"
+                        f"{get_player_name(player_to_play):6} plays {player_to_play_play} for {play_count}"
                     )
 
                 # Pairs points
@@ -74,19 +84,19 @@ def simulate_hands(
                     if most_recently_played_index_count == 4:
                         if not hide_play_actions:
                             print(
-                                f"!Double pairs royale for 12 points for player {player_to_play + 1}."
+                                f"!Double pairs royale for 12 points for {get_player_name(player_to_play)}."
                             )
                         score[player_to_play] += 12
                     elif most_recently_played_index_count == 3:
                         if not hide_play_actions:
                             print(
-                                f"!Pairs royale for 6 points for player {player_to_play + 1}."
+                                f"!Pairs royale for 6 points for {get_player_name(player_to_play)}."
                             )
                         score[player_to_play] += 6
                     elif most_recently_played_index_count == 2:
                         if not hide_play_actions:
                             print(
-                                f"!Pair for 2 points for player {player_to_play + 1}."
+                                f"!Pair for 2 points for {get_player_name(player_to_play)}."
                             )
                         score[player_to_play] += 2
                 else:
@@ -96,11 +106,13 @@ def simulate_hands(
                 # 15 and 31 count points
                 if play_count == 15:
                     if not hide_play_actions:
-                        print(f"!15 for 2 points for player {player_to_play + 1}.")
+                        print(
+                            f"!15 for 2 points for {get_player_name(player_to_play)}."
+                        )
                     score[player_to_play] += 2
                 elif play_count == 31:
                     if not hide_play_actions:
-                        print(f"!31 for 1 point for player {player_to_play + 1}.")
+                        print(f"!31 for 1 point for {get_player_name(player_to_play)}.")
                     score[player_to_play] += 1
 
                 # Runs points
@@ -119,7 +131,7 @@ def simulate_hands(
                     if adjacent_index_count == run_length - 1:
                         if not hide_play_actions:
                             print(
-                                f"!Run for {run_length} points for player {player_to_play + 1}."
+                                f"!Run for {run_length} points for {get_player_name(player_to_play)}."
                             )
                         score[player_to_play] += run_length
                         break
@@ -127,11 +139,11 @@ def simulate_hands(
                 consecutive_go_count = 0
             else:
                 if not hide_play_actions:
-                    print(f'Player {player_to_play + 1} says "Go!"')
+                    print(f'{get_player_name(player_to_play):6} says "Go!"')
                 consecutive_go_count += 1
                 if consecutive_go_count == 2:
                     if not hide_play_actions:
-                        print(f"!Go for 1 point for player {player_to_play + 1}.")
+                        print(f"!Go for 1 point for {get_player_name(player_to_play)}.")
                     score[player_to_play] += 1
 
                     if not hide_play_actions:
@@ -147,7 +159,7 @@ def simulate_hands(
         # Last Card points
         last_player_to_play = (player_to_play + 1) % 2
         if not hide_play_actions:
-            print(f"!Last card for 1 point for player {last_player_to_play + 1}.")
+            print(f"!Last card for 1 point for {get_player_name(last_player_to_play)}.")
         score[last_player_to_play] += 1
 
         if not hide_play_actions:
@@ -158,7 +170,6 @@ def simulate_hands(
     print(
         f"Simulated {hand_count} hands in {elapsed_time_ns / 1000000000} seconds for {elapsed_time_ns / hand_count} ns per hand"
     )
-    # print(f"Average score: {[ total / hand_count for total in total_score ]}")
     grand_total_score_lock.acquire()
     grand_total_score[0] += total_score[0]
     grand_total_score[1] += total_score[1]
