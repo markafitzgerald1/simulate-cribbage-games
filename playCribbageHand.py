@@ -35,17 +35,19 @@ def get_player_name(player_number):
 
 
 def simulate_hands(
-    hand_count,
+    process_hand_count,
+    overall_hand_count,
     grand_total_score,
     grand_total_score_lock,
     hide_pone_hand,
     hide_dealer_hand,
     hide_play_actions,
+    hands_per_update,
 ):
     deck = [Card(number % 13, number // 13) for number in range(52)]
     total_score = [0, 0]
     start_time_ns = time.time_ns()
-    for hand in range(hand_count):
+    for hand in range(process_hand_count):
         hand_cards = random.sample(deck, 8)
         hands = [hand_cards[0:4], hand_cards[4:]]
         if not hide_pone_hand:
@@ -166,13 +168,29 @@ def simulate_hands(
             print(f"Hand score: {score}")
         total_score[0] += score[0]
         total_score[1] += score[1]
+
+        if hand % hands_per_update == hands_per_update - 1:
+            grand_total_score_lock.acquire()
+            grand_total_score[0] += total_score[0]
+            grand_total_score[1] += total_score[1]
+            grand_total_score[2] += hands_per_update
+            total_score = [0, 0]
+            print(
+                f"Overall average score: {[ grand_total / grand_total_score[2] for grand_total in grand_total_score[0:2] ]}"
+            )
+            grand_total_score_lock.release()
+
     elapsed_time_ns = time.time_ns() - start_time_ns
     print(
-        f"Simulated {hand_count} hands in {elapsed_time_ns / 1000000000} seconds for {elapsed_time_ns / hand_count} ns per hand"
+        f"Simulated {process_hand_count} hands in {elapsed_time_ns / 1000000000} seconds for {elapsed_time_ns / process_hand_count} ns per hand"
     )
     grand_total_score_lock.acquire()
     grand_total_score[0] += total_score[0]
     grand_total_score[1] += total_score[1]
+    grand_total_score[2] += process_hand_count % hands_per_update
+    print(
+        f"Overall average score: {[ grand_total / grand_total_score[2] for grand_total in grand_total_score[0:2] ]}"
+    )
     grand_total_score_lock.release()
 
 
@@ -210,11 +228,17 @@ if __name__ == "__main__":
         action="store_true",
         help="suppress output of play actions (cards played, Go, points scored, count reset)",
     )
+    parser.add_argument(
+        "--hands-per-update",
+        help="number of hands to similate per statistics update",
+        type=int,
+        default=5000,
+    )
 
     args = parser.parse_args()
 
     manager = Manager()
-    grand_total_score = manager.list([0, 0])
+    grand_total_score = manager.list([0, 0, 0])
     grand_total_score_lock = Lock()
     if not args.hide_workers_start_message:
         print(
@@ -227,20 +251,23 @@ if __name__ == "__main__":
                 f" in {args.process_count} worker process{'es' if args.process_count > 1 else ''}",
                 flush=True,
             )
+
+    args.hand_count = (
+        math.ceil(args.hand_count / args.process_count) * args.process_count
+    )
     simulate_hands_args = (
         args.hand_count // args.process_count,
+        args.hand_count,
         grand_total_score,
         grand_total_score_lock,
         args.hide_pone_hand,
         args.hide_dealer_hand,
         args.hide_play_actions,
+        args.hands_per_update,
     )
     if args.process_count == 1:
         simulate_hands(*simulate_hands_args)
     else:
-        args.hand_count = (
-            math.ceil(args.hand_count / args.process_count) * args.process_count
-        )
         processes = [
             Process(target=simulate_hands, args=simulate_hands_args)
             for process_number in range(args.process_count)
@@ -255,5 +282,5 @@ if __name__ == "__main__":
             f"Simulated {args.hand_count} total hands in {elapsed_time_ns / 1000000000} seconds for {elapsed_time_ns / args.hand_count} ns per hand"
         )
     print(
-        f"Overall average score: {[ grand_total / args.hand_count for grand_total in grand_total_score ]}"
+        f"Overall average score: {[ grand_total / args.hand_count for grand_total in grand_total_score[0:2] ]}"
     )
