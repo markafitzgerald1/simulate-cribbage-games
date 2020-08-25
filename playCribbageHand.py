@@ -216,33 +216,22 @@ if __name__ == "__main__":
                 f" in {args.process_count} worker process{'es' if args.process_count > 1 else ''}",
                 flush=True,
             )
+    simulate_hands_args = (
+        args.hand_count // args.process_count,
+        grand_total_score,
+        grand_total_score_lock,
+        args.hide_pone_hand,
+        args.hide_dealer_hand,
+        args.hide_play_actions,
+    )
     if args.process_count == 1:
-        # TODO: factor out common argument list with below
-        simulate_hands(
-            args.hand_count,
-            grand_total_score,
-            grand_total_score_lock,
-            args.hide_pone_hand,
-            args.hide_dealer_hand,
-            args.hide_play_actions,
-        )
+        simulate_hands(*simulate_hands_args)
     else:
         args.hand_count = (
             math.ceil(args.hand_count / args.process_count) * args.process_count
         )
         processes = [
-            Process(
-                target=simulate_hands,
-                # TODO: factor out common argument list with above
-                args=(
-                    args.hand_count // args.process_count,
-                    grand_total_score,
-                    grand_total_score_lock,
-                    args.hide_pone_hand,
-                    args.hide_dealer_hand,
-                    args.hide_play_actions,
-                ),
-            )
+            Process(target=simulate_hands, args=simulate_hands_args)
             for process_number in range(args.process_count)
         ]
         start_time_ns = time.time_ns()
