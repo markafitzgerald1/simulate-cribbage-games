@@ -176,7 +176,7 @@ def simulate_hands(
             grand_total_score[2] += hands_per_update
             total_score = [0, 0]
             print(
-                f"Overall average score: {[ grand_total / grand_total_score[2] for grand_total in grand_total_score[0:2] ]}"
+                f"Overall average score after {grand_total_score[2]} hands: {[ grand_total / grand_total_score[2] for grand_total in grand_total_score[0:2] ]}"
             )
             grand_total_score_lock.release()
 
