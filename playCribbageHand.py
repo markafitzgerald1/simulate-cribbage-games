@@ -248,9 +248,14 @@ if __name__ == "__main__":
     manager = Manager()
     players_statistics = manager.dict(pone=Statistics(), dealer=Statistics())
     players_statistics_lock = Lock()
+    args.hand_count = (
+        (math.ceil(args.hand_count / args.process_count) * args.process_count)
+        if args.hand_count
+        else sys.maxsize
+    )
     if not args.hide_workers_start_message:
         print(
-            f"Simulating {args.hand_count} hands",
+            f"Simulating {args.hand_count if args.hand_count != sys.maxsize else 'infinite'} hands",
             end="" if args.process_count > 1 else os.linesep,
             flush=args.process_count == 1,
         )
@@ -260,11 +265,6 @@ if __name__ == "__main__":
                 flush=True,
             )
 
-    args.hand_count = (
-        (math.ceil(args.hand_count / args.process_count) * args.process_count)
-        if args.hand_count
-        else sys.maxsize
-    )
     simulate_hands_args = (
         args.hand_count // args.process_count,
         args.hand_count,
