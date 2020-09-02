@@ -10,6 +10,7 @@ import math
 import argparse
 import os
 from runstats import Statistics
+from statistics import NormalDist
 
 
 class Card:
@@ -44,10 +45,10 @@ def simulate_hands(
     hide_dealer_hand,
     hide_play_actions,
     hands_per_update,
+    confidence_level,
 ):
     deck = [Card(number % 13, number // 13) for number in range(52)]
     (pone_statistics, dealer_statistics) = (Statistics(), Statistics())
-    start_time_ns = time.time_ns()
     for hand in range(process_hand_count):
         hand_cards = random.sample(deck, 8)
         hands = [hand_cards[0:4], hand_cards[4:]]
@@ -180,19 +181,16 @@ def simulate_hands(
             pone_statistics.clear()
             dealer_statistics.clear()
             players_statistics_length = len(players_statistics["pone"])
-            print(
-                f"Mean score after {players_statistics_length} hands: {players_statistics['pone'].mean()} - {players_statistics['dealer'].mean()}"
-            )
             if players_statistics_length > 1:
+                z_statistic = NormalDist().inv_cdf(1 - (1 - confidence_level / 100) / 2)
                 print(
-                    f"Standard error of mean score after {players_statistics_length} hands: {players_statistics['pone'].stddev() / math.sqrt(players_statistics_length)} - {players_statistics['dealer'].stddev() / math.sqrt(players_statistics_length)}"
+                    f"Mean scores {confidence_level}% confidence interval (n = {players_statistics_length:{int(math.log10(overall_hand_count)) + 1}}): ({players_statistics['pone'].mean():.4f} ± {z_statistic * players_statistics['pone'].stddev() / math.sqrt(players_statistics_length):.4f}, {players_statistics['dealer'].mean():.4f} ± {z_statistic * players_statistics['dealer'].stddev() / math.sqrt(players_statistics_length):.4f})"
+                )
+            else:
+                print(
+                    f"Mean scores {'':27} (n = {players_statistics_length}): ({players_statistics['pone'].mean():.4f} {'':8}, {players_statistics['dealer'].mean():.4f})"
                 )
             players_statistics_lock.release()
-
-    elapsed_time_ns = time.time_ns() - start_time_ns
-    print(
-        f"Simulated {process_hand_count} hands in {elapsed_time_ns / 1000000000} seconds for {elapsed_time_ns / process_hand_count} ns per hand"
-    )
 
 
 if __name__ == "__main__":
@@ -235,6 +233,12 @@ if __name__ == "__main__":
         type=int,
         default=5000,
     )
+    parser.add_argument(
+        "--confidence-level",
+        help="statistical confidence level of outputted confidence intervals",
+        type=float,
+        default=95,
+    )
 
     args = parser.parse_args()
 
@@ -265,6 +269,7 @@ if __name__ == "__main__":
         args.hide_dealer_hand,
         args.hide_play_actions,
         args.hands_per_update,
+        args.confidence_level,
     )
     if args.process_count == 1:
         simulate_hands(*simulate_hands_args)
@@ -280,15 +285,5 @@ if __name__ == "__main__":
             process.join()
         elapsed_time_ns = time.time_ns() - start_time_ns
         print(
-            f"Simulated {args.hand_count} total hands in {elapsed_time_ns / 1000000000} seconds for {elapsed_time_ns / args.hand_count} ns per hand"
-        )
-
-    # TODO: shorten to μ ± zσ where z... or just percent confidence of CI, is command-line tunable (e.g. z=1.96 for 95% CI)
-    print(
-        f"Mean score: {players_statistics['pone'].mean()} - {players_statistics['dealer'].mean()}"
-    )
-    players_statistics_length = len(players_statistics["pone"])
-    if players_statistics_length > 1:
-        print(
-            f"Standard error of mean score: {players_statistics['pone'].stddev() / math.sqrt(players_statistics_length)} - {players_statistics['dealer'].stddev() / math.sqrt(players_statistics_length)}"
+            f"Simulated {args.hand_count} total hands with {args.process_count} worker processes in {elapsed_time_ns / 1000000000} seconds for {elapsed_time_ns / args.hand_count} ns per hand"
         )
