@@ -253,7 +253,7 @@ if __name__ == "__main__":
         )
         if args.process_count > 1:
             print(
-                f" in {args.process_count} worker process{'es' if args.process_count > 1 else ''}",
+                f" with {args.process_count} worker process{'es' if args.process_count > 1 else ''}",
                 flush=True,
             )
 
@@ -284,6 +284,7 @@ if __name__ == "__main__":
         for process in processes:
             process.join()
         elapsed_time_ns = time.time_ns() - start_time_ns
+        ns_per_s = 1000000000
         print(
-            f"Simulated {args.hand_count} total hands with {args.process_count} worker processes in {elapsed_time_ns / 1000000000} seconds for {elapsed_time_ns / args.hand_count} ns per hand"
+            f"Simulated {args.hand_count} hands with {args.process_count} worker processes at {args.hand_count / (elapsed_time_ns / ns_per_s):.0f} hands/s ({elapsed_time_ns / args.hand_count:.0f} ns/hand) in {elapsed_time_ns / ns_per_s} s"
         )
