@@ -9,6 +9,7 @@ from multiprocessing import Process, cpu_count, Manager, Lock
 import math
 import argparse
 import os
+from runstats import Statistics
 
 
 class Card:
@@ -37,15 +38,15 @@ def get_player_name(player_number):
 def simulate_hands(
     process_hand_count,
     overall_hand_count,
-    grand_total_score,
-    grand_total_score_lock,
+    players_statistics,
+    players_statistics_lock,
     hide_pone_hand,
     hide_dealer_hand,
     hide_play_actions,
     hands_per_update,
 ):
     deck = [Card(number % 13, number // 13) for number in range(52)]
-    total_score = [0, 0]
+    (pone_statistics, dealer_statistics) = (Statistics(), Statistics())
     start_time_ns = time.time_ns()
     for hand in range(process_hand_count):
         hand_cards = random.sample(deck, 8)
@@ -166,32 +167,32 @@ def simulate_hands(
 
         if not hide_play_actions:
             print(f"Hand score: {score}")
-        total_score[0] += score[0]
-        total_score[1] += score[1]
+        pone_statistics.push(score[0])
+        dealer_statistics.push(score[1])
 
-        if hand % hands_per_update == hands_per_update - 1:
-            grand_total_score_lock.acquire()
-            grand_total_score[0] += total_score[0]
-            grand_total_score[1] += total_score[1]
-            grand_total_score[2] += hands_per_update
-            total_score = [0, 0]
+        if (
+            hand % hands_per_update == hands_per_update - 1
+            or hand == process_hand_count - 1
+        ):
+            players_statistics_lock.acquire()
+            players_statistics["pone"] += pone_statistics
+            players_statistics["dealer"] += dealer_statistics
+            pone_statistics.clear()
+            dealer_statistics.clear()
+            players_statistics_length = len(players_statistics["pone"])
             print(
-                f"Overall average score after {grand_total_score[2]} hands: {[ grand_total / grand_total_score[2] for grand_total in grand_total_score[0:2] ]}"
+                f"Mean score after {players_statistics_length} hands: {players_statistics['pone'].mean()} - {players_statistics['dealer'].mean()}"
             )
-            grand_total_score_lock.release()
+            if players_statistics_length > 1:
+                print(
+                    f"Standard error of mean score after {players_statistics_length} hands: {players_statistics['pone'].stddev() / math.sqrt(players_statistics_length)} - {players_statistics['dealer'].stddev() / math.sqrt(players_statistics_length)}"
+                )
+            players_statistics_lock.release()
 
     elapsed_time_ns = time.time_ns() - start_time_ns
     print(
         f"Simulated {process_hand_count} hands in {elapsed_time_ns / 1000000000} seconds for {elapsed_time_ns / process_hand_count} ns per hand"
     )
-    grand_total_score_lock.acquire()
-    grand_total_score[0] += total_score[0]
-    grand_total_score[1] += total_score[1]
-    grand_total_score[2] += process_hand_count % hands_per_update
-    print(
-        f"Overall average score: {[ grand_total / grand_total_score[2] for grand_total in grand_total_score[0:2] ]}"
-    )
-    grand_total_score_lock.release()
 
 
 if __name__ == "__main__":
@@ -238,8 +239,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     manager = Manager()
-    grand_total_score = manager.list([0, 0, 0])
-    grand_total_score_lock = Lock()
+    players_statistics = manager.dict(pone=Statistics(), dealer=Statistics())
+    players_statistics_lock = Lock()
     if not args.hide_workers_start_message:
         print(
             f"Simulating {args.hand_count} hands",
@@ -258,8 +259,8 @@ if __name__ == "__main__":
     simulate_hands_args = (
         args.hand_count // args.process_count,
         args.hand_count,
-        grand_total_score,
-        grand_total_score_lock,
+        players_statistics,
+        players_statistics_lock,
         args.hide_pone_hand,
         args.hide_dealer_hand,
         args.hide_play_actions,
@@ -281,6 +282,13 @@ if __name__ == "__main__":
         print(
             f"Simulated {args.hand_count} total hands in {elapsed_time_ns / 1000000000} seconds for {elapsed_time_ns / args.hand_count} ns per hand"
         )
+
+    # TODO: shorten to μ ± zσ where z... or just percent confidence of CI, is command-line tunable (e.g. z=1.96 for 95% CI)
     print(
-        f"Overall average score: {[ grand_total / args.hand_count for grand_total in grand_total_score[0:2] ]}"
+        f"Mean score: {players_statistics['pone'].mean()} - {players_statistics['dealer'].mean()}"
     )
+    players_statistics_length = len(players_statistics["pone"])
+    if players_statistics_length > 1:
+        print(
+            f"Standard error of mean score: {players_statistics['pone'].stddev() / math.sqrt(players_statistics_length)} - {players_statistics['dealer'].stddev() / math.sqrt(players_statistics_length)}"
+        )
