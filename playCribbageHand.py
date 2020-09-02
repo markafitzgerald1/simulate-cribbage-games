@@ -188,7 +188,7 @@ def simulate_hands(
                 )
             else:
                 print(
-                    f"Mean scores {'':27} (n = {players_statistics_length}): ({players_statistics['pone'].mean():.4f} {'':8}, {players_statistics['dealer'].mean():.4f})"
+                    f"Mean scores {'':23} (n = {players_statistics_length}): ({players_statistics['pone'].mean():.4f} {'':8}, {players_statistics['dealer'].mean():.4f})"
                 )
             players_statistics_lock.release()
 
@@ -201,11 +201,14 @@ if __name__ == "__main__":
         type=int,
         default=cpu_count(),
     )
-    parser.add_argument(
-        "--hand-count",
-        help="number of cribbage hand plays to simulate",
-        type=int,
-        default=1,
+    hand_count_group = parser.add_mutually_exclusive_group()
+    hand_count_group.add_argument(
+        "--hand-count", help="number of cribbage hand plays to simulate", type=int,
+    )
+    hand_count_group.add_argument(
+        "--infinite-hand-count",
+        action="store_true",
+        help="simulate an infinite number of cribbage hands",
     )
     parser.add_argument(
         "--hide-workers-start-message",
@@ -258,7 +261,9 @@ if __name__ == "__main__":
             )
 
     args.hand_count = (
-        math.ceil(args.hand_count / args.process_count) * args.process_count
+        (math.ceil(args.hand_count / args.process_count) * args.process_count)
+        if args.hand_count
+        else sys.maxsize
     )
     simulate_hands_args = (
         args.hand_count // args.process_count,
