@@ -41,6 +41,8 @@ def simulate_hands(
     overall_hand_count,
     players_statistics,
     players_statistics_lock,
+    pone_select_play,
+    dealer_select_play,
     hide_pone_hand,
     hide_dealer_hand,
     hide_play_actions,
@@ -73,7 +75,12 @@ def simulate_hands(
             ]
 
             if playable_cards:
-                player_to_play_play = playable_cards[-1]
+                # TODO: replace two play selection algorithms with tuple argument if faster
+                player_to_play_play = playable_cards[
+                    pone_select_play(playable_cards)
+                    if player_to_play == 0
+                    else dealer_select_play(playable_cards)
+                ]
                 hands[player_to_play].remove(player_to_play_play)
                 current_play_plays.append(player_to_play_play)
                 play_count += player_to_play_play.count
@@ -193,6 +200,23 @@ def simulate_hands(
             players_statistics_lock.release()
 
 
+def play_first(playable_cards):
+    return 0
+
+
+def play_user_selected(playable_cards):
+    print(f"Playable cards are {','.join([ str(card) for card in playable_cards ])}.")
+    selected_card = None
+    while selected_card not in range(0, len(playable_cards)):
+        try:
+            # TODO: instead accept input of card index + suit (only when required to disambiguate)
+            selected_card_input = input("Enter the base-0 card index to play: ")
+            selected_card = int(selected_card_input)
+        except ValueError:
+            print(f"{selected_card_input} is not a valid selection")
+    return selected_card
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -242,6 +266,16 @@ if __name__ == "__main__":
         type=float,
         default=95,
     )
+    parser.add_argument(
+        "--user-entered-pone-plays",
+        action="store_true",
+        help="prompt user to enter pone plays",
+    )
+    parser.add_argument(
+        "--user-entered-dealer-plays",
+        action="store_true",
+        help="prompt user to enter dealer plays",
+    )
 
     args = parser.parse_args()
 
@@ -270,6 +304,8 @@ if __name__ == "__main__":
         args.hand_count,
         players_statistics,
         players_statistics_lock,
+        play_user_selected if args.user_entered_pone_plays else play_first,
+        play_user_selected if args.user_entered_dealer_plays else play_first,
         args.hide_pone_hand,
         args.hide_dealer_hand,
         args.hide_play_actions,
