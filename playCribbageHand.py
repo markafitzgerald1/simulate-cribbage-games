@@ -219,12 +219,25 @@ def play_user_selected(playable_cards):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
+
+    players_processes_group = parser.add_mutually_exclusive_group()
+    players_processes_group.add_argument(
         "--process-count",
         help="number of processes to use to simulate cribbage hand plays",
         type=int,
-        default=cpu_count(),
+        default=1,
     )
+    players_processes_group.add_argument(
+        "--user-entered-pone-plays",
+        action="store_true",
+        help="prompt user to enter pone plays",
+    )
+    players_processes_group.add_argument(
+        "--user-entered-dealer-plays",
+        action="store_true",
+        help="prompt user to enter dealer plays",
+    )
+
     hand_count_group = parser.add_mutually_exclusive_group()
     hand_count_group.add_argument(
         "--hand-count", help="number of cribbage hand plays to simulate", type=int,
@@ -265,16 +278,6 @@ if __name__ == "__main__":
         help="statistical confidence level of outputted confidence intervals",
         type=float,
         default=95,
-    )
-    parser.add_argument(
-        "--user-entered-pone-plays",
-        action="store_true",
-        help="prompt user to enter pone plays",
-    )
-    parser.add_argument(
-        "--user-entered-dealer-plays",
-        action="store_true",
-        help="prompt user to enter dealer plays",
     )
 
     args = parser.parse_args()
