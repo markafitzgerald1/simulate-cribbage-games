@@ -89,7 +89,11 @@ def simulate_hands(
         if Card(number % 13, number // 13) not in fixed_pone_cards
         and Card(number % 13, number // 13) not in fixed_dealer_cards
     ]
-    (pone_statistics, dealer_statistics) = (Statistics(), Statistics())
+    (pone_statistics, dealer_statistics, pone_minus_dealer_statistics) = (
+        Statistics(),
+        Statistics(),
+        Statistics(),
+    )
     for hand in range(process_hand_count):
         if fixed_pone_cards or fixed_dealer_cards:
             hand_cards = random.sample(deck, 4)
@@ -223,6 +227,7 @@ def simulate_hands(
             print(f"Hand score: {score}")
         pone_statistics.push(score[0])
         dealer_statistics.push(score[1])
+        pone_minus_dealer_statistics.push(score[0] - score[1])
 
         if (
             hand % hands_per_update == hands_per_update - 1
@@ -231,17 +236,18 @@ def simulate_hands(
             players_statistics_lock.acquire()
             players_statistics["pone"] += pone_statistics
             players_statistics["dealer"] += dealer_statistics
+            players_statistics["pone_minus_dealer"] += pone_minus_dealer_statistics
             pone_statistics.clear()
             dealer_statistics.clear()
             players_statistics_length = len(players_statistics["pone"])
             if players_statistics_length > 1:
                 z_statistic = NormalDist().inv_cdf(1 - (1 - confidence_level / 100) / 2)
                 print(
-                    f"Mean scores {confidence_level}% confidence interval (n = {players_statistics_length:{int(math.log10(overall_hand_count)) + 1}}): ({players_statistics['pone'].mean():.4f} ± {z_statistic * players_statistics['pone'].stddev() / math.sqrt(players_statistics_length):.4f}, {players_statistics['dealer'].mean():.4f} ± {z_statistic * players_statistics['dealer'].stddev() / math.sqrt(players_statistics_length):.4f})"
+                    f"Mean scores {confidence_level}% confidence interval (n = {players_statistics_length:{int(math.log10(overall_hand_count)) + 1}}): ({players_statistics['pone'].mean():.5f} ± {z_statistic * players_statistics['pone'].stddev() / math.sqrt(players_statistics_length):.5f}, {players_statistics['dealer'].mean():.5f} ± {z_statistic * players_statistics['dealer'].stddev() / math.sqrt(players_statistics_length):.5f}) = {players_statistics['pone_minus_dealer'].mean():.5f} ± {z_statistic * players_statistics['pone_minus_dealer'].stddev() / math.sqrt(players_statistics_length):.5f}"
                 )
             else:
                 print(
-                    f"Mean scores {'':23} (n = {players_statistics_length}): ({players_statistics['pone'].mean():.4f} {'':8}, {players_statistics['dealer'].mean():.4f})"
+                    f"Mean scores {'':26} (n = {players_statistics_length}): ({players_statistics['pone'].mean():.5f} {'':9}, {players_statistics['dealer'].mean():.5f}) {'':9} = {players_statistics['pone_minus_dealer'].mean():.5f}"
                 )
             players_statistics_lock.release()
 
@@ -340,7 +346,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     manager = Manager()
-    players_statistics = manager.dict(pone=Statistics(), dealer=Statistics())
+    players_statistics = manager.dict(
+        pone=Statistics(), dealer=Statistics(), pone_minus_dealer=Statistics()
+    )
     players_statistics_lock = Lock()
     args.hand_count = (
         sys.maxsize
