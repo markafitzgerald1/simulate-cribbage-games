@@ -16,11 +16,25 @@ from statistics import NormalDist
 class Card:
     """A French playing card"""
 
+    indices = "A23456789TJQK"
+    suits = "♣♦♥♠"
+    english_suits = "CDHS"
+
     def __init__(self, index, suit):
         self.index = index
         self.suit = suit
         self.count = min(index + 1, 10)
-        self.str = f"{'A23456789TJQK'[index]}{'♣♦♥♠'[suit]}"
+        self.str = f"{Card.indices[index]}{Card.suits[suit]}"
+
+    @classmethod
+    def from_string(cls, specifier):
+        return Card(
+            Card.indices.find(specifier[0].capitalize()),
+            Card.english_suits.find(specifier[1].capitalize()),
+        )
+
+    def __eq__(self, value):
+        return self.index == value.index and self.suit == value.suit
 
     def __str__(self):
         return self.str
@@ -39,6 +53,8 @@ def get_player_name(player_number):
 def simulate_hands(
     process_hand_count,
     overall_hand_count,
+    fixed_pone_card_specifiers,
+    fixed_dealer_card_specifiers,
     players_statistics,
     players_statistics_lock,
     pone_select_play,
@@ -49,11 +65,41 @@ def simulate_hands(
     hands_per_update,
     confidence_level,
 ):
-    deck = [Card(number % 13, number // 13) for number in range(52)]
+    fixed_pone_cards = []
+    if fixed_pone_card_specifiers:
+        fixed_pone_cards = [
+            Card.from_string(card_specifier)
+            for card_specifier in fixed_pone_card_specifiers.split(",")
+        ]
+        if len(fixed_pone_cards) != 4:
+            raise ValueError("Exactly 4 pone cards must be fixed")
+
+    fixed_dealer_cards = []
+    if fixed_dealer_card_specifiers:
+        fixed_dealer_cards = [
+            Card.from_string(card_specifier)
+            for card_specifier in fixed_dealer_card_specifiers.split(",")
+        ]
+        if len(fixed_dealer_cards) != 4:
+            raise ValueError("Exactly 4 dealer cards must be fixed")
+
+    deck = [
+        Card(number % 13, number // 13)
+        for number in range(52)
+        if Card(number % 13, number // 13) not in fixed_pone_cards
+        and Card(number % 13, number // 13) not in fixed_dealer_cards
+    ]
     (pone_statistics, dealer_statistics) = (Statistics(), Statistics())
     for hand in range(process_hand_count):
-        hand_cards = random.sample(deck, 8)
-        hands = [hand_cards[0:4], hand_cards[4:]]
+        if fixed_pone_cards or fixed_dealer_cards:
+            hand_cards = random.sample(deck, 4)
+            if fixed_pone_cards:
+                hands = [fixed_pone_cards.copy(), hand_cards]
+            else:
+                hands = [hand_cards, fixed_dealer_cards.copy()]
+        else:
+            hand_cards = random.sample(deck, 8)
+            hands = [hand_cards[0:4], hand_cards[4:]]
         if not hide_pone_hand:
             print(
                 f"{get_player_name(0):6} dealt {','.join([ str(card) for card in hands[0] ])}"
@@ -200,8 +246,8 @@ def simulate_hands(
             players_statistics_lock.release()
 
 
-def play_first(playable_cards):
-    return 0
+def play_random(playable_cards):
+    return random.randrange(0, len(playable_cards))
 
 
 def play_user_selected(playable_cards):
@@ -240,7 +286,10 @@ if __name__ == "__main__":
 
     hand_count_group = parser.add_mutually_exclusive_group()
     hand_count_group.add_argument(
-        "--hand-count", help="number of cribbage hand plays to simulate", type=int,
+        "--hand-count",
+        help="number of cribbage hand plays to simulate",
+        type=int,
+        default=1,
     )
     hand_count_group.add_argument(
         "--infinite-hand-count",
@@ -280,15 +329,23 @@ if __name__ == "__main__":
         default=95,
     )
 
+    specified_cards_group = parser.add_mutually_exclusive_group()
+    specified_cards_group.add_argument(
+        "--pone-cards", help="cards held by pone",
+    )
+    specified_cards_group.add_argument(
+        "--dealer-cards", help="cards held by dealer",
+    )
+
     args = parser.parse_args()
 
     manager = Manager()
     players_statistics = manager.dict(pone=Statistics(), dealer=Statistics())
     players_statistics_lock = Lock()
     args.hand_count = (
-        (math.ceil(args.hand_count / args.process_count) * args.process_count)
-        if args.hand_count
-        else sys.maxsize
+        sys.maxsize
+        if args.infinite_hand_count
+        else (math.ceil(args.hand_count / args.process_count) * args.process_count)
     )
     if not args.hide_workers_start_message:
         print(
@@ -305,10 +362,12 @@ if __name__ == "__main__":
     simulate_hands_args = (
         args.hand_count // args.process_count,
         args.hand_count,
+        args.pone_cards,
+        args.dealer_cards,
         players_statistics,
         players_statistics_lock,
-        play_user_selected if args.user_entered_pone_plays else play_first,
-        play_user_selected if args.user_entered_dealer_plays else play_first,
+        play_user_selected if args.user_entered_pone_plays else play_random,
+        play_user_selected if args.user_entered_dealer_plays else play_random,
         args.hide_pone_hand,
         args.hide_dealer_hand,
         args.hide_play_actions,
