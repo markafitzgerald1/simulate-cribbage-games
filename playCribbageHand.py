@@ -240,15 +240,25 @@ def simulate_hands(
             pone_statistics.clear()
             dealer_statistics.clear()
             players_statistics_length = len(players_statistics["pone"])
+            z_statistic = NormalDist().inv_cdf(1 - (1 - confidence_level / 100) / 2)
             if players_statistics_length > 1:
-                z_statistic = NormalDist().inv_cdf(1 - (1 - confidence_level / 100) / 2)
-                print(
-                    f"Mean scores {confidence_level}% confidence interval (n = {players_statistics_length:{int(math.log10(overall_hand_count)) + 1}}): ({players_statistics['pone'].mean():.5f} ± {z_statistic * players_statistics['pone'].stddev() / math.sqrt(players_statistics_length):.5f}, {players_statistics['dealer'].mean():.5f} ± {z_statistic * players_statistics['dealer'].stddev() / math.sqrt(players_statistics_length):.5f}) = {players_statistics['pone_minus_dealer'].mean():.5f} ± {z_statistic * players_statistics['pone_minus_dealer'].stddev() / math.sqrt(players_statistics_length):.5f}"
-                )
+                dealer_stddev = players_statistics["dealer"].stddev()
+                pone_stddev = players_statistics["pone"].stddev()
+                pone_minus_dealer_stddev = players_statistics[
+                    "pone_minus_dealer"
+                ].stddev()
             else:
-                print(
-                    f"Mean scores {'':26} (n = {players_statistics_length}): ({players_statistics['pone'].mean():.5f} {'':9}, {players_statistics['dealer'].mean():.5f}) {'':9} = {players_statistics['pone_minus_dealer'].mean():.5f}"
-                )
+                dealer_stddev, pone_stddev, pone_minus_dealer_stddev = 0, 0, 0
+            correlation = (
+                (pone_minus_dealer_stddev ** 2 - pone_stddev ** 2 - dealer_stddev ** 2)
+                / (2 * pone_stddev * dealer_stddev)
+                if pone_stddev != 0 and dealer_stddev != 0
+                else None
+            )
+            correlation_str = f"{correlation:.5f}" if correlation else "undefined"
+            print(
+                f"Mean scores {confidence_level}% confidence interval (n = {players_statistics_length:{int(math.log10(overall_hand_count)) + 1}}): ({players_statistics['pone'].mean():.5f} ± {z_statistic * pone_stddev / math.sqrt(players_statistics_length):.5f}, {players_statistics['dealer'].mean():.5f} ± {z_statistic * dealer_stddev / math.sqrt(players_statistics_length):.5f}) = {players_statistics['pone_minus_dealer'].mean():.5f} ± {z_statistic * pone_minus_dealer_stddev / math.sqrt(players_statistics_length):.5f}; ρ = {correlation_str}"
+            )
             players_statistics_lock.release()
 
 
