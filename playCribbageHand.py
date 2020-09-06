@@ -266,6 +266,16 @@ def play_random(playable_cards):
     return random.randrange(0, len(playable_cards))
 
 
+def play_highest_count(playable_cards):
+    play_card = None
+    play_index = None
+    for index, card in enumerate(playable_cards):
+        if not play_card or card.count > play_card.count:
+            play_card = card
+            play_index = index
+    return play_index
+
+
 def play_user_selected(playable_cards):
     print(f"Playable cards are {','.join([ str(card) for card in playable_cards ])}.")
     selected_card = None
@@ -282,22 +292,43 @@ def play_user_selected(playable_cards):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    players_processes_group = parser.add_mutually_exclusive_group()
-    players_processes_group.add_argument(
+    parser.add_argument(
         "--process-count",
         help="number of processes to use to simulate cribbage hand plays",
         type=int,
         default=1,
     )
-    players_processes_group.add_argument(
+
+    pone_play_algorithm_group = parser.add_mutually_exclusive_group()
+    pone_play_algorithm_group.add_argument(
         "--user-entered-pone-plays",
         action="store_true",
         help="prompt user to enter pone plays",
     )
-    players_processes_group.add_argument(
+    pone_play_algorithm_group.add_argument(
+        "--random-pone-plays", action="store_true", help="have pone make random plays"
+    )
+    pone_play_algorithm_group.add_argument(
+        "--highest-count-pone-plays",
+        action="store_true",
+        help="have pone make highest possible play count plays",
+    )
+
+    dealer_play_algorithm_group = parser.add_mutually_exclusive_group()
+    dealer_play_algorithm_group.add_argument(
         "--user-entered-dealer-plays",
         action="store_true",
         help="prompt user to enter dealer plays",
+    )
+    dealer_play_algorithm_group.add_argument(
+        "--random-dealer-plays",
+        action="store_true",
+        help="have dealer make random plays",
+    )
+    dealer_play_algorithm_group.add_argument(
+        "--highest-count-dealer-plays",
+        action="store_true",
+        help="have dealer make highest possible play count plays",
     )
 
     hand_count_group = parser.add_mutually_exclusive_group()
@@ -377,6 +408,20 @@ if __name__ == "__main__":
                 flush=True,
             )
 
+    if args.user_entered_pone_plays:
+        pone_select_play = play_user_selected
+    elif args.random_pone_plays:
+        pone_select_play = play_random
+    else:
+        pone_select_play = play_highest_count
+
+    if args.user_entered_dealer_plays:
+        dealer_select_play = play_user_selected
+    elif args.random_dealer_plays:
+        dealer_select_play = play_random
+    else:
+        dealer_select_play = play_highest_count
+
     simulate_hands_args = (
         args.hand_count // args.process_count,
         args.hand_count,
@@ -384,8 +429,8 @@ if __name__ == "__main__":
         args.dealer_cards,
         players_statistics,
         players_statistics_lock,
-        play_user_selected if args.user_entered_pone_plays else play_random,
-        play_user_selected if args.user_entered_dealer_plays else play_random,
+        pone_select_play,
+        dealer_select_play,
         args.hide_pone_hand,
         args.hide_dealer_hand,
         args.hide_play_actions,
