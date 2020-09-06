@@ -262,6 +262,10 @@ def simulate_hands(
             players_statistics_lock.release()
 
 
+def play_first(playable_cards):
+    return 0
+
+
 def play_random(playable_cards):
     return random.randrange(0, len(playable_cards))
 
@@ -301,34 +305,46 @@ if __name__ == "__main__":
 
     pone_play_algorithm_group = parser.add_mutually_exclusive_group()
     pone_play_algorithm_group.add_argument(
-        "--user-entered-pone-plays",
+        "--pone-play-user-entered",
         action="store_true",
         help="prompt user to enter pone plays",
     )
     pone_play_algorithm_group.add_argument(
-        "--random-pone-plays", action="store_true", help="have pone make random plays"
+        "--pone-play-first",
+        action="store_true",
+        help="have pone play first legal card from hand",
     )
     pone_play_algorithm_group.add_argument(
-        "--highest-count-pone-plays",
+        "--pone-play-random",
         action="store_true",
-        help="have pone make highest possible play count plays",
+        help="have pone play random legal card from hand",
+    )
+    pone_play_algorithm_group.add_argument(
+        "--pone-play-highest-count",
+        action="store_true",
+        help="have pone play highest count legal card from hand",
     )
 
     dealer_play_algorithm_group = parser.add_mutually_exclusive_group()
     dealer_play_algorithm_group.add_argument(
-        "--user-entered-dealer-plays",
+        "--dealer-play-user-entered",
         action="store_true",
         help="prompt user to enter dealer plays",
     )
     dealer_play_algorithm_group.add_argument(
-        "--random-dealer-plays",
+        "--dealer-play-first",
         action="store_true",
-        help="have dealer make random plays",
+        help="have dealer play first legal card from hand",
     )
     dealer_play_algorithm_group.add_argument(
-        "--highest-count-dealer-plays",
+        "--dealer-play-random",
         action="store_true",
-        help="have dealer make highest possible play count plays",
+        help="have dealer play random legal card from hand",
+    )
+    dealer_play_algorithm_group.add_argument(
+        "--dealer-play-highest-count",
+        action="store_true",
+        help="have dealer play highest count legal card from hand",
     )
 
     hand_count_group = parser.add_mutually_exclusive_group()
@@ -408,16 +424,20 @@ if __name__ == "__main__":
                 flush=True,
             )
 
-    if args.user_entered_pone_plays:
+    if args.pone_play_user_entered:
         pone_select_play = play_user_selected
-    elif args.random_pone_plays:
+    elif args.pone_play_first:
+        pone_select_play = play_first
+    elif args.pone_play_random:
         pone_select_play = play_random
     else:
         pone_select_play = play_highest_count
 
-    if args.user_entered_dealer_plays:
+    if args.dealer_play_user_entered:
         dealer_select_play = play_user_selected
-    elif args.random_dealer_plays:
+    elif args.dealer_play_first:
+        dealer_select_play = play_first
+    elif args.dealer_play_random:
         dealer_select_play = play_random
     else:
         dealer_select_play = play_highest_count
