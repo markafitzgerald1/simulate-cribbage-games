@@ -387,7 +387,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--confidence-level",
-        help="statistical confidence level of outputted confidence intervals",
+        help="statistical confidence level percentage of outputted confidence intervals",
         type=float,
         default=95,
     )
