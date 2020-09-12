@@ -59,20 +59,23 @@ def simulate_hands(
     players_statistics_lock,
     pone_select_play,
     dealer_select_play,
-    hide_pone_hand,
-    hide_dealer_hand,
+    hide_pone_hand_cards,
+    hide_dealer_hand_cards,
     hide_play_actions,
     hands_per_update,
     confidence_level,
 ):
+    DEALT_CARDS_LEN = 6
     fixed_pone_cards = []
     if fixed_pone_card_specifiers:
         fixed_pone_cards = [
             Card.from_string(card_specifier)
             for card_specifier in fixed_pone_card_specifiers.split(",")
         ]
-        if len(fixed_pone_cards) != 4:
-            raise ValueError("Exactly 4 pone cards must be fixed")
+        if len(fixed_pone_cards) != DEALT_CARDS_LEN:
+            raise ValueError(
+                f"Exactly {DEALT_CARDS_LEN} pone dealt cards must be fixed"
+            )
 
     fixed_dealer_cards = []
     if fixed_dealer_card_specifiers:
@@ -80,10 +83,12 @@ def simulate_hands(
             Card.from_string(card_specifier)
             for card_specifier in fixed_dealer_card_specifiers.split(",")
         ]
-        if len(fixed_dealer_cards) != 4:
-            raise ValueError("Exactly 4 dealer cards must be fixed")
+        if len(fixed_dealer_cards) != DEALT_CARDS_LEN:
+            raise ValueError(
+                f"Exactly {DEALT_CARDS_LEN} dealer dealt cards must be fixed"
+            )
 
-    deck = [
+    deck_less_fixed_cards = [
         Card(number % 13, number // 13)
         for number in range(52)
         if Card(number % 13, number // 13) not in fixed_pone_cards
@@ -96,22 +101,40 @@ def simulate_hands(
     )
     for hand in range(process_hand_count):
         if fixed_pone_cards or fixed_dealer_cards:
-            hand_cards = random.sample(deck, 4)
+            random_hand_cards = random.sample(deck_less_fixed_cards, DEALT_CARDS_LEN)
             if fixed_pone_cards:
-                hands = [fixed_pone_cards.copy(), hand_cards]
+                dealt_hands = [fixed_pone_cards.copy(), random_hand_cards]
             else:
-                hands = [hand_cards, fixed_dealer_cards.copy()]
+                dealt_hands = [random_hand_cards, fixed_dealer_cards.copy()]
         else:
-            hand_cards = random.sample(deck, 8)
-            hands = [hand_cards[0:4], hand_cards[4:]]
-        if not hide_pone_hand:
-            print(
-                f"{get_player_name(0):6} dealt {','.join([ str(card) for card in hands[0] ])}"
+            random_hand_cards = random.sample(
+                deck_less_fixed_cards, DEALT_CARDS_LEN * 2
             )
-        if not hide_dealer_hand:
+            dealt_hands = [
+                random_hand_cards[0:DEALT_CARDS_LEN],
+                random_hand_cards[DEALT_CARDS_LEN:],
+            ]
+        if not hide_pone_hand_cards:
             print(
-                f"{get_player_name(1):6} dealt {','.join([ str(card) for card in hands[1] ])}"
+                f"{get_player_name(0):6} dealt {','.join([ str(card) for card in dealt_hands[0] ])}"
             )
+        if not hide_dealer_hand_cards:
+            print(
+                f"{get_player_name(1):6} dealt {','.join([ str(card) for card in dealt_hands[1] ])}"
+            )
+
+        # TODO: command-line controllable discard strategy and/or simulation of multiple possible discards from fixed hand
+        KEPT_CARDS_LEN = 4
+        hands = [hand[0:KEPT_CARDS_LEN] for hand in dealt_hands]
+        if not hide_pone_hand_cards:
+            print(
+                f"{get_player_name(0):6} kept {','.join([ str(card) for card in hands[0] ])}"
+            )
+        if not hide_dealer_hand_cards:
+            print(
+                f"{get_player_name(1):6} kept {','.join([ str(card) for card in hands[1] ])}"
+            )
+
         player_to_play = 0
         play_count = 0
         consecutive_go_count = 0
@@ -365,12 +388,12 @@ if __name__ == "__main__":
         help="hide the workers startup details message",
     )
     parser.add_argument(
-        "--hide-pone-hand",
+        "--hide-pone-hand-cards",
         action="store_true",
         help="suppress deal-time output of pone hand contents",
     )
     parser.add_argument(
-        "--hide-dealer-hand",
+        "--hide-dealer-hand-cards",
         action="store_true",
         help="suppress deal-time output of dealer hand contents",
     )
@@ -394,10 +417,10 @@ if __name__ == "__main__":
 
     specified_cards_group = parser.add_mutually_exclusive_group()
     specified_cards_group.add_argument(
-        "--pone-cards", help="cards held by pone",
+        "--pone-dealt-cards", help="cards dealt to pone",
     )
     specified_cards_group.add_argument(
-        "--dealer-cards", help="cards held by dealer",
+        "--dealer-dealt-cards", help="cards dealt to dealer",
     )
 
     args = parser.parse_args()
@@ -445,14 +468,14 @@ if __name__ == "__main__":
     simulate_hands_args = (
         args.hand_count // args.process_count,
         args.hand_count,
-        args.pone_cards,
-        args.dealer_cards,
+        args.pone_dealt_cards,
+        args.dealer_dealt_cards,
         players_statistics,
         players_statistics_lock,
         pone_select_play,
         dealer_select_play,
-        args.hide_pone_hand,
-        args.hide_dealer_hand,
+        args.hide_pone_hand_cards,
+        args.hide_dealer_hand_cards,
         args.hide_play_actions,
         args.hands_per_update,
         args.confidence_level,
