@@ -59,8 +59,8 @@ def simulate_hands(
     players_statistics_lock,
     pone_select_play,
     dealer_select_play,
-    hide_pone_hand_cards,
-    hide_dealer_hand_cards,
+    hide_pone_hand,
+    hide_dealer_hand,
     hide_play_actions,
     hands_per_update,
     confidence_level,
@@ -114,11 +114,11 @@ def simulate_hands(
                 random_hand_cards[0:DEALT_CARDS_LEN],
                 random_hand_cards[DEALT_CARDS_LEN:],
             ]
-        if not hide_pone_hand_cards:
+        if not hide_pone_hand:
             print(
                 f"{get_player_name(0):6} dealt {','.join([ str(card) for card in dealt_hands[0] ])}"
             )
-        if not hide_dealer_hand_cards:
+        if not hide_dealer_hand:
             print(
                 f"{get_player_name(1):6} dealt {','.join([ str(card) for card in dealt_hands[1] ])}"
             )
@@ -126,11 +126,11 @@ def simulate_hands(
         # TODO: command-line controllable discard strategy and/or simulation of multiple possible discards from fixed hand
         KEPT_CARDS_LEN = 4
         hands = [hand[0:KEPT_CARDS_LEN] for hand in dealt_hands]
-        if not hide_pone_hand_cards:
+        if not hide_pone_hand:
             print(
                 f"{get_player_name(0):6} kept {','.join([ str(card) for card in hands[0] ])}"
             )
-        if not hide_dealer_hand_cards:
+        if not hide_dealer_hand:
             print(
                 f"{get_player_name(1):6} kept {','.join([ str(card) for card in hands[1] ])}"
             )
@@ -388,14 +388,14 @@ if __name__ == "__main__":
         help="hide the workers startup details message",
     )
     parser.add_argument(
-        "--hide-pone-hand-cards",
+        "--hide-pone-hand",
         action="store_true",
-        help="suppress deal-time output of pone hand contents",
+        help="suppress output of pone dealt hand and discard",
     )
     parser.add_argument(
-        "--hide-dealer-hand-cards",
+        "--hide-dealer-hand",
         action="store_true",
-        help="suppress deal-time output of dealer hand contents",
+        help="suppress output of dealer hand and discard",
     )
     parser.add_argument(
         "--hide-play-actions",
@@ -474,8 +474,8 @@ if __name__ == "__main__":
         players_statistics_lock,
         pone_select_play,
         dealer_select_play,
-        args.hide_pone_hand_cards,
-        args.hide_dealer_hand_cards,
+        args.hide_pone_hand,
+        args.hide_dealer_hand,
         args.hide_play_actions,
         args.hands_per_update,
         args.confidence_level,
