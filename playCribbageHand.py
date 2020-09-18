@@ -57,6 +57,8 @@ def simulate_hands(
     fixed_dealer_card_specifiers,
     players_statistics,
     players_statistics_lock,
+    pone_select_kept_cards,
+    dealer_select_kept_cards,
     pone_select_play,
     dealer_select_play,
     hide_pone_hand,
@@ -123,9 +125,10 @@ def simulate_hands(
                 f"{get_player_name(1):6} dealt {','.join([ str(card) for card in dealt_hands[1] ])}"
             )
 
-        # TODO: command-line controllable discard strategy and/or simulation of multiple possible discards from fixed hand
-        KEPT_CARDS_LEN = 4
-        hands = [hand[0:KEPT_CARDS_LEN] for hand in dealt_hands]
+        hands = [
+            pone_select_kept_cards(dealt_hands[0]),
+            dealer_select_kept_cards(dealt_hands[1]),
+        ]
         if not hide_pone_hand:
             print(
                 f"{get_player_name(0):6} kept {','.join([ str(card) for card in hands[0] ])}"
@@ -285,6 +288,17 @@ def simulate_hands(
             players_statistics_lock.release()
 
 
+KEPT_CARDS_LEN = 4
+
+
+def keep_random(dealt_cards):
+    return random.sample(dealt_cards, KEPT_CARDS_LEN)
+
+
+def keep_first_four(dealt_cards):
+    return dealt_cards[0:KEPT_CARDS_LEN]
+
+
 def play_first(playable_cards):
     return 0
 
@@ -324,6 +338,28 @@ if __name__ == "__main__":
         help="number of processes to use to simulate cribbage hand plays",
         type=int,
         default=1,
+    )
+
+    pone_discard_algorithm_group = parser.add_mutually_exclusive_group()
+    pone_discard_algorithm_group.add_argument(
+        "--pone-keep-random", action="store_true", help="have pone discard randomly",
+    )
+    pone_discard_algorithm_group.add_argument(
+        "--pone-keep-first-four",
+        action="store_true",
+        help="have pone keep the first four cards dealt to pone",
+    )
+
+    dealer_discard_algorithm_group = parser.add_mutually_exclusive_group()
+    dealer_discard_algorithm_group.add_argument(
+        "--dealer-keep-random",
+        action="store_true",
+        help="have dealer discard randomly",
+    )
+    dealer_discard_algorithm_group.add_argument(
+        "--dealer-keep-first-four",
+        action="store_true",
+        help="have dealer keep the first four cards dealt to dealer",
     )
 
     pone_play_algorithm_group = parser.add_mutually_exclusive_group()
@@ -447,6 +483,16 @@ if __name__ == "__main__":
                 flush=True,
             )
 
+    if args.pone_keep_random:
+        pone_select_kept_cards = keep_random
+    else:
+        pone_select_kept_cards = keep_first_four
+
+    if args.dealer_keep_random:
+        dealer_select_kept_cards = keep_random
+    else:
+        dealer_select_kept_cards = keep_first_four
+
     if args.pone_play_user_entered:
         pone_select_play = play_user_selected
     elif args.pone_play_first:
@@ -472,6 +518,8 @@ if __name__ == "__main__":
         args.dealer_dealt_cards,
         players_statistics,
         players_statistics_lock,
+        pone_select_kept_cards,
+        dealer_select_kept_cards,
         pone_select_play,
         dealer_select_play,
         args.hide_pone_hand,
