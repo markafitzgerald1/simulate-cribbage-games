@@ -139,7 +139,7 @@ def simulate_hands(
                 f"{get_player_name(1):6} dealt {','.join([ str(card) for card in dealt_hands[1] ])}"
             )
 
-        hands = [
+        kept_hands = [
             [card for card in dealt_hands[0] if card in pone_kept_cards]
             if pone_kept_cards
             else pone_select_kept_cards(dealt_hands[0]),
@@ -147,6 +147,15 @@ def simulate_hands(
             if dealer_kept_cards
             else dealer_select_kept_cards(dealt_hands[1]),
         ]
+        hands = [kept_hand.copy() for kept_hand in kept_hands]
+
+        # TODO: cut deck here
+        # if not hide_play_actions:
+        print(f"Cut/starter card is: -CS-")
+        # TODO: score his heels / his nibs for dealer if J is cut
+        # if not hide_play_actions:
+        print(f"His heels/nibs points: -HN-")
+
         if len(hands[0]) != KEPT_CARDS_LEN or len(hands[1]) != KEPT_CARDS_LEN:
             raise ValueError(
                 f"Kept non-{KEPT_CARDS_LEN} number of cards in one of {Hand(hands[0])} or {Hand(hands[1])}"
@@ -272,8 +281,17 @@ def simulate_hands(
             print(f"!Last card for 1 point for {get_player_name(last_player_to_play)}.")
         score[last_player_to_play] += 1
 
+        # TODO: score hands here
+        # if not hide_play_actions:
+        print(f"Pone hand points: -PH-")
+        print(f"Dealer hand points: -DH-")
+        # TODO: score crib here
+        # if not hide_play_actions:
+        print(f"Crib points: -CR-")
+
         if not hide_play_actions:
             print(f"Hand score: {score}")
+
         pone_statistics.push(score[0])
         dealer_statistics.push(score[1])
         pone_minus_dealer_statistics.push(score[0] - score[1])
