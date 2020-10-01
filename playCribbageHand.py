@@ -36,11 +36,31 @@ class Card:
     def __eq__(self, value):
         return self.index == value.index and self.suit == value.suit
 
+    # def __hash__(self):
+    #     return hash((self.index, self.suit))
+
     def __str__(self):
         return self.str
 
     def __repr__(self):
         return f"Card({self.index}, {self.suit})"
+
+
+def parse_cards(specifier):
+    return [
+        Card.from_string(card_specifier)
+        for card_specifier in (specifier.split(",") if specifier else [])
+    ]
+
+
+class Hand:
+    """A hand of Cards"""
+
+    def __init__(self, cards):
+        self.cards = cards
+
+    def __str__(self):
+        return f"[{','.join([str(card) for card in self.cards])}]"
 
 
 def get_player_name(player_number):
@@ -53,8 +73,10 @@ def get_player_name(player_number):
 def simulate_hands(
     process_hand_count,
     overall_hand_count,
-    fixed_pone_card_specifiers,
-    fixed_dealer_card_specifiers,
+    pone_dealt_cards,
+    dealer_dealt_cards,
+    pone_kept_cards,
+    dealer_kept_cards,
     players_statistics,
     players_statistics_lock,
     pone_select_kept_cards,
@@ -68,33 +90,25 @@ def simulate_hands(
     confidence_level,
 ):
     DEALT_CARDS_LEN = 6
-    fixed_pone_cards = []
-    if fixed_pone_card_specifiers:
-        fixed_pone_cards = [
-            Card.from_string(card_specifier)
-            for card_specifier in fixed_pone_card_specifiers.split(",")
-        ]
-        if len(fixed_pone_cards) != DEALT_CARDS_LEN:
-            raise ValueError(
-                f"Exactly {DEALT_CARDS_LEN} pone dealt cards must be fixed"
-            )
+    if len(pone_dealt_cards) not in [0, DEALT_CARDS_LEN] or len(
+        dealer_dealt_cards
+    ) not in [0, DEALT_CARDS_LEN]:
+        raise ValueError(
+            f"If specifying player dealt cards exactly {DEALT_CARDS_LEN} must be specified"
+        )
 
-    fixed_dealer_cards = []
-    if fixed_dealer_card_specifiers:
-        fixed_dealer_cards = [
-            Card.from_string(card_specifier)
-            for card_specifier in fixed_dealer_card_specifiers.split(",")
-        ]
-        if len(fixed_dealer_cards) != DEALT_CARDS_LEN:
-            raise ValueError(
-                f"Exactly {DEALT_CARDS_LEN} dealer dealt cards must be fixed"
-            )
+    if len(pone_kept_cards) not in [0, DEALT_CARDS_LEN] or len(
+        dealer_kept_cards
+    ) not in [0, KEPT_CARDS_LEN]:
+        raise ValueError(
+            f"If specifying player kept cards exactly {KEPT_CARDS_LEN} must be specified"
+        )
 
     deck_less_fixed_cards = [
         Card(number % 13, number // 13)
         for number in range(52)
-        if Card(number % 13, number // 13) not in fixed_pone_cards
-        and Card(number % 13, number // 13) not in fixed_dealer_cards
+        if Card(number % 13, number // 13) not in pone_dealt_cards
+        and Card(number % 13, number // 13) not in dealer_dealt_cards
     ]
     (pone_statistics, dealer_statistics, pone_minus_dealer_statistics) = (
         Statistics(),
@@ -102,12 +116,12 @@ def simulate_hands(
         Statistics(),
     )
     for hand in range(process_hand_count):
-        if fixed_pone_cards or fixed_dealer_cards:
+        if pone_dealt_cards or dealer_dealt_cards:
             random_hand_cards = random.sample(deck_less_fixed_cards, DEALT_CARDS_LEN)
-            if fixed_pone_cards:
-                dealt_hands = [fixed_pone_cards.copy(), random_hand_cards]
+            if pone_dealt_cards:
+                dealt_hands = [pone_dealt_cards.copy(), random_hand_cards]
             else:
-                dealt_hands = [random_hand_cards, fixed_dealer_cards.copy()]
+                dealt_hands = [random_hand_cards, dealer_dealt_cards.copy()]
         else:
             random_hand_cards = random.sample(
                 deck_less_fixed_cards, DEALT_CARDS_LEN * 2
@@ -126,9 +140,18 @@ def simulate_hands(
             )
 
         hands = [
-            pone_select_kept_cards(dealt_hands[0]),
-            dealer_select_kept_cards(dealt_hands[1]),
+            [card for card in dealt_hands[0] if card in pone_kept_cards]
+            if pone_kept_cards
+            else pone_select_kept_cards(dealt_hands[0]),
+            [card for card in dealt_hands[1] if card in dealer_kept_cards]
+            if dealer_kept_cards
+            else dealer_select_kept_cards(dealt_hands[1]),
         ]
+        if len(hands[0]) != KEPT_CARDS_LEN or len(hands[1]) != KEPT_CARDS_LEN:
+            raise ValueError(
+                f"Kept non-{KEPT_CARDS_LEN} number of cards in one of {Hand(hands[0])} or {Hand(hands[1])}"
+            )
+
         if not hide_pone_hand:
             print(
                 f"{get_player_name(0):6} kept {','.join([ str(card) for card in hands[0] ])}"
@@ -451,15 +474,33 @@ if __name__ == "__main__":
         default=95,
     )
 
-    specified_cards_group = parser.add_mutually_exclusive_group()
-    specified_cards_group.add_argument(
+    specified_dealt_cards_group = parser.add_mutually_exclusive_group()
+    specified_dealt_cards_group.add_argument(
         "--pone-dealt-cards", help="cards dealt to pone",
     )
-    specified_cards_group.add_argument(
+    specified_dealt_cards_group.add_argument(
         "--dealer-dealt-cards", help="cards dealt to dealer",
     )
 
+    specified_kept_cards_group = parser.add_mutually_exclusive_group()
+    specified_kept_cards_group.add_argument(
+        "--pone-kept-cards", help="cards kept by pone",
+    )
+    specified_kept_cards_group.add_argument(
+        "--dealer-kept-cards", help="cards kept by dealer",
+    )
+
     args = parser.parse_args()
+
+    [pone_dealt_cards, dealer_dealt_cards, pone_kept_cards, dealer_kept_cards] = [
+        parse_cards(specifier)
+        for specifier in [
+            args.pone_dealt_cards,
+            args.dealer_dealt_cards,
+            args.pone_kept_cards,
+            args.dealer_kept_cards,
+        ]
+    ]
 
     manager = Manager()
     players_statistics = manager.dict(
@@ -514,8 +555,10 @@ if __name__ == "__main__":
     simulate_hands_args = (
         args.hand_count // args.process_count,
         args.hand_count,
-        args.pone_dealt_cards,
-        args.dealer_dealt_cards,
+        pone_dealt_cards,
+        dealer_dealt_cards,
+        pone_kept_cards,
+        dealer_kept_cards,
         players_statistics,
         players_statistics_lock,
         pone_select_kept_cards,
