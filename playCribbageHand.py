@@ -149,6 +149,8 @@ def simulate_hands(
         ]
         hands = [kept_hand.copy() for kept_hand in kept_hands]
 
+        # TODO: store and output crib contents (discarded cards) here
+
         # TODO: cut deck here
         # if not hide_play_actions:
         print(f"Cut/starter card is: -CS-")
