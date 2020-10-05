@@ -149,7 +149,20 @@ def simulate_hands(
         ]
         hands = [kept_hand.copy() for kept_hand in kept_hands]
 
-        # TODO: store and output crib contents (discarded cards) here
+        pone_discarded_cards = (
+            [card for card in dealt_hands[0] if card not in pone_kept_cards]
+            if pone_kept_cards
+            else [card for card in dealt_hands[0] if card not in kept_hands[0]]
+        )
+        if not hide_pone_hand:
+            print(f"{get_player_name(0):6} discarded {Hand(pone_discarded_cards)}")
+        dealer_discarded_cards = (
+            [card for card in dealt_hands[1] if card not in dealer_kept_cards]
+            if dealer_kept_cards
+            else [card for card in dealt_hands[1] if card not in kept_hands[1]]
+        )
+        if not hide_dealer_hand:
+            print(f"{get_player_name(1):6} discarded {Hand(dealer_discarded_cards)}")
 
         # TODO: cut deck here
         # if not hide_play_actions:
