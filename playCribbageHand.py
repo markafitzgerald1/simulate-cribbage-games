@@ -131,13 +131,14 @@ def simulate_hands(
                 random_hand_cards[DEALT_CARDS_LEN:],
             ]
         if not hide_pone_hand:
-            print(
-                f"{get_player_name(0):6} dealt {','.join([ str(card) for card in dealt_hands[0] ])}"
-            )
+            print(f"{get_player_name(0):6} dealt {Hand(dealt_hands[0])}")
         if not hide_dealer_hand:
-            print(
-                f"{get_player_name(1):6} dealt {','.join([ str(card) for card in dealt_hands[1] ])}"
-            )
+            print(f"{get_player_name(1):6} dealt {Hand(dealt_hands[1])}")
+        deck_less_dealt_cards = [
+            card
+            for card in deck_less_fixed_cards
+            if card not in dealt_hands[0] + dealt_hands[1]
+        ]
 
         kept_hands = [
             [card for card in dealt_hands[0] if card in pone_kept_cards]
@@ -164,33 +165,31 @@ def simulate_hands(
         if not hide_dealer_hand:
             print(f"{get_player_name(1):6} discarded {Hand(dealer_discarded_cards)}")
 
-        # TODO: cut deck here
-        # if not hide_play_actions:
-        print(f"Cut/starter card is: -CS-")
-        # TODO: score his heels / his nibs for dealer if J is cut
-        # if not hide_play_actions:
-        print(f"His heels/nibs points: -HN-")
-
         if len(hands[0]) != KEPT_CARDS_LEN or len(hands[1]) != KEPT_CARDS_LEN:
             raise ValueError(
                 f"Kept non-{KEPT_CARDS_LEN} number of cards in one of {Hand(hands[0])} or {Hand(hands[1])}"
             )
 
         if not hide_pone_hand:
-            print(
-                f"{get_player_name(0):6} kept {','.join([ str(card) for card in hands[0] ])}"
-            )
+            print(f"{get_player_name(0):6} kept {Hand(hands[0])}")
         if not hide_dealer_hand:
-            print(
-                f"{get_player_name(1):6} kept {','.join([ str(card) for card in hands[1] ])}"
-            )
+            print(f"{get_player_name(1):6} kept {Hand(hands[1])}")
+
+        score = [0, 0]
+
+        starter = random.choice(deck_less_dealt_cards)
+        if not hide_play_actions:
+            print(f"Cut/starter card is: {starter}")
+        if starter.index == 10:
+            if not hide_play_actions:
+                print(f"His heels/nibs for 2 for {get_player_name(1)}")
+            score[1] += 2
 
         player_to_play = 0
         play_count = 0
         consecutive_go_count = 0
         most_recently_played_index = None
         most_recently_played_index_count = 0
-        score = [0, 0]
         current_play_plays = []
         while hands[0] or hands[1]:
             playable_cards = [
@@ -298,11 +297,11 @@ def simulate_hands(
 
         # TODO: score hands here
         # if not hide_play_actions:
-        print(f"Pone hand points: -PH-")
-        print(f"Dealer hand points: -DH-")
+        # print(f"Pone hand points: -PH-")
+        # print(f"Dealer hand points: -DH-")
         # TODO: score crib here
         # if not hide_play_actions:
-        print(f"Crib points: -CR-")
+        # print(f"Crib points: -CR-")
 
         if not hide_play_actions:
             print(f"Hand score: {score}")
