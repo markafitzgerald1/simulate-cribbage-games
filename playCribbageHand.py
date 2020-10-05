@@ -135,9 +135,7 @@ def simulate_hands(
         if not hide_dealer_hand:
             print(f"{get_player_name(1):6} dealt {Hand(dealt_hands[1])}")
         deck_less_dealt_cards = [
-            card
-            for card in deck_less_fixed_cards
-            if card not in dealt_hands[0] + dealt_hands[1]
+            card for card in deck_less_fixed_cards if card not in random_hand_cards
         ]
 
         kept_hands = [
