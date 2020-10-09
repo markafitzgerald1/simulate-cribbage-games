@@ -36,8 +36,8 @@ class Card:
     def __eq__(self, value):
         return self.index == value.index and self.suit == value.suit
 
-    # def __hash__(self):
-    #     return hash((self.index, self.suit))
+    def __hash__(self):
+        return hash((self.index, self.suit))
 
     def __str__(self):
         return self.str
@@ -104,12 +104,12 @@ def simulate_hands(
             f"If specifying player kept cards exactly {KEPT_CARDS_LEN} must be specified"
         )
 
-    deck_less_fixed_cards = [
+    deck_less_fixed_cards = {
         Card(number % 13, number // 13)
         for number in range(52)
         if Card(number % 13, number // 13) not in pone_dealt_cards
         and Card(number % 13, number // 13) not in dealer_dealt_cards
-    ]
+    }
     (pone_statistics, dealer_statistics, pone_minus_dealer_statistics) = (
         Statistics(),
         Statistics(),
@@ -134,9 +134,7 @@ def simulate_hands(
             print(f"{get_player_name(0):6} dealt {Hand(dealt_hands[0])}")
         if not hide_dealer_hand:
             print(f"{get_player_name(1):6} dealt {Hand(dealt_hands[1])}")
-        deck_less_dealt_cards = [
-            card for card in deck_less_fixed_cards if card not in random_hand_cards
-        ]
+        deck_less_dealt_cards = deck_less_fixed_cards.difference(set(random_hand_cards))
 
         kept_hands = [
             [card for card in dealt_hands[0] if card in pone_kept_cards]
@@ -175,7 +173,7 @@ def simulate_hands(
 
         score = [0, 0]
 
-        starter = random.choice(deck_less_dealt_cards)
+        starter = random.sample(deck_less_dealt_cards, 1)[0]
         if not hide_play_actions:
             print(f"Cut/starter card is: {starter}")
         if starter.index == 10:
@@ -602,6 +600,7 @@ if __name__ == "__main__":
         args.confidence_level,
     )
     if args.process_count == 1:
+        start_time_ns = time.time_ns()
         simulate_hands(*simulate_hands_args)
     else:
         processes = [
@@ -613,8 +612,9 @@ if __name__ == "__main__":
             process.start()
         for process in processes:
             process.join()
-        elapsed_time_ns = time.time_ns() - start_time_ns
-        ns_per_s = 1000000000
-        print(
-            f"Simulated {args.hand_count} hands with {args.process_count} worker processes at {args.hand_count / (elapsed_time_ns / ns_per_s):.0f} hands/s ({elapsed_time_ns / args.hand_count:.0f} ns/hand) in {elapsed_time_ns / ns_per_s} s"
-        )
+
+    elapsed_time_ns = time.time_ns() - start_time_ns
+    ns_per_s = 1000000000
+    print(
+        f"Simulated {args.hand_count} hands with {args.process_count} worker processes at {args.hand_count / (elapsed_time_ns / ns_per_s):.0f} hands/s ({elapsed_time_ns / args.hand_count:.0f} ns/hand) in {elapsed_time_ns / ns_per_s} s"
+    )
