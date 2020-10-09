@@ -72,17 +72,28 @@ def get_player_name(player_number):
 
 
 PAIR_POINTS = 2
+FIFTEENS_POINTS = 2
+FIFTEEN_COUNT = 15
 
 
 def score_hand(kept_hand, starter):
     pairs_points = PAIR_POINTS * sum(
         map(
-            lambda combination: combination[0].index == combination[1].index,
+            lambda subset: subset[0].index == subset[1].index,
             itertools.combinations(kept_hand + [starter], 2),
         )
     )
-    # TODO: also score fifteens, runs, flush (must be 5 in crib) and right jack points!
-    return pairs_points
+    fifteens_points = FIFTEENS_POINTS * sum(
+        map(
+            lambda subset: sum(map(lambda card: card.count, subset)) == FIFTEEN_COUNT,
+            itertools.chain.from_iterable(
+                itertools.combinations(kept_hand + [starter], subset_size)
+                for subset_size in range(2, KEPT_CARDS_LEN + 2)
+            ),
+        )
+    )
+    # TODO: also score runs, flush (must be 5 in crib) and right jack points!
+    return pairs_points + fifteens_points
 
 
 def simulate_hands(
@@ -247,12 +258,12 @@ def simulate_hands(
                     most_recently_played_index_count = 1
 
                 # 15 and 31 count points
-                if play_count == 15:
+                if play_count == FIFTEEN_COUNT:
                     if not hide_play_actions:
                         print(
-                            f"!15 for 2 points for {get_player_name(player_to_play)}."
+                            f"!{FIFTEEN_COUNT} for 2 points for {get_player_name(player_to_play)}."
                         )
-                    score[player_to_play] += 2
+                    score[player_to_play] += FIFTEENS_POINTS
                 elif play_count == 31:
                     if not hide_play_actions:
                         print(f"!31 for 1 point for {get_player_name(player_to_play)}.")
@@ -329,6 +340,8 @@ def simulate_hands(
 
         if not hide_play_actions:
             print(f"Hand cut + play + hands + crib score: {score}")
+
+        # TODO: consider keeping separate play, hand and crib statistics so that the phase in which a particular discard or play shows its value can be seen - e.g. is a discard helping my play, hand or crib more?
 
         pone_statistics.push(score[0])
         dealer_statistics.push(score[1])
