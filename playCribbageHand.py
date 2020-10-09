@@ -193,7 +193,6 @@ def simulate_hands(
             ]
 
             if playable_cards:
-                # TODO: replace two play selection algorithms with tuple argument if faster
                 player_to_play_play = playable_cards[
                     pone_select_play(playable_cards)
                     if player_to_play == 0
