@@ -11,6 +11,7 @@ import argparse
 import os
 from runstats import Statistics
 from statistics import NormalDist
+import itertools
 
 
 class Card:
@@ -68,6 +69,20 @@ def get_player_name(player_number):
         return "Pone"
     else:
         return "Dealer"
+
+
+PAIR_POINTS = 2
+
+
+def score_hand(kept_hand, starter):
+    pairs_points = PAIR_POINTS * sum(
+        map(
+            lambda combination: combination[0].index == combination[1].index,
+            itertools.combinations(kept_hand + [starter], 2),
+        )
+    )
+    # TODO: also score fifteens, runs, flush (must be 5 in crib) and right jack points!
+    return pairs_points
 
 
 def simulate_hands(
@@ -226,7 +241,7 @@ def simulate_hands(
                             print(
                                 f"!Pair for 2 points for {get_player_name(player_to_play)}."
                             )
-                        score[player_to_play] += 2
+                        score[player_to_play] += PAIR_POINTS
                 else:
                     most_recently_played_index = player_to_play_play.index
                     most_recently_played_index_count = 1
@@ -290,16 +305,30 @@ def simulate_hands(
             print(f"!Last card for 1 point for {get_player_name(last_player_to_play)}.")
         score[last_player_to_play] += 1
 
-        # TODO: score hands here
-        # if not hide_play_actions:
-        # print(f"Pone hand points: -PH-")
-        # print(f"Dealer hand points: -DH-")
-        # TODO: score crib here
-        # if not hide_play_actions:
-        # print(f"Crib points: -CR-")
+        pone_hand_points = score_hand(kept_hands[0], starter)
+        if not hide_play_actions:
+            print(
+                f"Pone hand {Hand(kept_hands[0])} with starter {starter} points: {pone_hand_points}"
+            )
+        score[0] += pone_hand_points
+
+        dealer_hand_points = score_hand(kept_hands[1], starter)
+        if not hide_play_actions:
+            print(
+                f"Dealer hand {Hand(kept_hands[1])} with starter {starter} points: {dealer_hand_points}"
+            )
+        score[1] += dealer_hand_points
+
+        crib_cards = pone_discarded_cards + dealer_discarded_cards
+        crib_points = score_hand(crib_cards, starter)
+        if not hide_play_actions:
+            print(
+                f"Crib {Hand(crib_cards)} with starter {starter} points: {crib_points}"
+            )
+        score[1] += crib_points
 
         if not hide_play_actions:
-            print(f"Hand score: {score}")
+            print(f"Hand cut + play + hands + crib score: {score}")
 
         pone_statistics.push(score[0])
         dealer_statistics.push(score[1])
