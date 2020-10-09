@@ -373,7 +373,6 @@ def play_user_selected(playable_cards):
     selected_card = None
     while selected_card not in range(0, len(playable_cards)):
         try:
-            # TODO: instead accept input of card index + suit (only when required to disambiguate)
             selected_card_input = input("Enter the base-0 card index to play: ")
             selected_card = int(selected_card_input)
         except ValueError:
