@@ -12,6 +12,7 @@ import os
 from runstats import Statistics
 from statistics import NormalDist
 import itertools
+from functools import cache
 
 
 class Card:
@@ -76,24 +77,49 @@ FIFTEENS_POINTS = 2
 FIFTEEN_COUNT = 15
 
 
-def score_hand(kept_hand, starter):
-    pairs_points = PAIR_POINTS * sum(
+@cache
+def hand_indices_pairs_points(sorted_hand_plus_starter_indices):
+    return PAIR_POINTS * sum(
         map(
-            lambda subset: subset[0].index == subset[1].index,
-            itertools.combinations(kept_hand + [starter], 2),
+            lambda indices: indices[0] == indices[1],
+            itertools.combinations(sorted_hand_plus_starter_indices, 2),
         )
     )
-    fifteens_points = FIFTEENS_POINTS * sum(
+
+
+def pairs_points(hand_plus_starter_cards):
+    sorted_hand_plus_starter_indices = tuple(
+        sorted([c.index for c in hand_plus_starter_cards])
+    )
+    return hand_indices_pairs_points(sorted_hand_plus_starter_indices)
+
+
+@cache
+def hand_counts_fifteens_points(sorted_hand_plus_starter_counts):
+    return FIFTEENS_POINTS * sum(
         map(
-            lambda subset: sum(map(lambda card: card.count, subset)) == FIFTEEN_COUNT,
+            lambda subset: sum(subset) == FIFTEEN_COUNT,
             itertools.chain.from_iterable(
-                itertools.combinations(kept_hand + [starter], subset_size)
+                itertools.combinations(sorted_hand_plus_starter_counts, subset_size)
                 for subset_size in range(2, KEPT_CARDS_LEN + 2)
             ),
         )
     )
+
+
+def fifteens_points(hand_plus_starter_cards):
+    sorted_hand_plus_starter_counts = tuple(
+        sorted([c.count for c in hand_plus_starter_cards])
+    )
+    return hand_counts_fifteens_points(sorted_hand_plus_starter_counts)
+
+
+def score_hand(kept_hand, starter):
+    hand_plus_starter_cards = kept_hand + [starter]
     # TODO: also score runs, flush (must be 5 in crib) and right jack points!
-    return pairs_points + fifteens_points
+    return pairs_points(hand_plus_starter_cards) + fifteens_points(
+        hand_plus_starter_cards
+    )
 
 
 def simulate_hands(
@@ -378,6 +404,8 @@ def simulate_hands(
                 f"Mean scores {confidence_level}% confidence interval (n = {players_statistics_length:{int(math.log10(overall_hand_count)) + 1}}): ({players_statistics['pone'].mean():.5f} ± {z_statistic * pone_stddev / math.sqrt(players_statistics_length):.5f}, {players_statistics['dealer'].mean():.5f} ± {z_statistic * dealer_stddev / math.sqrt(players_statistics_length):.5f}) = {players_statistics['pone_minus_dealer'].mean():.5f} ± {z_statistic * pone_minus_dealer_stddev / math.sqrt(players_statistics_length):.5f}; ρ = {correlation_str}"
             )
             players_statistics_lock.release()
+            # print(hand_indices_pairs_points.cache_info())
+            # print(hand_counts_fifteens_points.cache_info())
 
 
 KEPT_CARDS_LEN = 4
