@@ -83,23 +83,6 @@ FIFTEEN_COUNT = 15
 
 
 @cache
-def hand_indices_pairs_points(sorted_hand_plus_starter_indices):
-    return PAIR_POINTS * sum(
-        map(
-            lambda indices: indices[0] == indices[1],
-            itertools.combinations(sorted_hand_plus_starter_indices, 2),
-        )
-    )
-
-
-def pairs_points(hand_plus_starter_cards):
-    sorted_hand_plus_starter_indices = tuple(
-        sorted([c.index for c in hand_plus_starter_cards])
-    )
-    return hand_indices_pairs_points(sorted_hand_plus_starter_indices)
-
-
-@cache
 def hand_counts_fifteens_points(sorted_hand_plus_starter_counts):
     return FIFTEENS_POINTS * sum(
         map(
@@ -119,10 +102,57 @@ def fifteens_points(hand_plus_starter_cards):
     return hand_counts_fifteens_points(sorted_hand_plus_starter_counts)
 
 
+@cache
+def pairs_points(sorted_hand_plus_starter_indices):
+    return PAIR_POINTS * sum(
+        map(
+            lambda indices: indices[0] == indices[1],
+            itertools.combinations(sorted_hand_plus_starter_indices, 2),
+        )
+    )
+
+
+def runs_points_of_length(sorted_hand_plus_starter_indices, run_length):
+    return sum(
+        map(
+            lambda length_subset: run_length
+            * all(
+                map(
+                    lambda index_pair: index_pair[0] + 1 == index_pair[1],
+                    zip(length_subset, length_subset[1:]),
+                )
+            ),
+            itertools.combinations(sorted_hand_plus_starter_indices, run_length),
+        )
+    )
+
+
+@cache
+def runs_points(sorted_hand_plus_starter_indices):
+    five_run_points = runs_points_of_length(sorted_hand_plus_starter_indices, 5)
+    if five_run_points:
+        return five_run_points
+
+    four_run_points = runs_points_of_length(sorted_hand_plus_starter_indices, 4)
+    if four_run_points:
+        return four_run_points
+
+    return runs_points_of_length(sorted_hand_plus_starter_indices, 3)
+
+
+def pairs_plus_runs_points(hand_plus_starter_cards):
+    sorted_hand_plus_starter_indices = tuple(
+        sorted([c.index for c in hand_plus_starter_cards])
+    )
+    return pairs_points(sorted_hand_plus_starter_indices) + runs_points(
+        sorted_hand_plus_starter_indices
+    )
+
+
 def score_hand(kept_hand, starter):
     hand_plus_starter_cards = kept_hand + [starter]
-    # TODO: also score runs, flush (must be 5 in crib) and right jack points!
-    return pairs_points(hand_plus_starter_cards) + fifteens_points(
+    # TODO: also score flush (must be 5 in crib) and right jack points!
+    return pairs_plus_runs_points(hand_plus_starter_cards) + fifteens_points(
         hand_plus_starter_cards
     )
 
@@ -409,8 +439,9 @@ def simulate_hands(
                 f"Mean scores {confidence_level}% confidence interval (n = {players_statistics_length:{int(math.log10(overall_hand_count)) + 1}}): ({players_statistics['pone'].mean():.5f} ± {z_statistic * pone_stddev / math.sqrt(players_statistics_length):.5f}, {players_statistics['dealer'].mean():.5f} ± {z_statistic * dealer_stddev / math.sqrt(players_statistics_length):.5f}) = {players_statistics['pone_minus_dealer'].mean():.5f} ± {z_statistic * pone_minus_dealer_stddev / math.sqrt(players_statistics_length):.5f}; ρ = {correlation_str}"
             )
             players_statistics_lock.release()
-            # print(hand_indices_pairs_points.cache_info())
+            # print(pairs_points.cache_info())
             # print(hand_counts_fifteens_points.cache_info())
+            # print(runs_points.cache_info())
 
 
 KEPT_CARDS_LEN = 4
