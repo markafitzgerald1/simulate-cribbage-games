@@ -38,6 +38,11 @@ class Card:
     def __eq__(self, value):
         return self.index == value.index and self.suit == value.suit
 
+    def __lt__(self, other):
+        return self.index < other.index or (
+            self.index == other.index and self.suit < other.suit
+        )
+
     def __hash__(self):
         return hash((self.index, self.suit))
 
@@ -345,14 +350,14 @@ def simulate_hands(
         pone_hand_points = score_hand(kept_hands[0], starter)
         if not hide_play_actions:
             print(
-                f"Pone hand {Hand(kept_hands[0])} with starter {starter} points: {pone_hand_points}"
+                f"Pone hand {Hand(reversed(sorted(kept_hands[0])))} with starter {starter} points: {pone_hand_points}"
             )
         score[0] += pone_hand_points
 
         dealer_hand_points = score_hand(kept_hands[1], starter)
         if not hide_play_actions:
             print(
-                f"Dealer hand {Hand(kept_hands[1])} with starter {starter} points: {dealer_hand_points}"
+                f"Dealer hand {Hand(reversed(sorted(kept_hands[1])))} with starter {starter} points: {dealer_hand_points}"
             )
         score[1] += dealer_hand_points
 
@@ -360,7 +365,7 @@ def simulate_hands(
         crib_points = score_hand(crib_cards, starter)
         if not hide_play_actions:
             print(
-                f"Crib {Hand(crib_cards)} with starter {starter} points: {crib_points}"
+                f"Crib {Hand(reversed(sorted(crib_cards)))} with starter {starter} points: {crib_points}"
             )
         score[1] += crib_points
 
