@@ -149,11 +149,25 @@ def pairs_plus_runs_points(hand_plus_starter_cards):
     )
 
 
-def score_hand(kept_hand, starter):
+def flush_points(kept_hand, starter, is_crib=False):
+    kept_hand_suits = [c.suit for c in kept_hand]
+    for kept_card_suit in kept_hand_suits:
+        if kept_card_suit != kept_hand_suits[0]:
+            return 0
+
+    if is_crib and starter.suit == kept_hand_suits[0]:
+        return 5
+
+    return 4
+
+
+def score_hand(kept_hand, starter, is_crib=False):
     hand_plus_starter_cards = kept_hand + [starter]
-    # TODO: also score flush (must be 5 in crib) and right jack points!
-    return pairs_plus_runs_points(hand_plus_starter_cards) + fifteens_points(
-        hand_plus_starter_cards
+    # TODO: also score right jack points!
+    return (
+        pairs_plus_runs_points(hand_plus_starter_cards)
+        + fifteens_points(hand_plus_starter_cards)
+        + flush_points(kept_hand, starter, is_crib=is_crib)
     )
 
 
@@ -392,7 +406,7 @@ def simulate_hands(
         score[1] += dealer_hand_points
 
         crib_cards = pone_discarded_cards + dealer_discarded_cards
-        crib_points = score_hand(crib_cards, starter)
+        crib_points = score_hand(crib_cards, starter, is_crib=True)
         if not hide_play_actions:
             print(
                 f"Crib {Hand(reversed(sorted(crib_cards)))} with starter {starter} points: {crib_points}"
