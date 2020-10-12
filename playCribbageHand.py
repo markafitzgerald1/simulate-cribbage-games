@@ -161,13 +161,24 @@ def flush_points(kept_hand, starter, is_crib=False):
     return 4
 
 
+JACK_INDEX = 10
+
+
+def nobs_points(kept_hand, starter):
+    for kept_card in kept_hand:
+        if kept_card.index == JACK_INDEX and kept_card.suit == starter.suit:
+            return 1
+
+    return 0
+
+
 def score_hand(kept_hand, starter, is_crib=False):
     hand_plus_starter_cards = kept_hand + [starter]
-    # TODO: also score right jack points!
     return (
         pairs_plus_runs_points(hand_plus_starter_cards)
         + fifteens_points(hand_plus_starter_cards)
         + flush_points(kept_hand, starter, is_crib=is_crib)
+        + nobs_points(kept_hand, starter)
     )
 
 
