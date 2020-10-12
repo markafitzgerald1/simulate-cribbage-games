@@ -522,7 +522,9 @@ if __name__ == "__main__":
 
     pone_discard_algorithm_group = parser.add_mutually_exclusive_group()
     pone_discard_algorithm_group.add_argument(
-        "--pone-keep-random", action="store_true", help="have pone discard randomly",
+        "--pone-keep-random",
+        action="store_true",
+        help="have pone discard randomly",
     )
     pone_discard_algorithm_group.add_argument(
         "--pone-keep-first-four",
@@ -633,18 +635,22 @@ if __name__ == "__main__":
 
     specified_dealt_cards_group = parser.add_mutually_exclusive_group()
     specified_dealt_cards_group.add_argument(
-        "--pone-dealt-cards", help="cards dealt to pone",
+        "--pone-dealt-cards",
+        help="cards dealt to pone",
     )
     specified_dealt_cards_group.add_argument(
-        "--dealer-dealt-cards", help="cards dealt to dealer",
+        "--dealer-dealt-cards",
+        help="cards dealt to dealer",
     )
 
     specified_kept_cards_group = parser.add_mutually_exclusive_group()
     specified_kept_cards_group.add_argument(
-        "--pone-kept-cards", help="cards kept by pone",
+        "--pone-kept-cards",
+        help="cards kept by pone",
     )
     specified_kept_cards_group.add_argument(
-        "--dealer-kept-cards", help="cards kept by dealer",
+        "--dealer-kept-cards",
+        help="cards kept by dealer",
     )
 
     args = parser.parse_args()
