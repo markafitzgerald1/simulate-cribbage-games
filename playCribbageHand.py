@@ -222,7 +222,23 @@ def simulate_hands(
         if Card(number % 13, number // 13) not in pone_dealt_cards
         and Card(number % 13, number // 13) not in dealer_dealt_cards
     }
-    (pone_statistics, dealer_statistics, pone_minus_dealer_statistics) = (
+    (
+        pone_statistics,
+        pone_play_statistics,
+        pone_hand_statistics,
+        dealer_statistics,
+        dealer_play_statistics,
+        dealer_hand_statistics,
+        crib_statistics,
+        pone_minus_dealer_play_statistics,
+        pone_minus_dealer_statistics,
+    ) = (
+        Statistics(),
+        Statistics(),
+        Statistics(),
+        Statistics(),
+        Statistics(),
+        Statistics(),
         Statistics(),
         Statistics(),
         Statistics(),
@@ -407,14 +423,12 @@ def simulate_hands(
             print(
                 f"Pone hand {Hand(reversed(sorted(kept_hands[0])))} with starter {starter} points: {pone_hand_points}"
             )
-        score[0] += pone_hand_points
 
         dealer_hand_points = score_hand(kept_hands[1], starter)
         if not hide_play_actions:
             print(
                 f"Dealer hand {Hand(reversed(sorted(kept_hands[1])))} with starter {starter} points: {dealer_hand_points}"
             )
-        score[1] += dealer_hand_points
 
         crib_cards = pone_discarded_cards + dealer_discarded_cards
         crib_points = score_hand(crib_cards, starter, is_crib=True)
@@ -422,24 +436,37 @@ def simulate_hands(
             print(
                 f"Crib {Hand(reversed(sorted(crib_cards)))} with starter {starter} points: {crib_points}"
             )
-        score[1] += crib_points
 
         if not hide_play_actions:
             print(f"Hand cut + play + hands + crib score: {score}")
 
         # TODO: consider keeping separate play, hand and crib statistics so that the phase in which a particular discard or play shows its value can be seen - e.g. is a discard helping my play, hand or crib more?
 
-        pone_statistics.push(score[0])
-        dealer_statistics.push(score[1])
-        pone_minus_dealer_statistics.push(score[0] - score[1])
+        pone_play_statistics.push(score[0])
+        pone_hand_statistics.push(pone_hand_points)
+        pone_statistics.push(score[0] + pone_hand_points)
+        dealer_play_statistics.push(score[1])
+        dealer_hand_statistics.push(dealer_hand_points)
+        crib_statistics.push(crib_points)
+        dealer_statistics.push(score[1] + dealer_hand_points + crib_points)
+        pone_minus_dealer_play_statistics.push(score[0] - score[1])
+        pone_minus_dealer_statistics.push(
+            score[0] + pone_hand_points - score[1] - dealer_hand_points - crib_points
+        )
 
         if (
             hand % hands_per_update == hands_per_update - 1
             or hand == process_hand_count - 1
         ):
             players_statistics_lock.acquire()
+            players_statistics["pone_play"] += pone_play_statistics
+            players_statistics["pone_hand"] += pone_hand_statistics
             players_statistics["pone"] += pone_statistics
+            players_statistics["dealer_play"] += dealer_play_statistics
+            players_statistics["dealer_hand"] += dealer_hand_statistics
+            players_statistics["crib"] += crib_statistics
             players_statistics["dealer"] += dealer_statistics
+            players_statistics["pone_minus_dealer_play"] += pone_minus_dealer_statistics
             players_statistics["pone_minus_dealer"] += pone_minus_dealer_statistics
             pone_statistics.clear()
             dealer_statistics.clear()
@@ -667,7 +694,15 @@ if __name__ == "__main__":
 
     manager = Manager()
     players_statistics = manager.dict(
-        pone=Statistics(), dealer=Statistics(), pone_minus_dealer=Statistics()
+        pone_play=Statistics(),
+        pone_hand=Statistics(),
+        pone=Statistics(),
+        dealer_play=Statistics(),
+        dealer_hand=Statistics(),
+        crib=Statistics(),
+        dealer=Statistics(),
+        pone_minus_dealer_play=Statistics(),
+        pone_minus_dealer=Statistics(),
     )
     players_statistics_lock = Lock()
     args.hand_count = (
