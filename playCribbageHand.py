@@ -491,9 +491,6 @@ def simulate_hands(
                 f"Mean scores {confidence_level}% confidence interval (n = {players_statistics_length:{int(math.log10(overall_hand_count)) + 1}}): ({players_statistics['pone'].mean():.5f} ± {z_statistic * pone_stddev / math.sqrt(players_statistics_length):.5f}, {players_statistics['dealer'].mean():.5f} ± {z_statistic * dealer_stddev / math.sqrt(players_statistics_length):.5f}) = {players_statistics['pone_minus_dealer'].mean():.5f} ± {z_statistic * pone_minus_dealer_stddev / math.sqrt(players_statistics_length):.5f}; ρ = {correlation_str}"
             )
             players_statistics_lock.release()
-            # print(pairs_points.cache_info())
-            # print(hand_counts_fifteens_points.cache_info())
-            # print(runs_points.cache_info())
 
 
 KEPT_CARDS_LEN = 4
