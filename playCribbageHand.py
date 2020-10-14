@@ -187,8 +187,11 @@ def formatted_hand_count(hands_simulated, total_hands_to_be_simulated):
 
 
 def get_confidence_interval(statistics, confidence_level):
+    if len(statistics) == 1:
+        return f"{statistics.mean():+9.5f}"
+
     z_statistic = NormalDist().inv_cdf(1 - (1 - confidence_level / 100) / 2)
-    return f"{statistics.mean():+9.5f} ± {z_statistic * statistics.stddev() / math.sqrt(len(statistics)):.5f}"
+    return f"{statistics.mean():+9.5f} ± {z_statistic * statistics.stddev() / math.sqrt(len(statistics)):8.5f}"
 
 
 def simulate_hands(
@@ -515,40 +518,42 @@ def simulate_hands(
                 else None
             )
 
+            if players_statistics_length > 1:
+                print(
+                    f"Mean play statistics {confidence_level}% confidence intervals ({formatted_hand_count(players_statistics_length, overall_hand_count)}):"
+                )
+            else:
+                print(f"Mean play statistics:")
+
             print(
-                f"Play statistics {confidence_level}% confidence intervals ({formatted_hand_count(players_statistics_length, overall_hand_count)}):"
+                f"Pone              Play    points: {get_confidence_interval(players_statistics['pone_play'], confidence_level)}"
             )
             print(
-                f"Mean pone              play    points: {get_confidence_interval(players_statistics['pone_play'], confidence_level)}"
+                f"Dealer            Play    points: {get_confidence_interval(players_statistics['dealer_play'], confidence_level)}"
             )
             print(
-                f"Mean dealer            play    points: {get_confidence_interval(players_statistics['dealer_play'], confidence_level)}"
+                f"Pone minus Dealer Play    points: {get_confidence_interval(players_statistics['pone_minus_dealer_play'], confidence_level)}"
             )
             print(
-                f"Mean pone minus dealer play    points: {get_confidence_interval(players_statistics['pone_minus_dealer_play'], confidence_level)}"
+                f"Pone              Hand    points: {get_confidence_interval(players_statistics['pone_hand'], confidence_level)}"
             )
             print(
-                f"Mean pone              hand    points: {get_confidence_interval(players_statistics['pone_hand'], confidence_level)}"
+                f"Pone              Overall points: {get_confidence_interval(players_statistics['pone'], confidence_level)}"
             )
             print(
-                f"Mean pone              overall points: {get_confidence_interval(players_statistics['pone'], confidence_level)}"
+                f"Dealer            Hand    points: {get_confidence_interval(players_statistics['dealer_hand'], confidence_level)}"
             )
             print(
-                f"Mean dealer            hand    points: {get_confidence_interval(players_statistics['dealer_hand'], confidence_level)}"
+                f"Crib              Hand    points: {get_confidence_interval(players_statistics['crib'], confidence_level)}"
             )
             print(
-                f"Mean crib              hand    points: {get_confidence_interval(players_statistics['crib'], confidence_level)}"
+                f"Dealer            Overall points: {get_confidence_interval(players_statistics['dealer'], confidence_level)}"
             )
             print(
-                f"Mean dealer            overall points: {get_confidence_interval(players_statistics['dealer'], confidence_level)}"
-            )
-            print(
-                f"Mean pone minus dealer overall points: {get_confidence_interval(players_statistics['pone_minus_dealer'], confidence_level)}"
+                f"Pone minus Dealer Overall points: {get_confidence_interval(players_statistics['pone_minus_dealer'], confidence_level)}"
             )
             correlation_str = f"{correlation:+8.5f}" if correlation else "undefined"
-            print(
-                f"Mean pone   and dealer overall points correlation: {correlation_str}"
-            )
+            print(f"Pone   and Dealer Overall points correlation: {correlation_str}")
             players_statistics_lock.release()
 
 
