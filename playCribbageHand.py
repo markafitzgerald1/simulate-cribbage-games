@@ -182,6 +182,15 @@ def score_hand(kept_hand, starter, is_crib=False):
     )
 
 
+def formatted_hand_count(hands_simulated, total_hands_to_be_simulated):
+    return f"n = {hands_simulated:{int(math.log10(total_hands_to_be_simulated)) + 1}}"
+
+
+def get_confidence_interval(statistics, confidence_level):
+    z_statistic = NormalDist().inv_cdf(1 - (1 - confidence_level / 100) / 2)
+    return f"{statistics.mean():+9.5f} ± {z_statistic * statistics.stddev() / math.sqrt(len(statistics)):.5f}"
+
+
 def simulate_hands(
     process_hand_count,
     overall_hand_count,
@@ -440,8 +449,6 @@ def simulate_hands(
         if not hide_play_actions:
             print(f"Hand cut + play + hands + crib score: {score}")
 
-        # TODO: consider keeping separate play, hand and crib statistics so that the phase in which a particular discard or play shows its value can be seen - e.g. is a discard helping my play, hand or crib more?
-
         pone_play_statistics.push(score[0])
         pone_hand_statistics.push(pone_hand_points)
         pone_statistics.push(score[0] + pone_hand_points)
@@ -459,17 +466,36 @@ def simulate_hands(
             or hand == process_hand_count - 1
         ):
             players_statistics_lock.acquire()
+
             players_statistics["pone_play"] += pone_play_statistics
+            pone_play_statistics.clear()
+
             players_statistics["pone_hand"] += pone_hand_statistics
+            pone_hand_statistics.clear()
+
             players_statistics["pone"] += pone_statistics
-            players_statistics["dealer_play"] += dealer_play_statistics
-            players_statistics["dealer_hand"] += dealer_hand_statistics
-            players_statistics["crib"] += crib_statistics
-            players_statistics["dealer"] += dealer_statistics
-            players_statistics["pone_minus_dealer_play"] += pone_minus_dealer_statistics
-            players_statistics["pone_minus_dealer"] += pone_minus_dealer_statistics
             pone_statistics.clear()
+
+            players_statistics["dealer_play"] += dealer_play_statistics
+            dealer_play_statistics.clear()
+
+            players_statistics["dealer_hand"] += dealer_hand_statistics
+            dealer_hand_statistics.clear()
+
+            players_statistics["crib"] += crib_statistics
+            crib_statistics.clear()
+
+            players_statistics["dealer"] += dealer_statistics
             dealer_statistics.clear()
+
+            players_statistics[
+                "pone_minus_dealer_play"
+            ] += pone_minus_dealer_play_statistics
+            pone_minus_dealer_play_statistics.clear()
+
+            players_statistics["pone_minus_dealer"] += pone_minus_dealer_statistics
+            pone_minus_dealer_statistics.clear()
+
             players_statistics_length = len(players_statistics["pone"])
             z_statistic = NormalDist().inv_cdf(1 - (1 - confidence_level / 100) / 2)
             if players_statistics_length > 1:
@@ -486,9 +512,40 @@ def simulate_hands(
                 if pone_stddev != 0 and dealer_stddev != 0
                 else None
             )
-            correlation_str = f"{correlation:.5f}" if correlation else "undefined"
+
             print(
-                f"Mean scores {confidence_level}% confidence interval (n = {players_statistics_length:{int(math.log10(overall_hand_count)) + 1}}): ({players_statistics['pone'].mean():.5f} ± {z_statistic * pone_stddev / math.sqrt(players_statistics_length):.5f}, {players_statistics['dealer'].mean():.5f} ± {z_statistic * dealer_stddev / math.sqrt(players_statistics_length):.5f}) = {players_statistics['pone_minus_dealer'].mean():.5f} ± {z_statistic * pone_minus_dealer_stddev / math.sqrt(players_statistics_length):.5f}; ρ = {correlation_str}"
+                f"Play statistics {confidence_level}% confidence intervals ({formatted_hand_count(players_statistics_length, overall_hand_count)}):"
+            )
+            print(
+                f"Mean pone              play    points: {get_confidence_interval(players_statistics['pone_play'], confidence_level)}"
+            )
+            print(
+                f"Mean dealer            play    points: {get_confidence_interval(players_statistics['dealer_play'], confidence_level)}"
+            )
+            print(
+                f"Mean pone minus dealer play    points: {get_confidence_interval(players_statistics['pone_minus_dealer_play'], confidence_level)}"
+            )
+            print(
+                f"Mean pone              hand    points: {get_confidence_interval(players_statistics['pone_hand'], confidence_level)}"
+            )
+            print(
+                f"Mean pone              overall points: {get_confidence_interval(players_statistics['pone'], confidence_level)}"
+            )
+            print(
+                f"Mean dealer            hand    points: {get_confidence_interval(players_statistics['dealer_hand'], confidence_level)}"
+            )
+            print(
+                f"Mean crib              hand    points: {get_confidence_interval(players_statistics['crib'], confidence_level)}"
+            )
+            print(
+                f"Mean dealer            overall points: {get_confidence_interval(players_statistics['dealer'], confidence_level)}"
+            )
+            print(
+                f"Mean pone minus dealer overall points: {get_confidence_interval(players_statistics['pone_minus_dealer'], confidence_level)}"
+            )
+            correlation_str = f"{correlation:+8.5f}" if correlation else "undefined"
+            print(
+                f"Mean pone   and dealer overall points correlation: {correlation_str}"
             )
             players_statistics_lock.release()
 
@@ -523,7 +580,7 @@ def play_highest_count(playable_cards):
 
 
 def play_user_selected(playable_cards):
-    print(f"Playable cards are {','.join([ str(card) for card in playable_cards ])}.")
+    print(f"Playable cards are {','.join([str(card) for card in playable_cards])}.")
     selected_card = None
     while selected_card not in range(0, len(playable_cards)):
         try:
