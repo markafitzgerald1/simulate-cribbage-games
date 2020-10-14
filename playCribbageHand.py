@@ -225,12 +225,12 @@ def simulate_hands(
             f"If specifying player kept cards exactly {KEPT_CARDS_LEN} must be specified"
         )
 
-    deck_less_fixed_cards = {
+    deck_less_fixed_cards = [
         Card(number % 13, number // 13)
         for number in range(52)
         if Card(number % 13, number // 13) not in pone_dealt_cards
         and Card(number % 13, number // 13) not in dealer_dealt_cards
-    }
+    ]
     (
         pone_statistics,
         pone_play_statistics,
@@ -271,7 +271,9 @@ def simulate_hands(
             print(f"{get_player_name(0):6} dealt {Hand(dealt_hands[0])}")
         if not hide_dealer_hand:
             print(f"{get_player_name(1):6} dealt {Hand(dealt_hands[1])}")
-        deck_less_dealt_cards = deck_less_fixed_cards.difference(set(random_hand_cards))
+        deck_less_dealt_cards = set(deck_less_fixed_cards).difference(
+            set(random_hand_cards)
+        )
 
         kept_hands = [
             [card for card in dealt_hands[0] if card in pone_kept_cards]
