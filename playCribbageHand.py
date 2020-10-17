@@ -219,6 +219,7 @@ def statistics_dict_add(
                 "pone": Statistics(),
                 "dealer_play": Statistics(),
                 "dealer_hand": Statistics(),
+                "pone_minus_dealer_hand": Statistics(),
                 "crib": Statistics(),
                 "dealer": Statistics(),
                 "pone_minus_dealer_play": Statistics(),
@@ -279,8 +280,10 @@ def simulate_hands(
             dealer_hand_statistics,
             crib_statistics,
             pone_minus_dealer_play_statistics,
+            pone_minus_dealer_hand_statistics,
             pone_minus_dealer_statistics,
         ) = (
+            {},
             {},
             {},
             {},
@@ -549,6 +552,11 @@ def simulate_hands(
                 pone_minus_dealer_play_statistics, kept_cards, score[0] - score[1]
             )
             statistics_push(
+                pone_minus_dealer_hand_statistics,
+                kept_cards,
+                pone_hand_points - dealer_hand_points,
+            )
+            statistics_push(
                 pone_minus_dealer_statistics,
                 kept_cards,
                 score[0]
@@ -602,6 +610,13 @@ def simulate_hands(
 
                 statistics_dict_add(
                     players_statistics,
+                    "pone_minus_dealer_hand",
+                    pone_minus_dealer_hand_statistics,
+                )
+                pone_minus_dealer_hand_statistics.clear()
+
+                statistics_dict_add(
+                    players_statistics,
                     "pone_minus_dealer",
                     pone_minus_dealer_statistics,
                 )
@@ -633,42 +648,58 @@ def simulate_hands(
                 else:
                     print(f"Mean play statistics:")
 
-                for keep, keep_stats in sorted(
+                sorted_players_statistics = sorted(
                     players_statistics.items(),
                     key=lambda item: item[1]["pone_minus_dealer"].mean(),
-                    reverse=bool(dealer_dealt_cards),
-                ):
+                    reverse=bool(pone_dealt_cards),
+                )
+                for keep, keep_stats in sorted_players_statistics:
                     if keep:
+                        # print(
+                        #     f"For kept {Hand(keep)}, discard {Hand(set(pone_dealt_cards or dealer_dealt_cards) - set(keep))}: "
+                        # )
                         print(
-                            f"For kept {Hand(keep)}, discard {Hand(set(pone_dealt_cards or dealer_dealt_cards) - set(keep))}: "
+                            f"{Hand(keep)} - {Hand(set(pone_dealt_cards or dealer_dealt_cards) - set(keep))}: {keep_stats['pone_minus_dealer_play'].mean():+9.5f} Δ-peg + {keep_stats['pone_minus_dealer_hand'].mean():+9.5f} Δ-hand - {keep_stats['crib'].mean():+9.5f} crib = {get_confidence_interval(keep_stats['pone_minus_dealer'], confidence_level)} overall"
                         )
-                    print(
-                        f"Pone              Play    points: {get_confidence_interval(keep_stats['pone_play'], confidence_level)}"
-                    )
-                    print(
-                        f"Dealer            Play    points: {get_confidence_interval(keep_stats['dealer_play'], confidence_level)}"
-                    )
-                    print(
-                        f"Pone minus Dealer Play    points: {get_confidence_interval(keep_stats['pone_minus_dealer_play'], confidence_level)}"
-                    )
-                    print(
-                        f"Pone              Hand    points: {get_confidence_interval(keep_stats['pone_hand'], confidence_level)}"
-                    )
-                    print(
-                        f"Pone              Overall points: {get_confidence_interval(keep_stats['pone'], confidence_level)}"
-                    )
-                    print(
-                        f"Dealer            Hand    points: {get_confidence_interval(keep_stats['dealer_hand'], confidence_level)}"
-                    )
-                    print(
-                        f"Crib              Hand    points: {get_confidence_interval(keep_stats['crib'], confidence_level)}"
-                    )
-                    print(
-                        f"Dealer            Overall points: {get_confidence_interval(keep_stats['dealer'], confidence_level)}"
-                    )
-                    print(
-                        f"Pone minus Dealer Overall points: {get_confidence_interval(keep_stats['pone_minus_dealer'], confidence_level)}"
-                    )
+                    if (
+                        abs(
+                            keep_stats["pone_minus_dealer"].mean()
+                            - sorted_players_statistics[0][1][
+                                "pone_minus_dealer"
+                            ].mean()
+                        )
+                        < 2  # TODO: convert into command-line option
+                    ):
+                        print(
+                            f"Pone              Play    points: {get_confidence_interval(keep_stats['pone_play'], confidence_level)}"
+                        )
+                        print(
+                            f"Dealer            Play    points: {get_confidence_interval(keep_stats['dealer_play'], confidence_level)}"
+                        )
+                        print(
+                            f"Pone minus Dealer Play    points: {get_confidence_interval(keep_stats['pone_minus_dealer_play'], confidence_level)}"
+                        )
+                        print(
+                            f"Pone              Hand    points: {get_confidence_interval(keep_stats['pone_hand'], confidence_level)}"
+                        )
+                        print(
+                            f"Pone              Overall points: {get_confidence_interval(keep_stats['pone'], confidence_level)}"
+                        )
+                        print(
+                            f"Dealer            Hand    points: {get_confidence_interval(keep_stats['dealer_hand'], confidence_level)}"
+                        )
+                        print(
+                            f"Pone minus Dealer Hand    points: {get_confidence_interval(keep_stats['pone_minus_dealer_hand'], confidence_level)}"
+                        )
+                        print(
+                            f"Crib              Hand    points: {get_confidence_interval(keep_stats['crib'], confidence_level)}"
+                        )
+                        print(
+                            f"Dealer            Overall points: {get_confidence_interval(keep_stats['dealer'], confidence_level)}"
+                        )
+                        print(
+                            f"Pone minus Dealer Overall points: {get_confidence_interval(keep_stats['pone_minus_dealer'], confidence_level)}"
+                        )
 
                 # correlation_str = f"{correlation:+8.5f}" if correlation else "undefined"
                 # print(f"Pone   and Dealer Overall points correlation: {correlation_str}")
