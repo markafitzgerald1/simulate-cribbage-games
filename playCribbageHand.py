@@ -248,406 +248,433 @@ def simulate_hands(
     hands_per_update,
     confidence_level,
 ):
-    DEALT_CARDS_LEN = 6
-    if len(pone_dealt_cards) not in [0, DEALT_CARDS_LEN] or len(
-        dealer_dealt_cards
-    ) not in [0, DEALT_CARDS_LEN]:
-        raise ValueError(
-            f"If specifying player dealt cards exactly {DEALT_CARDS_LEN} must be specified"
-        )
-
-    if len(pone_kept_cards) not in [0, KEPT_CARDS_LEN] or len(
-        dealer_kept_cards
-    ) not in [0, KEPT_CARDS_LEN]:
-        raise ValueError(
-            f"If specifying player kept cards exactly {KEPT_CARDS_LEN} must be specified"
-        )
-
-    deck_less_fixed_cards = [
-        Card(number % 13, number // 13)
-        for number in range(52)
-        if Card(number % 13, number // 13) not in pone_dealt_cards
-        and Card(number % 13, number // 13) not in dealer_dealt_cards
-    ]
-    (
-        pone_statistics,
-        pone_play_statistics,
-        pone_hand_statistics,
-        dealer_statistics,
-        dealer_play_statistics,
-        dealer_hand_statistics,
-        crib_statistics,
-        pone_minus_dealer_play_statistics,
-        pone_minus_dealer_statistics,
-    ) = (
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-    )
-    pone_dealt_cards_possible_keeps = itertools.cycle(
-        itertools.combinations(pone_dealt_cards, KEPT_CARDS_LEN)
-    )
-    dealer_dealt_cards_possible_keeps = itertools.cycle(
-        itertools.combinations(dealer_dealt_cards, KEPT_CARDS_LEN)
-    )
-    for hand in range(process_hand_count):
-        if pone_dealt_cards or dealer_dealt_cards:
-            random_hand_cards = random.sample(deck_less_fixed_cards, DEALT_CARDS_LEN)
-            if pone_dealt_cards:
-                dealt_hands = [pone_dealt_cards.copy(), random_hand_cards]
-            else:
-                dealt_hands = [random_hand_cards, dealer_dealt_cards.copy()]
-        else:
-            random_hand_cards = random.sample(
-                deck_less_fixed_cards, DEALT_CARDS_LEN * 2
-            )
-            dealt_hands = [
-                random_hand_cards[0:DEALT_CARDS_LEN],
-                random_hand_cards[DEALT_CARDS_LEN:],
-            ]
-        if not hide_pone_hand:
-            print(f"{get_player_name(0):6} dealt {Hand(dealt_hands[0])}")
-        if not hide_dealer_hand:
-            print(f"{get_player_name(1):6} dealt {Hand(dealt_hands[1])}")
-        deck_less_dealt_cards = list(
-            set(deck_less_fixed_cards).difference(set(random_hand_cards))
-        )
-
-        if pone_kept_cards:
-            kept_pone_hand = [
-                card for card in dealt_hands[0] if card in pone_kept_cards
-            ]
-        elif pone_select_kept_cards:
-            kept_pone_hand = pone_select_kept_cards(dealt_hands[0])
-        elif pone_dealt_cards:
-            kept_pone_hand = list(next(pone_dealt_cards_possible_keeps))
-        else:
+    try:
+        DEALT_CARDS_LEN = 6
+        if len(pone_dealt_cards) not in [0, DEALT_CARDS_LEN] or len(
+            dealer_dealt_cards
+        ) not in [0, DEALT_CARDS_LEN]:
             raise ValueError(
-                "Iterating through all possible kept hands not supported with non-fixed deals."
+                f"If specifying player dealt cards exactly {DEALT_CARDS_LEN} must be specified"
             )
 
-        if dealer_kept_cards:
-            kept_dealer_hand = [
-                card for card in dealt_hands[1] if card in dealer_kept_cards
-            ]
-        elif dealer_select_kept_cards:
-            kept_dealer_hand = dealer_select_kept_cards(dealt_hands[1])
-        elif dealer_dealt_cards:
-            kept_dealer_hand = list(next(dealer_dealt_cards_possible_keeps))
-        else:
+        if len(pone_kept_cards) not in [0, KEPT_CARDS_LEN] or len(
+            dealer_kept_cards
+        ) not in [0, KEPT_CARDS_LEN]:
             raise ValueError(
-                "Iterating through all possible kept hands not supported with non-fixed deals."
+                f"If specifying player kept cards exactly {KEPT_CARDS_LEN} must be specified"
             )
 
-        kept_hands = [kept_pone_hand, kept_dealer_hand]
-        hands = [kept_hand.copy() for kept_hand in kept_hands]
-
-        pone_discarded_cards = (
-            [card for card in dealt_hands[0] if card not in pone_kept_cards]
-            if pone_kept_cards
-            else [card for card in dealt_hands[0] if card not in kept_hands[0]]
+        deck_less_fixed_cards = [
+            Card(number % 13, number // 13)
+            for number in range(52)
+            if Card(number % 13, number // 13) not in pone_dealt_cards
+            and Card(number % 13, number // 13) not in dealer_dealt_cards
+        ]
+        (
+            pone_statistics,
+            pone_play_statistics,
+            pone_hand_statistics,
+            dealer_statistics,
+            dealer_play_statistics,
+            dealer_hand_statistics,
+            crib_statistics,
+            pone_minus_dealer_play_statistics,
+            pone_minus_dealer_statistics,
+        ) = (
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
         )
-        if not hide_pone_hand:
-            print(f"{get_player_name(0):6} discarded {Hand(pone_discarded_cards)}")
-        dealer_discarded_cards = (
-            [card for card in dealt_hands[1] if card not in dealer_kept_cards]
-            if dealer_kept_cards
-            else [card for card in dealt_hands[1] if card not in kept_hands[1]]
+        pone_dealt_cards_possible_keeps = itertools.cycle(
+            itertools.combinations(pone_dealt_cards, KEPT_CARDS_LEN)
         )
-        if not hide_dealer_hand:
-            print(f"{get_player_name(1):6} discarded {Hand(dealer_discarded_cards)}")
-
-        if len(hands[0]) != KEPT_CARDS_LEN or len(hands[1]) != KEPT_CARDS_LEN:
-            raise ValueError(
-                f"Kept non-{KEPT_CARDS_LEN} number of cards in one of {Hand(hands[0])} or {Hand(hands[1])}"
-            )
-
-        if not hide_pone_hand:
-            print(f"{get_player_name(0):6} kept {Hand(hands[0])}")
-        if not hide_dealer_hand:
-            print(f"{get_player_name(1):6} kept {Hand(hands[1])}")
-
-        score = [0, 0]
-
-        starter = random.sample(deck_less_dealt_cards, 1)[0]
-        if not hide_play_actions:
-            print(f"Cut/starter card is: {starter}")
-        if starter.index == 10:
-            if not hide_play_actions:
-                print(f"His heels/nibs for 2 for {get_player_name(1)}")
-            score[1] += 2
-
-        player_to_play = 0
-        play_count = 0
-        consecutive_go_count = 0
-        most_recently_played_index = None
-        most_recently_played_index_count = 0
-        current_play_plays = []
-        while hands[0] or hands[1]:
-            playable_cards = [
-                card for card in hands[player_to_play] if play_count + card.count <= 31
-            ]
-
-            if playable_cards:
-                player_to_play_play = playable_cards[
-                    pone_select_play(playable_cards)
-                    if player_to_play == 0
-                    else dealer_select_play(playable_cards)
-                ]
-                hands[player_to_play].remove(player_to_play_play)
-                current_play_plays.append(player_to_play_play)
-                play_count += player_to_play_play.count
-                if not hide_play_actions:
-                    print(
-                        f"{get_player_name(player_to_play):6} plays {player_to_play_play} for {play_count}"
-                    )
-
-                # Pairs points
-                if player_to_play_play.index == most_recently_played_index:
-                    most_recently_played_index_count += 1
-                    if most_recently_played_index_count == 4:
-                        if not hide_play_actions:
-                            print(
-                                f"!Double pairs royale for 12 points for {get_player_name(player_to_play)}."
-                            )
-                        score[player_to_play] += 12
-                    elif most_recently_played_index_count == 3:
-                        if not hide_play_actions:
-                            print(
-                                f"!Pairs royale for 6 points for {get_player_name(player_to_play)}."
-                            )
-                        score[player_to_play] += 6
-                    elif most_recently_played_index_count == 2:
-                        if not hide_play_actions:
-                            print(
-                                f"!Pair for 2 points for {get_player_name(player_to_play)}."
-                            )
-                        score[player_to_play] += PAIR_POINTS
+        dealer_dealt_cards_possible_keeps = itertools.cycle(
+            itertools.combinations(dealer_dealt_cards, KEPT_CARDS_LEN)
+        )
+        for hand in range(process_hand_count):
+            if pone_dealt_cards or dealer_dealt_cards:
+                random_hand_cards = random.sample(
+                    deck_less_fixed_cards, DEALT_CARDS_LEN
+                )
+                if pone_dealt_cards:
+                    dealt_hands = [pone_dealt_cards.copy(), random_hand_cards]
                 else:
-                    most_recently_played_index = player_to_play_play.index
-                    most_recently_played_index_count = 1
+                    dealt_hands = [random_hand_cards, dealer_dealt_cards.copy()]
+            else:
+                random_hand_cards = random.sample(
+                    deck_less_fixed_cards, DEALT_CARDS_LEN * 2
+                )
+                dealt_hands = [
+                    random_hand_cards[0:DEALT_CARDS_LEN],
+                    random_hand_cards[DEALT_CARDS_LEN:],
+                ]
+            if not hide_pone_hand:
+                print(f"{get_player_name(0):6} dealt {Hand(dealt_hands[0])}")
+            if not hide_dealer_hand:
+                print(f"{get_player_name(1):6} dealt {Hand(dealt_hands[1])}")
+            deck_less_dealt_cards = list(
+                set(deck_less_fixed_cards).difference(set(random_hand_cards))
+            )
 
-                # 15 and 31 count points
-                if play_count == FIFTEEN_COUNT:
+            if pone_kept_cards:
+                kept_pone_hand = [
+                    card for card in dealt_hands[0] if card in pone_kept_cards
+                ]
+            elif pone_select_kept_cards:
+                kept_pone_hand = pone_select_kept_cards(dealt_hands[0])
+            elif pone_dealt_cards:
+                kept_pone_hand = list(next(pone_dealt_cards_possible_keeps))
+            else:
+                raise ValueError(
+                    "Iterating through all possible kept hands not supported with non-fixed deals."
+                )
+
+            if dealer_kept_cards:
+                kept_dealer_hand = [
+                    card for card in dealt_hands[1] if card in dealer_kept_cards
+                ]
+            elif dealer_select_kept_cards:
+                kept_dealer_hand = dealer_select_kept_cards(dealt_hands[1])
+            elif dealer_dealt_cards:
+                kept_dealer_hand = list(next(dealer_dealt_cards_possible_keeps))
+            else:
+                raise ValueError(
+                    "Iterating through all possible kept hands not supported with non-fixed deals."
+                )
+
+            kept_hands = [kept_pone_hand, kept_dealer_hand]
+            hands = [kept_hand.copy() for kept_hand in kept_hands]
+
+            pone_discarded_cards = (
+                [card for card in dealt_hands[0] if card not in pone_kept_cards]
+                if pone_kept_cards
+                else [card for card in dealt_hands[0] if card not in kept_hands[0]]
+            )
+            if not hide_pone_hand:
+                print(f"{get_player_name(0):6} discarded {Hand(pone_discarded_cards)}")
+            dealer_discarded_cards = (
+                [card for card in dealt_hands[1] if card not in dealer_kept_cards]
+                if dealer_kept_cards
+                else [card for card in dealt_hands[1] if card not in kept_hands[1]]
+            )
+            if not hide_dealer_hand:
+                print(
+                    f"{get_player_name(1):6} discarded {Hand(dealer_discarded_cards)}"
+                )
+
+            if len(hands[0]) != KEPT_CARDS_LEN or len(hands[1]) != KEPT_CARDS_LEN:
+                raise ValueError(
+                    f"Kept non-{KEPT_CARDS_LEN} number of cards in one of {Hand(hands[0])} or {Hand(hands[1])}"
+                )
+
+            if not hide_pone_hand:
+                print(f"{get_player_name(0):6} kept {Hand(hands[0])}")
+            if not hide_dealer_hand:
+                print(f"{get_player_name(1):6} kept {Hand(hands[1])}")
+
+            score = [0, 0]
+
+            starter = random.sample(deck_less_dealt_cards, 1)[0]
+            if not hide_play_actions:
+                print(f"Cut/starter card is: {starter}")
+            if starter.index == 10:
+                if not hide_play_actions:
+                    print(f"His heels/nibs for 2 for {get_player_name(1)}")
+                score[1] += 2
+
+            player_to_play = 0
+            play_count = 0
+            consecutive_go_count = 0
+            most_recently_played_index = None
+            most_recently_played_index_count = 0
+            current_play_plays = []
+            while hands[0] or hands[1]:
+                playable_cards = [
+                    card
+                    for card in hands[player_to_play]
+                    if play_count + card.count <= 31
+                ]
+
+                if playable_cards:
+                    player_to_play_play = playable_cards[
+                        pone_select_play(playable_cards)
+                        if player_to_play == 0
+                        else dealer_select_play(playable_cards)
+                    ]
+                    hands[player_to_play].remove(player_to_play_play)
+                    current_play_plays.append(player_to_play_play)
+                    play_count += player_to_play_play.count
                     if not hide_play_actions:
                         print(
-                            f"!{FIFTEEN_COUNT} for 2 points for {get_player_name(player_to_play)}."
+                            f"{get_player_name(player_to_play):6} plays {player_to_play_play} for {play_count}"
                         )
-                    score[player_to_play] += FIFTEENS_POINTS
-                elif play_count == 31:
-                    if not hide_play_actions:
-                        print(f"!31 for 1 point for {get_player_name(player_to_play)}.")
-                    score[player_to_play] += 1
 
-                # Runs points
-                for run_length in reversed(range(3, len(current_play_plays) + 1)):
-                    sorted_recent_play_indices = sorted(
-                        [play.index for play in current_play_plays[-run_length:]]
-                    )
-                    adjacent_index_count = 0
-                    for play_index in range(run_length - 1):
-                        diff_with_next = (
-                            sorted_recent_play_indices[play_index + 1]
-                            - sorted_recent_play_indices[play_index]
-                        )
-                        if diff_with_next == 1:
-                            adjacent_index_count += 1
-                    if adjacent_index_count == run_length - 1:
+                    # Pairs points
+                    if player_to_play_play.index == most_recently_played_index:
+                        most_recently_played_index_count += 1
+                        if most_recently_played_index_count == 4:
+                            if not hide_play_actions:
+                                print(
+                                    f"!Double pairs royale for 12 points for {get_player_name(player_to_play)}."
+                                )
+                            score[player_to_play] += 12
+                        elif most_recently_played_index_count == 3:
+                            if not hide_play_actions:
+                                print(
+                                    f"!Pairs royale for 6 points for {get_player_name(player_to_play)}."
+                                )
+                            score[player_to_play] += 6
+                        elif most_recently_played_index_count == 2:
+                            if not hide_play_actions:
+                                print(
+                                    f"!Pair for 2 points for {get_player_name(player_to_play)}."
+                                )
+                            score[player_to_play] += PAIR_POINTS
+                    else:
+                        most_recently_played_index = player_to_play_play.index
+                        most_recently_played_index_count = 1
+
+                    # 15 and 31 count points
+                    if play_count == FIFTEEN_COUNT:
                         if not hide_play_actions:
                             print(
-                                f"!Run for {run_length} points for {get_player_name(player_to_play)}."
+                                f"!{FIFTEEN_COUNT} for 2 points for {get_player_name(player_to_play)}."
                             )
-                        score[player_to_play] += run_length
-                        break
+                        score[player_to_play] += FIFTEENS_POINTS
+                    elif play_count == 31:
+                        if not hide_play_actions:
+                            print(
+                                f"!31 for 1 point for {get_player_name(player_to_play)}."
+                            )
+                        score[player_to_play] += 1
 
-                consecutive_go_count = 0
-            else:
-                if not hide_play_actions:
-                    print(f'{get_player_name(player_to_play):6} says "Go!"')
-                consecutive_go_count += 1
-                if consecutive_go_count == 2:
-                    if not hide_play_actions:
-                        print(f"!Go for 1 point for {get_player_name(player_to_play)}.")
-                    score[player_to_play] += 1
+                    # Runs points
+                    for run_length in reversed(range(3, len(current_play_plays) + 1)):
+                        sorted_recent_play_indices = sorted(
+                            [play.index for play in current_play_plays[-run_length:]]
+                        )
+                        adjacent_index_count = 0
+                        for play_index in range(run_length - 1):
+                            diff_with_next = (
+                                sorted_recent_play_indices[play_index + 1]
+                                - sorted_recent_play_indices[play_index]
+                            )
+                            if diff_with_next == 1:
+                                adjacent_index_count += 1
+                        if adjacent_index_count == run_length - 1:
+                            if not hide_play_actions:
+                                print(
+                                    f"!Run for {run_length} points for {get_player_name(player_to_play)}."
+                                )
+                            score[player_to_play] += run_length
+                            break
 
-                    if not hide_play_actions:
-                        print("---resetting play count to 0---")
                     consecutive_go_count = 0
-                    play_count = 0
-                    current_play_plays = []
-                    most_recently_played_index = None
-                    most_recently_played_index_count = 0
+                else:
+                    if not hide_play_actions:
+                        print(f'{get_player_name(player_to_play):6} says "Go!"')
+                    consecutive_go_count += 1
+                    if consecutive_go_count == 2:
+                        if not hide_play_actions:
+                            print(
+                                f"!Go for 1 point for {get_player_name(player_to_play)}."
+                            )
+                        score[player_to_play] += 1
 
-            player_to_play = (player_to_play + 1) % 2
+                        if not hide_play_actions:
+                            print("---resetting play count to 0---")
+                        consecutive_go_count = 0
+                        play_count = 0
+                        current_play_plays = []
+                        most_recently_played_index = None
+                        most_recently_played_index_count = 0
 
-        # Last Card points
-        last_player_to_play = (player_to_play + 1) % 2
-        if not hide_play_actions:
-            print(f"!Last card for 1 point for {get_player_name(last_player_to_play)}.")
-        score[last_player_to_play] += 1
+                player_to_play = (player_to_play + 1) % 2
 
-        pone_hand_points = score_hand(kept_hands[0], starter)
-        if not hide_play_actions:
-            print(
-                f"Pone hand {Hand(reversed(sorted(kept_hands[0])))} with starter {starter} points: {pone_hand_points}"
-            )
-
-        dealer_hand_points = score_hand(kept_hands[1], starter)
-        if not hide_play_actions:
-            print(
-                f"Dealer hand {Hand(reversed(sorted(kept_hands[1])))} with starter {starter} points: {dealer_hand_points}"
-            )
-
-        crib_cards = pone_discarded_cards + dealer_discarded_cards
-        crib_points = score_hand(crib_cards, starter, is_crib=True)
-        if not hide_play_actions:
-            print(
-                f"Crib {Hand(reversed(sorted(crib_cards)))} with starter {starter} points: {crib_points}"
-            )
-
-        if not hide_play_actions:
-            print(f"Hand cut + play + hands + crib score: {score}")
-
-        if pone_dealt_cards and not pone_kept_cards:
-            kept_cards = tuple(kept_pone_hand)
-        elif dealer_dealt_cards and not dealer_kept_cards:
-            kept_cards = tuple(kept_dealer_hand)
-        else:
-            kept_cards = None
-
-        statistics_push(pone_play_statistics, kept_cards, score[0])
-        statistics_push(pone_hand_statistics, kept_cards, pone_hand_points)
-        statistics_push(pone_statistics, kept_cards, pone_hand_points)
-        statistics_push(dealer_play_statistics, kept_cards, score[1])
-        statistics_push(dealer_hand_statistics, kept_cards, dealer_hand_points)
-        statistics_push(crib_statistics, kept_cards, crib_points)
-        statistics_push(
-            dealer_statistics, kept_cards, score[1] + dealer_hand_points + crib_points
-        )
-        statistics_push(
-            pone_minus_dealer_play_statistics, kept_cards, score[0] - score[1]
-        )
-        statistics_push(
-            pone_minus_dealer_statistics,
-            kept_cards,
-            score[0] + pone_hand_points - score[1] - dealer_hand_points - crib_points,
-        )
-
-        if (
-            hand % hands_per_update == hands_per_update - 1
-            or hand == process_hand_count - 1
-        ):
-            players_statistics_lock.acquire()
-
-            statistics_dict_add(players_statistics, "pone_play", pone_play_statistics)
-            pone_play_statistics.clear()
-
-            statistics_dict_add(players_statistics, "pone_hand", pone_hand_statistics)
-            pone_hand_statistics.clear()
-
-            statistics_dict_add(players_statistics, "pone", pone_statistics)
-            pone_statistics.clear()
-
-            statistics_dict_add(
-                players_statistics, "dealer_play", dealer_play_statistics
-            )
-            dealer_play_statistics.clear()
-
-            statistics_dict_add(
-                players_statistics, "dealer_hand", dealer_hand_statistics
-            )
-            dealer_hand_statistics.clear()
-
-            statistics_dict_add(players_statistics, "crib", crib_statistics)
-            crib_statistics.clear()
-
-            statistics_dict_add(players_statistics, "dealer", dealer_statistics)
-            dealer_statistics.clear()
-
-            statistics_dict_add(
-                players_statistics,
-                "pone_minus_dealer_play",
-                pone_minus_dealer_play_statistics,
-            )
-            pone_minus_dealer_play_statistics.clear()
-
-            statistics_dict_add(
-                players_statistics, "pone_minus_dealer", pone_minus_dealer_statistics
-            )
-            pone_minus_dealer_statistics.clear()
-
-            players_statistics_length = len(players_statistics[kept_cards]["pone"])
-            z_statistic = NormalDist().inv_cdf(1 - (1 - confidence_level / 100) / 2)
-
-            # TODO: calculate correlation based on overall stats and per keep, not interval stats
-            # if players_statistics_length > 1:
-            #     dealer_stddev = players_statistics["dealer"].stddev()
-            #     pone_stddev = players_statistics["pone"].stddev()
-            #     pone_minus_dealer_stddev = players_statistics[
-            #         "pone_minus_dealer"
-            #     ].stddev()
-            # else:
-            #     dealer_stddev, pone_stddev, pone_minus_dealer_stddev = 0, 0, 0
-            # correlation = (
-            #     (pone_minus_dealer_stddev ** 2 - pone_stddev ** 2 - dealer_stddev ** 2)
-            #     / (2 * pone_stddev * dealer_stddev)
-            #     if pone_stddev != 0 and dealer_stddev != 0
-            #     else None
-            # )
-
-            if players_statistics_length > 1:
+            # Last Card points
+            last_player_to_play = (player_to_play + 1) % 2
+            if not hide_play_actions:
                 print(
-                    f"Mean play statistics {confidence_level}% confidence intervals ({formatted_hand_count(players_statistics_length, overall_hand_count)}):"
+                    f"!Last card for 1 point for {get_player_name(last_player_to_play)}."
                 )
+            score[last_player_to_play] += 1
+
+            pone_hand_points = score_hand(kept_hands[0], starter)
+            if not hide_play_actions:
+                print(
+                    f"Pone hand {Hand(reversed(sorted(kept_hands[0])))} with starter {starter} points: {pone_hand_points}"
+                )
+
+            dealer_hand_points = score_hand(kept_hands[1], starter)
+            if not hide_play_actions:
+                print(
+                    f"Dealer hand {Hand(reversed(sorted(kept_hands[1])))} with starter {starter} points: {dealer_hand_points}"
+                )
+
+            crib_cards = pone_discarded_cards + dealer_discarded_cards
+            crib_points = score_hand(crib_cards, starter, is_crib=True)
+            if not hide_play_actions:
+                print(
+                    f"Crib {Hand(reversed(sorted(crib_cards)))} with starter {starter} points: {crib_points}"
+                )
+
+            if not hide_play_actions:
+                print(f"Hand cut + play + hands + crib score: {score}")
+
+            if pone_dealt_cards and not pone_kept_cards:
+                kept_cards = tuple(kept_pone_hand)
+            elif dealer_dealt_cards and not dealer_kept_cards:
+                kept_cards = tuple(kept_dealer_hand)
             else:
-                print(f"Mean play statistics:")
+                kept_cards = None
 
-            for keep, keep_stats in sorted(
-                players_statistics.items(),
-                key=lambda item: item[1]["pone_minus_dealer"].mean(),
-                reverse=bool(dealer_dealt_cards),
+            statistics_push(pone_play_statistics, kept_cards, score[0])
+            statistics_push(pone_hand_statistics, kept_cards, pone_hand_points)
+            statistics_push(pone_statistics, kept_cards, pone_hand_points)
+            statistics_push(dealer_play_statistics, kept_cards, score[1])
+            statistics_push(dealer_hand_statistics, kept_cards, dealer_hand_points)
+            statistics_push(crib_statistics, kept_cards, crib_points)
+            statistics_push(
+                dealer_statistics,
+                kept_cards,
+                score[1] + dealer_hand_points + crib_points,
+            )
+            statistics_push(
+                pone_minus_dealer_play_statistics, kept_cards, score[0] - score[1]
+            )
+            statistics_push(
+                pone_minus_dealer_statistics,
+                kept_cards,
+                score[0]
+                + pone_hand_points
+                - score[1]
+                - dealer_hand_points
+                - crib_points,
+            )
+
+            if (
+                hand % hands_per_update == hands_per_update - 1
+                or hand == process_hand_count - 1
             ):
-                if keep:
-                    print(
-                        f"For kept {Hand(keep)}, discard {Hand(set(pone_dealt_cards or dealer_dealt_cards) - set(keep))}: "
-                    )
-                print(
-                    f"Pone              Play    points: {get_confidence_interval(keep_stats['pone_play'], confidence_level)}"
-                )
-                print(
-                    f"Dealer            Play    points: {get_confidence_interval(keep_stats['dealer_play'], confidence_level)}"
-                )
-                print(
-                    f"Pone minus Dealer Play    points: {get_confidence_interval(keep_stats['pone_minus_dealer_play'], confidence_level)}"
-                )
-                print(
-                    f"Pone              Hand    points: {get_confidence_interval(keep_stats['pone_hand'], confidence_level)}"
-                )
-                print(
-                    f"Pone              Overall points: {get_confidence_interval(keep_stats['pone'], confidence_level)}"
-                )
-                print(
-                    f"Dealer            Hand    points: {get_confidence_interval(keep_stats['dealer_hand'], confidence_level)}"
-                )
-                print(
-                    f"Crib              Hand    points: {get_confidence_interval(keep_stats['crib'], confidence_level)}"
-                )
-                print(
-                    f"Dealer            Overall points: {get_confidence_interval(keep_stats['dealer'], confidence_level)}"
-                )
-                print(
-                    f"Pone minus Dealer Overall points: {get_confidence_interval(keep_stats['pone_minus_dealer'], confidence_level)}"
-                )
+                players_statistics_lock.acquire()
 
-            # correlation_str = f"{correlation:+8.5f}" if correlation else "undefined"
-            # print(f"Pone   and Dealer Overall points correlation: {correlation_str}")
-            players_statistics_lock.release()
+                statistics_dict_add(
+                    players_statistics, "pone_play", pone_play_statistics
+                )
+                pone_play_statistics.clear()
+
+                statistics_dict_add(
+                    players_statistics, "pone_hand", pone_hand_statistics
+                )
+                pone_hand_statistics.clear()
+
+                statistics_dict_add(players_statistics, "pone", pone_statistics)
+                pone_statistics.clear()
+
+                statistics_dict_add(
+                    players_statistics, "dealer_play", dealer_play_statistics
+                )
+                dealer_play_statistics.clear()
+
+                statistics_dict_add(
+                    players_statistics, "dealer_hand", dealer_hand_statistics
+                )
+                dealer_hand_statistics.clear()
+
+                statistics_dict_add(players_statistics, "crib", crib_statistics)
+                crib_statistics.clear()
+
+                statistics_dict_add(players_statistics, "dealer", dealer_statistics)
+                dealer_statistics.clear()
+
+                statistics_dict_add(
+                    players_statistics,
+                    "pone_minus_dealer_play",
+                    pone_minus_dealer_play_statistics,
+                )
+                pone_minus_dealer_play_statistics.clear()
+
+                statistics_dict_add(
+                    players_statistics,
+                    "pone_minus_dealer",
+                    pone_minus_dealer_statistics,
+                )
+                pone_minus_dealer_statistics.clear()
+
+                players_statistics_length = len(players_statistics[kept_cards]["pone"])
+                z_statistic = NormalDist().inv_cdf(1 - (1 - confidence_level / 100) / 2)
+
+                # TODO: calculate correlation based on overall stats and per keep, not interval stats
+                # if players_statistics_length > 1:
+                #     dealer_stddev = players_statistics["dealer"].stddev()
+                #     pone_stddev = players_statistics["pone"].stddev()
+                #     pone_minus_dealer_stddev = players_statistics[
+                #         "pone_minus_dealer"
+                #     ].stddev()
+                # else:
+                #     dealer_stddev, pone_stddev, pone_minus_dealer_stddev = 0, 0, 0
+                # correlation = (
+                #     (pone_minus_dealer_stddev ** 2 - pone_stddev ** 2 - dealer_stddev ** 2)
+                #     / (2 * pone_stddev * dealer_stddev)
+                #     if pone_stddev != 0 and dealer_stddev != 0
+                #     else None
+                # )
+
+                if players_statistics_length > 1:
+                    print(
+                        f"Mean play statistics {confidence_level}% confidence intervals ({formatted_hand_count(players_statistics_length, overall_hand_count)}):"
+                    )
+                else:
+                    print(f"Mean play statistics:")
+
+                for keep, keep_stats in sorted(
+                    players_statistics.items(),
+                    key=lambda item: item[1]["pone_minus_dealer"].mean(),
+                    reverse=bool(dealer_dealt_cards),
+                ):
+                    if keep:
+                        print(
+                            f"For kept {Hand(keep)}, discard {Hand(set(pone_dealt_cards or dealer_dealt_cards) - set(keep))}: "
+                        )
+                    print(
+                        f"Pone              Play    points: {get_confidence_interval(keep_stats['pone_play'], confidence_level)}"
+                    )
+                    print(
+                        f"Dealer            Play    points: {get_confidence_interval(keep_stats['dealer_play'], confidence_level)}"
+                    )
+                    print(
+                        f"Pone minus Dealer Play    points: {get_confidence_interval(keep_stats['pone_minus_dealer_play'], confidence_level)}"
+                    )
+                    print(
+                        f"Pone              Hand    points: {get_confidence_interval(keep_stats['pone_hand'], confidence_level)}"
+                    )
+                    print(
+                        f"Pone              Overall points: {get_confidence_interval(keep_stats['pone'], confidence_level)}"
+                    )
+                    print(
+                        f"Dealer            Hand    points: {get_confidence_interval(keep_stats['dealer_hand'], confidence_level)}"
+                    )
+                    print(
+                        f"Crib              Hand    points: {get_confidence_interval(keep_stats['crib'], confidence_level)}"
+                    )
+                    print(
+                        f"Dealer            Overall points: {get_confidence_interval(keep_stats['dealer'], confidence_level)}"
+                    )
+                    print(
+                        f"Pone minus Dealer Overall points: {get_confidence_interval(keep_stats['pone_minus_dealer'], confidence_level)}"
+                    )
+
+                # correlation_str = f"{correlation:+8.5f}" if correlation else "undefined"
+                # print(f"Pone   and Dealer Overall points correlation: {correlation_str}")
+                players_statistics_lock.release()
+    except KeyboardInterrupt:
+        sys.exit(0)
 
 
 def keep_random(dealt_cards):
@@ -935,8 +962,11 @@ if __name__ == "__main__":
         start_time_ns = time.time_ns()
         for process in processes:
             process.start()
-        for process in processes:
-            process.join()
+        try:
+            for process in processes:
+                process.join()
+        except KeyboardInterrupt:
+            sys.exit(0)
 
     elapsed_time_ns = time.time_ns() - start_time_ns
     ns_per_s = 1000000000
