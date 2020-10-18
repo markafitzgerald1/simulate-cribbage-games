@@ -178,13 +178,21 @@ def nobs_points(kept_hand, starter):
     return 0
 
 
-def score_hand(kept_hand, starter, is_crib=False):
-    hand_plus_starter_cards = kept_hand + [starter]
+def score_hand_and_starter(kept_hand, starter, is_crib=False):
+    hand_plus_starter_cards = [*kept_hand, starter]
     return (
         pairs_plus_runs_points(hand_plus_starter_cards)
         + fifteens_points(hand_plus_starter_cards)
         + flush_points(kept_hand, starter, is_crib=is_crib)
         + nobs_points(kept_hand, starter)
+    )
+
+
+def score_hand(kept_hand):
+    return (
+        pairs_plus_runs_points(kept_hand)
+        + fifteens_points(kept_hand)
+        + flush_points(kept_hand, starter=None)
     )
 
 
@@ -352,7 +360,7 @@ def simulate_hands(
                 )
 
             kept_hands = [kept_pone_hand, kept_dealer_hand]
-            hands = [kept_hand.copy() for kept_hand in kept_hands]
+            hands = [list(kept_hand) for kept_hand in kept_hands]
 
             pone_discarded_cards = (
                 [card for card in dealt_hands[0] if card not in pone_kept_cards]
@@ -508,20 +516,20 @@ def simulate_hands(
                 )
             score[last_player_to_play] += 1
 
-            pone_hand_points = score_hand(kept_hands[0], starter)
+            pone_hand_points = score_hand_and_starter(kept_hands[0], starter)
             if not hide_play_actions:
                 print(
                     f"Pone hand {Hand(reversed(sorted(kept_hands[0])))} with starter {starter} points: {pone_hand_points}"
                 )
 
-            dealer_hand_points = score_hand(kept_hands[1], starter)
+            dealer_hand_points = score_hand_and_starter(kept_hands[1], starter)
             if not hide_play_actions:
                 print(
                     f"Dealer hand {Hand(reversed(sorted(kept_hands[1])))} with starter {starter} points: {dealer_hand_points}"
                 )
 
             crib_cards = pone_discarded_cards + dealer_discarded_cards
-            crib_points = score_hand(crib_cards, starter, is_crib=True)
+            crib_points = score_hand_and_starter(crib_cards, starter, is_crib=True)
             if not hide_play_actions:
                 print(
                     f"Crib {Hand(reversed(sorted(crib_cards)))} with starter {starter} points: {crib_points}"
@@ -716,6 +724,20 @@ def keep_first_four(dealt_cards):
     return dealt_cards[0:KEPT_CARDS_LEN]
 
 
+def keep_max_pre_cut_points(dealt_cards):
+    scored_kept_hands = map(
+        lambda kept_hand: (score_hand(kept_hand), kept_hand),
+        itertools.combinations(dealt_cards, KEPT_CARDS_LEN),
+    )
+    max_score = -1
+    max_score_kept_hand = None
+    for score, kept_hand in scored_kept_hands:
+        if score > max_score:
+            max_score = score
+            max_score_kept_hand = kept_hand
+    return max_score_kept_hand
+
+
 def play_first(playable_cards):
     return 0
 
@@ -772,6 +794,11 @@ if __name__ == "__main__":
         action="store_true",
         help="have pone keep the first four cards dealt to pone",
     )
+    pone_discard_algorithm_group.add_argument(
+        "--pone-maximize-pre-cut-hand-points",
+        action="store_true",
+        help="have pone keep the cards which maximize points in hand before the cut",
+    )
 
     dealer_discard_algorithm_group = parser.add_mutually_exclusive_group()
     dealer_discard_algorithm_group.add_argument(
@@ -788,6 +815,11 @@ if __name__ == "__main__":
         "--dealer-keep-first-four",
         action="store_true",
         help="have dealer keep the first four cards dealt to dealer",
+    )
+    dealer_discard_algorithm_group.add_argument(
+        "--dealer-maximize-pre-cut-hand-points",
+        action="store_true",
+        help="have dealer keep the cards which maximize points in hand before the cut",
     )
 
     pone_play_algorithm_group = parser.add_mutually_exclusive_group()
@@ -935,15 +967,19 @@ if __name__ == "__main__":
         pone_select_kept_cards = keep_random
     elif args.pone_keep_each_possibility:
         pone_select_kept_cards = None
-    else:
+    elif args.pone_keep_first_four:
         pone_select_kept_cards = keep_first_four
+    else:
+        pone_select_kept_cards = keep_max_pre_cut_points
 
     if args.dealer_keep_random:
         dealer_select_kept_cards = keep_random
     elif args.dealer_keep_each_possibility:
         dealer_select_kept_cards = None
-    else:
+    elif args.dealer_keep_first_four:
         dealer_select_kept_cards = keep_first_four
+    else:
+        dealer_select_kept_cards = keep_max_pre_cut_points
 
     if args.pone_play_user_entered:
         pone_select_play = play_user_selected
