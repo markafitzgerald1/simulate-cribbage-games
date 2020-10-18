@@ -238,6 +238,10 @@ def statistics_dict_add(
         sum_stats_by_keep_by_type[keep] = new_sum_stats_for_keep
 
 
+DECK_LIST = [Card(number % 13, number // 13) for number in range(52)]
+DECK_SET = set(DECK_LIST)
+
+
 def simulate_hands(
     process_hand_count,
     overall_hand_count,
@@ -274,10 +278,9 @@ def simulate_hands(
             )
 
         deck_less_fixed_cards = [
-            Card(number % 13, number // 13)
-            for number in range(52)
-            if Card(number % 13, number // 13) not in pone_dealt_cards
-            and Card(number % 13, number // 13) not in dealer_dealt_cards
+            card
+            for card in DECK_SET
+            if card not in pone_dealt_cards and card not in dealer_dealt_cards
         ]
         (
             pone_statistics,
@@ -547,7 +550,7 @@ def simulate_hands(
 
             statistics_push(pone_play_statistics, kept_cards, score[0])
             statistics_push(pone_hand_statistics, kept_cards, pone_hand_points)
-            statistics_push(pone_statistics, kept_cards, pone_hand_points)
+            statistics_push(pone_statistics, kept_cards, score[0] + pone_hand_points)
             statistics_push(dealer_play_statistics, kept_cards, score[1])
             statistics_push(dealer_hand_statistics, kept_cards, dealer_hand_points)
             statistics_push(crib_statistics, kept_cards, crib_points)
@@ -663,9 +666,6 @@ def simulate_hands(
                 )
                 for keep, keep_stats in sorted_players_statistics:
                     if keep:
-                        # print(
-                        #     f"For kept {Hand(keep)}, discard {Hand(set(pone_dealt_cards or dealer_dealt_cards) - set(keep))}: "
-                        # )
                         print(
                             f"{Hand(keep)} - {Hand(set(pone_dealt_cards or dealer_dealt_cards) - set(keep))}: {keep_stats['pone_minus_dealer_play'].mean():+9.5f} Δ-peg + {keep_stats['pone_minus_dealer_hand'].mean():+9.5f} Δ-hand - {keep_stats['crib'].mean():+9.5f} crib = {get_confidence_interval(keep_stats['pone_minus_dealer'], confidence_level)} overall"
                         )
@@ -724,18 +724,35 @@ def keep_first_four(dealt_cards):
     return dealt_cards[0:KEPT_CARDS_LEN]
 
 
+# TODO: try adding @cache
+# TODO: create smaller flush-ignoring alternative for performant, almost as accurate < 10Mhand simulations
 def keep_max_pre_cut_points(dealt_cards):
-    scored_kept_hands = map(
-        lambda kept_hand: (score_hand(kept_hand), kept_hand),
-        itertools.combinations(dealt_cards, KEPT_CARDS_LEN),
-    )
     max_score = -1
     max_score_kept_hand = None
-    for score, kept_hand in scored_kept_hands:
+    for score, kept_hand in map(
+        lambda kept_hand: (score_hand(kept_hand), kept_hand),
+        itertools.combinations(dealt_cards, KEPT_CARDS_LEN),
+    ):
         if score > max_score:
             max_score = score
             max_score_kept_hand = kept_hand
     return max_score_kept_hand
+
+
+# TODO: try adding @cache
+# TODO: create smaller flush-ignoring alternative for performant, almost as accurate < 10Mhand simulations
+def keep_max_post_cut_hand_points(dealt_cards):
+    max_total_score = -1
+    max_total_score_kept_hand = None
+    for kept_hand in itertools.combinations(dealt_cards, KEPT_CARDS_LEN):
+        total_score = 0
+        for starter in [card for card in DECK_SET if card not in kept_hand]:
+            score = score_hand_and_starter(kept_hand, starter)
+            total_score += score
+        if total_score > max_total_score:
+            max_total_score = total_score
+            max_total_score_kept_hand = kept_hand
+    return max_total_score_kept_hand
 
 
 def play_first(playable_cards):
@@ -799,6 +816,11 @@ if __name__ == "__main__":
         action="store_true",
         help="have pone keep the cards which maximize points in hand before the cut",
     )
+    pone_discard_algorithm_group.add_argument(
+        "--pone-maximize-post-cut-hand-points",
+        action="store_true",
+        help="have pone keep the cards which maximize points in hand after the cut",
+    )
 
     dealer_discard_algorithm_group = parser.add_mutually_exclusive_group()
     dealer_discard_algorithm_group.add_argument(
@@ -820,6 +842,11 @@ if __name__ == "__main__":
         "--dealer-maximize-pre-cut-hand-points",
         action="store_true",
         help="have dealer keep the cards which maximize points in hand before the cut",
+    )
+    dealer_discard_algorithm_group.add_argument(
+        "--dealer-maximize-post-cut-hand-points",
+        action="store_true",
+        help="have dealer keep the cards which maximize points in hand after the cut",
     )
 
     pone_play_algorithm_group = parser.add_mutually_exclusive_group()
@@ -969,6 +996,8 @@ if __name__ == "__main__":
         pone_select_kept_cards = None
     elif args.pone_keep_first_four:
         pone_select_kept_cards = keep_first_four
+    elif args.pone_maximize_post_cut_hand_points:
+        pone_select_kept_cards = keep_max_post_cut_hand_points
     else:
         pone_select_kept_cards = keep_max_pre_cut_points
 
@@ -978,6 +1007,8 @@ if __name__ == "__main__":
         dealer_select_kept_cards = None
     elif args.dealer_keep_first_four:
         dealer_select_kept_cards = keep_first_four
+    elif args.dealer_maximize_post_cut_hand_points:
+        dealer_select_kept_cards = keep_max_post_cut_hand_points
     else:
         dealer_select_kept_cards = keep_max_pre_cut_points
 
