@@ -538,8 +538,12 @@ def simulate_hands(
                     f"Crib {Hand(reversed(sorted(crib_cards)))} with starter {starter} points: {crib_points}"
                 )
 
+            overall_pone_points = score[0] + pone_hand_points
+            overall_dealer_points = score[1] + dealer_hand_points + crib_points
             if not hide_play_actions:
-                print(f"Hand cut + play + hands + crib score: {score}")
+                print(
+                    f"Hand cut + play + hands + crib score: {[overall_pone_points, overall_dealer_points]}"
+                )
 
             if pone_dealt_cards and not pone_kept_cards:
                 kept_cards = tuple(kept_pone_hand)
@@ -550,14 +554,14 @@ def simulate_hands(
 
             statistics_push(pone_play_statistics, kept_cards, score[0])
             statistics_push(pone_hand_statistics, kept_cards, pone_hand_points)
-            statistics_push(pone_statistics, kept_cards, score[0] + pone_hand_points)
+            statistics_push(pone_statistics, kept_cards, overall_pone_points)
             statistics_push(dealer_play_statistics, kept_cards, score[1])
             statistics_push(dealer_hand_statistics, kept_cards, dealer_hand_points)
             statistics_push(crib_statistics, kept_cards, crib_points)
             statistics_push(
                 dealer_statistics,
                 kept_cards,
-                score[1] + dealer_hand_points + crib_points,
+                overall_dealer_points,
             )
             statistics_push(
                 pone_minus_dealer_play_statistics, kept_cards, score[0] - score[1]
@@ -570,11 +574,7 @@ def simulate_hands(
             statistics_push(
                 pone_minus_dealer_statistics,
                 kept_cards,
-                score[0]
-                + pone_hand_points
-                - score[1]
-                - dealer_hand_points
-                - crib_points,
+                overall_pone_points - overall_dealer_points,
             )
 
             if (
