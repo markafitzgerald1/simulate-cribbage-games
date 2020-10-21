@@ -756,6 +756,63 @@ def keep_max_post_cut_hand_points(dealt_cards):
     return max_total_score_kept_hand
 
 
+# TODO: try adding @cache?
+# TODO: make this faster - currently takes 9 seconds on my personal laptop to run on two dealt 6-card hands
+def keep_max_post_cut_hand_plus_or_minus_crib_points(dealt_cards, plus_crib):
+    max_average_score = -1
+    max_average_score_kept_hand = None
+    for kept_hand in itertools.combinations(dealt_cards, KEPT_CARDS_LEN):
+        discarded_dealt_cards = [card for card in dealt_cards if card not in kept_hand]
+        total_kept_hand_score = 0
+        kept_hand_count = 0
+        total_kept_hand_possible_cribs_score = 0
+        kept_hand_possible_cribs_count = 0
+        deck_less_dealt_cards = [card for card in DECK_SET if card not in dealt_cards]
+        for starter in deck_less_dealt_cards:
+            deck_less_dealt_cards_and_starter = [
+                card for card in deck_less_dealt_cards if card != starter
+            ]
+            for possible_opponent_discard in itertools.combinations(
+                deck_less_dealt_cards_and_starter, 2
+            ):
+                possible_crib = [*discarded_dealt_cards, *possible_opponent_discard]
+                kept_hand_possible_crib_score = score_hand_and_starter(
+                    possible_crib, starter, is_crib=True
+                )
+                total_kept_hand_possible_cribs_score += kept_hand_possible_crib_score
+                kept_hand_possible_cribs_count += 1
+            kept_hand_score = score_hand_and_starter(kept_hand, starter)
+            total_kept_hand_score += kept_hand_score
+            kept_hand_count += 1
+        average_hand_score = total_kept_hand_score / kept_hand_count
+        average_crib_score = (
+            (1 if plus_crib else -1)
+            * total_kept_hand_possible_cribs_score
+            / kept_hand_possible_cribs_count
+        )
+        average_score = average_hand_score + average_crib_score
+        print(
+            f"Average expected post-cut hand +/- crib points for {Hand(kept_hand)} - {Hand(discarded_dealt_cards)} is {average_hand_score:+.3f} hand {average_crib_score:+.3f} crib = {average_score:+.3f}"
+        )
+        if average_score > max_average_score:
+            max_average_score = average_score
+            max_average_score_kept_hand = kept_hand
+    print(
+        f"Maximum average expected post-cut hand +/- crib points for dealt hand {Hand(dealt_cards)} is {max_average_score:+.3f} for kept hand {Hand(max_average_score_kept_hand)}"
+    )
+    return max_average_score_kept_hand
+
+
+def keep_max_post_cut_hand_minus_crib_points(dealt_cards):
+    return keep_max_post_cut_hand_plus_or_minus_crib_points(
+        dealt_cards, plus_crib=False
+    )
+
+
+def keep_max_post_cut_hand_plus_crib_points(dealt_cards):
+    return keep_max_post_cut_hand_plus_or_minus_crib_points(dealt_cards, plus_crib=True)
+
+
 def play_first(playable_cards):
     return 0
 
@@ -822,6 +879,11 @@ if __name__ == "__main__":
         action="store_true",
         help="have pone keep the cards which maximize points in hand after the cut",
     )
+    pone_discard_algorithm_group.add_argument(
+        "--pone-maximize-post-cut-hand-minus-crib-points",
+        action="store_true",
+        help="have pone keep the cards which maximize points in hand minus crib after the cut",
+    )
 
     dealer_discard_algorithm_group = parser.add_mutually_exclusive_group()
     dealer_discard_algorithm_group.add_argument(
@@ -848,6 +910,11 @@ if __name__ == "__main__":
         "--dealer-maximize-post-cut-hand-points",
         action="store_true",
         help="have dealer keep the cards which maximize points in hand after the cut",
+    )
+    dealer_discard_algorithm_group.add_argument(
+        "--dealer-maximize-post-cut-hand-plus-crib-points",
+        action="store_true",
+        help="have dealer keep the cards which maximize points in hand plus crib after the cut",
     )
 
     pone_play_algorithm_group = parser.add_mutually_exclusive_group()
@@ -999,6 +1066,8 @@ if __name__ == "__main__":
         pone_select_kept_cards = keep_first_four
     elif args.pone_maximize_post_cut_hand_points:
         pone_select_kept_cards = keep_max_post_cut_hand_points
+    elif args.pone_maximize_post_cut_hand_minus_crib_points:
+        pone_select_kept_cards = keep_max_post_cut_hand_minus_crib_points
     else:
         pone_select_kept_cards = keep_max_pre_cut_points
 
@@ -1010,6 +1079,8 @@ if __name__ == "__main__":
         dealer_select_kept_cards = keep_first_four
     elif args.dealer_maximize_post_cut_hand_points:
         dealer_select_kept_cards = keep_max_post_cut_hand_points
+    elif args.dealer_maximize_post_cut_hand_plus_crib_points:
+        dealer_select_kept_cards = keep_max_post_cut_hand_plus_crib_points
     else:
         dealer_select_kept_cards = keep_max_pre_cut_points
 
