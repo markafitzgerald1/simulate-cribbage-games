@@ -753,7 +753,6 @@ def keep_first_four(dealt_cards):
     return dealt_cards[0:KEPT_CARDS_LEN]
 
 
-# TODO: try adding @cache
 # TODO: create smaller flush-ignoring alternative for performant, almost as accurate < 10Mhand simulations
 def keep_max_pre_cut_points(dealt_cards):
     max_score = -1
@@ -768,8 +767,8 @@ def keep_max_pre_cut_points(dealt_cards):
     return max_score_kept_hand
 
 
-# TODO: try adding @cache
 # TODO: create smaller flush-ignoring alternative for performant, almost as accurate < 10Mhand simulations
+# TODO: factor out code in common with keep_max_pre_cut_points()
 def keep_max_post_cut_hand_points(dealt_cards):
     max_total_score = -1
     max_total_score_kept_hand = None
@@ -784,8 +783,8 @@ def keep_max_post_cut_hand_points(dealt_cards):
     return max_total_score_kept_hand
 
 
-# TODO: try adding @cache?
-# TODO: make this faster - currently takes 9 seconds on my personal laptop to run on two dealt 6-card hands
+# TODO: make this faster - currently takes about 5.75 seconds on my personal laptop to run on two dealt 6-card hands
+# TODO: factor out code in common with keep_max_post_cut_hand_points()
 def keep_max_post_cut_hand_plus_or_minus_crib_points(dealt_cards, plus_crib):
     max_average_score = -1
     max_average_score_kept_hand = None
