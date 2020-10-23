@@ -775,8 +775,7 @@ def keep_max_post_cut_hand_points(dealt_cards):
     max_total_score_kept_hand = None
     for kept_hand in itertools.combinations(dealt_cards, KEPT_CARDS_LEN):
         total_score = 0
-        for starter in [card for card in DECK_SET if card not in kept_hand]:
-            # TODO: could create a variant here which iterates over all 45 choose 2 possible opponent crib discards and calculates + factors in expected crib value
+        for starter in [card for card in DECK_SET if card not in dealt_cards]:
             score = score_hand_and_starter(kept_hand, starter)
             total_score += score
         if total_score > max_total_score:
