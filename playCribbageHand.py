@@ -795,7 +795,9 @@ def keep_max_post_cut_hand_plus_or_minus_crib_points(dealt_cards, plus_crib):
         total_kept_hand_possible_cribs_score = 0
         kept_hand_possible_cribs_count = 0
         deck_less_dealt_cards = [card for card in DECK_SET if card not in dealt_cards]
+        # TODO: create variant which instead calculates and caches expected crib value of discarded_dealt_cards - 52choose2 = 1326 entries
         for starter in deck_less_dealt_cards:
+            # TODO: create variant which instead calculates and caches expected crib value of discarded_dealt_cards given starter 'starter' - 52choose3 = 22100 entries
             deck_less_dealt_cards_and_starter = [
                 card for card in deck_less_dealt_cards if card != starter
             ]
