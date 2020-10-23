@@ -15,6 +15,13 @@ import itertools
 from functools import cache
 
 
+MAX_CARD_COUNTING_VALUE = 10
+
+
+def index_count(index):
+    return min(index + 1, MAX_CARD_COUNTING_VALUE)
+
+
 class Card:
     """A French playing card"""
 
@@ -25,7 +32,7 @@ class Card:
     def __init__(self, index, suit):
         self.index = index
         self.suit = suit
-        self.count = min(index + 1, 10)
+        self.count = index_count(index)
         self.str = f"{Card.indices[index]}{Card.suits[suit]}"
 
     @classmethod
@@ -188,11 +195,26 @@ def score_hand_and_starter(kept_hand, starter, is_crib=False):
     )
 
 
-def score_hand(kept_hand):
+@cache
+def pairs_runs_and_fifteens_points_internal(sorted_kept_hand_indices):
     return (
-        pairs_plus_runs_points(kept_hand)
-        + fifteens_points(kept_hand)
-        + flush_points(kept_hand, starter=None)
+        pairs_points(sorted_kept_hand_indices)
+        + runs_points(sorted_kept_hand_indices)
+        + hand_counts_fifteens_points(
+            tuple(index_count(index) for index in sorted_kept_hand_indices)
+        )
+    )
+
+
+def pairs_runs_and_fifteens_points(kept_hand):
+    return pairs_runs_and_fifteens_points_internal(
+        tuple(sorted([card.index for card in kept_hand]))
+    )
+
+
+def score_hand(kept_hand):
+    return pairs_runs_and_fifteens_points(kept_hand) + flush_points(
+        kept_hand, starter=None
     )
 
 
@@ -712,6 +734,14 @@ def simulate_hands(
                 # correlation_str = f"{correlation:+8.5f}" if correlation else "undefined"
                 # print(f"Pone   and Dealer Overall points correlation: {correlation_str}")
                 players_statistics_lock.release()
+
+                # print("pairs_points:", pairs_points.cache_info())
+                # print("runs_points:", runs_points.cache_info())
+                # print("fifteens_points:", hand_counts_fifteens_points.cache_info())
+                # print(
+                #     "pairs, runs and fifteens points:",
+                #     pairs_runs_and_fifteens_points_internal.cache_info(),
+                # )
     except KeyboardInterrupt:
         sys.exit(0)
 
