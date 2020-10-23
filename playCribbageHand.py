@@ -96,7 +96,7 @@ KEPT_CARDS_LEN = 4
 
 
 @cache
-def hand_counts_fifteens_points(sorted_hand_plus_starter_counts):
+def cached_fifteens_points(sorted_hand_plus_starter_counts):
     return FIFTEENS_POINTS * sum(
         map(
             lambda subset: sum(subset) == FIFTEEN_COUNT,
@@ -112,7 +112,7 @@ def fifteens_points(hand_plus_starter_cards):
     sorted_hand_plus_starter_counts = tuple(
         sorted([c.count for c in hand_plus_starter_cards])
     )
-    return hand_counts_fifteens_points(sorted_hand_plus_starter_counts)
+    return cached_fifteens_points(sorted_hand_plus_starter_counts)
 
 
 @cache
@@ -185,30 +185,29 @@ def nobs_points(kept_hand, starter):
     return 0
 
 
-def score_hand_and_starter(kept_hand, starter, is_crib=False):
-    hand_plus_starter_cards = [*kept_hand, starter]
-    return (
-        pairs_plus_runs_points(hand_plus_starter_cards)
-        + fifteens_points(hand_plus_starter_cards)
-        + flush_points(kept_hand, starter, is_crib=is_crib)
-        + nobs_points(kept_hand, starter)
-    )
-
-
 @cache
-def pairs_runs_and_fifteens_points_internal(sorted_kept_hand_indices):
+def cached_pairs_runs_and_fifteens_points(sorted_kept_hand_indices):
     return (
         pairs_points(sorted_kept_hand_indices)
         + runs_points(sorted_kept_hand_indices)
-        + hand_counts_fifteens_points(
+        + cached_fifteens_points(
             tuple(index_count(index) for index in sorted_kept_hand_indices)
         )
     )
 
 
 def pairs_runs_and_fifteens_points(kept_hand):
-    return pairs_runs_and_fifteens_points_internal(
+    return cached_pairs_runs_and_fifteens_points(
         tuple(sorted([card.index for card in kept_hand]))
+    )
+
+
+def score_hand_and_starter(kept_hand, starter, is_crib=False):
+    hand_plus_starter_cards = [*kept_hand, starter]
+    return (
+        pairs_runs_and_fifteens_points(hand_plus_starter_cards)
+        + flush_points(kept_hand, starter, is_crib=is_crib)
+        + nobs_points(kept_hand, starter)
     )
 
 
@@ -735,13 +734,13 @@ def simulate_hands(
                 # print(f"Pone   and Dealer Overall points correlation: {correlation_str}")
                 players_statistics_lock.release()
 
-                # print("pairs_points:", pairs_points.cache_info())
-                # print("runs_points:", runs_points.cache_info())
-                # print("fifteens_points:", hand_counts_fifteens_points.cache_info())
-                # print(
-                #     "pairs, runs and fifteens points:",
-                #     pairs_runs_and_fifteens_points_internal.cache_info(),
-                # )
+                print("pairs_points:", pairs_points.cache_info())
+                print("runs_points:", runs_points.cache_info())
+                print("fifteens_points:", cached_fifteens_points.cache_info())
+                print(
+                    "pairs, runs and fifteens points:",
+                    cached_pairs_runs_and_fifteens_points.cache_info(),
+                )
     except KeyboardInterrupt:
         sys.exit(0)
 
