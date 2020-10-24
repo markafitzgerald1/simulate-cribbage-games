@@ -337,10 +337,12 @@ def simulate_hands(
                 random_hand_cards = random.sample(
                     deck_less_fixed_cards, DEALT_CARDS_LEN
                 )
-                if pone_dealt_cards:
-                    dealt_hands = [pone_dealt_cards.copy(), random_hand_cards]
-                else:
-                    dealt_hands = [random_hand_cards, dealer_dealt_cards.copy()]
+                dealt_hands = [
+                    pone_dealt_cards.copy() if pone_dealt_cards else random_hand_cards,
+                    dealer_dealt_cards.copy()
+                    if dealer_dealt_cards
+                    else random_hand_cards,
+                ]
             else:
                 random_hand_cards = random.sample(
                     deck_less_fixed_cards, DEALT_CARDS_LEN * 2
@@ -1035,12 +1037,11 @@ if __name__ == "__main__":
         default=95,
     )
 
-    specified_dealt_cards_group = parser.add_mutually_exclusive_group()
-    specified_dealt_cards_group.add_argument(
+    parser.add_argument(
         "--pone-dealt-cards",
         help="cards dealt to pone",
     )
-    specified_dealt_cards_group.add_argument(
+    parser.add_argument(
         "--dealer-dealt-cards",
         help="cards dealt to dealer",
     )
