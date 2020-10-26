@@ -5,7 +5,7 @@
 import sys
 import random
 import time
-from multiprocessing import Process, cpu_count, Manager, Lock
+from multiprocessing import Process, Manager, Lock
 import math
 import argparse
 import os
@@ -743,6 +743,10 @@ def simulate_hands(
                     "pairs, runs and fifteens points:",
                     cached_pairs_runs_and_fifteens_points.cache_info(),
                 )
+                print(
+                    "max kept pre-cut points ignoring suit",
+                    cached_keep_max_pre_cut_points_ignoring_suit.cache_info(),
+                )
     except KeyboardInterrupt:
         sys.exit(0)
 
@@ -755,7 +759,32 @@ def keep_first_four(dealt_cards):
     return dealt_cards[0:KEPT_CARDS_LEN]
 
 
-# TODO: create smaller flush-ignoring alternative for performant, almost as accurate < 10Mhand simulations
+@cache
+def cached_keep_max_pre_cut_points_ignoring_suit(sorted_dealt_card_indices):
+    max_score = -1
+    max_score_kept_hand = None
+    for score, kept_hand in map(
+        lambda sorted_kept_hand_indices: (
+            cached_pairs_runs_and_fifteens_points(sorted_kept_hand_indices),
+            sorted_kept_hand_indices,
+        ),
+        itertools.combinations(sorted_dealt_card_indices, KEPT_CARDS_LEN),
+    ):
+        if score > max_score:
+            max_score = score
+            max_score_kept_hand = kept_hand
+    return max_score_kept_hand
+
+
+def keep_max_pre_cut_points_ignoring_suit(dealt_cards):
+    max_score_kept_hand_indices = cached_keep_max_pre_cut_points_ignoring_suit(
+        tuple(sorted([c.index for c in dealt_cards]))
+    )
+    for kept_hand in itertools.combinations(dealt_cards, KEPT_CARDS_LEN):
+        if max_score_kept_hand_indices == tuple(sorted([c.index for c in kept_hand])):
+            return kept_hand
+
+
 def keep_max_pre_cut_points(dealt_cards):
     max_score = -1
     max_score_kept_hand = None
@@ -901,6 +930,11 @@ if __name__ == "__main__":
         help="have pone keep the first four cards dealt to pone",
     )
     pone_discard_algorithm_group.add_argument(
+        "--pone-maximize-pre-cut-hand-points-ignoring-suit",
+        action="store_true",
+        help="have pone keep the cards which maximize points in hand before the cut ignoring suit",
+    )
+    pone_discard_algorithm_group.add_argument(
         "--pone-maximize-pre-cut-hand-points",
         action="store_true",
         help="have pone keep the cards which maximize points in hand before the cut",
@@ -931,6 +965,11 @@ if __name__ == "__main__":
         "--dealer-keep-first-four",
         action="store_true",
         help="have dealer keep the first four cards dealt to dealer",
+    )
+    dealer_discard_algorithm_group.add_argument(
+        "--dealer-maximize-pre-cut-hand-points-ignoring-suit",
+        action="store_true",
+        help="have dealer keep the cards which maximize points in hand before the cut ignoring suit",
     )
     dealer_discard_algorithm_group.add_argument(
         "--dealer-maximize-pre-cut-hand-points",
@@ -1094,6 +1133,8 @@ if __name__ == "__main__":
         pone_select_kept_cards = None
     elif args.pone_keep_first_four:
         pone_select_kept_cards = keep_first_four
+    elif args.pone_maximize_pre_cut_hand_points_ignoring_suit:
+        pone_select_kept_cards = keep_max_pre_cut_points_ignoring_suit
     elif args.pone_maximize_post_cut_hand_points:
         pone_select_kept_cards = keep_max_post_cut_hand_points
     elif args.pone_maximize_post_cut_hand_minus_crib_points:
@@ -1107,6 +1148,8 @@ if __name__ == "__main__":
         dealer_select_kept_cards = None
     elif args.dealer_keep_first_four:
         dealer_select_kept_cards = keep_first_four
+    elif args.dealer_maximize_pre_cut_hand_points_ignoring_suit:
+        dealer_select_kept_cards = keep_max_pre_cut_points_ignoring_suit
     elif args.dealer_maximize_post_cut_hand_points:
         dealer_select_kept_cards = keep_max_post_cut_hand_points
     elif args.dealer_maximize_post_cut_hand_plus_crib_points:
@@ -1171,5 +1214,5 @@ if __name__ == "__main__":
     elapsed_time_ns = time.time_ns() - start_time_ns
     ns_per_s = 1000000000
     print(
-        f"Simulated {args.hand_count} hands with {args.process_count} worker processes at {args.hand_count / (elapsed_time_ns / ns_per_s):.0f} hands/s ({elapsed_time_ns / args.hand_count:.0f} ns/hand) in {elapsed_time_ns / ns_per_s} s"
+        f"Simulated {args.hand_count} hands with {args.process_count} worker processes at {args.hand_count / (elapsed_time_ns / ns_per_s):.3f} hands/s ({elapsed_time_ns / args.hand_count:.0f} ns/hand) in {elapsed_time_ns / ns_per_s} s"
     )
