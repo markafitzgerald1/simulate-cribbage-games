@@ -281,6 +281,7 @@ def simulate_hands(
     hide_play_actions,
     hands_per_update,
     confidence_level,
+    start_time_ns
 ):
     try:
         DEALT_CARDS_LEN = 6
@@ -747,6 +748,10 @@ def simulate_hands(
                     "max kept pre-cut points ignoring suit",
                     cached_keep_max_pre_cut_points_ignoring_suit.cache_info(),
                 )
+                print(
+                    f"Simulated {players_statistics_length} hands at {simulation_performance_statistics(start_time_ns, players_statistics_length)}"
+                )
+
     except KeyboardInterrupt:
         sys.exit(0)
 
@@ -901,6 +906,12 @@ def play_user_selected(playable_cards):
         except ValueError:
             print(f"{selected_card_input} is not a valid selection")
     return selected_card
+
+
+def simulation_performance_statistics(start_time_ns, hands_simulated):
+    elapsed_time_ns = time.time_ns() - start_time_ns
+    ns_per_s = 1000000000
+    return f"{hands_simulated / (elapsed_time_ns / ns_per_s):.3f} hands/s ({elapsed_time_ns / hands_simulated:.0f} ns/hand) in {elapsed_time_ns / ns_per_s} s"
 
 
 if __name__ == "__main__":
@@ -1175,6 +1186,7 @@ if __name__ == "__main__":
     else:
         dealer_select_play = play_highest_count
 
+    start_time_ns = time.time_ns()
     simulate_hands_args = (
         args.hand_count // args.process_count,
         args.hand_count,
@@ -1193,16 +1205,15 @@ if __name__ == "__main__":
         args.hide_play_actions,
         args.hands_per_update,
         args.confidence_level,
+        start_time_ns
     )
     if args.process_count == 1:
-        start_time_ns = time.time_ns()
         simulate_hands(*simulate_hands_args)
     else:
         processes = [
             Process(target=simulate_hands, args=simulate_hands_args)
             for process_number in range(args.process_count)
         ]
-        start_time_ns = time.time_ns()
         for process in processes:
             process.start()
         try:
@@ -1211,8 +1222,6 @@ if __name__ == "__main__":
         except KeyboardInterrupt:
             sys.exit(0)
 
-    elapsed_time_ns = time.time_ns() - start_time_ns
-    ns_per_s = 1000000000
     print(
-        f"Simulated {args.hand_count} hands with {args.process_count} worker processes at {args.hand_count / (elapsed_time_ns / ns_per_s):.3f} hands/s ({elapsed_time_ns / args.hand_count:.0f} ns/hand) in {elapsed_time_ns / ns_per_s} s"
+        f"Simulated {args.hand_count} hands with {args.process_count} worker processes at {simulation_performance_statistics(start_time_ns, args.hand_count)}"
     )
