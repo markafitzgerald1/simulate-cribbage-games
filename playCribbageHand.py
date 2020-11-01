@@ -766,7 +766,7 @@ def keep_first_four(dealt_cards):
 
 @cache
 def cached_keep_max_pre_cut_points_ignoring_suit(sorted_dealt_card_indices):
-    max_score = -1
+    max_score = None
     max_score_kept_hand = None
     for score, kept_hand in map(
         lambda sorted_kept_hand_indices: (
@@ -775,7 +775,7 @@ def cached_keep_max_pre_cut_points_ignoring_suit(sorted_dealt_card_indices):
         ),
         itertools.combinations(sorted_dealt_card_indices, KEPT_CARDS_LEN),
     ):
-        if score > max_score:
+        if not max_score or score > max_score:
             max_score = score
             max_score_kept_hand = kept_hand
     return max_score_kept_hand
@@ -791,13 +791,13 @@ def keep_max_pre_cut_points_ignoring_suit(dealt_cards):
 
 
 def keep_max_pre_cut_points(dealt_cards):
-    max_score = -1
+    max_score = None
     max_score_kept_hand = None
     for score, kept_hand in map(
         lambda kept_hand: (score_hand(kept_hand), kept_hand),
         itertools.combinations(dealt_cards, KEPT_CARDS_LEN),
     ):
-        if score > max_score:
+        if not max_score or score > max_score:
             max_score = score
             max_score_kept_hand = kept_hand
     return max_score_kept_hand
@@ -806,14 +806,14 @@ def keep_max_pre_cut_points(dealt_cards):
 # TODO: create smaller flush-ignoring alternative for performant, almost as accurate < 10Mhand simulations
 # TODO: factor out code in common with keep_max_pre_cut_points()
 def keep_max_post_cut_hand_points(dealt_cards):
-    max_total_score = -1
+    max_total_score = None
     max_total_score_kept_hand = None
     for kept_hand in itertools.combinations(dealt_cards, KEPT_CARDS_LEN):
         total_score = 0
         for starter in [card for card in DECK_SET if card not in dealt_cards]:
             score = score_hand_and_starter(kept_hand, starter)
             total_score += score
-        if total_score > max_total_score:
+        if not max_total_score or total_score > max_total_score:
             max_total_score = total_score
             max_total_score_kept_hand = kept_hand
     return max_total_score_kept_hand
@@ -822,7 +822,7 @@ def keep_max_post_cut_hand_points(dealt_cards):
 # TODO: make this faster - currently takes about 5.75 seconds on my personal laptop to run on two dealt 6-card hands
 # TODO: factor out code in common with keep_max_post_cut_hand_points()
 def keep_max_post_cut_hand_plus_or_minus_crib_points(dealt_cards, plus_crib):
-    max_average_score = -1
+    max_average_score = None
     max_average_score_kept_hand = None
     for kept_hand in itertools.combinations(dealt_cards, KEPT_CARDS_LEN):
         discarded_dealt_cards = [card for card in dealt_cards if card not in kept_hand]
@@ -856,15 +856,15 @@ def keep_max_post_cut_hand_plus_or_minus_crib_points(dealt_cards, plus_crib):
             / kept_hand_possible_cribs_count
         )
         average_score = average_hand_score + average_crib_score
-        print(
-            f"Average expected post-cut hand +/- crib points for {Hand(kept_hand)} - {Hand(discarded_dealt_cards)} is {average_hand_score:+.3f} hand {average_crib_score:+.3f} crib = {average_score:+.3f}"
-        )
-        if average_score > max_average_score:
+        # print(
+        #     f"Average expected post-cut hand +/- crib points for {Hand(kept_hand)} - {Hand(discarded_dealt_cards)} is {average_hand_score:+.3f} hand {average_crib_score:+.3f} crib = {average_score:+.3f}"
+        # )
+        if not max_average_score or average_score > max_average_score:
             max_average_score = average_score
             max_average_score_kept_hand = kept_hand
-    print(
-        f"Maximum average expected post-cut hand +/- crib points for dealt hand {Hand(dealt_cards)} is {max_average_score:+.3f} for kept hand {Hand(max_average_score_kept_hand)}"
-    )
+    # print(
+    #     f"Maximum average expected post-cut hand +/- crib points for dealt hand {Hand(dealt_cards)} is {max_average_score:+.3f} for kept hand {Hand(max_average_score_kept_hand)}"
+    # )
     return max_average_score_kept_hand
 
 
