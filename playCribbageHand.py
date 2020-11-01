@@ -281,7 +281,7 @@ def simulate_hands(
     hide_play_actions,
     hands_per_update,
     confidence_level,
-    start_time_ns
+    start_time_ns,
 ):
     try:
         DEALT_CARDS_LEN = 6
@@ -746,7 +746,11 @@ def simulate_hands(
                 )
                 print(
                     "max kept pre-cut points ignoring suit",
-                    cached_keep_max_pre_cut_points_ignoring_suit.cache_info(),
+                    cached_keep_max_pre_cut_hand_points_ignoring_suit.cache_info(),
+                )
+                print(
+                    "max kept post-cut points ignoring suit",
+                    cached_keep_max_post_cut_hand_points_ignoring_suit.cache_info(),
                 )
                 print(
                     f"Simulated {players_statistics_length} hands at {simulation_performance_statistics(start_time_ns, players_statistics_length)}"
@@ -765,7 +769,7 @@ def keep_first_four(dealt_cards):
 
 
 @cache
-def cached_keep_max_pre_cut_points_ignoring_suit(sorted_dealt_card_indices):
+def cached_keep_max_pre_cut_hand_points_ignoring_suit(sorted_dealt_card_indices):
     max_score = None
     max_score_kept_hand = None
     for score, kept_hand in map(
@@ -781,13 +785,19 @@ def cached_keep_max_pre_cut_points_ignoring_suit(sorted_dealt_card_indices):
     return max_score_kept_hand
 
 
-def keep_max_pre_cut_points_ignoring_suit(dealt_cards):
-    max_score_kept_hand_indices = cached_keep_max_pre_cut_points_ignoring_suit(
-        tuple(sorted([c.index for c in dealt_cards]))
+def find_kept_cards(dealt_cards, kept_indices):
+    for kept_cards in itertools.combinations(dealt_cards, KEPT_CARDS_LEN):
+        if kept_indices == tuple(sorted([c.index for c in kept_cards])):
+            return kept_cards
+
+
+def keep_max_pre_cut_hand_points_ignoring_suit(dealt_cards):
+    return find_kept_cards(
+        dealt_cards,
+        cached_keep_max_pre_cut_hand_points_ignoring_suit(
+            tuple(sorted([c.index for c in dealt_cards]))
+        ),
     )
-    for kept_hand in itertools.combinations(dealt_cards, KEPT_CARDS_LEN):
-        if max_score_kept_hand_indices == tuple(sorted([c.index for c in kept_hand])):
-            return kept_hand
 
 
 def keep_max_pre_cut_points(dealt_cards):
@@ -803,7 +813,43 @@ def keep_max_pre_cut_points(dealt_cards):
     return max_score_kept_hand
 
 
-# TODO: create smaller flush-ignoring alternative for performant, almost as accurate < 10Mhand simulations
+@cache
+def cached_keep_max_post_cut_hand_points_ignoring_suit(sorted_dealt_card_indices):
+    max_all_starters_total_score = None
+    max_all_starters_total_score_kept_hand = None
+    for sorted_kept_hand_indices in itertools.combinations(
+        sorted_dealt_card_indices, KEPT_CARDS_LEN
+    ):
+        all_starters_total_score = 0
+        for starter_index in range(13):
+            available_starter_index_count = 4 - sorted_dealt_card_indices.count(
+                starter_index
+            )
+            possible_post_cut_hand = tuple(
+                sorted([*sorted_kept_hand_indices, starter_index])
+            )
+            post_cut_score = cached_pairs_runs_and_fifteens_points(
+                possible_post_cut_hand
+            )
+            all_starters_total_score += post_cut_score * available_starter_index_count
+        if (
+            not max_all_starters_total_score
+            or all_starters_total_score > max_all_starters_total_score
+        ):
+            max_all_starters_total_score = all_starters_total_score
+            max_all_starters_total_score_kept_hand = sorted_kept_hand_indices
+    return max_all_starters_total_score_kept_hand
+
+
+def keep_max_post_cut_hand_points_ignoring_suit(dealt_cards):
+    return find_kept_cards(
+        dealt_cards,
+        cached_keep_max_post_cut_hand_points_ignoring_suit(
+            tuple(sorted([c.index for c in dealt_cards]))
+        ),
+    )
+
+
 # TODO: factor out code in common with keep_max_pre_cut_points()
 def keep_max_post_cut_hand_points(dealt_cards):
     max_total_score = None
@@ -819,6 +865,7 @@ def keep_max_post_cut_hand_points(dealt_cards):
     return max_total_score_kept_hand
 
 
+# TODO: create smaller flush-ignoring alternative for performant, almost as accurate < 10Mhand simulations
 # TODO: make this faster - currently takes about 5.75 seconds on my personal laptop to run on two dealt 6-card hands
 # TODO: factor out code in common with keep_max_post_cut_hand_points()
 def keep_max_post_cut_hand_plus_or_minus_crib_points(dealt_cards, plus_crib):
@@ -956,6 +1003,11 @@ if __name__ == "__main__":
         help="have pone keep the cards which maximize points in hand after the cut",
     )
     pone_discard_algorithm_group.add_argument(
+        "--pone-maximize-post-cut-hand-points-ignoring-suit",
+        action="store_true",
+        help="have pone keep the cards which maximize points in hand after the cut ignoring suit",
+    )
+    pone_discard_algorithm_group.add_argument(
         "--pone-maximize-post-cut-hand-minus-crib-points",
         action="store_true",
         help="have pone keep the cards which maximize points in hand minus crib after the cut",
@@ -991,6 +1043,11 @@ if __name__ == "__main__":
         "--dealer-maximize-post-cut-hand-points",
         action="store_true",
         help="have dealer keep the cards which maximize points in hand after the cut",
+    )
+    dealer_discard_algorithm_group.add_argument(
+        "--dealer-maximize-post-cut-hand-points-ignoring-suit",
+        action="store_true",
+        help="have dealer keep the cards which maximize points in hand after the cut ignoring suit",
     )
     dealer_discard_algorithm_group.add_argument(
         "--dealer-maximize-post-cut-hand-plus-crib-points",
@@ -1145,7 +1202,9 @@ if __name__ == "__main__":
     elif args.pone_keep_first_four:
         pone_select_kept_cards = keep_first_four
     elif args.pone_maximize_pre_cut_hand_points_ignoring_suit:
-        pone_select_kept_cards = keep_max_pre_cut_points_ignoring_suit
+        pone_select_kept_cards = keep_max_pre_cut_hand_points_ignoring_suit
+    elif args.pone_maximize_post_cut_hand_points_ignoring_suit:
+        pone_select_kept_cards = keep_max_post_cut_hand_points_ignoring_suit
     elif args.pone_maximize_post_cut_hand_points:
         pone_select_kept_cards = keep_max_post_cut_hand_points
     elif args.pone_maximize_post_cut_hand_minus_crib_points:
@@ -1160,7 +1219,9 @@ if __name__ == "__main__":
     elif args.dealer_keep_first_four:
         dealer_select_kept_cards = keep_first_four
     elif args.dealer_maximize_pre_cut_hand_points_ignoring_suit:
-        dealer_select_kept_cards = keep_max_pre_cut_points_ignoring_suit
+        dealer_select_kept_cards = keep_max_pre_cut_hand_points_ignoring_suit
+    elif args.dealer_maximize_post_cut_hand_points_ignoring_suit:
+        dealer_select_kept_cards = keep_max_post_cut_hand_points_ignoring_suit
     elif args.dealer_maximize_post_cut_hand_points:
         dealer_select_kept_cards = keep_max_post_cut_hand_points
     elif args.dealer_maximize_post_cut_hand_plus_crib_points:
@@ -1205,7 +1266,7 @@ if __name__ == "__main__":
         args.hide_play_actions,
         args.hands_per_update,
         args.confidence_level,
-        start_time_ns
+        start_time_ns,
     )
     if args.process_count == 1:
         simulate_hands(*simulate_hands_args)
