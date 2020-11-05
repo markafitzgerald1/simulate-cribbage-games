@@ -470,9 +470,11 @@ def simulate_hands(
 
                 if playable_cards:
                     player_to_play_play = playable_cards[
-                        pone_select_play(playable_cards, play_count)
+                        pone_select_play(playable_cards, play_count, current_play_plays)
                         if player_to_play == 0
-                        else dealer_select_play(playable_cards, play_count)
+                        else dealer_select_play(
+                            playable_cards, play_count, current_play_plays
+                        )
                     ]
                     hands[player_to_play].remove(player_to_play_play)
                     current_play_plays.append(player_to_play_play)
@@ -1072,15 +1074,15 @@ def keep_max_post_cut_hand_plus_crib_points(dealt_cards):
     return keep_max_post_cut_hand_plus_or_minus_crib_points(dealt_cards, plus_crib=True)
 
 
-def play_first(playable_cards, current_play_count):
+def play_first(playable_cards, current_play_count, current_play_plays):
     return 0
 
 
-def play_random(playable_cards, current_play_count):
+def play_random(playable_cards, current_play_count, current_play_plays):
     return random.randrange(0, len(playable_cards))
 
 
-def play_highest_count(playable_cards, current_play_count):
+def play_highest_count(playable_cards, current_play_count, current_play_plays):
     play_card = None
     play_index = None
     for index, card in enumerate(playable_cards):
@@ -1093,11 +1095,25 @@ def play_highest_count(playable_cards, current_play_count):
 THIRTY_ONE_COUNT = 31
 
 
-def play_15_or_31_else_highest_count(playable_cards, current_play_count):
+def play_15_or_31_else_highest_count(
+    playable_cards, current_play_count, current_play_plays
+):
     for index, card in enumerate(playable_cards):
         if current_play_count + card.count in [FIFTEEN_COUNT, THIRTY_ONE_COUNT]:
             return index
-    return play_highest_count(playable_cards, current_play_count)
+    return play_highest_count(playable_cards, current_play_count, current_play_plays)
+
+
+def play_pair_else_15_or_31_else_highest_count(
+    playable_cards, current_play_count, current_play_plays
+):
+    if current_play_plays:
+        for index, card in enumerate(playable_cards):
+            if card.index == current_play_plays[-1].index:
+                return index
+    return play_15_or_31_else_highest_count(
+        playable_cards, current_play_count, current_play_plays
+    )
 
 
 def play_user_selected(playable_cards):
@@ -1248,6 +1264,10 @@ if __name__ == "__main__":
         action="store_true",
         help="have pone play 15-2 or 31 for 2 otherwise the highest count legal card from hand",
     )
+    pone_play_algorithm_group.add_argument(
+        "--pone-play-pair-else-15-or-31-else-highest-count",
+        action="store_true",
+    )
 
     dealer_play_algorithm_group = parser.add_mutually_exclusive_group()
     dealer_play_algorithm_group.add_argument(
@@ -1274,6 +1294,10 @@ if __name__ == "__main__":
         "--dealer-play-15-or-31-else-highest-count",
         action="store_true",
         help="have dealer play 15-2 or 31 for 2 otherwise the highest count legal card from hand",
+    )
+    dealer_play_algorithm_group.add_argument(
+        "--dealer-play-pair-else-15-or-31-else-highest-count",
+        action="store_true",
     )
 
     hand_count_group = parser.add_mutually_exclusive_group()
@@ -1418,6 +1442,8 @@ if __name__ == "__main__":
         pone_select_play = play_random
     elif args.pone_play_15_or_31_else_highest_count:
         pone_select_play = play_15_or_31_else_highest_count
+    elif args.pone_play_pair_else_15_or_31_else_highest_count:
+        pone_select_play = play_pair_else_15_or_31_else_highest_count
     else:
         pone_select_play = play_highest_count
 
@@ -1429,6 +1455,8 @@ if __name__ == "__main__":
         dealer_select_play = play_random
     elif args.dealer_play_15_or_31_else_highest_count:
         dealer_select_play = play_15_or_31_else_highest_count
+    elif args.dealer_play_pair_else_15_or_31_else_highest_count:
+        dealer_select_play = play_pair_else_15_or_31_else_highest_count
     else:
         dealer_select_play = play_highest_count
 
