@@ -1095,24 +1095,35 @@ def play_highest_count(playable_cards, current_play_count, current_play_plays):
 THIRTY_ONE_COUNT = 31
 
 
-def play_15_or_31_else_highest_count(
-    playable_cards, current_play_count, current_play_plays
-):
+def play_to_fixed_count(playable_cards, current_play_count, *target_play_counts):
     for index, card in enumerate(playable_cards):
-        if current_play_count + card.count in [FIFTEEN_COUNT, THIRTY_ONE_COUNT]:
+        if current_play_count + card.count in target_play_counts:
             return index
-    return play_highest_count(playable_cards, current_play_count, current_play_plays)
 
 
-def play_pair_else_15_or_31_else_highest_count(
-    playable_cards, current_play_count, current_play_plays
-):
+def play_pair(playable_cards, current_play_plays):
     if current_play_plays:
         for index, card in enumerate(playable_cards):
             if card.index == current_play_plays[-1].index:
                 return index
-    return play_15_or_31_else_highest_count(
-        playable_cards, current_play_count, current_play_plays
+
+
+def play_15_or_31_else_highest_count(
+    playable_cards, current_play_count, current_play_plays
+):
+    return play_to_fixed_count(
+        playable_cards, current_play_count, FIFTEEN_COUNT, THIRTY_ONE_COUNT
+    ) or play_highest_count(playable_cards, current_play_count, current_play_plays)
+
+
+def play_15_else_pair_else_31_else_highest_count(
+    playable_cards, current_play_count, current_play_plays
+):
+    return (
+        play_to_fixed_count(playable_cards, current_play_count, FIFTEEN_COUNT)
+        or play_pair(playable_cards, current_play_plays)
+        or play_to_fixed_count(playable_cards, current_play_count, THIRTY_ONE_COUNT)
+        or play_highest_count(playable_cards, current_play_count, current_play_plays)
     )
 
 
@@ -1265,7 +1276,7 @@ if __name__ == "__main__":
         help="have pone play 15-2 or 31 for 2 otherwise the highest count legal card from hand",
     )
     pone_play_algorithm_group.add_argument(
-        "--pone-play-pair-else-15-or-31-else-highest-count",
+        "--pone-play-15-else-pair-else-31-else-highest-count",
         action="store_true",
     )
 
@@ -1296,7 +1307,7 @@ if __name__ == "__main__":
         help="have dealer play 15-2 or 31 for 2 otherwise the highest count legal card from hand",
     )
     dealer_play_algorithm_group.add_argument(
-        "--dealer-play-pair-else-15-or-31-else-highest-count",
+        "--dealer-play-15-else-pair-else-31-else-highest-count",
         action="store_true",
     )
 
@@ -1442,8 +1453,8 @@ if __name__ == "__main__":
         pone_select_play = play_random
     elif args.pone_play_15_or_31_else_highest_count:
         pone_select_play = play_15_or_31_else_highest_count
-    elif args.pone_play_pair_else_15_or_31_else_highest_count:
-        pone_select_play = play_pair_else_15_or_31_else_highest_count
+    elif args.pone_play_15_else_pair_else_31_else_highest_count:
+        pone_select_play = play_15_else_pair_else_31_else_highest_count
     else:
         pone_select_play = play_highest_count
 
@@ -1455,8 +1466,8 @@ if __name__ == "__main__":
         dealer_select_play = play_random
     elif args.dealer_play_15_or_31_else_highest_count:
         dealer_select_play = play_15_or_31_else_highest_count
-    elif args.dealer_play_pair_else_15_or_31_else_highest_count:
-        dealer_select_play = play_pair_else_15_or_31_else_highest_count
+    elif args.dealer_play_15_else_pair_else_31_else_highest_count:
+        dealer_select_play = play_15_else_pair_else_31_else_highest_count
     else:
         dealer_select_play = play_highest_count
 
