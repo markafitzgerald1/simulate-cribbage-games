@@ -292,6 +292,32 @@ DECK_LIST = [Card(number % 13, number // 13) for number in range(52)]
 DECK_SET = set(DECK_LIST)
 
 
+@cache
+def cached_get_current_play_run_length(current_play_play_indices_tuple):
+    for run_length in reversed(range(3, len(current_play_play_indices_tuple) + 1)):
+        sorted_recent_play_indices = sorted(
+            [index for index in current_play_play_indices_tuple[-run_length:]]
+        )
+        adjacent_index_count = 0
+        for play_index in range(run_length - 1):
+            diff_with_next = (
+                sorted_recent_play_indices[play_index + 1]
+                - sorted_recent_play_indices[play_index]
+            )
+            if diff_with_next == 1:
+                adjacent_index_count += 1
+        if adjacent_index_count == run_length - 1:
+            return run_length
+
+    return 0
+
+
+def get_current_play_run_length(current_play_plays):
+    return cached_get_current_play_run_length(
+        tuple([c.index for c in current_play_plays])
+    )
+
+
 def simulate_hands(
     process_hand_count,
     overall_hand_count,
@@ -523,26 +549,15 @@ def simulate_hands(
                             )
                         score[player_to_play] += 1
 
-                    # Runs points
-                    for run_length in reversed(range(3, len(current_play_plays) + 1)):
-                        sorted_recent_play_indices = sorted(
-                            [play.index for play in current_play_plays[-run_length:]]
-                        )
-                        adjacent_index_count = 0
-                        for play_index in range(run_length - 1):
-                            diff_with_next = (
-                                sorted_recent_play_indices[play_index + 1]
-                                - sorted_recent_play_indices[play_index]
+                    current_play_run_length = get_current_play_run_length(
+                        current_play_plays
+                    )
+                    if current_play_run_length:
+                        if not hide_play_actions:
+                            print(
+                                f"!Run for {current_play_run_length} points for {get_player_name(player_to_play)}."
                             )
-                            if diff_with_next == 1:
-                                adjacent_index_count += 1
-                        if adjacent_index_count == run_length - 1:
-                            if not hide_play_actions:
-                                print(
-                                    f"!Run for {run_length} points for {get_player_name(player_to_play)}."
-                                )
-                            score[player_to_play] += run_length
-                            break
+                        score[player_to_play] += current_play_run_length
 
                     consecutive_go_count = 0
                 else:
@@ -786,6 +801,10 @@ def simulate_hands(
                 print(
                     "max kept post-cut hand ± crib points ignoring suit",
                     cached_keep_max_post_cut_hand_plus_or_minus_crib_points_ignoring_suit.cache_info(),
+                )
+                print(
+                    "cached_get_current_play_run_length",
+                    cached_get_current_play_run_length.cache_info(),
                 )
 
                 print(
@@ -1137,6 +1156,31 @@ def play_15_else_pair_else_31_else_highest_count(
     )
 
 
+def play_run(playable_cards, current_play_plays):
+    best_play_index = None
+    best_play_run_length = None
+    for index, playable_card in enumerate(playable_cards):
+        play_run_length = get_current_play_run_length(
+            [*current_play_plays, playable_card]
+        )
+        if play_run_length and (
+            not best_play_index or play_run_length > best_play_run_length
+        ):
+            best_play_index = index
+            best_play_run_length = play_run_length
+    return best_play_index
+
+
+def play_run_else_15_else_pair_else_31_else_highest_count(
+    playable_cards, current_play_count, current_play_plays
+):
+    return play_run(
+        playable_cards, current_play_plays
+    ) or play_15_else_pair_else_31_else_highest_count(
+        playable_cards, current_play_count, current_play_plays
+    )
+
+
 def play_user_selected(playable_cards):
     print(f"Playable cards are {','.join([str(card) for card in playable_cards])}.")
     selected_card = None
@@ -1293,6 +1337,10 @@ if __name__ == "__main__":
         "--pone-play-15-else-pair-else-31-else-highest-count",
         action="store_true",
     )
+    pone_play_algorithm_group.add_argument(
+        "--pone-play-run-else-15-else-pair-else-31-else-highest-count",
+        action="store_true",
+    )
 
     dealer_play_algorithm_group = parser.add_mutually_exclusive_group()
     dealer_play_algorithm_group.add_argument(
@@ -1326,6 +1374,10 @@ if __name__ == "__main__":
     )
     dealer_play_algorithm_group.add_argument(
         "--dealer-play-15-else-pair-else-31-else-highest-count",
+        action="store_true",
+    )
+    dealer_play_algorithm_group.add_argument(
+        "--dealer-play-run-else-15-else-pair-else-31-else-highest-count",
         action="store_true",
     )
 
@@ -1475,6 +1527,8 @@ if __name__ == "__main__":
         pone_select_play = play_pair_else_15_or_31_else_highest_count
     elif args.pone_play_15_else_pair_else_31_else_highest_count:
         pone_select_play = play_15_else_pair_else_31_else_highest_count
+    elif args.pone_play_run_else_15_else_pair_else_31_else_highest_count:
+        pone_select_play = play_run_else_15_else_pair_else_31_else_highest_count
     else:
         pone_select_play = play_highest_count
 
@@ -1490,6 +1544,8 @@ if __name__ == "__main__":
         dealer_select_play = play_pair_else_15_or_31_else_highest_count
     elif args.dealer_play_15_else_pair_else_31_else_highest_count:
         dealer_select_play = play_15_else_pair_else_31_else_highest_count
+    elif args.dealer_play_run_else_15_else_pair_else_31_else_highest_count:
+        dealer_select_play = play_run_else_15_else_pair_else_31_else_highest_count
     else:
         dealer_select_play = play_highest_count
 
