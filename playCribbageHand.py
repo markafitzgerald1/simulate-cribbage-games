@@ -14,7 +14,18 @@ from statistics import NormalDist
 import itertools
 from functools import cache
 from collections import Counter
-from typing import Callable, Iterable, Optional, Sequence, NoReturn, NewType, List
+from typing import (
+    Callable,
+    Iterable,
+    Optional,
+    Sequence,
+    NoReturn,
+    NewType,
+    List,
+    Dict,
+    Tuple,
+    Literal,
+)
 
 
 MAX_CARD_COUNTING_VALUE = 10
@@ -326,6 +337,21 @@ PlaySelector = Callable[[Sequence[Card], PlayCount, Iterable[Card]], PlayableCar
 START_OF_PLAY_COUNT: PlayCount = PlayCount(0)
 
 
+# TODO: replace repeated constant strings with constants or Enum
+PlayerStatistic = Literal[
+    "pone_play",
+    "pone_hand",
+    "pone",
+    "dealer_play",
+    "dealer_hand",
+    "crib",
+    "dealer",
+    "pone_minus_dealer_play",
+    "pone_minus_dealer_hand",
+    "pone_minus_dealer",
+]
+
+
 def simulate_hands(
     process_hand_count,
     overall_hand_count,
@@ -367,29 +393,18 @@ def simulate_hands(
             for card in DECK_SET
             if card not in pone_dealt_cards and card not in dealer_dealt_cards
         ]
-        (
-            pone_statistics,
-            pone_play_statistics,
-            pone_hand_statistics,
-            dealer_statistics,
-            dealer_play_statistics,
-            dealer_hand_statistics,
-            crib_statistics,
-            pone_minus_dealer_play_statistics,
-            pone_minus_dealer_hand_statistics,
-            pone_minus_dealer_statistics,
-        ) = (
-            {},
-            {},
-            {},
-            {},
-            {},
-            {},
-            {},
-            {},
-            {},
-            {},
-        )
+
+        pone_statistics: Dict[Tuple[Card], Statistics] = {}
+        pone_play_statistics: Dict[Tuple[Card], Statistics] = {}
+        pone_hand_statistics: Dict[Tuple[Card], Statistics] = {}
+        dealer_statistics: Dict[Tuple[Card], Statistics] = {}
+        dealer_play_statistics: Dict[Tuple[Card], Statistics] = {}
+        dealer_hand_statistics: Dict[Tuple[Card], Statistics] = {}
+        crib_statistics: Dict[Tuple[Card], Statistics] = {}
+        pone_minus_dealer_play_statistics: Dict[Tuple[Card], Statistics] = {}
+        pone_minus_dealer_hand_statistics: Dict[Tuple[Card], Statistics] = {}
+        pone_minus_dealer_statistics: Dict[Tuple[Card], Statistics] = {}
+
         pone_dealt_cards_possible_keeps = itertools.cycle(
             itertools.combinations(pone_dealt_cards, KEPT_CARDS_LEN)
         )
@@ -1537,7 +1552,7 @@ if __name__ == "__main__":
     ]
 
     manager = Manager()
-    players_statistics = manager.dict()
+    players_statistics: Dict[PlayerStatistic, Statistics] = manager.dict()
     players_statistics_lock = Lock()
     args.hand_count = (
         sys.maxsize
