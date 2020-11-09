@@ -16,7 +16,6 @@ from functools import cache
 from collections import Counter
 from typing import (
     Callable,
-    Iterable,
     Optional,
     Sequence,
     NoReturn,
@@ -333,7 +332,7 @@ def get_current_play_run_length(current_play_plays):
 
 
 PlayableCardIndex = NewType("PlayableCardIndex", int)
-PlaySelector = Callable[[Sequence[Card], PlayCount, Iterable[Card]], PlayableCardIndex]
+PlaySelector = Callable[[Sequence[Card], PlayCount, Sequence[Card]], PlayableCardIndex]
 START_OF_PLAY_COUNT: PlayCount = PlayCount(0)
 
 
@@ -1125,7 +1124,7 @@ def keep_max_post_cut_hand_plus_crib_points(dealt_cards):
 def play_first(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
-    current_play_plays: Iterable[Card],
+    current_play_plays: Sequence[Card],
 ) -> PlayableCardIndex:
     return PlayableCardIndex(0)
 
@@ -1133,7 +1132,7 @@ def play_first(
 def play_random(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
-    current_play_plays: Iterable[Card],
+    current_play_plays: Sequence[Card],
 ) -> PlayableCardIndex:
     return PlayableCardIndex(random.randrange(0, len(playable_cards)))
 
@@ -1141,7 +1140,7 @@ def play_random(
 def play_highest_count(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
-    current_play_plays: Iterable[Card],
+    current_play_plays: Sequence[Card],
 ) -> PlayableCardIndex:
     play_card = None
     play_index = None
@@ -1167,17 +1166,20 @@ def play_to_fixed_count(
     return None
 
 
-def play_pair(playable_cards, current_play_plays):
+def play_pair(
+    playable_cards: Sequence[Card], current_play_plays: Sequence[Card]
+) -> Optional[PlayableCardIndex]:
     if current_play_plays:
         for index, card in enumerate(playable_cards):
             if card.index == current_play_plays[-1].index:
-                return index
+                return PlayableCardIndex(index)
+    return None
 
 
 def play_15_or_31_else_highest_count(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
-    current_play_plays: Iterable[Card],
+    current_play_plays: Sequence[Card],
 ) -> PlayableCardIndex:
     play_to_fixed_count_index = play_to_fixed_count(
         playable_cards, current_play_count, FIFTEEN_COUNT, THIRTY_ONE_COUNT
@@ -1190,18 +1192,25 @@ def play_15_or_31_else_highest_count(
 
 
 def play_pair_else_15_or_31_else_highest_count(
-    playable_cards, current_play_count, current_play_plays
-):
-    return play_pair(
-        playable_cards, current_play_plays
-    ) or play_15_else_pair_else_31_else_highest_count(
-        playable_cards, current_play_count, current_play_plays
+    playable_cards: Sequence[Card],
+    current_play_count: PlayCount,
+    current_play_plays: Sequence[Card],
+) -> PlayableCardIndex:
+    play_pair_index = play_pair(playable_cards, current_play_plays)
+    return (
+        play_pair_index
+        if play_pair_index is not None
+        else play_15_or_31_else_highest_count(
+            playable_cards, current_play_count, current_play_plays
+        )
     )
 
 
 def play_15_else_pair_else_31_else_highest_count(
-    playable_cards, current_play_count, current_play_plays
-):
+    playable_cards: Sequence[Card],
+    current_play_count: PlayCount,
+    current_play_plays: Sequence[Card],
+) -> PlayableCardIndex:
     return (
         play_to_fixed_count(playable_cards, current_play_count, FIFTEEN_COUNT)
         or play_pair(playable_cards, current_play_plays)
@@ -1236,7 +1245,7 @@ def play_run_else_15_else_pair_else_31_else_highest_count(
 
 
 def play_low_lead(
-    playable_cards: Iterable[Card], current_play_count: PlayCount
+    playable_cards: Sequence[Card], current_play_count: PlayCount
 ) -> Optional[PlayableCardIndex]:
     if current_play_count > 0:
         return None
@@ -1251,9 +1260,9 @@ def play_low_lead(
 
 
 def play_run_else_15_else_pair_else_31_else_low_lead_else_highest_count(
-    playable_cards: Iterable[Card],
+    playable_cards: Sequence[Card],
     current_play_count: PlayCount,
-    current_play_plays: Iterable[Card],
+    current_play_plays: Sequence[Card],
 ) -> PlayableCardIndex:
     return play_low_lead(
         playable_cards, current_play_count
@@ -1265,7 +1274,7 @@ def play_run_else_15_else_pair_else_31_else_low_lead_else_highest_count(
 def play_user_selected(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
-    current_play_plays: Iterable[Card],
+    current_play_plays: Sequence[Card],
 ) -> PlayableCardIndex:
     print(f"Playable cards are {','.join([str(card) for card in playable_cards])}.")
     selected_card: Optional[PlayableCardIndex] = None
@@ -1635,7 +1644,7 @@ if __name__ == "__main__":
             play_run_else_15_else_pair_else_31_else_low_lead_else_highest_count
         )
     else:
-        pone_select_play = play_15_or_31_else_highest_count
+        pone_select_play = play_pair_else_15_or_31_else_highest_count
 
     dealer_play_selector: PlaySelector
     if args.dealer_play_user_entered:
@@ -1661,7 +1670,7 @@ if __name__ == "__main__":
             play_run_else_15_else_pair_else_31_else_low_lead_else_highest_count
         )
     else:
-        dealer_select_play = play_15_or_31_else_highest_count
+        dealer_select_play = play_pair_else_15_or_31_else_highest_count
 
     start_time_ns = time.time_ns()
     simulate_hands_args = (
