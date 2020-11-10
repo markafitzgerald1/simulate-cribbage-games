@@ -1196,13 +1196,11 @@ def play_pair_else_15_or_31_else_highest_count(
     current_play_count: PlayCount,
     current_play_plays: Sequence[Card],
 ) -> PlayableCardIndex:
-    play_pair_index = play_pair(playable_cards, current_play_plays)
-    return (
-        play_pair_index
-        if play_pair_index is not None
-        else play_15_or_31_else_highest_count(
-            playable_cards, current_play_count, current_play_plays
-        )
+    if (play_pair_index := play_pair(playable_cards, current_play_plays)) is not None:
+        return play_pair_index
+
+    return play_15_or_31_else_highest_count(
+        playable_cards, current_play_count, current_play_plays
     )
 
 
@@ -1211,12 +1209,24 @@ def play_15_else_pair_else_31_else_highest_count(
     current_play_count: PlayCount,
     current_play_plays: Sequence[Card],
 ) -> PlayableCardIndex:
-    return (
-        play_to_fixed_count(playable_cards, current_play_count, FIFTEEN_COUNT)
-        or play_pair(playable_cards, current_play_plays)
-        or play_to_fixed_count(playable_cards, current_play_count, THIRTY_ONE_COUNT)
-        or play_highest_count(playable_cards, current_play_count, current_play_plays)
-    )
+    if (
+        play_15_index := play_to_fixed_count(
+            playable_cards, current_play_count, FIFTEEN_COUNT
+        )
+    ) is not None:
+        return play_15_index
+
+    if (play_pair_index := play_pair(playable_cards, current_play_plays)) is not None:
+        return play_pair_index
+
+    if (
+        play_31_index := play_to_fixed_count(
+            playable_cards, current_play_count, THIRTY_ONE_COUNT
+        )
+    ) is not None:
+        return play_31_index
+
+    return play_highest_count(playable_cards, current_play_count, current_play_plays)
 
 
 def play_run(playable_cards, current_play_plays):
@@ -1644,7 +1654,7 @@ if __name__ == "__main__":
             play_run_else_15_else_pair_else_31_else_low_lead_else_highest_count
         )
     else:
-        pone_select_play = play_pair_else_15_or_31_else_highest_count
+        pone_select_play = play_15_else_pair_else_31_else_highest_count
 
     dealer_play_selector: PlaySelector
     if args.dealer_play_user_entered:
@@ -1670,7 +1680,7 @@ if __name__ == "__main__":
             play_run_else_15_else_pair_else_31_else_low_lead_else_highest_count
         )
     else:
-        dealer_select_play = play_pair_else_15_or_31_else_highest_count
+        dealer_select_play = play_15_else_pair_else_31_else_highest_count
 
     start_time_ns = time.time_ns()
     simulate_hands_args = (
