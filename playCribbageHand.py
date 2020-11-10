@@ -1268,7 +1268,7 @@ def play_low_lead(
     play_card: Optional[Card] = None
     play_index: Optional[PlayableCardIndex] = None
     for index, card in enumerate(playable_cards):
-        if not play_card or (card.count < 5 and card.count > play_card.count):
+        if card.count < 5 and (play_card is None or card.count > play_card.count):
             play_card = card
             play_index = PlayableCardIndex(index)
     return play_index
