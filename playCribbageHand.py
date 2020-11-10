@@ -1229,17 +1229,19 @@ def play_15_else_pair_else_31_else_highest_count(
     return play_highest_count(playable_cards, current_play_count, current_play_plays)
 
 
-def play_run(playable_cards, current_play_plays):
-    best_play_index = None
-    best_play_run_length = None
+def play_run(
+    playable_cards: Sequence[Card], current_play_plays: Sequence[Card]
+) -> Optional[PlayableCardIndex]:
+    best_play_index: Optional[PlayableCardIndex] = None
+    best_play_run_length: Optional[int] = None
     for index, playable_card in enumerate(playable_cards):
         play_run_length = get_current_play_run_length(
             [*current_play_plays, playable_card]
         )
         if play_run_length and (
-            not best_play_index or play_run_length > best_play_run_length
+            best_play_index is None or play_run_length > best_play_run_length
         ):
-            best_play_index = index
+            best_play_index = PlayableCardIndex(index)
             best_play_run_length = play_run_length
     return best_play_index
 
@@ -1247,9 +1249,10 @@ def play_run(playable_cards, current_play_plays):
 def play_run_else_15_else_pair_else_31_else_highest_count(
     playable_cards, current_play_count, current_play_plays
 ):
-    return play_run(
-        playable_cards, current_play_plays
-    ) or play_15_else_pair_else_31_else_highest_count(
+    if (run_index := play_run(playable_cards, current_play_plays)) is not None:
+        return run_index
+
+    return play_15_else_pair_else_31_else_highest_count(
         playable_cards, current_play_count, current_play_plays
     )
 
@@ -1269,7 +1272,7 @@ def play_low_lead(
     return play_index
 
 
-def play_run_else_15_else_pair_else_31_else_low_lead_else_highest_count(
+def play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
     current_play_plays: Sequence[Card],
@@ -1447,7 +1450,7 @@ if __name__ == "__main__":
         action="store_true",
     )
     pone_play_algorithm_group.add_argument(
-        "--pone-play-run-else-15-else-pair-else-31-else-low-lead-else-highest-count",
+        "--pone-play-low-lead-else-run-else-15-else-pair-else-31-else-highest-count",
         action="store_true",
     )
 
@@ -1490,7 +1493,7 @@ if __name__ == "__main__":
         action="store_true",
     )
     dealer_play_algorithm_group.add_argument(
-        "--dealer-play-run-else-15-else-pair-else-31-else-low-lead-else-highest-count",
+        "--dealer-play-low-lead-else-run-else-15-else-pair-else-31-else-highest-count",
         action="store_true",
     )
 
@@ -1649,9 +1652,9 @@ if __name__ == "__main__":
         pone_select_play = play_15_else_pair_else_31_else_highest_count
     elif args.pone_play_run_else_15_else_pair_else_31_else_highest_count:
         pone_select_play = play_run_else_15_else_pair_else_31_else_highest_count
-    elif args.pone_play_run_else_15_else_pair_else_31_else_low_lead_else_highest_count:
+    elif args.pone_play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count:
         pone_select_play = (
-            play_run_else_15_else_pair_else_31_else_low_lead_else_highest_count
+            play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count
         )
     else:
         pone_select_play = play_15_else_pair_else_31_else_highest_count
@@ -1674,10 +1677,10 @@ if __name__ == "__main__":
     elif args.dealer_play_run_else_15_else_pair_else_31_else_highest_count:
         dealer_select_play = play_run_else_15_else_pair_else_31_else_highest_count
     elif (
-        args.dealer_play_run_else_15_else_pair_else_31_else_low_lead_else_highest_count
+        args.dealer_play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count
     ):
         dealer_select_play = (
-            play_run_else_15_else_pair_else_31_else_low_lead_else_highest_count
+            play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count
         )
     else:
         dealer_select_play = play_15_else_pair_else_31_else_highest_count
