@@ -1247,8 +1247,10 @@ def play_run(
 
 
 def play_run_else_15_else_pair_else_31_else_highest_count(
-    playable_cards, current_play_count, current_play_plays
-):
+    playable_cards: Sequence[Card],
+    current_play_count: PlayCount,
+    current_play_plays: Sequence[Card],
+) -> PlayableCardIndex:
     if (run_index := play_run(playable_cards, current_play_plays)) is not None:
         return run_index
 
@@ -1277,9 +1279,12 @@ def play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count(
     current_play_count: PlayCount,
     current_play_plays: Sequence[Card],
 ) -> PlayableCardIndex:
-    return play_low_lead(
-        playable_cards, current_play_count
-    ) or play_run_else_15_else_pair_else_31_else_highest_count(
+    if (
+        low_lead_index := play_low_lead(playable_cards, current_play_count)
+    ) is not None:
+        return low_lead_index
+
+    return play_run_else_15_else_pair_else_31_else_highest_count(
         playable_cards, current_play_count, current_play_plays
     )
 
