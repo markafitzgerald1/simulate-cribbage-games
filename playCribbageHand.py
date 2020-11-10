@@ -1662,7 +1662,9 @@ if __name__ == "__main__":
             play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count
         )
     else:
-        pone_select_play = play_15_else_pair_else_31_else_highest_count
+        pone_select_play = (
+            play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count
+        )
 
     dealer_play_selector: PlaySelector
     if args.dealer_play_user_entered:
@@ -1688,7 +1690,9 @@ if __name__ == "__main__":
             play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count
         )
     else:
-        dealer_select_play = play_15_else_pair_else_31_else_highest_count
+        dealer_select_play = (
+            play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count
+        )
 
     start_time_ns = time.time_ns()
     simulate_hands_args = (
