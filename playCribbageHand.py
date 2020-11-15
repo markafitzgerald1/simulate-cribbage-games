@@ -1138,14 +1138,23 @@ def simulate_hands(
                         print(
                             f"{Hand(keep)} - {Hand(set(pone_dealt_cards or dealer_dealt_cards) - set(keep))}: {get_confidence_interval(keep_stats['pone_minus_dealer_game_points'], confidence_level)} game points; {keep_stats['pone_minus_dealer_play'].mean():+9.5f} Δ-peg + {keep_stats['pone_minus_dealer_hand'].mean():+9.5f} Δ-hand - {keep_stats['crib'].mean():+9.5f} crib = {get_confidence_interval(keep_stats['pone_minus_dealer'], confidence_level)} overall"
                         )
+                    # TODO: convert 0.4, 2 into command-line option
                     if (
-                        abs(
+                        0
+                        < abs(
                             keep_stats["pone_minus_dealer_game_points"].mean()
                             - sorted_players_statistics[0][1][
                                 "pone_minus_dealer_game_points"
                             ].mean()
                         )
-                        < 0.4  # TODO: convert into command-line option
+                        < 0.4
+                        or abs(
+                            keep_stats["pone_minus_dealer"].mean()
+                            - sorted_players_statistics[0][1][
+                                "pone_minus_dealer"
+                            ].mean()
+                        )
+                        < 2
                     ):
                         print(
                             f"Pone              Play    points: {get_confidence_interval(keep_stats['pone_play'], confidence_level)}"

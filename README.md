@@ -9,22 +9,22 @@ Simulate and analyze the play of cribbage hands between two opponents.
 
 ## Test
 
-- Check for type errors - should only fine one about `runstats` module not having type hints: `mypy playCribbageHand.py`
+- Check for type errors - should only find one about `runstats` module not having type hints: `mypy playCribbageHand.py`
 
 ## Use
 
 - Simulate one hand from deal to end of hand counting: `python playCribbageHand.py`
 - Help on additional simulation options: `python playCribbageHand.py --help`
 
-## Smoke Tests
+## Smoke Tests and Usage Examples
 
 All of the following should exit with status code 0 and no raised exception:
 
-- Simulate a single random hand: `python playCribbageHand.py`;
-- Simulate a fixed dealer hand and discard against random pone hands: `python playCribbageHand.py --dealer-dealt-cards AC,2D,3H,4S,5C,6D --dealer-kept-cards 3H,4S,5C,6D --pone-keep-first-four --pone-play-first --dealer-play-first --hide-pone-hand --hide-dealer-hand --hide-play-actions --hand-count 1000`;
-- Simulate a fixed pone hand and discard against random dealer hands: `python playCribbageHand.py --pone-dealt-cards AC,2D,3H,4S,5C,6D --pone-kept-cards 3H,4S,5C,6D --dealer-keep-first-four --pone-play-first --dealer-play-first --hide-pone-hand --hide-dealer-hand --hide-play-actions --hand-count 1000`;
-- Simulate all possible discards from a fixed dealer hand against random pone hands: `python playCribbageHand.py --dealer-dealt-cards AC,2D,3H,4S,5C,6D --dealer-keep-each-possibility --pone-keep-first-four --pone-play-first --dealer-play-first --hide-pone-hand --hide-dealer-hand --hide-play-actions --hand-count 1500`; and
-- Simulate all possible discards from a fixed pone hand against random dealer hands: `python playCribbageHand.py --pone-dealt-cards AC,2D,3H,4S,5C,6D --pone-keep-each-possibility --dealer-keep-first-four --hide-pone-hand --hide-dealer-hand --hide-play-actions --hand-count 1500`.
+- Simulate play of a single randomly discarded and played hand: `python playCribbageHand.py`;
+- Simulate a fixed pone hand and discard against random dealer hands: `python playCribbageHand.py --pone-dealt-cards AC,2D,3H,4S,5C,6D --pone-kept-cards 3H,4S,5C,6D --dealer-keep-first-four --pone-play-first --dealer-play-first --hide-pone-hand --hide-dealer-hand --hide-play-actions --hand-count 5000`;
+- Simulate to the end of single hand play a fixed dealer hand and discard against random pone hands: `python playCribbageHand.py --dealer-dealt-cards AC,2D,3H,4S,5C,6D --dealer-kept-cards 3H,4S,5C,6D --pone-keep-first-four --pone-play-first --dealer-play-first --hide-pone-hand --hide-dealer-hand --hide-play-actions --hand-count 5000`;
+- Simulate all possible discards from a fixed pone hand against random dealer hands: `python playCribbageHand.py --pone-dealt-cards AC,2D,3H,4S,5C,6D --pone-keep-each-possibility --dealer-keep-first-four --hide-pone-hand --hide-dealer-hand --hide-play-actions --hands-per-update 10000 --hand-count 10000`; and
+- Simulate all possible discards from a fixed dealer hand against random pone hands: `python playCribbageHand.py --dealer-dealt-cards AC,2D,3H,4S,5C,6D --dealer-keep-each-possibility --pone-keep-first-four --pone-play-first --dealer-play-first --hide-pone-hand --hide-dealer-hand --hide-play-actions --hands-per-update 10000 --hand-count 10000`.
 
 ## Long-term project goal
 
