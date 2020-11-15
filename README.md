@@ -36,7 +36,7 @@ for different possible discards or plays.
 ## Current short to medium term goals
 
 - Add play decision analysis support by allowing the set of the initial simulation state to a post-discard, start or middle of play state and then simulating all possible initial plays to the end of the hand (or multiple hands); and
-- Increase confidence in implementation by adding type hints (Python), type checking and unit tests.
+- Increase confidence in implementation by adding further type hints (Python), type checking and unit tests.
 
 ## Past project goals
 
