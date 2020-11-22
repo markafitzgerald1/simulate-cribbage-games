@@ -911,6 +911,7 @@ def simulate_hands(
     hands_per_update,
     confidence_level,
     start_time_ns,
+    show_calc_cache_usage_stats,
 ):
     try:
         if len(pone_dealt_cards) not in [0, DEALT_CARDS_LEN] or len(
@@ -1249,29 +1250,30 @@ def simulate_hands(
                 # print(f"Pone   and Dealer Overall points correlation: {correlation_str}")
                 players_statistics_lock.release()
 
-                print("pairs_points:", pairs_points.cache_info())
-                print("runs_points:", runs_points.cache_info())
-                print("fifteens_points:", cached_fifteens_points.cache_info())
-                print(
-                    "pairs, runs and fifteens points:",
-                    cached_pairs_runs_and_fifteens_points.cache_info(),
-                )
-                print(
-                    "max kept pre-cut points ignoring suit",
-                    cached_keep_max_pre_cut_hand_points_ignoring_suit.cache_info(),
-                )
-                print(
-                    "max kept post-cut points ignoring suit",
-                    cached_keep_max_post_cut_hand_points_ignoring_suit.cache_info(),
-                )
-                print(
-                    "max kept post-cut hand ± crib points ignoring suit",
-                    cached_keep_max_post_cut_hand_plus_or_minus_crib_points_ignoring_suit.cache_info(),
-                )
-                print(
-                    "cached_get_current_play_run_length",
-                    cached_get_current_play_run_length.cache_info(),
-                )
+                if show_calc_cache_usage_stats:
+                    print("pairs_points:", pairs_points.cache_info())
+                    print("runs_points:", runs_points.cache_info())
+                    print("fifteens_points:", cached_fifteens_points.cache_info())
+                    print(
+                        "pairs, runs and fifteens points:",
+                        cached_pairs_runs_and_fifteens_points.cache_info(),
+                    )
+                    print(
+                        "max kept pre-cut points ignoring suit",
+                        cached_keep_max_pre_cut_hand_points_ignoring_suit.cache_info(),
+                    )
+                    print(
+                        "max kept post-cut points ignoring suit",
+                        cached_keep_max_post_cut_hand_points_ignoring_suit.cache_info(),
+                    )
+                    print(
+                        "max kept post-cut hand ± crib points ignoring suit",
+                        cached_keep_max_post_cut_hand_plus_or_minus_crib_points_ignoring_suit.cache_info(),
+                    )
+                    print(
+                        "cached_get_current_play_run_length",
+                        cached_get_current_play_run_length.cache_info(),
+                    )
 
                 print(
                     f"Simulated {players_statistics_length} hands at {simulation_performance_statistics(start_time_ns, players_statistics_length)}"
@@ -2039,6 +2041,11 @@ if __name__ == "__main__":
         help="suppress output of play actions (cards played, Go, points scored, count reset)",
     )
     parser.add_argument(
+        "--show-calc-cache-usage-stats",
+        action="store_true",
+        help="show calculation cache usage statistics",
+    )
+    parser.add_argument(
         "--hands-per-update",
         help="number of hands to similate per statistics update",
         type=int,
@@ -2236,6 +2243,7 @@ if __name__ == "__main__":
         args.hands_per_update,
         args.confidence_level,
         start_time_ns,
+        args.show_calc_cache_usage_stats,
     )
     if args.process_count == 1:
         simulate_hands(*simulate_hands_args)
