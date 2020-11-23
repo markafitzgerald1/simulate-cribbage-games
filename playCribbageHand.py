@@ -2112,6 +2112,7 @@ if __name__ == "__main__":
                 flush=True,
             )
 
+    # TODO: eliminate snake case to kebab case args names duplication from code
     if args.pone_keep_random:
         pone_select_kept_cards = keep_random
     elif args.pone_keep_each_possibility:
