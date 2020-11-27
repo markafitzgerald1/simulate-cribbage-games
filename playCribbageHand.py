@@ -1798,16 +1798,11 @@ def play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count(
     )
 
 
-def play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count(
+def play_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
     current_play_plays: Sequence[Card],
 ) -> PlayableCardIndex:
-    if (
-        low_lead_index := play_low_lead(playable_cards, current_play_count)
-    ) is not None:
-        return low_lead_index
-
     if (run_index := play_run(playable_cards, current_play_plays)) is not None:
         return run_index
 
@@ -1838,6 +1833,56 @@ def play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_hi
         return play_16_to_20_index
 
     return play_highest_count(playable_cards, current_play_count, current_play_plays)
+
+
+def play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count(
+    playable_cards: Sequence[Card],
+    current_play_count: PlayCount,
+    current_play_plays: Sequence[Card],
+) -> PlayableCardIndex:
+    if (
+        low_lead_index := play_low_lead(playable_cards, current_play_count)
+    ) is not None:
+        return low_lead_index
+
+    return play_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count(
+        playable_cards, current_play_count, current_play_plays
+    )
+
+
+def play_pairs_royale(
+    playable_cards: Sequence[Card], current_play_plays: Sequence[Card]
+) -> Optional[PlayableCardIndex]:
+    if len(current_play_plays) >= 2:
+        for index, card in enumerate(playable_cards):
+            if (
+                card.index
+                == current_play_plays[-1].index
+                == current_play_plays[-2].index
+            ):
+                print(f"PREFER PAIRS ROYALE HERE; PLAY OPTIONS: {Hand(playable_cards)}")
+                return PlayableCardIndex(index)
+    return None
+
+
+def play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count(
+    playable_cards: Sequence[Card],
+    current_play_count: PlayCount,
+    current_play_plays: Sequence[Card],
+) -> PlayableCardIndex:
+    if (
+        low_lead_index := play_low_lead(playable_cards, current_play_count)
+    ) is not None:
+        return low_lead_index
+
+    if (
+        play_pairs_royale_index := play_pairs_royale(playable_cards, current_play_plays)
+    ) is not None:
+        return play_pairs_royale_index
+
+    return play_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count(
+        playable_cards, current_play_count, current_play_plays
+    )
 
 
 def play_user_selected(
@@ -2013,6 +2058,10 @@ if __name__ == "__main__":
         "--pone-play-low-lead-else-run-else-15-else-pair-else-31-else-16-to-20-count-else-highest-count",
         action="store_true",
     )
+    pone_play_algorithm_group.add_argument(
+        "--pone-play-low-lead-else-pairs-royale-else-run-else-15-else-pair-else-31-else-16-to-20-count-else-highest-count",
+        action="store_true",
+    )
 
     parser.add_argument(
         "--select-each-post-initial-play",
@@ -2064,6 +2113,10 @@ if __name__ == "__main__":
     )
     dealer_play_algorithm_group.add_argument(
         "--dealer-play-low-lead-else-run-else-15-else-pair-else-31-else-16-to-20-count-else-highest-count",
+        action="store_true",
+    )
+    dealer_play_algorithm_group.add_argument(
+        "--dealer-play-low-lead-else-pairs-royale-else-run-else-15-else-pair-else-31-else-16-to-20-count-else-highest-count",
         action="store_true",
     )
 
@@ -2246,8 +2299,12 @@ if __name__ == "__main__":
         args.pone_play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     ):
         pone_select_play = play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+    elif (
+        args.pone_play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+    ):
+        pone_select_play = play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     else:
-        pone_select_play = play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+        pone_select_play = play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
 
     dealer_play_selector: PlaySelector
     if args.dealer_play_user_entered:
@@ -2276,8 +2333,12 @@ if __name__ == "__main__":
         args.dealer_play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     ):
         dealer_select_play = play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+    elif (
+        args.dealer_play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+    ):
+        dealer_select_play = play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     else:
-        dealer_select_play = play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+        dealer_select_play = play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
 
     initial_pone_score = Points(
         int(args.initial_pone_score) if args.initial_pone_score else 0
