@@ -1860,7 +1860,6 @@ def play_pairs_royale(
                 == current_play_plays[-1].index
                 == current_play_plays[-2].index
             ):
-                print(f"PREFER PAIRS ROYALE HERE; PLAY OPTIONS: {Hand(playable_cards)}")
                 return PlayableCardIndex(index)
     return None
 
