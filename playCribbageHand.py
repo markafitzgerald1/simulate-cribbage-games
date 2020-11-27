@@ -13,7 +13,7 @@ from runstats import Statistics  # type: ignore
 from statistics import NormalDist
 import itertools
 from functools import cache
-from collections import Counter
+from collections import Counter, namedtuple
 from typing import (
     Callable,
     Optional,
@@ -24,7 +24,7 @@ from typing import (
     Dict,
     Tuple,
     Literal,
-    Iterable,
+    NamedTuple,
 )
 
 
@@ -409,6 +409,16 @@ def get_kept_cards(
     return tuple()
 
 
+class HandSimulationResult(NamedTuple):
+    kept_cards: Tuple[Card, ...]
+    pone_play_points: Points
+    pone_hand_points: Points
+    dealer_play_points: Points
+    dealer_hand_points: Points
+    crib_points: Points
+    non_initial_played_card_played: bool
+
+
 def create_hand_simulation_result(
     pone_dealt_cards,
     pone_kept_cards,
@@ -420,8 +430,8 @@ def create_hand_simulation_result(
     initial_pone_score,
     initial_dealer_score,
     non_initial_played_card_played,
-) -> Tuple[Tuple[Card, ...], Points, Points, Points, Points, Points, bool]:
-    return (
+) -> HandSimulationResult:
+    return HandSimulationResult(
         get_kept_cards(
             pone_dealt_cards,
             pone_kept_cards,
@@ -466,7 +476,7 @@ def simulate_hand(
     post_initial_play: Optional[Card],
     initial_played_cards: Tuple[Card, ...],
     hide_play_actions: bool,
-) -> Tuple[Tuple[Card, ...], Points, Points, Points, Points, Points, bool]:
+) -> HandSimulationResult:
     if pone_dealt_cards or dealer_dealt_cards:
         random_hand_cards = random.sample(
             deck_less_fixed_cards,
@@ -559,7 +569,7 @@ def simulate_hand(
         score = add_to_score(score, DEALER, NIBS_SCORE_POINTS)
         if game_over(score):
             # TODO: replace with constant maintenance of simulation result which can be returned at any time
-            return (
+            return HandSimulationResult(
                 tuple(),
                 Points(0),
                 Points(0),
@@ -898,7 +908,7 @@ def simulate_hand(
             False,
         )
 
-    return (
+    return HandSimulationResult(
         # TODO: replace with constant maintenance of simulation result which can be returned at any time
         get_kept_cards(
             pone_dealt_cards,
