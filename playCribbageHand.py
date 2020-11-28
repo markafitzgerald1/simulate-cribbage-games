@@ -587,6 +587,7 @@ def simulate_hand(
     plays_to_31: List[PlayTo31] = [create_play_to_31()]
     remaining_initial_played_cards: List[Card] = list(initial_played_cards)
     remaining_post_initial_play = post_initial_play
+    non_initial_played_card_played: bool = False
     while hands[0] or hands[1]:
         playable_cards = [
             card
@@ -602,19 +603,8 @@ def simulate_hand(
                     remaining_post_initial_play
                     and remaining_post_initial_play not in hands[player_to_play]
                 ):
-                    # TODO: replace with constant maintenance of simulation result which can be returned at any time
-                    return create_hand_simulation_result(
-                        pone_dealt_cards,
-                        pone_kept_cards,
-                        kept_pone_hand,
-                        dealer_dealt_cards,
-                        dealer_kept_cards,
-                        kept_dealer_hand,
-                        score,
-                        initial_pone_score,
-                        initial_dealer_score,
-                        True,
-                    )
+                    non_initial_played_card_played = True
+                    break
 
                 player_to_play_play = remaining_post_initial_play
                 remaining_post_initial_play = None
@@ -630,19 +620,8 @@ def simulate_hand(
             if remaining_initial_played_cards:
                 expected_play = remaining_initial_played_cards.pop(0)
                 if player_to_play_play != expected_play:
-                    # TODO: replace with constant maintenance of simulation result which can be returned at any time
-                    return create_hand_simulation_result(
-                        pone_dealt_cards,
-                        pone_kept_cards,
-                        kept_pone_hand,
-                        dealer_dealt_cards,
-                        dealer_kept_cards,
-                        kept_dealer_hand,
-                        score,
-                        initial_pone_score,
-                        initial_dealer_score,
-                        True,
-                    )
+                    non_initial_played_card_played = True
+                    break
             if not hide_play_actions:
                 print(
                     f"{get_player_name(player_to_play):6} plays {player_to_play_play} for {play_count}"
@@ -660,19 +639,7 @@ def simulate_hand(
                         score, player_to_play, DOUBLE_PAIRS_ROYALE_POINTS
                     )
                     if game_over(score):
-                        # TODO: replace with constant maintenance of simulation result which can be returned at any time
-                        return create_hand_simulation_result(
-                            pone_dealt_cards,
-                            pone_kept_cards,
-                            kept_pone_hand,
-                            dealer_dealt_cards,
-                            dealer_kept_cards,
-                            kept_dealer_hand,
-                            score,
-                            initial_pone_score,
-                            initial_dealer_score,
-                            False,
-                        )
+                        break
                 elif most_recently_played_index_count == 3:
                     if not hide_play_actions:
                         print(
@@ -680,19 +647,7 @@ def simulate_hand(
                         )
                     score = add_to_score(score, player_to_play, PAIRS_ROYALE_POINTS)
                     if game_over(score):
-                        # TODO: replace with constant maintenance of simulation result which can be returned at any time
-                        return create_hand_simulation_result(
-                            pone_dealt_cards,
-                            pone_kept_cards,
-                            kept_pone_hand,
-                            dealer_dealt_cards,
-                            dealer_kept_cards,
-                            kept_dealer_hand,
-                            score,
-                            initial_pone_score,
-                            initial_dealer_score,
-                            False,
-                        )
+                        break
                 elif most_recently_played_index_count == 2:
                     if not hide_play_actions:
                         print(
@@ -700,19 +655,7 @@ def simulate_hand(
                         )
                     score = add_to_score(score, player_to_play, PAIR_POINTS)
                     if game_over(score):
-                        # TODO: replace with constant maintenance of simulation result which can be returned at any time
-                        return create_hand_simulation_result(
-                            pone_dealt_cards,
-                            pone_kept_cards,
-                            kept_pone_hand,
-                            dealer_dealt_cards,
-                            dealer_kept_cards,
-                            kept_dealer_hand,
-                            score,
-                            initial_pone_score,
-                            initial_dealer_score,
-                            False,
-                        )
+                        break
             else:
                 most_recently_played_index = player_to_play_play.index
                 most_recently_played_index_count = 1
@@ -725,19 +668,7 @@ def simulate_hand(
                     )
                 score = add_to_score(score, player_to_play, FIFTEENS_POINTS)
                 if game_over(score):
-                    # TODO: replace with constant maintenance of simulation result which can be returned at any time
-                    return create_hand_simulation_result(
-                        pone_dealt_cards,
-                        pone_kept_cards,
-                        kept_pone_hand,
-                        dealer_dealt_cards,
-                        dealer_kept_cards,
-                        kept_dealer_hand,
-                        score,
-                        initial_pone_score,
-                        initial_dealer_score,
-                        False,
-                    )
+                    break
             elif play_count == THIRTY_ONE_COUNT:
                 if not hide_play_actions:
                     print(
@@ -745,19 +676,7 @@ def simulate_hand(
                     )
                 score = add_to_score(score, player_to_play, THIRTY_ONE_COUNT_POINTS)
                 if game_over(score):
-                    # TODO: replace with constant maintenance of simulation result which can be returned at any time
-                    return create_hand_simulation_result(
-                        pone_dealt_cards,
-                        pone_kept_cards,
-                        kept_pone_hand,
-                        dealer_dealt_cards,
-                        dealer_kept_cards,
-                        kept_dealer_hand,
-                        score,
-                        initial_pone_score,
-                        initial_dealer_score,
-                        False,
-                    )
+                    break
 
             current_play_run_length = get_current_play_run_length(plays_to_31[-1])
             if current_play_run_length:
@@ -767,19 +686,7 @@ def simulate_hand(
                     )
                 score = add_to_score(score, player_to_play, current_play_run_length)
                 if game_over(score):
-                    # TODO: replace with constant maintenance of simulation result which can be returned at any time
-                    return create_hand_simulation_result(
-                        pone_dealt_cards,
-                        pone_kept_cards,
-                        kept_pone_hand,
-                        dealer_dealt_cards,
-                        dealer_kept_cards,
-                        kept_dealer_hand,
-                        score,
-                        initial_pone_score,
-                        initial_dealer_score,
-                        False,
-                    )
+                    break
 
             consecutive_go_count = 0
         else:
@@ -793,19 +700,7 @@ def simulate_hand(
                     )
                 score = add_to_score(score, player_to_play, GO_POINTS)
                 if game_over(score):
-                    # TODO: replace with constant maintenance of simulation result which can be returned at any time
-                    return create_hand_simulation_result(
-                        pone_dealt_cards,
-                        pone_kept_cards,
-                        kept_pone_hand,
-                        dealer_dealt_cards,
-                        dealer_kept_cards,
-                        kept_dealer_hand,
-                        score,
-                        initial_pone_score,
-                        initial_dealer_score,
-                        False,
-                    )
+                    break
 
                 if not hide_play_actions:
                     print(f"---resetting play count to {START_OF_PLAY_COUNT}---")
@@ -816,6 +711,20 @@ def simulate_hand(
                 most_recently_played_index_count = 0
 
         player_to_play = 1 if player_to_play == 0 else 0
+
+    if non_initial_played_card_played or game_over(score):
+        return create_hand_simulation_result(
+            pone_dealt_cards,
+            pone_kept_cards,
+            kept_pone_hand,
+            dealer_dealt_cards,
+            dealer_kept_cards,
+            kept_dealer_hand,
+            score,
+            initial_pone_score,
+            initial_dealer_score,
+            non_initial_played_card_played,
+        )
 
     # Last Card points
     last_player_to_play: Player = 1 if player_to_play == 0 else 0
