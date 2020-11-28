@@ -1025,16 +1025,11 @@ def simulate_hands(
         )
         for hand in range(process_hand_count):
             post_initial_play: Optional[Card] = None
-            kept_cards: Tuple[Card, ...] = tuple()
-            (
-                pone_play_points,
-                pone_hand_points,
-                dealer_play_points,
-                dealer_hand_points,
-                crib_points,
-                non_initial_played_card_played,
-            ) = (Points(0), Points(0), Points(0), Points(0), Points(0), True)
-            while non_initial_played_card_played:
+            hand_simulation_result: Optional[HandSimulationResult] = None
+            while (
+                not hand_simulation_result
+                or hand_simulation_result.non_initial_played_card_played
+            ):
                 post_initial_play = (
                     next(pone_kept_cards_possible_plays)
                     if pone_kept_cards_possible_plays
@@ -1044,15 +1039,7 @@ def simulate_hands(
                     if dealer_kept_cards_possible_plays
                     else None
                 )
-                (
-                    kept_cards,
-                    pone_play_points,
-                    pone_hand_points,
-                    dealer_play_points,
-                    dealer_hand_points,
-                    crib_points,
-                    non_initial_played_card_played,
-                ) = simulate_hand(
+                hand_simulation_result = simulate_hand(
                     pone_dealt_cards,
                     dealer_dealt_cards,
                     deck_less_fixed_cards,
@@ -1073,9 +1060,14 @@ def simulate_hands(
                     hide_play_actions,
                 )
 
-            overall_pone_points = pone_play_points + pone_hand_points
+            overall_pone_points = (
+                hand_simulation_result.pone_play_points
+                + hand_simulation_result.pone_hand_points
+            )
             overall_dealer_points = (
-                dealer_play_points + dealer_hand_points + crib_points
+                hand_simulation_result.dealer_play_points
+                + hand_simulation_result.dealer_hand_points
+                + hand_simulation_result.crib_points
             )
 
             final_pone_score = Points(initial_pone_score + overall_pone_points)
@@ -1094,17 +1086,37 @@ def simulate_hands(
                 )
 
             # TODO: used namedtuple
-            statistics_key = tuple([kept_cards, post_initial_play])
-            statistics_push(pone_play_statistics, statistics_key, pone_play_points)
-            statistics_push(pone_hand_statistics, statistics_key, pone_hand_points)
+            statistics_key = tuple(
+                [hand_simulation_result.kept_cards, post_initial_play]
+            )
+            statistics_push(
+                pone_play_statistics,
+                statistics_key,
+                hand_simulation_result.pone_play_points,
+            )
+            statistics_push(
+                pone_hand_statistics,
+                statistics_key,
+                hand_simulation_result.pone_hand_points,
+            )
             statistics_push(pone_statistics, statistics_key, overall_pone_points)
             statistics_push(
                 pone_game_points_statistics, statistics_key, pone_game_points
             )
 
-            statistics_push(dealer_play_statistics, statistics_key, dealer_play_points)
-            statistics_push(dealer_hand_statistics, statistics_key, dealer_hand_points)
-            statistics_push(crib_statistics, statistics_key, crib_points)
+            statistics_push(
+                dealer_play_statistics,
+                statistics_key,
+                hand_simulation_result.dealer_play_points,
+            )
+            statistics_push(
+                dealer_hand_statistics,
+                statistics_key,
+                hand_simulation_result.dealer_hand_points,
+            )
+            statistics_push(
+                crib_statistics, statistics_key, hand_simulation_result.crib_points
+            )
             statistics_push(
                 dealer_statistics,
                 statistics_key,
@@ -1118,12 +1130,14 @@ def simulate_hands(
             statistics_push(
                 pone_minus_dealer_play_statistics,
                 statistics_key,
-                pone_play_points - dealer_play_points,
+                hand_simulation_result.pone_play_points
+                - hand_simulation_result.dealer_play_points,
             )
             statistics_push(
                 pone_minus_dealer_hand_statistics,
                 statistics_key,
-                pone_hand_points - dealer_hand_points,
+                hand_simulation_result.pone_hand_points
+                - hand_simulation_result.dealer_hand_points,
             )
             statistics_push(
                 pone_minus_dealer_statistics,
