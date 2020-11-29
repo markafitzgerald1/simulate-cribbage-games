@@ -261,8 +261,8 @@ def score_hand(kept_hand):
     )
 
 
-def formatted_hand_count(hands_simulated, total_hands_to_be_simulated):
-    return f"n = {hands_simulated:{int(math.log10(total_hands_to_be_simulated)) + 1}}"
+def formatted_game_count(games_simulated, total_games_to_be_simulated):
+    return f"n = {games_simulated:{int(math.log10(total_games_to_be_simulated)) + 1}}"
 
 
 def get_confidence_interval(statistics, confidence_level):
@@ -409,7 +409,7 @@ def get_kept_cards(
     return tuple()
 
 
-class HandSimulationResult(NamedTuple):
+class GameSimulationResult(NamedTuple):
     kept_cards: Tuple[Card, ...]
     pone_play_points: Points
     pone_hand_points: Points
@@ -430,8 +430,8 @@ def create_hand_simulation_result(
     initial_pone_score,
     initial_dealer_score,
     non_initial_played_card_played,
-) -> HandSimulationResult:
-    return HandSimulationResult(
+) -> GameSimulationResult:
+    return GameSimulationResult(
         get_kept_cards(
             pone_dealt_cards,
             pone_kept_cards,
@@ -457,7 +457,7 @@ def create_play_to_31() -> PlayTo31:
     return PlayTo31(played_cards)
 
 
-def simulate_hand(
+def simulate_game(
     pone_dealt_cards: List[Card],
     dealer_dealt_cards: List[Card],
     deck_less_fixed_cards: Sequence[Card],
@@ -476,7 +476,7 @@ def simulate_hand(
     post_initial_play: Optional[Card],
     initial_played_cards: Tuple[Card, ...],
     hide_play_actions: bool,
-) -> HandSimulationResult:
+) -> GameSimulationResult:
     if pone_dealt_cards or dealer_dealt_cards:
         random_hand_cards = random.sample(
             deck_less_fixed_cards,
@@ -569,7 +569,7 @@ def simulate_hand(
         score = add_to_score(score, DEALER, NIBS_SCORE_POINTS)
         if game_over(score):
             # TODO: replace with constant maintenance of simulation result which can be returned at any time
-            return HandSimulationResult(
+            return GameSimulationResult(
                 tuple(),
                 Points(0),
                 Points(0),
@@ -817,7 +817,7 @@ def simulate_hand(
             False,
         )
 
-    return HandSimulationResult(
+    return GameSimulationResult(
         # TODO: replace with constant maintenance of simulation result which can be returned at any time
         get_kept_cards(
             pone_dealt_cards,
@@ -870,9 +870,9 @@ def game_points(
         return (GamePoints(0), GamePoints(0))
 
 
-def simulate_hands(
-    process_hand_count,
-    overall_hand_count,
+def simulate_games(
+    process_game_count,
+    overall_game_count,
     initial_pone_score: Points,
     initial_dealer_score: Points,
     pone_dealt_cards: List[Card],
@@ -890,7 +890,7 @@ def simulate_hands(
     hide_pone_hand,
     hide_dealer_hand,
     hide_play_actions: bool,
-    hands_per_update,
+    games_per_update,
     confidence_level,
     start_time_ns,
     show_calc_cache_usage_stats,
@@ -932,12 +932,12 @@ def simulate_hands(
             if dealer_kept_cards and select_each_post_initial_play
             else None
         )
-        for hand in range(process_hand_count):
+        for game in range(process_game_count):
             post_initial_play: Optional[Card] = None
-            hand_simulation_result: Optional[HandSimulationResult] = None
+            game_simulation_result: Optional[GameSimulationResult] = None
             while (
-                not hand_simulation_result
-                or hand_simulation_result.non_initial_played_card_played
+                not game_simulation_result
+                or game_simulation_result.non_initial_played_card_played
             ):
                 post_initial_play = (
                     next(pone_kept_cards_possible_plays)
@@ -948,7 +948,7 @@ def simulate_hands(
                     if dealer_kept_cards_possible_plays
                     else None
                 )
-                hand_simulation_result = simulate_hand(
+                game_simulation_result = simulate_game(
                     pone_dealt_cards,
                     dealer_dealt_cards,
                     deck_less_fixed_cards,
@@ -970,13 +970,13 @@ def simulate_hands(
                 )
 
             overall_pone_points = (
-                hand_simulation_result.pone_play_points
-                + hand_simulation_result.pone_hand_points
+                game_simulation_result.pone_play_points
+                + game_simulation_result.pone_hand_points
             )
             overall_dealer_points = (
-                hand_simulation_result.dealer_play_points
-                + hand_simulation_result.dealer_hand_points
-                + hand_simulation_result.crib_points
+                game_simulation_result.dealer_play_points
+                + game_simulation_result.dealer_hand_points
+                + game_simulation_result.crib_points
             )
 
             final_pone_score = Points(initial_pone_score + overall_pone_points)
@@ -988,25 +988,25 @@ def simulate_hands(
 
             if not hide_play_actions:
                 print(
-                    f"Score at end of hand: {(initial_pone_score + overall_pone_points, initial_dealer_score + overall_dealer_points)}"
+                    f"Score at end of game simulation: {(initial_pone_score + overall_pone_points, initial_dealer_score + overall_dealer_points)}"
                 )
                 print(
-                    f"Game points at end of hand: {(pone_game_points, dealer_game_points)}"
+                    f"Game points at end of game simulation: {(pone_game_points, dealer_game_points)}"
                 )
 
             # TODO: used namedtuple
             statistics_key = tuple(
-                [hand_simulation_result.kept_cards, post_initial_play]
+                [game_simulation_result.kept_cards, post_initial_play]
             )
             statistics_push(
                 pone_play_statistics,
                 statistics_key,
-                hand_simulation_result.pone_play_points,
+                game_simulation_result.pone_play_points,
             )
             statistics_push(
                 pone_hand_statistics,
                 statistics_key,
-                hand_simulation_result.pone_hand_points,
+                game_simulation_result.pone_hand_points,
             )
             statistics_push(pone_statistics, statistics_key, overall_pone_points)
             statistics_push(
@@ -1016,15 +1016,15 @@ def simulate_hands(
             statistics_push(
                 dealer_play_statistics,
                 statistics_key,
-                hand_simulation_result.dealer_play_points,
+                game_simulation_result.dealer_play_points,
             )
             statistics_push(
                 dealer_hand_statistics,
                 statistics_key,
-                hand_simulation_result.dealer_hand_points,
+                game_simulation_result.dealer_hand_points,
             )
             statistics_push(
-                crib_statistics, statistics_key, hand_simulation_result.crib_points
+                crib_statistics, statistics_key, game_simulation_result.crib_points
             )
             statistics_push(
                 dealer_statistics,
@@ -1039,14 +1039,14 @@ def simulate_hands(
             statistics_push(
                 pone_minus_dealer_play_statistics,
                 statistics_key,
-                hand_simulation_result.pone_play_points
-                - hand_simulation_result.dealer_play_points,
+                game_simulation_result.pone_play_points
+                - game_simulation_result.dealer_play_points,
             )
             statistics_push(
                 pone_minus_dealer_hand_statistics,
                 statistics_key,
-                hand_simulation_result.pone_hand_points
-                - hand_simulation_result.dealer_hand_points,
+                game_simulation_result.pone_hand_points
+                - game_simulation_result.dealer_hand_points,
             )
             statistics_push(
                 pone_minus_dealer_statistics,
@@ -1060,8 +1060,8 @@ def simulate_hands(
             )
 
             if (
-                hand % hands_per_update == hands_per_update - 1
-                or hand == process_hand_count - 1
+                game % games_per_update == games_per_update - 1
+                or game == process_game_count - 1
             ):
                 players_statistics_lock.acquire()
 
@@ -1159,7 +1159,7 @@ def simulate_hands(
 
                 if players_statistics_length > 1:
                     print(
-                        f"Mean play statistics {confidence_level}% confidence intervals ({formatted_hand_count(players_statistics_length, overall_hand_count)}):"
+                        f"Mean play statistics {confidence_level}% confidence intervals ({formatted_game_count(players_statistics_length, overall_game_count)}):"
                     )
                 else:
                     print(f"Mean play statistics:")
@@ -1274,7 +1274,7 @@ def simulate_hands(
                     )
 
                 print(
-                    f"Simulated {players_statistics_length} hands at {simulation_performance_statistics(start_time_ns, players_statistics_length)}"
+                    f"Simulated {players_statistics_length} games at {simulation_performance_statistics(start_time_ns, players_statistics_length)}"
                 )
 
     except KeyboardInterrupt:
@@ -1541,15 +1541,9 @@ def keep_max_post_cut_hand_plus_or_minus_crib_points(dealt_cards, plus_crib):
             / kept_hand_starter_and_opponent_discard_count
         )
         average_score = average_hand_score + average_crib_score
-        # print(
-        #     f"Average expected post-cut hand +/- crib points for {Hand(kept_hand)} - {Hand(discarded_dealt_cards)} is {average_hand_score:+.3f} hand {average_crib_score:+.3f} crib = {average_score:+.3f}"
-        # )
         if not max_average_score or average_score > max_average_score:
             max_average_score = average_score
             max_average_score_kept_hand = kept_hand
-    # print(
-    #     f"Maximum average expected post-cut hand +/- crib points for dealt hand {Hand(dealt_cards)} is {max_average_score:+.3f} for kept hand {Hand(max_average_score_kept_hand)}"
-    # )
     return max_average_score_kept_hand
 
 
@@ -1834,10 +1828,10 @@ def play_user_selected(
     return selected_card
 
 
-def simulation_performance_statistics(start_time_ns, hands_simulated):
+def simulation_performance_statistics(start_time_ns, games_simulated):
     elapsed_time_ns = time.time_ns() - start_time_ns
     ns_per_s = 1000000000
-    return f"{hands_simulated / (elapsed_time_ns / ns_per_s):.3f} hands/s ({elapsed_time_ns / hands_simulated:.0f} ns/hand) in {elapsed_time_ns / ns_per_s} s"
+    return f"{games_simulated / (elapsed_time_ns / ns_per_s):.3f} games/s ({elapsed_time_ns / games_simulated:.0f} ns/game) in {elapsed_time_ns / ns_per_s} s"
 
 
 if __name__ == "__main__":
@@ -1845,7 +1839,7 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--process-count",
-        help="number of processes to use to simulate cribbage hand plays",
+        help="number of processes to use to simulate cribbage games",
         type=int,
         default=1,
     )
@@ -2052,17 +2046,17 @@ if __name__ == "__main__":
         action="store_true",
     )
 
-    hand_count_group = parser.add_mutually_exclusive_group()
-    hand_count_group.add_argument(
-        "--hand-count",
-        help="number of cribbage hand plays to simulate",
+    game_count_group = parser.add_mutually_exclusive_group()
+    game_count_group.add_argument(
+        "--game-count",
+        help="number of cribbage games to simulate",
         type=int,
         default=1,
     )
-    hand_count_group.add_argument(
-        "--infinite-hand-count",
+    game_count_group.add_argument(
+        "--infinite-game-count",
         action="store_true",
-        help="simulate an infinite number of cribbage hands",
+        help="simulate an infinite number of cribbage games",
     )
     parser.add_argument(
         "--hide-workers-start-message",
@@ -2090,8 +2084,8 @@ if __name__ == "__main__":
         help="show calculation cache usage statistics",
     )
     parser.add_argument(
-        "--hands-per-update",
-        help="number of hands to similate per statistics update",
+        "--games-per-update",
+        help="number of games to similate per statistics update",
         type=int,
         default=5000,
     )
@@ -2146,14 +2140,14 @@ if __name__ == "__main__":
     manager = Manager()
     players_statistics: Dict[PlayerStatistic, Statistics] = manager.dict()
     players_statistics_lock = Lock()
-    args.hand_count = (
+    args.game_count = (
         sys.maxsize
-        if args.infinite_hand_count
-        else (math.ceil(args.hand_count / args.process_count) * args.process_count)
+        if args.infinite_game_count
+        else (math.ceil(args.game_count / args.process_count) * args.process_count)
     )
     if not args.hide_workers_start_message:
         print(
-            f"Simulating {args.hand_count if args.hand_count != sys.maxsize else 'infinite'} hands",
+            f"Simulating {args.game_count if args.game_count != sys.maxsize else 'infinite'} games",
             end="" if args.process_count > 1 else os.linesep,
             flush=args.process_count == 1,
         )
@@ -2280,9 +2274,9 @@ if __name__ == "__main__":
     )
 
     start_time_ns = time.time_ns()
-    simulate_hands_args = (
-        args.hand_count // args.process_count,
-        args.hand_count,
+    simulate_games_args = (
+        args.game_count // args.process_count,
+        args.game_count,
         initial_pone_score,
         initial_dealer_score,
         pone_dealt_cards,
@@ -2300,16 +2294,16 @@ if __name__ == "__main__":
         args.hide_pone_hand,
         args.hide_dealer_hand,
         bool(args.hide_play_actions),
-        args.hands_per_update,
+        args.games_per_update,
         args.confidence_level,
         start_time_ns,
         args.show_calc_cache_usage_stats,
     )
     if args.process_count == 1:
-        simulate_hands(*simulate_hands_args)
+        simulate_games(*simulate_games_args)
     else:
         processes = [
-            Process(target=simulate_hands, args=simulate_hands_args)
+            Process(target=simulate_games, args=simulate_games_args)
             for process_number in range(args.process_count)
         ]
         for process in processes:
@@ -2321,5 +2315,5 @@ if __name__ == "__main__":
             sys.exit(0)
 
     print(
-        f"Simulated {args.hand_count} hands with {args.process_count} worker processes at {simulation_performance_statistics(start_time_ns, args.hand_count)}"
+        f"Simulated {args.game_count} games with {args.process_count} worker processes at {simulation_performance_statistics(start_time_ns, args.game_count)}"
     )

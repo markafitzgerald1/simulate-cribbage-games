@@ -9,27 +9,28 @@ Simulate and analyze the play of cribbage hands between two opponents.
 
 ## Test
 
-- Check for type errors - should only find one about `runstats` module not having type hints: `mypy playCribbageHand.py`
+- Check for type errors - should only find one about `runstats` module not having type hints: `mypy simulateCribbageGames.py`
 
 ## Use
 
-- Simulate one hand from deal to end of hand counting: `python playCribbageHand.py`
-- Help on additional simulation options: `python playCribbageHand.py --help`
+- Simulate one hand from deal to end of hand counting: `python simulateCribbageGames.py`
+- Help on additional simulation options: `python simulateCribbageGames.py --help`
 
 ## Smoke Tests and Usage Examples
 
 All of the following should exit with status code 0 and no raised exception:
 
-- Simulate play of a single randomly discarded and played hand: `python playCribbageHand.py`;
-- Simulate a fixed pone hand and discard against random dealer hands: `python playCribbageHand.py --pone-dealt-cards AC,2D,3H,4S,5C,6D --pone-kept-cards 3H,4S,5C,6D --dealer-keep-first-four --pone-play-first --dealer-play-first --hide-pone-hand --hide-dealer-hand --hide-play-actions --hand-count 5000`;
-- Simulate a fixed pone hand and discard against random dealer hands with two parallel processes: `python playCribbageHand.py --pone-dealt-cards AC,2D,3H,4S,5C,6D --pone-kept-cards 3H,4S,5C,6D --dealer-keep-first-four --pone-play-first --dealer-play-first --hide-pone-hand --hide-dealer-hand --hide-play-actions --hand-count 5000 --process-count 2`;
-- Simulate to the end of single hand play a fixed dealer hand and discard against random pone hands: `python playCribbageHand.py --dealer-dealt-cards AC,2D,3H,4S,5C,6D --dealer-kept-cards 3H,4S,5C,6D --pone-keep-first-four --pone-play-first --dealer-play-first --hide-pone-hand --hide-dealer-hand --hide-play-actions --hand-count 5000`;
-- Simulate all possible discards from a fixed pone hand against random dealer hands: `python playCribbageHand.py --pone-dealt-cards AC,2D,3H,4S,5C,6D --pone-keep-each-possibility --dealer-keep-first-four --hide-pone-hand --hide-dealer-hand --hide-play-actions --hands-per-update 10000 --hand-count 10000`;
-- Simulate all possible discards from a fixed dealer hand against random pone hands: `python playCribbageHand.py --dealer-dealt-cards AC,2D,3H,4S,5C,6D --dealer-keep-each-possibility --pone-keep-first-four --pone-play-first --dealer-play-first --hide-pone-hand --hide-dealer-hand --hide-play-actions --hands-per-update 10000 --hand-count 10000`;
-- Simulate all possible discards from a fixed dealer hand against random pone hands at a greater than 0-0 game score: `python playCribbageHand.py --dealer-dealt-cards JH,TS,6S,6C,4C,AD --dealer-keep-each-possibility --initial-pone-score 105 --initial-dealer-score 117 --hide-pone-hand --hide-dealer-hand --hide-play-actions --hand-count 20000`;
-- Simulate all possible leads from a fixed pone hand and discard against random dealer hands: `python playCribbageHand.py --pone-dealt-cards JH,TS,6S,6C,4C,AD --pone-kept-cards TS,6S,4C,AD --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --hand-count 30000`; and
-- Simulate all possible pone plays from a mid-play position against partly known dealer hands: `python playCribbageHand.py --pone-dealt-cards KC,QD,TC,8S,4D,AH --pone-kept-cards QD,TC,4D,AH --dealer-dealt-cards 8H --initial-played-cards 4D,8H --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --hand-count 20000`.
-- Simulate all possible dealer plays from a mid-play position against partly known pone and fully known dealer hands: `python playCribbageHand.py --dealer-dealt-cards 8C,4D,TH,9S,KC,KD --dealer-kept-cards 8C,4D,TH,9S --pone-dealt-cards 4C --initial-played-cards 4C --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --hand-count 20000`
+- Simulate play of 10 randomly discarded and played games: `python simulateCribbageGames.py --game-count 10`;
+- Simulate and summarize play of 5,000 randomly discarded and played games: `python simulateCribbageGames.py --game-count 5000 --hide-pone-hand --hide-dealer-hand --hide-play-actions`;
+- Simulate a fixed pone hand and discard against random dealer hands: `python simulateCribbageGames.py --pone-dealt-cards AC,2D,3H,4S,5C,6D --pone-kept-cards 2D,3H,4S,5C --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 5000`;
+- Simulate a fixed pone hand and discard against random dealer hands with two parallel processes: `python simulateCribbageGames.py --pone-dealt-cards AC,2D,3H,4S,5C,6D --pone-kept-cards 2D,3H,4S,5C --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 5000 --process-count 2`;
+- Simulate to the end of single hand play a fixed dealer hand and discard against random pone hands: `python simulateCribbageGames.py --dealer-dealt-cards AC,2D,3H,4S,5C,6D --dealer-kept-cards AC,2D,3H,4S --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 5000`;
+- Simulate all possible discards from a fixed pone hand against random dealer hands: `python simulateCribbageGames.py --pone-dealt-cards AC,2D,3H,4S,5C,6D --pone-keep-each-possibility --hide-pone-hand --hide-dealer-hand --hide-play-actions --games-per-update 10000 --game-count 10000`;
+- Simulate all possible discards from a fixed dealer hand against random pone hands: `python simulateCribbageGames.py --dealer-dealt-cards AC,2D,3H,4S,5C,6D --dealer-keep-each-possibility --hide-pone-hand --hide-dealer-hand --hide-play-actions --games-per-update 10000 --game-count 10000`;
+- Simulate all possible discards from a fixed dealer hand against random pone hands at a greater than 0-0 game score: `python simulateCribbageGames.py --dealer-dealt-cards JH,TS,6S,6C,4C,AD --dealer-keep-each-possibility --initial-pone-score 105 --initial-dealer-score 117 --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 20000`;
+- Simulate all possible leads from a fixed pone hand and discard against random dealer hands: `python simulateCribbageGames.py --pone-dealt-cards JH,TS,6S,6C,4C,AD --pone-kept-cards TS,6S,4C,AD --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 30000`; and
+- Simulate all possible pone plays from a mid-play position against partly known dealer hands: `python simulateCribbageGames.py --pone-dealt-cards KC,QD,TC,8S,4D,AH --pone-kept-cards QD,TC,4D,AH --dealer-dealt-cards 8H --initial-played-cards 4D,8H --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 20000`.
+- Simulate all possible dealer plays from a mid-play position against partly known pone and fully known dealer hands: `python simulateCribbageGames.py --dealer-dealt-cards 8C,4D,TH,9S,KC,KD --dealer-kept-cards 8C,4D,TH,9S --pone-dealt-cards 4C --initial-played-cards 4C --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 20000`
 
 ## Long-term project goal
 
@@ -39,11 +40,13 @@ for different possible discards or plays.
 
 ## Current short to medium term goals
 
-- Add play decision analysis support by allowing the set of the initial simulation state to a post-discard, start or middle of play state and then simulating all possible initial plays to the end of the hand (or multiple hands); and
+- Add play decision analysis support by allowing the set of the initial simulation state to all post-discard, post-initial play states and then simulating all possible next plays to the end of the hand (or multiple hands);
+- Add multiple played hands or played hands to end of game simulation support; and
 - Increase confidence in implementation by adding further type hints (Python), type checking and unit tests.
 
 ## Past project goals
 
+- Add play decision analysis support by allowing the set of the initial simulation state to a post-discard, start or middle of first play to 31 state and then simulating all possible initial plays to the end of the hand (or multiple hands).
 - Provide efficient discard and play analysis factoring
   in the expected play points differential - to end of hand - above opponent
   for different possible discards or plays. (Extended to multi-hand or end of game with _game_ points differential also added as ultimate goal is winning - scored hand/play points is just a proxy for ultimately scored _game_ points.)
