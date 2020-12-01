@@ -293,11 +293,13 @@ def statistics_dict_add(
                 "first_pone_crib": Statistics(),
                 "first_pone_total_points": Statistics(),
                 "first_pone_game_points": Statistics(),
+                "first_pone_wins": Statistics(),
                 "first_dealer_play": Statistics(),
                 "first_dealer_hand": Statistics(),
                 "first_dealer_crib": Statistics(),
                 "first_dealer_total_points": Statistics(),
                 "first_dealer_game_points": Statistics(),
+                "first_dealer_wins": Statistics(),
                 "first_pone_minus_first_dealer_play": Statistics(),
                 "first_pone_minus_first_dealer_hand": Statistics(),
                 "first_pone_minus_first_dealer_crib": Statistics(),
@@ -351,11 +353,13 @@ PlayerStatistic = Literal[
     "first_pone_crib",
     "first_pone_total_points",
     "first_pone_game_points",
+    "first_pone_wins",
     "first_dealer_play",
     "first_dealer_hand",
     "first_dealer_crib",
     "first_dealer_total_points",
     "first_dealer_game_points",
+    "first_dealer_wins",
     "first_pone_minus_first_dealer_play",
     "first_pone_minus_first_dealer_hand",
     "first_pone_minus_first_dealer_crib",
@@ -976,11 +980,13 @@ def simulate_games(
         first_pone_crib_statistics: Dict[Tuple[Card], Statistics] = {}
         overall_first_pone_points_statistics: Dict[Tuple[Card], Statistics] = {}
         first_pone_game_points_statistics: Dict[Tuple[Card], Statistics] = {}
+        first_pone_wins_statistics: Dict[Tuple[Card], Statistics] = {}
         first_dealer_play_statistics: Dict[Tuple[Card], Statistics] = {}
         first_dealer_hand_statistics: Dict[Tuple[Card], Statistics] = {}
         first_dealer_crib_statistics: Dict[Tuple[Card], Statistics] = {}
         overall_first_dealer_points_statistics: Dict[Tuple[Card], Statistics] = {}
         first_dealer_game_points_statistics: Dict[Tuple[Card], Statistics] = {}
+        first_dealer_wins_statistics: Dict[Tuple[Card], Statistics] = {}
         first_pone_minus_first_dealer_play_statistics: Dict[
             Tuple[Card], Statistics
         ] = {}
@@ -1112,6 +1118,11 @@ def simulate_games(
                 statistics_key,
                 first_pone_game_points,
             )
+            statistics_push(
+                first_pone_wins_statistics,
+                statistics_key,
+                first_pone_game_points > 0,
+            )
 
             statistics_push(
                 first_dealer_play_statistics,
@@ -1138,6 +1149,12 @@ def simulate_games(
                 statistics_key,
                 first_dealer_game_points,
             )
+            statistics_push(
+                first_dealer_wins_statistics,
+                statistics_key,
+                first_dealer_game_points > 0,
+            )
+
             statistics_push(
                 first_pone_minus_first_dealer_play_statistics,
                 statistics_key,
@@ -1204,6 +1221,13 @@ def simulate_games(
 
                 statistics_dict_add(
                     players_statistics,
+                    "first_pone_wins",
+                    first_pone_wins_statistics,
+                )
+                first_pone_game_points_statistics.clear()
+
+                statistics_dict_add(
+                    players_statistics,
                     "first_dealer_play",
                     first_dealer_play_statistics,
                 )
@@ -1236,6 +1260,13 @@ def simulate_games(
                     first_dealer_game_points_statistics,
                 )
                 first_dealer_game_points_statistics.clear()
+
+                statistics_dict_add(
+                    players_statistics,
+                    "first_dealer_wins",
+                    first_dealer_wins_statistics,
+                )
+                first_dealer_wins_statistics.clear()
 
                 statistics_dict_add(
                     players_statistics,
@@ -1362,6 +1393,9 @@ def simulate_games(
                         print(
                             f"First Pone                    Game  points: {get_confidence_interval(keep_stats['first_pone_game_points'], confidence_level)}"
                         )
+                        print(
+                            f"First Pone                    Game  wins  : {get_confidence_interval(keep_stats['first_pone_wins'], confidence_level)}"
+                        )
                         print("-----------------------------------------------------")
                         print(
                             f"First Dealer                  Play  points: {get_confidence_interval(keep_stats['first_dealer_play'], confidence_level)}"
@@ -1377,6 +1411,9 @@ def simulate_games(
                         )
                         print(
                             f"First Dealer                  Game  points: {get_confidence_interval(keep_stats['first_dealer_game_points'], confidence_level)}"
+                        )
+                        print(
+                            f"First Dealer                  Game  wins  : {get_confidence_interval(keep_stats['first_dealer_wins'], confidence_level)}"
                         )
                         print("-----------------------------------------------------")
                         print(
