@@ -26,6 +26,7 @@ from typing import (
     Literal,
     NamedTuple,
 )
+from enum import Enum
 
 
 MAX_CARD_COUNTING_VALUE = 10
@@ -267,10 +268,10 @@ def formatted_game_count(games_simulated, total_games_to_be_simulated):
 
 def get_confidence_interval(statistics, confidence_level):
     if len(statistics) == 1:
-        return f"{statistics.mean():+9.5f}"
+        return f"{statistics.mean():+10.5f}"
 
     z_statistic = NormalDist().inv_cdf(1 - (1 - confidence_level / 100) / 2)
-    return f"{statistics.mean():+9.5f} ± {z_statistic * statistics.stddev() / math.sqrt(len(statistics)):8.5f}"
+    return f"{statistics.mean():+10.5f} ± {z_statistic * statistics.stddev() / math.sqrt(len(statistics)):8.5f}"
 
 
 def statistics_push(statistics_dict, key, value):
@@ -287,19 +288,21 @@ def statistics_dict_add(
             new_sum_stats_for_keep = sum_stats_by_keep_by_type[keep]
         else:
             new_sum_stats_for_keep = {
-                "pone_play": Statistics(),
-                "pone_hand": Statistics(),
-                "pone": Statistics(),
-                "pone_game_points": Statistics(),
-                "dealer_play": Statistics(),
-                "dealer_hand": Statistics(),
-                "crib": Statistics(),
-                "dealer": Statistics(),
-                "dealer_game_points": Statistics(),
-                "pone_minus_dealer_play": Statistics(),
-                "pone_minus_dealer_hand": Statistics(),
-                "pone_minus_dealer": Statistics(),
-                "pone_minus_dealer_game_points": Statistics(),
+                "first_pone_play": Statistics(),
+                "first_pone_hand": Statistics(),
+                "first_pone_crib": Statistics(),
+                "first_pone_total_points": Statistics(),
+                "first_pone_game_points": Statistics(),
+                "first_dealer_play": Statistics(),
+                "first_dealer_hand": Statistics(),
+                "first_dealer_crib": Statistics(),
+                "first_dealer_total_points": Statistics(),
+                "first_dealer_game_points": Statistics(),
+                "first_pone_minus_first_dealer_play": Statistics(),
+                "first_pone_minus_first_dealer_hand": Statistics(),
+                "first_pone_minus_first_dealer_crib": Statistics(),
+                "first_pone_minus_first_dealer_total_points": Statistics(),
+                "first_pone_minus_first_dealer_game_points": Statistics(),
             }
 
         new_sum_stats_for_keep[stat_type_name] += addend_stats
@@ -343,19 +346,21 @@ START_OF_PLAY_COUNT: PlayCount = PlayCount(0)
 
 # TODO: replace repeated constant strings with constants or Enum
 PlayerStatistic = Literal[
-    "pone_play",
-    "pone_hand",
-    "pone",
-    "pone_game_points",
-    "dealer_play",
-    "dealer_hand",
-    "crib",
-    "dealer",
-    "dealer_game_points",
-    "pone_minus_dealer_play",
-    "pone_minus_dealer_hand",
-    "pone_minus_dealer",
-    "pone_minus_dealer_game_points",
+    "first_pone_play",
+    "first_pone_hand",
+    "first_pone_crib",
+    "first_pone_total_points",
+    "first_pone_game_points",
+    "first_dealer_play",
+    "first_dealer_hand",
+    "first_dealer_crib",
+    "first_dealer_total_points",
+    "first_dealer_game_points",
+    "first_pone_minus_first_dealer_play",
+    "first_pone_minus_first_dealer_hand",
+    "first_pone_minus_first_dealer_crib",
+    "first_pone_minus_first_dealer_total_points",
+    "first_pone_minus_first_dealer_game_points",
 ]
 
 
@@ -363,21 +368,127 @@ Player = Literal[0, 1]
 MAX_SCORE: Points = Points(121)
 
 
-def add_to_score(
-    score: Tuple[Points, Points], scoring_player: Player, points: Points
-) -> Tuple[Points, Points]:
-    return (
+class GameScore(NamedTuple):
+    first_pone_initial: Points
+    first_pone_play: Points
+    first_pone_hand: Points
+    first_pone_crib: Points
+    first_dealer_initial: Points
+    first_dealer_play: Points
+    first_dealer_hand: Points
+    first_dealer_crib: Points
+
+
+class GamePlayer(Enum):
+    FIRST_PONE = 0
+    FIRST_DEALER = 1
+
+
+class PointsType(Enum):
+    PLAY = 0
+    HAND = 1
+    CRIB = 2
+
+
+def add_to_game_score(
+    game_score: GameScore,
+    game_player: GamePlayer,
+    points_type: PointsType,
+    points: Points,
+) -> GameScore:
+    # TODO: shorten up this code - very likely unnecessarily verbose
+    return GameScore(
+        game_score.first_pone_initial,
         Points(
-            min(score[0] + (points if scoring_player == 0 else Points(0)), MAX_SCORE)
+            min(
+                game_score.first_pone_play
+                + (
+                    points
+                    if game_player == GamePlayer.FIRST_PONE
+                    and points_type == PointsType.PLAY
+                    else Points(0)
+                ),
+                MAX_SCORE,
+            )
         ),
         Points(
-            min(score[1] + (points if scoring_player == 1 else Points(0)), MAX_SCORE)
+            min(
+                game_score.first_pone_hand
+                + (
+                    points
+                    if game_player == GamePlayer.FIRST_PONE
+                    and points_type == PointsType.HAND
+                    else Points(0)
+                ),
+                MAX_SCORE,
+            )
+        ),
+        Points(
+            min(
+                game_score.first_pone_crib
+                + (
+                    points
+                    if game_player == GamePlayer.FIRST_PONE
+                    and points_type == PointsType.CRIB
+                    else Points(0)
+                ),
+                MAX_SCORE,
+            )
+        ),
+        game_score.first_dealer_initial,
+        Points(
+            min(
+                game_score.first_dealer_play
+                + (
+                    points
+                    if game_player == GamePlayer.FIRST_DEALER
+                    and points_type == PointsType.PLAY
+                    else Points(0)
+                ),
+                MAX_SCORE,
+            )
+        ),
+        Points(
+            min(
+                game_score.first_dealer_hand
+                + (
+                    points
+                    if game_player == GamePlayer.FIRST_DEALER
+                    and points_type == PointsType.HAND
+                    else Points(0)
+                ),
+                MAX_SCORE,
+            )
+        ),
+        Points(
+            min(
+                game_score.first_dealer_crib
+                + (
+                    points
+                    if game_player == GamePlayer.FIRST_DEALER
+                    and points_type == PointsType.CRIB
+                    else Points(0)
+                ),
+                MAX_SCORE,
+            )
         ),
     )
 
 
-def game_over(score: Tuple[Points, Points]) -> bool:
-    return max(score) >= MAX_SCORE
+def game_over(game_score: GameScore) -> bool:
+    return (
+        max(
+            game_score.first_pone_initial
+            + game_score.first_pone_play
+            + game_score.first_pone_hand
+            + game_score.first_pone_crib,
+            game_score.first_dealer_initial
+            + game_score.first_dealer_play
+            + game_score.first_dealer_hand
+            + game_score.first_dealer_crib,
+        )
+        >= MAX_SCORE
+    )
 
 
 NIBS_SCORE_POINTS: Points = Points(2)
@@ -394,59 +505,10 @@ CardCount = NewType("CardCount", int)
 DEALT_CARDS_LEN: CardCount = CardCount(6)
 
 
-def get_kept_cards(
-    pone_dealt_cards,
-    pone_kept_cards,
-    kept_pone_hand,
-    dealer_dealt_cards,
-    dealer_kept_cards,
-    kept_dealer_hand,
-) -> Tuple[Card, ...]:
-    if pone_dealt_cards and len(pone_dealt_cards) > 1 and not pone_kept_cards:
-        return tuple(kept_pone_hand)
-    if dealer_dealt_cards and len(dealer_dealt_cards) > 1 and not dealer_kept_cards:
-        return tuple(kept_dealer_hand)
-    return tuple()
-
-
 class GameSimulationResult(NamedTuple):
     kept_cards: Tuple[Card, ...]
-    pone_play_points: Points
-    pone_hand_points: Points
-    dealer_play_points: Points
-    dealer_hand_points: Points
-    crib_points: Points
+    score: GameScore
     non_initial_played_card_played: bool
-
-
-def create_hand_simulation_result(
-    pone_dealt_cards,
-    pone_kept_cards,
-    kept_pone_hand,
-    dealer_dealt_cards,
-    dealer_kept_cards,
-    kept_dealer_hand,
-    score,
-    initial_pone_score,
-    initial_dealer_score,
-    non_initial_played_card_played,
-) -> GameSimulationResult:
-    return GameSimulationResult(
-        get_kept_cards(
-            pone_dealt_cards,
-            pone_kept_cards,
-            kept_pone_hand,
-            dealer_dealt_cards,
-            dealer_kept_cards,
-            kept_dealer_hand,
-        ),
-        Points(score[0] - initial_pone_score),
-        Points(0),
-        Points(score[1] - initial_dealer_score),
-        Points(0),
-        Points(0),
-        non_initial_played_card_played,
-    )
 
 
 PlayTo31 = NewType("PlayTo31", List[Card])
@@ -457,382 +519,386 @@ def create_play_to_31() -> PlayTo31:
     return PlayTo31(played_cards)
 
 
+def get_game_player(player_to_play: Player, hand: int) -> GamePlayer:
+    return GamePlayer((player_to_play + hand) % 2)
+
+
 def simulate_game(
     pone_dealt_cards: List[Card],
     dealer_dealt_cards: List[Card],
     deck_less_fixed_cards: Sequence[Card],
     pone_kept_cards: List[Card],
     dealer_kept_cards: List[Card],
+    maximum_hands_per_game: int,
     pone_select_kept_cards,
+    pone_select_each_possible_kept_hand: bool,
     dealer_select_kept_cards,
+    dealer_select_each_possible_kept_hand: bool,
     pone_select_play,
     dealer_select_play,
     hide_pone_hand: bool,
     hide_dealer_hand: bool,
     pone_dealt_cards_possible_keeps,  # type: itertools.cycle[Tuple[Card, ...]]
     dealer_dealt_cards_possible_keeps,  # type: itertools.cycle[Tuple[Card, ...]]
-    initial_pone_score: Points,
-    initial_dealer_score: Points,
+    initial_first_pone_score: Points,
+    initial_first_dealer_score: Points,
     post_initial_play: Optional[Card],
     initial_played_cards: Tuple[Card, ...],
     hide_play_actions: bool,
 ) -> GameSimulationResult:
-    if pone_dealt_cards or dealer_dealt_cards:
-        random_hand_cards = random.sample(
-            deck_less_fixed_cards,
-            2 * DEALT_CARDS_LEN - len(pone_dealt_cards) - len(dealer_dealt_cards),
-        )
-        dealt_hands = [
-            [
-                *pone_dealt_cards.copy(),
-                *random_hand_cards[0 : (DEALT_CARDS_LEN - len(pone_dealt_cards))],
-            ],
-            [
-                *dealer_dealt_cards.copy(),
-                *random_hand_cards[(DEALT_CARDS_LEN - len(pone_dealt_cards)) :],
-            ],
-        ]
-    else:
-        random_hand_cards = random.sample(deck_less_fixed_cards, DEALT_CARDS_LEN * 2)
-        dealt_hands = [
-            random_hand_cards[0:DEALT_CARDS_LEN],
-            random_hand_cards[DEALT_CARDS_LEN:],
-        ]
-    if not hide_pone_hand:
-        print(f"{get_player_name(0):6} dealt {Hand(dealt_hands[0])}")
-    if not hide_dealer_hand:
-        print(f"{get_player_name(1):6} dealt {Hand(dealt_hands[1])}")
-    deck_less_dealt_cards = list(
-        set(deck_less_fixed_cards).difference(set(random_hand_cards))
+    first_kept_pone_hand: List[Card] = []
+    first_kept_dealer_hand: List[Card] = []
+    game_score: GameScore = GameScore(
+        initial_first_pone_score,
+        Points(0),
+        Points(0),
+        Points(0),
+        initial_first_dealer_score,
+        Points(0),
+        Points(0),
+        Points(0),
     )
-
-    if pone_kept_cards:
-        kept_pone_hand = [card for card in dealt_hands[0] if card in pone_kept_cards]
-    elif pone_select_kept_cards != keep_each_possibility:
-        kept_pone_hand = pone_select_kept_cards(dealt_hands[0])
-    elif pone_dealt_cards:
-        kept_pone_hand = list(next(pone_dealt_cards_possible_keeps))
-    else:
-        raise ValueError(
-            "Iterating through all possible kept hands not supported with non-fixed deals."
+    non_initial_played_card_played: bool = False
+    for hand in range(maximum_hands_per_game):
+        is_first_hand: bool = not hand
+        if is_first_hand and (pone_dealt_cards or dealer_dealt_cards):
+            random_hand_cards = random.sample(
+                deck_less_fixed_cards,
+                2 * DEALT_CARDS_LEN - len(pone_dealt_cards) - len(dealer_dealt_cards),
+            )
+            dealt_hands = [
+                [
+                    *pone_dealt_cards.copy(),
+                    *random_hand_cards[0 : (DEALT_CARDS_LEN - len(pone_dealt_cards))],
+                ],
+                [
+                    *dealer_dealt_cards.copy(),
+                    *random_hand_cards[(DEALT_CARDS_LEN - len(pone_dealt_cards)) :],
+                ],
+            ]
+        else:
+            random_hand_cards = random.sample(
+                deck_less_fixed_cards, DEALT_CARDS_LEN * 2
+            )
+            dealt_hands = [
+                random_hand_cards[0:DEALT_CARDS_LEN],
+                random_hand_cards[DEALT_CARDS_LEN:],
+            ]
+        if not hide_pone_hand:
+            print(f"{get_player_name(0):6} dealt {Hand(dealt_hands[0])}")
+        if not hide_dealer_hand:
+            print(f"{get_player_name(1):6} dealt {Hand(dealt_hands[1])}")
+        deck_less_dealt_cards = list(
+            set(deck_less_fixed_cards).difference(set(random_hand_cards))
         )
 
-    if dealer_kept_cards:
-        kept_dealer_hand = [
-            card for card in dealt_hands[1] if card in dealer_kept_cards
-        ]
-    elif dealer_select_kept_cards != keep_each_possibility:
-        kept_dealer_hand = dealer_select_kept_cards(dealt_hands[1])
-    elif dealer_dealt_cards:
-        kept_dealer_hand = list(next(dealer_dealt_cards_possible_keeps))
-    else:
-        raise ValueError(
-            "Iterating through all possible kept hands not supported with non-fixed deals."
-        )
-
-    kept_hands = [kept_pone_hand, kept_dealer_hand]
-    hands = [list(kept_hand) for kept_hand in kept_hands]
-
-    pone_discarded_cards = (
-        [card for card in dealt_hands[0] if card not in pone_kept_cards]
-        if pone_kept_cards
-        else [card for card in dealt_hands[0] if card not in kept_hands[0]]
-    )
-    if not hide_pone_hand:
-        print(f"{get_player_name(0):6} discarded {Hand(pone_discarded_cards)}")
-    dealer_discarded_cards = (
-        [card for card in dealt_hands[1] if card not in dealer_kept_cards]
-        if dealer_kept_cards
-        else [card for card in dealt_hands[1] if card not in kept_hands[1]]
-    )
-    if not hide_dealer_hand:
-        print(f"{get_player_name(1):6} discarded {Hand(dealer_discarded_cards)}")
-
-    if len(hands[0]) != KEPT_CARDS_LEN or len(hands[1]) != KEPT_CARDS_LEN:
-        raise ValueError(
-            f"Kept non-{KEPT_CARDS_LEN} number of cards in one of {Hand(hands[0])} or {Hand(hands[1])}"
-        )
-
-    if not hide_pone_hand:
-        print(f"{get_player_name(0):6} kept {Hand(hands[0])}")
-    if not hide_dealer_hand:
-        print(f"{get_player_name(1):6} kept {Hand(hands[1])}")
-
-    score: Tuple[Points, Points] = (initial_pone_score, initial_dealer_score)
-
-    starter = random.sample(deck_less_dealt_cards, 1)[0]
-    if not hide_play_actions:
-        print(f"Cut/starter card is: {starter}")
-    if starter.index == 10:
-        if not hide_play_actions:
-            print(f"His heels/nibs for 2 for {get_player_name(1)}")
-        score = add_to_score(score, DEALER, NIBS_SCORE_POINTS)
-        if game_over(score):
-            # TODO: replace with constant maintenance of simulation result which can be returned at any time
-            return GameSimulationResult(
-                tuple(),
-                Points(0),
-                Points(0),
-                NIBS_SCORE_POINTS,
-                Points(0),
-                Points(0),
-                False,
+        if is_first_hand and pone_kept_cards:
+            kept_pone_hand = [
+                card for card in dealt_hands[0] if card in pone_kept_cards
+            ]
+        elif not (is_first_hand and pone_select_each_possible_kept_hand):
+            kept_pone_hand = pone_select_kept_cards(dealt_hands[0])
+        elif is_first_hand and pone_dealt_cards:
+            kept_pone_hand = first_kept_pone_hand = list(
+                next(pone_dealt_cards_possible_keeps)
+            )
+        else:
+            raise ValueError(
+                "Iterating through all possible kept hands not supported with non-fixed deals."
             )
 
-    player_to_play: Player = 0
-    play_count: PlayCount = START_OF_PLAY_COUNT
-    consecutive_go_count = 0
-    most_recently_played_index = None
-    most_recently_played_index_count = 0
-    plays_to_31: List[PlayTo31] = [create_play_to_31()]
-    remaining_initial_played_cards: List[Card] = list(initial_played_cards)
-    remaining_post_initial_play = post_initial_play
-    non_initial_played_card_played: bool = False
-    while hands[0] or hands[1]:
-        playable_cards = [
-            card
-            for card in hands[player_to_play]
-            if play_count + card.count <= THIRTY_ONE_COUNT
-        ]
-
-        if playable_cards:
-            player_to_play_play: Card
-
-            if (not remaining_initial_played_cards) and remaining_post_initial_play:
-                if not remaining_post_initial_play or (
-                    remaining_post_initial_play
-                    and remaining_post_initial_play not in hands[player_to_play]
-                ):
-                    non_initial_played_card_played = True
-                    break
-
-                player_to_play_play = remaining_post_initial_play
-                remaining_post_initial_play = None
-            else:
-                player_to_play_play = playable_cards[
-                    pone_select_play(playable_cards, play_count, plays_to_31[-1])
-                    if player_to_play == 0
-                    else dealer_select_play(playable_cards, play_count, plays_to_31[-1])
-                ]
-            hands[player_to_play].remove(player_to_play_play)
-            plays_to_31[-1].append(player_to_play_play)
-            play_count += player_to_play_play.count
-            if remaining_initial_played_cards:
-                expected_play = remaining_initial_played_cards.pop(0)
-                if player_to_play_play != expected_play:
-                    non_initial_played_card_played = True
-                    break
-            if not hide_play_actions:
-                print(
-                    f"{get_player_name(player_to_play):6} plays {player_to_play_play} for {play_count}"
-                )
-
-            # Pairs points
-            if player_to_play_play.index == most_recently_played_index:
-                most_recently_played_index_count += 1
-                if most_recently_played_index_count == 4:
-                    if not hide_play_actions:
-                        print(
-                            f"!Double pairs royale for {DOUBLE_PAIRS_ROYALE_POINTS} points for {get_player_name(player_to_play)}."
-                        )
-                    score = add_to_score(
-                        score, player_to_play, DOUBLE_PAIRS_ROYALE_POINTS
-                    )
-                    if game_over(score):
-                        break
-                elif most_recently_played_index_count == 3:
-                    if not hide_play_actions:
-                        print(
-                            f"!Pairs royale for {PAIRS_ROYALE_POINTS} points for {get_player_name(player_to_play)}."
-                        )
-                    score = add_to_score(score, player_to_play, PAIRS_ROYALE_POINTS)
-                    if game_over(score):
-                        break
-                elif most_recently_played_index_count == 2:
-                    if not hide_play_actions:
-                        print(
-                            f"!Pair for {PAIR_POINTS} points for {get_player_name(player_to_play)}."
-                        )
-                    score = add_to_score(score, player_to_play, PAIR_POINTS)
-                    if game_over(score):
-                        break
-            else:
-                most_recently_played_index = player_to_play_play.index
-                most_recently_played_index_count = 1
-
-            # 15 and 31 count points
-            if play_count == FIFTEEN_COUNT:
-                if not hide_play_actions:
-                    print(
-                        f"!{FIFTEEN_COUNT} for {FIFTEENS_POINTS} points for {get_player_name(player_to_play)}."
-                    )
-                score = add_to_score(score, player_to_play, FIFTEENS_POINTS)
-                if game_over(score):
-                    break
-            elif play_count == THIRTY_ONE_COUNT:
-                if not hide_play_actions:
-                    print(
-                        f"!{THIRTY_ONE_COUNT} for {THIRTY_ONE_COUNT_POINTS} point for {get_player_name(player_to_play)}."
-                    )
-                score = add_to_score(score, player_to_play, THIRTY_ONE_COUNT_POINTS)
-                if game_over(score):
-                    break
-
-            current_play_run_length = get_current_play_run_length(plays_to_31[-1])
-            if current_play_run_length:
-                if not hide_play_actions:
-                    print(
-                        f"!Run for {current_play_run_length} points for {get_player_name(player_to_play)}."
-                    )
-                score = add_to_score(score, player_to_play, current_play_run_length)
-                if game_over(score):
-                    break
-
-            consecutive_go_count = 0
+        if is_first_hand and dealer_kept_cards:
+            kept_dealer_hand = [
+                card for card in dealt_hands[1] if card in dealer_kept_cards
+            ]
+        elif not (is_first_hand and dealer_select_each_possible_kept_hand):
+            kept_dealer_hand = dealer_select_kept_cards(dealt_hands[1])
+        elif is_first_hand and dealer_dealt_cards:
+            kept_dealer_hand = first_kept_dealer_hand = list(
+                next(dealer_dealt_cards_possible_keeps)
+            )
         else:
+            raise ValueError(
+                "Iterating through all possible kept hands not supported with non-fixed deals."
+            )
+
+        kept_hands = [kept_pone_hand, kept_dealer_hand]
+        hands = [list(kept_hand) for kept_hand in kept_hands]
+
+        pone_discarded_cards = (
+            [card for card in dealt_hands[0] if card not in pone_kept_cards]
+            if (is_first_hand and pone_kept_cards)
+            else [card for card in dealt_hands[0] if card not in kept_hands[0]]
+        )
+        if not hide_pone_hand:
+            print(f"{get_player_name(0):6} discarded {Hand(pone_discarded_cards)}")
+
+        dealer_discarded_cards = (
+            [card for card in dealt_hands[1] if card not in dealer_kept_cards]
+            if (is_first_hand and dealer_kept_cards)
+            else [card for card in dealt_hands[1] if card not in kept_hands[1]]
+        )
+        if not hide_dealer_hand:
+            print(f"{get_player_name(1):6} discarded {Hand(dealer_discarded_cards)}")
+
+        if len(hands[0]) != KEPT_CARDS_LEN or len(hands[1]) != KEPT_CARDS_LEN:
+            raise ValueError(
+                f"Kept non-{KEPT_CARDS_LEN} number of cards in one of {Hand(hands[0])} or {Hand(hands[1])}"
+            )
+
+        if not hide_pone_hand:
+            print(f"{get_player_name(0):6} kept {Hand(hands[0])}")
+        if not hide_dealer_hand:
+            print(f"{get_player_name(1):6} kept {Hand(hands[1])}")
+
+        starter = random.sample(deck_less_dealt_cards, 1)[0]
+        if not hide_play_actions:
+            print(f"Cut/starter card is: {starter}")
+        if starter.index == 10:
             if not hide_play_actions:
-                print(f'{get_player_name(player_to_play):6} says "Go!"')
-            consecutive_go_count += 1
-            if consecutive_go_count == 2:
+                print(f"His heels/nibs for 2 for {get_player_name(1)}")
+            dealer_game_player = GamePlayer((hand + 1) % 2)
+            game_score = add_to_game_score(
+                game_score, dealer_game_player, PointsType.PLAY, NIBS_SCORE_POINTS
+            )
+            if game_over(game_score):
+                break
+
+        player_to_play: Player = 0
+        play_count: PlayCount = START_OF_PLAY_COUNT
+        consecutive_go_count = 0
+        most_recently_played_index = None
+        most_recently_played_index_count = 0
+        plays_to_31: List[PlayTo31] = [create_play_to_31()]
+        remaining_initial_played_cards: List[Card] = list(initial_played_cards)
+        remaining_post_initial_play = post_initial_play
+        while hands[0] or hands[1]:
+            playable_cards = [
+                card
+                for card in hands[player_to_play]
+                if play_count + card.count <= THIRTY_ONE_COUNT
+            ]
+
+            if playable_cards:
+                player_to_play_play: Card
+
+                if (not remaining_initial_played_cards) and remaining_post_initial_play:
+                    if not remaining_post_initial_play or (
+                        remaining_post_initial_play
+                        and remaining_post_initial_play not in hands[player_to_play]
+                    ):
+                        non_initial_played_card_played = True
+                        break
+
+                    player_to_play_play = remaining_post_initial_play
+                    remaining_post_initial_play = None
+                else:
+                    player_to_play_play = playable_cards[
+                        pone_select_play(playable_cards, play_count, plays_to_31[-1])
+                        if player_to_play == 0
+                        else dealer_select_play(
+                            playable_cards, play_count, plays_to_31[-1]
+                        )
+                    ]
+                hands[player_to_play].remove(player_to_play_play)
+                plays_to_31[-1].append(player_to_play_play)
+                play_count += player_to_play_play.count
+                if remaining_initial_played_cards:
+                    expected_play = remaining_initial_played_cards.pop(0)
+                    if player_to_play_play != expected_play:
+                        non_initial_played_card_played = True
+                        break
                 if not hide_play_actions:
                     print(
-                        f"!Go for {GO_POINTS} point for {get_player_name(player_to_play)}."
+                        f"{get_player_name(player_to_play):6} plays {player_to_play_play} for {play_count}"
                     )
-                score = add_to_score(score, player_to_play, GO_POINTS)
-                if game_over(score):
-                    break
 
-                if not hide_play_actions:
-                    print(f"---resetting play count to {START_OF_PLAY_COUNT}---")
+                # Pairs points
+                if player_to_play_play.index == most_recently_played_index:
+                    most_recently_played_index_count += 1
+                    if most_recently_played_index_count == 4:
+                        if not hide_play_actions:
+                            print(
+                                f"!Double pairs royale for {DOUBLE_PAIRS_ROYALE_POINTS} points for {get_player_name(player_to_play)}."
+                            )
+                        game_score = add_to_game_score(
+                            game_score,
+                            get_game_player(player_to_play, hand),
+                            PointsType.PLAY,
+                            DOUBLE_PAIRS_ROYALE_POINTS,
+                        )
+                        if game_over(game_score):
+                            break
+                    elif most_recently_played_index_count == 3:
+                        if not hide_play_actions:
+                            print(
+                                f"!Pairs royale for {PAIRS_ROYALE_POINTS} points for {get_player_name(player_to_play)}."
+                            )
+                        game_score = add_to_game_score(
+                            game_score,
+                            get_game_player(player_to_play, hand),
+                            PointsType.PLAY,
+                            PAIRS_ROYALE_POINTS,
+                        )
+                        if game_over(game_score):
+                            break
+                    elif most_recently_played_index_count == 2:
+                        if not hide_play_actions:
+                            print(
+                                f"!Pair for {PAIR_POINTS} points for {get_player_name(player_to_play)}."
+                            )
+                        game_score = add_to_game_score(
+                            game_score,
+                            get_game_player(player_to_play, hand),
+                            PointsType.PLAY,
+                            PAIR_POINTS,
+                        )
+                        if game_over(game_score):
+                            break
+                else:
+                    most_recently_played_index = player_to_play_play.index
+                    most_recently_played_index_count = 1
+
+                # 15 and 31 count points
+                if play_count == FIFTEEN_COUNT:
+                    if not hide_play_actions:
+                        print(
+                            f"!{FIFTEEN_COUNT} for {FIFTEENS_POINTS} points for {get_player_name(player_to_play)}."
+                        )
+                    game_score = add_to_game_score(
+                        game_score,
+                        get_game_player(player_to_play, hand),
+                        PointsType.PLAY,
+                        FIFTEENS_POINTS,
+                    )
+                    if game_over(game_score):
+                        break
+                elif play_count == THIRTY_ONE_COUNT:
+                    if not hide_play_actions:
+                        print(
+                            f"!{THIRTY_ONE_COUNT} for {THIRTY_ONE_COUNT_POINTS} point for {get_player_name(player_to_play)}."
+                        )
+                    game_score = add_to_game_score(
+                        game_score,
+                        get_game_player(player_to_play, hand),
+                        PointsType.PLAY,
+                        THIRTY_ONE_COUNT_POINTS,
+                    )
+                    if game_over(game_score):
+                        break
+
+                current_play_run_length = get_current_play_run_length(plays_to_31[-1])
+                if current_play_run_length:
+                    if not hide_play_actions:
+                        print(
+                            f"!Run for {current_play_run_length} points for {get_player_name(player_to_play)}."
+                        )
+                    game_score = add_to_game_score(
+                        game_score,
+                        get_game_player(player_to_play, hand),
+                        PointsType.PLAY,
+                        current_play_run_length,
+                    )
+                    if game_over(game_score):
+                        break
+
                 consecutive_go_count = 0
-                play_count = START_OF_PLAY_COUNT
-                plays_to_31.append(create_play_to_31())
-                most_recently_played_index = None
-                most_recently_played_index_count = 0
+            else:
+                if not hide_play_actions:
+                    print(f'{get_player_name(player_to_play):6} says "Go!"')
+                consecutive_go_count += 1
+                if consecutive_go_count == 2:
+                    if not hide_play_actions:
+                        print(
+                            f"!Go for {GO_POINTS} point for {get_player_name(player_to_play)}."
+                        )
+                    game_score = add_to_game_score(
+                        game_score,
+                        get_game_player(player_to_play, hand),
+                        PointsType.PLAY,
+                        GO_POINTS,
+                    )
+                    if game_over(game_score):
+                        break
 
-        player_to_play = 1 if player_to_play == 0 else 0
+                    if not hide_play_actions:
+                        print(f"---resetting play count to {START_OF_PLAY_COUNT}---")
+                    consecutive_go_count = 0
+                    play_count = START_OF_PLAY_COUNT
+                    plays_to_31.append(create_play_to_31())
+                    most_recently_played_index = None
+                    most_recently_played_index_count = 0
 
-    if non_initial_played_card_played or game_over(score):
-        return create_hand_simulation_result(
-            pone_dealt_cards,
-            pone_kept_cards,
-            kept_pone_hand,
-            dealer_dealt_cards,
-            dealer_kept_cards,
-            kept_dealer_hand,
-            score,
-            initial_pone_score,
-            initial_dealer_score,
-            non_initial_played_card_played,
-        )
+            player_to_play = 1 if player_to_play == 0 else 0
 
-    # Last Card points
-    last_player_to_play: Player = 1 if player_to_play == 0 else 0
-    if not hide_play_actions:
-        print(
-            f"!Last card for {LAST_CARD_POINTS} point for {get_player_name(last_player_to_play)}."
-        )
-    score = add_to_score(score, last_player_to_play, LAST_CARD_POINTS)
-    if game_over(score):
-        # TODO: replace with constant maintenance of simulation result which can be returned at any time
-        return create_hand_simulation_result(
-            pone_dealt_cards,
-            pone_kept_cards,
-            kept_pone_hand,
-            dealer_dealt_cards,
-            dealer_kept_cards,
-            kept_dealer_hand,
-            score,
-            initial_pone_score,
-            initial_dealer_score,
-            False,
-        )
+        if non_initial_played_card_played or game_over(game_score):
+            break
 
-    pone_hand_points = score_hand_and_starter(kept_hands[0], starter)
-    if not hide_play_actions:
-        print(
-            f"Pone hand {Hand(reversed(sorted(kept_hands[0])))} with starter {starter} points: {pone_hand_points}"
+        # Last Card points
+        last_player_to_play: Player = 1 if player_to_play == 0 else 0
+        if not hide_play_actions:
+            print(
+                f"!Last card for {LAST_CARD_POINTS} point for {get_player_name(last_player_to_play)}."
+            )
+        game_score = add_to_game_score(
+            game_score,
+            get_game_player(last_player_to_play, hand),
+            PointsType.PLAY,
+            LAST_CARD_POINTS,
         )
+        if game_over(game_score):
+            break
 
-    dealer_hand_points = score_hand_and_starter(kept_hands[1], starter)
-    if not hide_play_actions:
-        print(
-            f"Dealer hand {Hand(reversed(sorted(kept_hands[1])))} with starter {starter} points: {dealer_hand_points}"
-        )
+        pone_hand_points = score_hand_and_starter(kept_hands[0], starter)
+        if not hide_play_actions:
+            print(
+                f"Pone hand {Hand(reversed(sorted(kept_hands[0])))} with starter {starter} points: {pone_hand_points}"
+            )
 
-    crib_cards = pone_discarded_cards + dealer_discarded_cards
-    crib_points = score_hand_and_starter(crib_cards, starter, is_crib=True)
-    if not hide_play_actions:
-        print(
-            f"Crib {Hand(reversed(sorted(crib_cards)))} with starter {starter} points: {crib_points}"
-        )
+        dealer_hand_points = score_hand_and_starter(kept_hands[1], starter)
+        if not hide_play_actions:
+            print(
+                f"Dealer hand {Hand(reversed(sorted(kept_hands[1])))} with starter {starter} points: {dealer_hand_points}"
+            )
 
-    pone_play_points = Points(score[0] - initial_pone_score)
-    dealer_play_points = Points(score[1] - initial_dealer_score)
+        crib_cards = pone_discarded_cards + dealer_discarded_cards
+        crib_points = score_hand_and_starter(crib_cards, starter, is_crib=True)
+        if not hide_play_actions:
+            print(
+                f"Crib {Hand(reversed(sorted(crib_cards)))} with starter {starter} points: {crib_points}"
+            )
 
-    score = add_to_score(score, PONE, pone_hand_points)
-    if game_over(score):
-        # TODO: replace with constant maintenance of simulation result which can be returned at any time
-        return create_hand_simulation_result(
-            pone_dealt_cards,
-            pone_kept_cards,
-            kept_pone_hand,
-            dealer_dealt_cards,
-            dealer_kept_cards,
-            kept_dealer_hand,
-            score,
-            initial_pone_score,
-            initial_dealer_score,
-            False,
+        game_score = add_to_game_score(
+            game_score, get_game_player(PONE, hand), PointsType.HAND, pone_hand_points
         )
+        if game_over(game_score):
+            break
 
-    score = add_to_score(score, DEALER, dealer_hand_points)
-    if game_over(score):
-        # TODO: replace with constant maintenance of simulation result which can be returned at any time
-        return create_hand_simulation_result(
-            pone_dealt_cards,
-            pone_kept_cards,
-            kept_pone_hand,
-            dealer_dealt_cards,
-            dealer_kept_cards,
-            kept_dealer_hand,
-            score,
-            initial_pone_score,
-            initial_dealer_score,
-            False,
+        game_score = add_to_game_score(
+            game_score,
+            get_game_player(DEALER, hand),
+            PointsType.HAND,
+            dealer_hand_points,
         )
-    score = add_to_score(score, DEALER, crib_points)
-    if game_over(score):
-        # TODO: replace with constant maintenance of simulation result which can be returned at any time
-        return create_hand_simulation_result(
-            pone_dealt_cards,
-            pone_kept_cards,
-            kept_pone_hand,
-            dealer_dealt_cards,
-            dealer_kept_cards,
-            kept_dealer_hand,
-            score,
-            initial_pone_score,
-            initial_dealer_score,
-            False,
+        if game_over(game_score):
+            break
+        game_score = add_to_game_score(
+            game_score, get_game_player(DEALER, hand), PointsType.CRIB, crib_points
         )
+        if game_over(game_score):
+            break
+
+    if pone_dealt_cards and len(pone_dealt_cards) > 1 and not pone_kept_cards:
+        kept_cards = tuple(first_kept_pone_hand)
+    elif dealer_dealt_cards and len(dealer_dealt_cards) > 1 and not dealer_kept_cards:
+        kept_cards = tuple(first_kept_dealer_hand)
+    else:
+        kept_cards = tuple()
 
     return GameSimulationResult(
-        # TODO: replace with constant maintenance of simulation result which can be returned at any time
-        get_kept_cards(
-            pone_dealt_cards,
-            pone_kept_cards,
-            kept_pone_hand,
-            dealer_dealt_cards,
-            dealer_kept_cards,
-            kept_dealer_hand,
-        ),
-        pone_play_points,
-        pone_hand_points,
-        dealer_play_points,
-        dealer_hand_points,
-        crib_points,
-        False,
+        kept_cards,
+        game_score,
+        non_initial_played_card_played,
     )
 
 
@@ -873,8 +939,9 @@ def game_points(
 def simulate_games(
     process_game_count,
     overall_game_count,
-    initial_pone_score: Points,
-    initial_dealer_score: Points,
+    maximum_hands_per_game: int,
+    initial_first_pone_score: Points,
+    initial_first_dealer_score: Points,
     pone_dealt_cards: List[Card],
     dealer_dealt_cards: List[Card],
     pone_kept_cards: List[Card],
@@ -883,7 +950,9 @@ def simulate_games(
     players_statistics,
     players_statistics_lock,
     pone_select_kept_cards,
+    pone_select_each_possible_kept_hand: bool,
     dealer_select_kept_cards,
+    dealer_select_each_possible_kept_hand: bool,
     pone_select_play: PlaySelector,
     dealer_select_play: PlaySelector,
     select_each_post_initial_play: bool,
@@ -902,19 +971,31 @@ def simulate_games(
             if card not in pone_dealt_cards and card not in dealer_dealt_cards
         ]
 
-        pone_play_statistics: Dict[Tuple[Card], Statistics] = {}
-        pone_hand_statistics: Dict[Tuple[Card], Statistics] = {}
-        pone_statistics: Dict[Tuple[Card], Statistics] = {}
-        pone_game_points_statistics: Dict[Tuple[Card], Statistics] = {}
-        dealer_play_statistics: Dict[Tuple[Card], Statistics] = {}
-        dealer_hand_statistics: Dict[Tuple[Card], Statistics] = {}
-        crib_statistics: Dict[Tuple[Card], Statistics] = {}
-        dealer_statistics: Dict[Tuple[Card], Statistics] = {}
-        dealer_game_points_statistics: Dict[Tuple[Card], Statistics] = {}
-        pone_minus_dealer_play_statistics: Dict[Tuple[Card], Statistics] = {}
-        pone_minus_dealer_hand_statistics: Dict[Tuple[Card], Statistics] = {}
-        pone_minus_dealer_statistics: Dict[Tuple[Card], Statistics] = {}
-        pone_minus_dealer_game_points_statistics: Dict[Tuple[Card], Statistics] = {}
+        first_pone_play_statistics: Dict[Tuple[Card], Statistics] = {}
+        first_pone_hand_statistics: Dict[Tuple[Card], Statistics] = {}
+        first_pone_crib_statistics: Dict[Tuple[Card], Statistics] = {}
+        overall_first_pone_points_statistics: Dict[Tuple[Card], Statistics] = {}
+        first_pone_game_points_statistics: Dict[Tuple[Card], Statistics] = {}
+        first_dealer_play_statistics: Dict[Tuple[Card], Statistics] = {}
+        first_dealer_hand_statistics: Dict[Tuple[Card], Statistics] = {}
+        first_dealer_crib_statistics: Dict[Tuple[Card], Statistics] = {}
+        overall_first_dealer_points_statistics: Dict[Tuple[Card], Statistics] = {}
+        first_dealer_game_points_statistics: Dict[Tuple[Card], Statistics] = {}
+        first_pone_minus_first_dealer_play_statistics: Dict[
+            Tuple[Card], Statistics
+        ] = {}
+        first_pone_minus_first_dealer_hand_statistics: Dict[
+            Tuple[Card], Statistics
+        ] = {}
+        first_pone_minus_first_dealer_crib_statistics: Dict[
+            Tuple[Card], Statistics
+        ] = {}
+        first_pone_minus_first_dealer_total_points_statistics: Dict[
+            Tuple[Card], Statistics
+        ] = {}
+        first_pone_minus_first_dealer_game_points_statistics: Dict[
+            Tuple[Card], Statistics
+        ] = {}
 
         pone_dealt_cards_possible_keeps = itertools.cycle(
             itertools.combinations(pone_dealt_cards, KEPT_CARDS_LEN)
@@ -954,44 +1035,52 @@ def simulate_games(
                     deck_less_fixed_cards,
                     pone_kept_cards,
                     dealer_kept_cards,
+                    maximum_hands_per_game,
                     pone_select_kept_cards,
+                    pone_select_each_possible_kept_hand,
                     dealer_select_kept_cards,
+                    dealer_select_each_possible_kept_hand,
                     pone_select_play,
                     dealer_select_play,
                     hide_pone_hand,
                     hide_dealer_hand,
                     pone_dealt_cards_possible_keeps,
                     dealer_dealt_cards_possible_keeps,
-                    initial_pone_score,
-                    initial_dealer_score,
+                    initial_first_pone_score,
+                    initial_first_dealer_score,
                     post_initial_play,
                     initial_played_cards,
                     hide_play_actions,
                 )
 
-            overall_pone_points = (
-                game_simulation_result.pone_play_points
-                + game_simulation_result.pone_hand_points
+            first_pone_total_points = (
+                game_simulation_result.score.first_pone_play
+                + game_simulation_result.score.first_pone_hand
+                + game_simulation_result.score.first_pone_crib
             )
-            overall_dealer_points = (
-                game_simulation_result.dealer_play_points
-                + game_simulation_result.dealer_hand_points
-                + game_simulation_result.crib_points
+            first_dealer_total_points = (
+                game_simulation_result.score.first_dealer_play
+                + game_simulation_result.score.first_dealer_hand
+                + game_simulation_result.score.first_dealer_crib
             )
 
-            final_pone_score = Points(initial_pone_score + overall_pone_points)
-            final_dealer_score = Points(initial_dealer_score + overall_dealer_points)
+            final_first_pone_score = Points(
+                initial_first_pone_score + first_pone_total_points
+            )
+            final_first_dealer_score = Points(
+                initial_first_dealer_score + first_dealer_total_points
+            )
 
-            (pone_game_points, dealer_game_points) = game_points(
-                final_pone_score, final_dealer_score
+            (first_pone_game_points, first_dealer_game_points) = game_points(
+                final_first_pone_score, final_first_dealer_score
             )
 
             if not hide_play_actions:
                 print(
-                    f"Score at end of game simulation: {(initial_pone_score + overall_pone_points, initial_dealer_score + overall_dealer_points)}"
+                    f"Score at end of game simulation: {(initial_first_pone_score + first_pone_total_points, initial_first_dealer_score + first_dealer_total_points)}"
                 )
                 print(
-                    f"Game points at end of game simulation: {(pone_game_points, dealer_game_points)}"
+                    f"Game points at end of game simulation: {(first_pone_game_points, first_dealer_game_points)}"
                 )
 
             # TODO: used namedtuple
@@ -999,64 +1088,83 @@ def simulate_games(
                 [game_simulation_result.kept_cards, post_initial_play]
             )
             statistics_push(
-                pone_play_statistics,
+                first_pone_play_statistics,
                 statistics_key,
-                game_simulation_result.pone_play_points,
+                game_simulation_result.score.first_pone_play,
             )
             statistics_push(
-                pone_hand_statistics,
+                first_pone_hand_statistics,
                 statistics_key,
-                game_simulation_result.pone_hand_points,
+                game_simulation_result.score.first_pone_hand,
             )
-            statistics_push(pone_statistics, statistics_key, overall_pone_points)
             statistics_push(
-                pone_game_points_statistics, statistics_key, pone_game_points
+                first_pone_crib_statistics,
+                statistics_key,
+                game_simulation_result.score.first_pone_crib,
+            )
+            statistics_push(
+                overall_first_pone_points_statistics,
+                statistics_key,
+                first_pone_total_points,
+            )
+            statistics_push(
+                first_pone_game_points_statistics,
+                statistics_key,
+                first_pone_game_points,
             )
 
             statistics_push(
-                dealer_play_statistics,
+                first_dealer_play_statistics,
                 statistics_key,
-                game_simulation_result.dealer_play_points,
+                game_simulation_result.score.first_dealer_play,
             )
             statistics_push(
-                dealer_hand_statistics,
+                first_dealer_hand_statistics,
                 statistics_key,
-                game_simulation_result.dealer_hand_points,
+                game_simulation_result.score.first_dealer_hand,
             )
             statistics_push(
-                crib_statistics, statistics_key, game_simulation_result.crib_points
+                first_dealer_crib_statistics,
+                statistics_key,
+                game_simulation_result.score.first_dealer_crib,
             )
             statistics_push(
-                dealer_statistics,
+                overall_first_dealer_points_statistics,
                 statistics_key,
-                overall_dealer_points,
+                first_dealer_total_points,
             )
             statistics_push(
-                dealer_game_points_statistics,
+                first_dealer_game_points_statistics,
                 statistics_key,
-                dealer_game_points,
+                first_dealer_game_points,
             )
             statistics_push(
-                pone_minus_dealer_play_statistics,
+                first_pone_minus_first_dealer_play_statistics,
                 statistics_key,
-                game_simulation_result.pone_play_points
-                - game_simulation_result.dealer_play_points,
+                game_simulation_result.score.first_pone_play
+                - game_simulation_result.score.first_dealer_play,
             )
             statistics_push(
-                pone_minus_dealer_hand_statistics,
+                first_pone_minus_first_dealer_hand_statistics,
                 statistics_key,
-                game_simulation_result.pone_hand_points
-                - game_simulation_result.dealer_hand_points,
+                game_simulation_result.score.first_pone_hand
+                - game_simulation_result.score.first_dealer_hand,
             )
             statistics_push(
-                pone_minus_dealer_statistics,
+                first_pone_minus_first_dealer_crib_statistics,
                 statistics_key,
-                overall_pone_points - overall_dealer_points,
+                game_simulation_result.score.first_pone_crib
+                - game_simulation_result.score.first_dealer_crib,
             )
             statistics_push(
-                pone_minus_dealer_game_points_statistics,
+                first_pone_minus_first_dealer_total_points_statistics,
                 statistics_key,
-                pone_game_points - dealer_game_points,
+                first_pone_total_points - first_dealer_total_points,
+            )
+            statistics_push(
+                first_pone_minus_first_dealer_game_points_statistics,
+                statistics_key,
+                first_pone_game_points - first_dealer_game_points,
             )
 
             if (
@@ -1066,87 +1174,117 @@ def simulate_games(
                 players_statistics_lock.acquire()
 
                 statistics_dict_add(
-                    players_statistics, "pone_play", pone_play_statistics
+                    players_statistics, "first_pone_play", first_pone_play_statistics
                 )
-                pone_play_statistics.clear()
+                first_pone_play_statistics.clear()
 
                 statistics_dict_add(
-                    players_statistics, "pone_hand", pone_hand_statistics
+                    players_statistics, "first_pone_hand", first_pone_hand_statistics
                 )
-                pone_hand_statistics.clear()
-
-                statistics_dict_add(players_statistics, "pone", pone_statistics)
-                pone_statistics.clear()
+                first_pone_hand_statistics.clear()
 
                 statistics_dict_add(
-                    players_statistics, "pone_game_points", pone_game_points_statistics
+                    players_statistics, "first_pone_crib", first_pone_crib_statistics
                 )
-                pone_game_points_statistics.clear()
-
-                statistics_dict_add(
-                    players_statistics, "dealer_play", dealer_play_statistics
-                )
-                dealer_play_statistics.clear()
-
-                statistics_dict_add(
-                    players_statistics, "dealer_hand", dealer_hand_statistics
-                )
-                dealer_hand_statistics.clear()
-
-                statistics_dict_add(players_statistics, "crib", crib_statistics)
-                crib_statistics.clear()
-
-                statistics_dict_add(players_statistics, "dealer", dealer_statistics)
-                dealer_statistics.clear()
+                first_pone_crib_statistics.clear()
 
                 statistics_dict_add(
                     players_statistics,
-                    "dealer_game_points",
-                    dealer_game_points_statistics,
+                    "first_pone_total_points",
+                    overall_first_pone_points_statistics,
                 )
-                dealer_game_points_statistics.clear()
+                overall_first_pone_points_statistics.clear()
 
                 statistics_dict_add(
                     players_statistics,
-                    "pone_minus_dealer_play",
-                    pone_minus_dealer_play_statistics,
+                    "first_pone_game_points",
+                    first_pone_game_points_statistics,
                 )
-                pone_minus_dealer_play_statistics.clear()
+                first_pone_game_points_statistics.clear()
 
                 statistics_dict_add(
                     players_statistics,
-                    "pone_minus_dealer_hand",
-                    pone_minus_dealer_hand_statistics,
+                    "first_dealer_play",
+                    first_dealer_play_statistics,
                 )
-                pone_minus_dealer_hand_statistics.clear()
+                first_dealer_play_statistics.clear()
 
                 statistics_dict_add(
                     players_statistics,
-                    "pone_minus_dealer",
-                    pone_minus_dealer_statistics,
+                    "first_dealer_hand",
+                    first_dealer_hand_statistics,
                 )
-                pone_minus_dealer_statistics.clear()
+                first_dealer_hand_statistics.clear()
 
                 statistics_dict_add(
                     players_statistics,
-                    "pone_minus_dealer_game_points",
-                    pone_minus_dealer_game_points_statistics,
+                    "first_dealer_crib",
+                    first_dealer_crib_statistics,
                 )
-                pone_minus_dealer_game_points_statistics.clear()
+                first_dealer_crib_statistics.clear()
+
+                statistics_dict_add(
+                    players_statistics,
+                    "first_dealer_total_points",
+                    overall_first_dealer_points_statistics,
+                )
+                overall_first_dealer_points_statistics.clear()
+
+                statistics_dict_add(
+                    players_statistics,
+                    "first_dealer_game_points",
+                    first_dealer_game_points_statistics,
+                )
+                first_dealer_game_points_statistics.clear()
+
+                statistics_dict_add(
+                    players_statistics,
+                    "first_pone_minus_first_dealer_play",
+                    first_pone_minus_first_dealer_play_statistics,
+                )
+                first_pone_minus_first_dealer_play_statistics.clear()
+
+                statistics_dict_add(
+                    players_statistics,
+                    "first_pone_minus_first_dealer_hand",
+                    first_pone_minus_first_dealer_hand_statistics,
+                )
+                first_pone_minus_first_dealer_hand_statistics.clear()
+
+                statistics_dict_add(
+                    players_statistics,
+                    "first_pone_minus_first_dealer_crib",
+                    first_pone_minus_first_dealer_crib_statistics,
+                )
+                first_pone_minus_first_dealer_crib_statistics.clear()
+
+                statistics_dict_add(
+                    players_statistics,
+                    "first_pone_minus_first_dealer_total_points",
+                    first_pone_minus_first_dealer_total_points_statistics,
+                )
+                first_pone_minus_first_dealer_total_points_statistics.clear()
+
+                statistics_dict_add(
+                    players_statistics,
+                    "first_pone_minus_first_dealer_game_points",
+                    first_pone_minus_first_dealer_game_points_statistics,
+                )
+                first_pone_minus_first_dealer_game_points_statistics.clear()
 
                 players_statistics_length = sum(
                     [
-                        len(players_statistics[key]["pone"])
+                        len(players_statistics[key]["first_pone_total_points"])
                         for (key, stats) in players_statistics.items()
                     ]
                 )
 
                 # TODO: calculate correlation based on overall stats and per keep, not interval stats
                 # if players_statistics_length > 1:
-                #     dealer_stddev = players_statistics["dealer"].stddev()
-                #     pone_stddev = players_statistics["pone"].stddev()
+                #     dealer_stddev = players_statistics["first_dealer_total_points"].stddev()
+                #     pone_stddev = players_statistics["first_pone_total_points"].stddev()
                 #     pone_minus_dealer_stddev = players_statistics[
-                #         "pone_minus_dealer"
+                #         "first_pone_minus_first_dealer_total_points"
                 #     ].stddev()
                 # else:
                 #     dealer_stddev, pone_stddev, pone_minus_dealer_stddev = 0, 0, 0
@@ -1167,8 +1305,8 @@ def simulate_games(
                 sorted_players_statistics = sorted(
                     players_statistics.items(),
                     key=lambda item: (
-                        item[1]["pone_minus_dealer_game_points"].mean(),
-                        item[1]["pone_minus_dealer"].mean(),
+                        item[1]["first_pone_minus_first_dealer_game_points"].mean(),
+                        item[1]["first_pone_minus_first_dealer_total_points"].mean(),
                     ),
                     reverse=bool(len(pone_dealt_cards) >= len(dealer_dealt_cards)),
                 )
@@ -1183,65 +1321,78 @@ def simulate_games(
                         )
                     if post_initial:
                         print(
-                            f"post-initial play {post_initial} (n={len(keep_stats['pone'])})",
+                            f"post-initial play {post_initial} (n={len(keep_stats['first_pone_total_points'])})",
                             end="",
                         )
                     if keep or post_initial:
                         print(
-                            f": {get_confidence_interval(keep_stats['pone_minus_dealer_game_points'], confidence_level)} game points; {keep_stats['pone_minus_dealer_play'].mean():+9.5f} Δ-peg + {keep_stats['pone_minus_dealer_hand'].mean():+9.5f} Δ-hand - {keep_stats['crib'].mean():+9.5f} crib = {get_confidence_interval(keep_stats['pone_minus_dealer'], confidence_level)} overall"
+                            f": {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_game_points'], confidence_level)} game points; {keep_stats['first_pone_minus_first_dealer_play'].mean():+9.5f} Δ-peg + {keep_stats['first_pone_minus_first_dealer_hand'].mean():+9.5f} Δ-hand + {keep_stats['first_pone_minus_first_dealer_crib'].mean():+9.5f} crib = {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_total_points'], confidence_level)} overall"
                         )
                     # TODO: convert 0.06, 2 into command-line option
                     game_points_differential = abs(
-                        keep_stats["pone_minus_dealer_game_points"].mean()
+                        keep_stats["first_pone_minus_first_dealer_game_points"].mean()
                         - sorted_players_statistics[0][1][
-                            "pone_minus_dealer_game_points"
+                            "first_pone_minus_first_dealer_game_points"
                         ].mean()
                     )
                     if 0 < game_points_differential < 0.06 or (
                         game_points_differential == 0
                         and abs(
-                            keep_stats["pone_minus_dealer"].mean()
+                            keep_stats[
+                                "first_pone_minus_first_dealer_total_points"
+                            ].mean()
                             - sorted_players_statistics[0][1][
-                                "pone_minus_dealer"
+                                "first_pone_minus_first_dealer_total_points"
                             ].mean()
                         )
                         < 2
                     ):
                         print(
-                            f"Pone              Play    points: {get_confidence_interval(keep_stats['pone_play'], confidence_level)}"
+                            f"First Pone                    Play  points: {get_confidence_interval(keep_stats['first_pone_play'], confidence_level)}"
                         )
                         print(
-                            f"Dealer            Play    points: {get_confidence_interval(keep_stats['dealer_play'], confidence_level)}"
+                            f"First Pone                    Hand  points: {get_confidence_interval(keep_stats['first_pone_hand'], confidence_level)}"
                         )
                         print(
-                            f"Pone minus Dealer Play    points: {get_confidence_interval(keep_stats['pone_minus_dealer_play'], confidence_level)}"
+                            f"First Pone                    Crib  points: {get_confidence_interval(keep_stats['first_pone_crib'], confidence_level)}"
                         )
                         print(
-                            f"Pone              Hand    points: {get_confidence_interval(keep_stats['pone_hand'], confidence_level)}"
+                            f"First Pone                    Total points: {get_confidence_interval(keep_stats['first_pone_total_points'], confidence_level)}"
                         )
                         print(
-                            f"Pone              Overall points: {get_confidence_interval(keep_stats['pone'], confidence_level)}"
+                            f"First Pone                    Game  points: {get_confidence_interval(keep_stats['first_pone_game_points'], confidence_level)}"
+                        )
+                        print("-----------------------------------------------------")
+                        print(
+                            f"First Dealer                  Play  points: {get_confidence_interval(keep_stats['first_dealer_play'], confidence_level)}"
                         )
                         print(
-                            f"Dealer            Hand    points: {get_confidence_interval(keep_stats['dealer_hand'], confidence_level)}"
+                            f"First Dealer                  Hand  points: {get_confidence_interval(keep_stats['first_dealer_hand'], confidence_level)}"
                         )
                         print(
-                            f"Pone minus Dealer Hand    points: {get_confidence_interval(keep_stats['pone_minus_dealer_hand'], confidence_level)}"
+                            f"First Dealer                  Crib  points: {get_confidence_interval(keep_stats['first_dealer_crib'], confidence_level)}"
                         )
                         print(
-                            f"Crib              Hand    points: {get_confidence_interval(keep_stats['crib'], confidence_level)}"
+                            f"First Dealer                  Total points: {get_confidence_interval(keep_stats['first_dealer_total_points'], confidence_level)}"
                         )
                         print(
-                            f"Dealer            Overall points: {get_confidence_interval(keep_stats['dealer'], confidence_level)}"
+                            f"First Dealer                  Game  points: {get_confidence_interval(keep_stats['first_dealer_game_points'], confidence_level)}"
+                        )
+                        print("-----------------------------------------------------")
+                        print(
+                            f"First Pone minus First Dealer Play  points: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_play'], confidence_level)}"
                         )
                         print(
-                            f"Pone minus Dealer Overall points: {get_confidence_interval(keep_stats['pone_minus_dealer'], confidence_level)}"
+                            f"First Pone minus First Dealer Hand  points: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_hand'], confidence_level)}"
                         )
                         print(
-                            f"Pone              Game    points: {get_confidence_interval(keep_stats['pone_game_points'], confidence_level)}"
+                            f"First Pone minus First Dealer Crib  points: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_crib'], confidence_level)}"
                         )
                         print(
-                            f"Dealer            Game    points: {get_confidence_interval(keep_stats['dealer_game_points'], confidence_level)}"
+                            f"First Pone minus First Dealer Total points: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_total_points'], confidence_level)}"
+                        )
+                        print(
+                            f"First Pone minus First Dealer Game  points: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_game_points'], confidence_level)}"
                         )
 
                 # correlation_str = f"{correlation:+8.5f}" if correlation else "undefined"
@@ -1283,10 +1434,6 @@ def simulate_games(
 
 def keep_random(dealt_cards):
     return random.sample(dealt_cards, KEPT_CARDS_LEN)
-
-
-def keep_each_possibility(dealt_cards: Sequence[Card]) -> NoReturn:
-    assert False, f"{keep_each_possibility.__name__} should never be called."
 
 
 def keep_first_four(dealt_cards):
@@ -1851,11 +1998,6 @@ if __name__ == "__main__":
         help="have pone discard randomly",
     )
     pone_discard_algorithm_group.add_argument(
-        "--pone-keep-each-possibility",
-        action="store_true",
-        help="have pone discard in each possible manner",
-    )
-    pone_discard_algorithm_group.add_argument(
         "--pone-keep-first-four",
         action="store_true",
         help="have pone keep the first four cards dealt to pone",
@@ -1891,16 +2033,17 @@ if __name__ == "__main__":
         help="have pone keep the cards which maximize points in hand minus crib after the cut",
     )
 
+    parser.add_argument(
+        "--pone-select-each-possible-kept-hand",
+        action="store_true",
+        help="have pone keep each possible kept hand",
+    )
+
     dealer_discard_algorithm_group = parser.add_mutually_exclusive_group()
     dealer_discard_algorithm_group.add_argument(
         "--dealer-keep-random",
         action="store_true",
         help="have dealer discard randomly",
-    )
-    dealer_discard_algorithm_group.add_argument(
-        "--dealer-keep-each-possibility",
-        action="store_true",
-        help="have dealer discard in each possible manner",
     )
     dealer_discard_algorithm_group.add_argument(
         "--dealer-keep-first-four",
@@ -1936,6 +2079,12 @@ if __name__ == "__main__":
         "--dealer-maximize-post-cut-hand-plus-crib-points",
         action="store_true",
         help="have dealer keep the cards which maximize points in hand plus crib after the cut",
+    )
+
+    parser.add_argument(
+        "--dealer-select-each-possible-kept-hand",
+        action="store_true",
+        help="have dealer keep each possible kept hand",
     )
 
     pone_play_algorithm_group = parser.add_mutually_exclusive_group()
@@ -1989,12 +2138,6 @@ if __name__ == "__main__":
         action="store_true",
     )
 
-    parser.add_argument(
-        "--select-each-post-initial-play",
-        action="store_true",
-        help="have the next play to play post initial played card rotate through each possible play per simulated hand",
-    )
-
     dealer_play_algorithm_group = parser.add_mutually_exclusive_group()
     dealer_play_algorithm_group.add_argument(
         "--dealer-play-user-entered",
@@ -2046,6 +2189,12 @@ if __name__ == "__main__":
         action="store_true",
     )
 
+    parser.add_argument(
+        "--select-each-post-initial-play",
+        action="store_true",
+        help="have the next play to play post initial played card rotate through each possible play per simulated hand",
+    )
+
     game_count_group = parser.add_mutually_exclusive_group()
     game_count_group.add_argument(
         "--game-count",
@@ -2058,6 +2207,20 @@ if __name__ == "__main__":
         action="store_true",
         help="simulate an infinite number of cribbage games",
     )
+
+    hand_count_group = parser.add_mutually_exclusive_group()
+    hand_count_group.add_argument(
+        "--maximum-hands-per-game",
+        help="maximum number of cribbage hands to simulate per game",
+        type=int,
+        default=1,
+    )
+    hand_count_group.add_argument(
+        "--unlimited-hands-per-game",
+        action="store_true",
+        help="simulate an unlimited number of hands per game",
+    )
+
     parser.add_argument(
         "--hide-workers-start-message",
         action="store_true",
@@ -2140,14 +2303,17 @@ if __name__ == "__main__":
     manager = Manager()
     players_statistics: Dict[PlayerStatistic, Statistics] = manager.dict()
     players_statistics_lock = Lock()
-    args.game_count = (
+    game_count = (
         sys.maxsize
         if args.infinite_game_count
         else (math.ceil(args.game_count / args.process_count) * args.process_count)
     )
+    maximum_hands_per_game = (
+        sys.maxsize if args.unlimited_hands_per_game else args.maximum_hands_per_game
+    )
     if not args.hide_workers_start_message:
         print(
-            f"Simulating {args.game_count if args.game_count != sys.maxsize else 'infinite'} games",
+            f"Simulating {game_count if game_count != sys.maxsize else 'infinite'} games of up to {maximum_hands_per_game if maximum_hands_per_game != sys.maxsize else 'unlimited'} hands each",
             end="" if args.process_count > 1 else os.linesep,
             flush=args.process_count == 1,
         )
@@ -2160,8 +2326,6 @@ if __name__ == "__main__":
     # TODO: eliminate snake case to kebab case args names duplication from code
     if args.pone_keep_random:
         pone_select_kept_cards = keep_random
-    elif args.pone_keep_each_possibility:
-        pone_select_kept_cards = keep_each_possibility
     elif args.pone_keep_first_four:
         pone_select_kept_cards = keep_first_four
     elif args.pone_maximize_pre_cut_hand_points_ignoring_suit:
@@ -2181,8 +2345,6 @@ if __name__ == "__main__":
 
     if args.dealer_keep_random:
         dealer_select_kept_cards = keep_random
-    elif args.dealer_keep_each_possibility:
-        dealer_select_kept_cards = keep_each_possibility
     elif args.dealer_keep_first_four:
         dealer_select_kept_cards = keep_first_four
     elif args.dealer_maximize_pre_cut_hand_points_ignoring_suit:
@@ -2275,8 +2437,9 @@ if __name__ == "__main__":
 
     start_time_ns = time.time_ns()
     simulate_games_args = (
-        args.game_count // args.process_count,
-        args.game_count,
+        game_count // args.process_count,
+        game_count,
+        maximum_hands_per_game,
         initial_pone_score,
         initial_dealer_score,
         pone_dealt_cards,
@@ -2287,7 +2450,9 @@ if __name__ == "__main__":
         players_statistics,
         players_statistics_lock,
         pone_select_kept_cards,
+        args.pone_select_each_possible_kept_hand,
         dealer_select_kept_cards,
+        args.dealer_select_each_possible_kept_hand,
         pone_select_play,
         dealer_select_play,
         args.select_each_post_initial_play,
@@ -2315,5 +2480,5 @@ if __name__ == "__main__":
             sys.exit(0)
 
     print(
-        f"Simulated {args.game_count} games with {args.process_count} worker processes at {simulation_performance_statistics(start_time_ns, args.game_count)}"
+        f"Simulated {game_count} games with {args.process_count} worker processes at {simulation_performance_statistics(start_time_ns, game_count)}"
     )
