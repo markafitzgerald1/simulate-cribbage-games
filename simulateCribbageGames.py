@@ -613,14 +613,16 @@ def simulate_game(
                 TOTAL_DISCARD_SIMULATION_COUNT: int = (
                     POSSIBLE_DISCARD_COUNT * discard_simulations_per_possible_discard
                 )
-                # print(
-                #     f"Simulating each of the {POSSIBLE_DISCARD_COUNT} possible discard {discard_simulations_per_possible_discard} times in order to select discard"
-                # )
+                if not hide_pone_hand:
+                    print(
+                        f"Simulating each of the {POSSIBLE_DISCARD_COUNT} possible discard {discard_simulations_per_possible_discard} times in order to select discard"
+                    )
                 manager = Manager()
                 simulated_players_statistics: Dict[
                     PlayerStatistic, Statistics
                 ] = manager.dict()
                 simulated_players_statistics_lock = Lock()
+                CONFIDENCE_LEVEL: int = 95
                 simulate_games(
                     TOTAL_DISCARD_SIMULATION_COUNT,
                     TOTAL_DISCARD_SIMULATION_COUNT,
@@ -657,7 +659,7 @@ def simulate_game(
                     True,
                     sys.maxsize,
                     False,
-                    95,
+                    CONFIDENCE_LEVEL,
                     time.time_ns(),
                     False,
                 )
@@ -670,25 +672,16 @@ def simulate_game(
                     ),
                     reverse=bool(len(pone_dealt_cards) >= len(dealer_dealt_cards)),
                 )
-                # for (
-                #     keep,
-                #     post_initial,
-                # ), keep_stats in sorted_simulated_players_statistics:
-                #     print(
-                #         f"{keep} - {post_initial} - {keep_stats['first_pone_minus_first_dealer_total_points'].mean()}"
-                #     )
+                if not hide_pone_hand:
+                    for (
+                        keep,
+                        post_initial,
+                    ), keep_stats in sorted_simulated_players_statistics:
+                        print(
+                            f"{Hand(keep)} - {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_total_points'], CONFIDENCE_LEVEL)}"
+                        )
 
-                # print(
-                #     f"sorted_simulated_players_statistics[0][1][fpmfdtp]: {sorted_simulated_players_statistics[0][1]['first_pone_minus_first_dealer_total_points']}"
-                # )
-                # print(
-                #     f"sorted_simulated_players_statistics[0][1][fpmfdtp].mean(): {sorted_simulated_players_statistics[0][1]['first_pone_minus_first_dealer_total_points'].mean()}"
-                # )
-                # print(
-                #     f"sorted_simulated_players_statistics[0][0]: {sorted_simulated_players_statistics[0][0]}"
-                # )
                 kept_pone_hand = sorted_simulated_players_statistics[0][0][0]
-                # print(f"sorted_simulated_players_statistics[0][0][0]: {kept_pone_hand}")
             else:
                 kept_pone_hand = pone_select_kept_cards(dealt_hands[0])
         elif is_first_hand and pone_dealt_cards:
