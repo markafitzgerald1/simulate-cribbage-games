@@ -27,6 +27,7 @@ from typing import (
     NamedTuple,
 )
 from enum import Enum
+from math import comb
 
 
 MAX_CARD_COUNTING_VALUE = 10
@@ -527,6 +528,9 @@ def get_game_player(player_to_play: Player, hand: int) -> GamePlayer:
     return GamePlayer((player_to_play + hand) % 2)
 
 
+POSSIBLE_DISCARD_COUNT: int = comb(DEALT_CARDS_LEN, DEALT_CARDS_LEN - KEPT_CARDS_LEN)
+
+
 def simulate_game(
     pone_dealt_cards: List[Card],
     dealer_dealt_cards: List[Card],
@@ -535,6 +539,7 @@ def simulate_game(
     dealer_kept_cards: List[Card],
     maximum_hands_per_game: int,
     pone_select_kept_cards,
+    pone_discard_based_on_simulations: Optional[int],
     pone_select_each_possible_kept_hand: bool,
     dealer_select_kept_cards,
     dealer_select_each_possible_kept_hand: bool,
@@ -601,7 +606,91 @@ def simulate_game(
                 card for card in dealt_hands[0] if card in pone_kept_cards
             ]
         elif not (is_first_hand and pone_select_each_possible_kept_hand):
-            kept_pone_hand = pone_select_kept_cards(dealt_hands[0])
+            if pone_discard_based_on_simulations:
+                discard_simulations_per_possible_discard: int = (
+                    pone_discard_based_on_simulations
+                )
+                TOTAL_DISCARD_SIMULATION_COUNT: int = (
+                    POSSIBLE_DISCARD_COUNT * discard_simulations_per_possible_discard
+                )
+                # print(
+                #     f"Simulating each of the {POSSIBLE_DISCARD_COUNT} possible discard {discard_simulations_per_possible_discard} times in order to select discard"
+                # )
+                manager = Manager()
+                simulated_players_statistics: Dict[
+                    PlayerStatistic, Statistics
+                ] = manager.dict()
+                simulated_players_statistics_lock = Lock()
+                simulate_games(
+                    TOTAL_DISCARD_SIMULATION_COUNT,
+                    TOTAL_DISCARD_SIMULATION_COUNT,
+                    1,
+                    Points(
+                        game_score.first_pone_initial
+                        + game_score.first_pone_play
+                        + game_score.first_pone_hand
+                        + game_score.first_pone_crib
+                    ),
+                    Points(
+                        game_score.first_dealer_initial
+                        + game_score.first_dealer_play
+                        + game_score.first_dealer_hand
+                        + game_score.first_dealer_crib
+                    ),
+                    dealt_hands[0],
+                    [],
+                    [],
+                    [],
+                    (),
+                    simulated_players_statistics,
+                    simulated_players_statistics_lock,
+                    keep_max_post_cut_hand_points_ignoring_suit,
+                    False,
+                    True,
+                    keep_max_post_cut_hand_points_ignoring_suit,
+                    False,
+                    pone_select_play,
+                    dealer_select_play,
+                    False,
+                    True,
+                    True,
+                    True,
+                    sys.maxsize,
+                    False,
+                    95,
+                    time.time_ns(),
+                    False,
+                )
+
+                sorted_simulated_players_statistics = sorted(
+                    simulated_players_statistics.items(),
+                    key=lambda item: (
+                        item[1]["first_pone_minus_first_dealer_game_points"].mean(),
+                        item[1]["first_pone_minus_first_dealer_total_points"].mean(),
+                    ),
+                    reverse=bool(len(pone_dealt_cards) >= len(dealer_dealt_cards)),
+                )
+                # for (
+                #     keep,
+                #     post_initial,
+                # ), keep_stats in sorted_simulated_players_statistics:
+                #     print(
+                #         f"{keep} - {post_initial} - {keep_stats['first_pone_minus_first_dealer_total_points'].mean()}"
+                #     )
+
+                # print(
+                #     f"sorted_simulated_players_statistics[0][1][fpmfdtp]: {sorted_simulated_players_statistics[0][1]['first_pone_minus_first_dealer_total_points']}"
+                # )
+                # print(
+                #     f"sorted_simulated_players_statistics[0][1][fpmfdtp].mean(): {sorted_simulated_players_statistics[0][1]['first_pone_minus_first_dealer_total_points'].mean()}"
+                # )
+                # print(
+                #     f"sorted_simulated_players_statistics[0][0]: {sorted_simulated_players_statistics[0][0]}"
+                # )
+                kept_pone_hand = sorted_simulated_players_statistics[0][0][0]
+                # print(f"sorted_simulated_players_statistics[0][0][0]: {kept_pone_hand}")
+            else:
+                kept_pone_hand = pone_select_kept_cards(dealt_hands[0])
         elif is_first_hand and pone_dealt_cards:
             kept_pone_hand = first_kept_pone_hand = list(
                 next(pone_dealt_cards_possible_keeps)
@@ -954,6 +1043,7 @@ def simulate_games(
     players_statistics,
     players_statistics_lock,
     pone_select_kept_cards,
+    pone_discard_based_on_simulations: Optional[int],
     pone_select_each_possible_kept_hand: bool,
     dealer_select_kept_cards,
     dealer_select_each_possible_kept_hand: bool,
@@ -963,7 +1053,8 @@ def simulate_games(
     hide_pone_hand,
     hide_dealer_hand,
     hide_play_actions: bool,
-    games_per_update,
+    games_per_update: int,
+    show_statistics_updates: bool,
     confidence_level,
     start_time_ns,
     show_calc_cache_usage_stats,
@@ -1043,6 +1134,7 @@ def simulate_games(
                     dealer_kept_cards,
                     maximum_hands_per_game,
                     pone_select_kept_cards,
+                    pone_discard_based_on_simulations,
                     pone_select_each_possible_kept_hand,
                     dealer_select_kept_cards,
                     dealer_select_each_possible_kept_hand,
@@ -1310,127 +1402,140 @@ def simulate_games(
                     ]
                 )
 
-                # TODO: calculate correlation based on overall stats and per keep, not interval stats
-                # if players_statistics_length > 1:
-                #     dealer_stddev = players_statistics["first_dealer_total_points"].stddev()
-                #     pone_stddev = players_statistics["first_pone_total_points"].stddev()
-                #     pone_minus_dealer_stddev = players_statistics[
-                #         "first_pone_minus_first_dealer_total_points"
-                #     ].stddev()
-                # else:
-                #     dealer_stddev, pone_stddev, pone_minus_dealer_stddev = 0, 0, 0
-                # correlation = (
-                #     (pone_minus_dealer_stddev ** 2 - pone_stddev ** 2 - dealer_stddev ** 2)
-                #     / (2 * pone_stddev * dealer_stddev)
-                #     if pone_stddev != 0 and dealer_stddev != 0
-                #     else None
-                # )
+                if show_statistics_updates:
+                    # TODO: calculate correlation based on overall stats and per keep, not interval stats
+                    # if players_statistics_length > 1:
+                    #     dealer_stddev = players_statistics["first_dealer_total_points"].stddev()
+                    #     pone_stddev = players_statistics["first_pone_total_points"].stddev()
+                    #     pone_minus_dealer_stddev = players_statistics[
+                    #         "first_pone_minus_first_dealer_total_points"
+                    #     ].stddev()
+                    # else:
+                    #     dealer_stddev, pone_stddev, pone_minus_dealer_stddev = 0, 0, 0
+                    # correlation = (
+                    #     (pone_minus_dealer_stddev ** 2 - pone_stddev ** 2 - dealer_stddev ** 2)
+                    #     / (2 * pone_stddev * dealer_stddev)
+                    #     if pone_stddev != 0 and dealer_stddev != 0
+                    #     else None
+                    # )
 
-                if players_statistics_length > 1:
-                    print(
-                        f"Mean play statistics {confidence_level}% confidence intervals ({formatted_game_count(players_statistics_length, overall_game_count)}):"
-                    )
-                else:
-                    print(f"Mean play statistics:")
+                    if players_statistics_length > 1:
+                        print(
+                            f"Mean play statistics {confidence_level}% confidence intervals ({formatted_game_count(players_statistics_length, overall_game_count)}):"
+                        )
+                    else:
+                        print(f"Mean play statistics:")
 
-                sorted_players_statistics = sorted(
-                    players_statistics.items(),
-                    key=lambda item: (
-                        item[1]["first_pone_minus_first_dealer_game_points"].mean(),
-                        item[1]["first_pone_minus_first_dealer_total_points"].mean(),
-                    ),
-                    reverse=bool(len(pone_dealt_cards) >= len(dealer_dealt_cards)),
-                )
-                for (
-                    keep,
-                    post_initial,
-                ), keep_stats in sorted_players_statistics:
-                    if keep:
-                        print(
-                            f"{Hand(keep)} - {Hand(set(pone_dealt_cards or dealer_dealt_cards) - set(keep))}",
-                            end="",
-                        )
-                    if post_initial:
-                        print(
-                            f"post-initial play {post_initial} (n={len(keep_stats['first_pone_total_points'])})",
-                            end="",
-                        )
-                    if keep or post_initial:
-                        print(
-                            f": {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_game_points'], confidence_level)} game points; {keep_stats['first_pone_minus_first_dealer_play'].mean():+9.5f} Δ-peg + {keep_stats['first_pone_minus_first_dealer_hand'].mean():+9.5f} Δ-hand + {keep_stats['first_pone_minus_first_dealer_crib'].mean():+9.5f} crib = {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_total_points'], confidence_level)} overall"
-                        )
-                    # TODO: convert 0.06, 2 into command-line option
-                    game_points_differential = abs(
-                        keep_stats["first_pone_minus_first_dealer_game_points"].mean()
-                        - sorted_players_statistics[0][1][
-                            "first_pone_minus_first_dealer_game_points"
-                        ].mean()
-                    )
-                    if 0 < game_points_differential < 0.06 or (
-                        game_points_differential == 0
-                        and abs(
-                            keep_stats[
+                    sorted_players_statistics = sorted(
+                        players_statistics.items(),
+                        key=lambda item: (
+                            item[1]["first_pone_minus_first_dealer_game_points"].mean(),
+                            item[1][
                                 "first_pone_minus_first_dealer_total_points"
+                            ].mean(),
+                        ),
+                        reverse=bool(len(pone_dealt_cards) >= len(dealer_dealt_cards)),
+                    )
+                    for (
+                        keep,
+                        post_initial,
+                    ), keep_stats in sorted_players_statistics:
+                        if keep:
+                            print(
+                                f"{Hand(keep)} - {Hand(set(pone_dealt_cards or dealer_dealt_cards) - set(keep))}",
+                                end="",
+                            )
+                        if post_initial:
+                            print(
+                                f"post-initial play {post_initial} (n={len(keep_stats['first_pone_total_points'])})",
+                                end="",
+                            )
+                        if keep or post_initial:
+                            print(
+                                f": {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_game_points'], confidence_level)} game points; {keep_stats['first_pone_minus_first_dealer_play'].mean():+9.5f} Δ-peg + {keep_stats['first_pone_minus_first_dealer_hand'].mean():+9.5f} Δ-hand + {keep_stats['first_pone_minus_first_dealer_crib'].mean():+9.5f} crib = {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_total_points'], confidence_level)} overall"
+                            )
+                        # TODO: convert 0.06, 2 into command-line option
+                        game_points_differential = abs(
+                            keep_stats[
+                                "first_pone_minus_first_dealer_game_points"
                             ].mean()
                             - sorted_players_statistics[0][1][
-                                "first_pone_minus_first_dealer_total_points"
+                                "first_pone_minus_first_dealer_game_points"
                             ].mean()
                         )
-                        < 2
-                    ):
-                        print(
-                            f"First Pone                    Play  points: {get_confidence_interval(keep_stats['first_pone_play'], confidence_level)}"
-                        )
-                        print(
-                            f"First Pone                    Hand  points: {get_confidence_interval(keep_stats['first_pone_hand'], confidence_level)}"
-                        )
-                        print(
-                            f"First Pone                    Crib  points: {get_confidence_interval(keep_stats['first_pone_crib'], confidence_level)}"
-                        )
-                        print(
-                            f"First Pone                    Total points: {get_confidence_interval(keep_stats['first_pone_total_points'], confidence_level)}"
-                        )
-                        print(
-                            f"First Pone                    Game  points: {get_confidence_interval(keep_stats['first_pone_game_points'], confidence_level)}"
-                        )
-                        print(
-                            f"First Pone                    Game  wins  : {get_confidence_interval(keep_stats['first_pone_wins'], confidence_level)}"
-                        )
-                        print("-----------------------------------------------------")
-                        print(
-                            f"First Dealer                  Play  points: {get_confidence_interval(keep_stats['first_dealer_play'], confidence_level)}"
-                        )
-                        print(
-                            f"First Dealer                  Hand  points: {get_confidence_interval(keep_stats['first_dealer_hand'], confidence_level)}"
-                        )
-                        print(
-                            f"First Dealer                  Crib  points: {get_confidence_interval(keep_stats['first_dealer_crib'], confidence_level)}"
-                        )
-                        print(
-                            f"First Dealer                  Total points: {get_confidence_interval(keep_stats['first_dealer_total_points'], confidence_level)}"
-                        )
-                        print(
-                            f"First Dealer                  Game  points: {get_confidence_interval(keep_stats['first_dealer_game_points'], confidence_level)}"
-                        )
-                        print(
-                            f"First Dealer                  Game  wins  : {get_confidence_interval(keep_stats['first_dealer_wins'], confidence_level)}"
-                        )
-                        print("-----------------------------------------------------")
-                        print(
-                            f"First Pone minus First Dealer Play  points: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_play'], confidence_level)}"
-                        )
-                        print(
-                            f"First Pone minus First Dealer Hand  points: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_hand'], confidence_level)}"
-                        )
-                        print(
-                            f"First Pone minus First Dealer Crib  points: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_crib'], confidence_level)}"
-                        )
-                        print(
-                            f"First Pone minus First Dealer Total points: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_total_points'], confidence_level)}"
-                        )
-                        print(
-                            f"First Pone minus First Dealer Game  points: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_game_points'], confidence_level)}"
-                        )
+                        if 0 < game_points_differential < 0.06 or (
+                            game_points_differential == 0
+                            and abs(
+                                keep_stats[
+                                    "first_pone_minus_first_dealer_total_points"
+                                ].mean()
+                                - sorted_players_statistics[0][1][
+                                    "first_pone_minus_first_dealer_total_points"
+                                ].mean()
+                            )
+                            < 2
+                        ):
+                            print(
+                                f"First Pone                    Play  points: {get_confidence_interval(keep_stats['first_pone_play'], confidence_level)}"
+                            )
+                            print(
+                                f"First Pone                    Hand  points: {get_confidence_interval(keep_stats['first_pone_hand'], confidence_level)}"
+                            )
+                            print(
+                                f"First Pone                    Crib  points: {get_confidence_interval(keep_stats['first_pone_crib'], confidence_level)}"
+                            )
+                            print(
+                                f"First Pone                    Total points: {get_confidence_interval(keep_stats['first_pone_total_points'], confidence_level)}"
+                            )
+                            print(
+                                f"First Pone                    Game  points: {get_confidence_interval(keep_stats['first_pone_game_points'], confidence_level)}"
+                            )
+                            print(
+                                f"First Pone                    Game  wins  : {get_confidence_interval(keep_stats['first_pone_wins'], confidence_level)}"
+                            )
+                            print(
+                                "-----------------------------------------------------"
+                            )
+                            print(
+                                f"First Dealer                  Play  points: {get_confidence_interval(keep_stats['first_dealer_play'], confidence_level)}"
+                            )
+                            print(
+                                f"First Dealer                  Hand  points: {get_confidence_interval(keep_stats['first_dealer_hand'], confidence_level)}"
+                            )
+                            print(
+                                f"First Dealer                  Crib  points: {get_confidence_interval(keep_stats['first_dealer_crib'], confidence_level)}"
+                            )
+                            print(
+                                f"First Dealer                  Total points: {get_confidence_interval(keep_stats['first_dealer_total_points'], confidence_level)}"
+                            )
+                            print(
+                                f"First Dealer                  Game  points: {get_confidence_interval(keep_stats['first_dealer_game_points'], confidence_level)}"
+                            )
+                            print(
+                                f"First Dealer                  Game  wins  : {get_confidence_interval(keep_stats['first_dealer_wins'], confidence_level)}"
+                            )
+                            print(
+                                "-----------------------------------------------------"
+                            )
+                            print(
+                                f"First Pone minus First Dealer Play  points: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_play'], confidence_level)}"
+                            )
+                            print(
+                                f"First Pone minus First Dealer Hand  points: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_hand'], confidence_level)}"
+                            )
+                            print(
+                                f"First Pone minus First Dealer Crib  points: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_crib'], confidence_level)}"
+                            )
+                            print(
+                                f"First Pone minus First Dealer Total points: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_total_points'], confidence_level)}"
+                            )
+                            print(
+                                f"First Pone minus First Dealer Game  points: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_game_points'], confidence_level)}"
+                            )
+
+                    print(
+                        f"Simulated {players_statistics_length} games at {simulation_performance_statistics(start_time_ns, players_statistics_length)}"
+                    )
 
                 # correlation_str = f"{correlation:+8.5f}" if correlation else "undefined"
                 # print(f"Pone   and Dealer Overall points correlation: {correlation_str}")
@@ -1460,10 +1565,6 @@ def simulate_games(
                         "cached_get_current_play_run_length",
                         cached_get_current_play_run_length.cache_info(),
                     )
-
-                print(
-                    f"Simulated {players_statistics_length} games at {simulation_performance_statistics(start_time_ns, players_statistics_length)}"
-                )
 
     except KeyboardInterrupt:
         sys.exit(0)
@@ -2071,6 +2172,12 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--pone-discard-based-on-simulations",
+        help="have pone keep the cards which on average maximize pone minus dealer game points in simulated games",
+        type=int,
+    )
+
+    parser.add_argument(
         "--pone-select-each-possible-kept-hand",
         action="store_true",
         help="have pone keep each possible kept hand",
@@ -2487,6 +2594,7 @@ if __name__ == "__main__":
         players_statistics,
         players_statistics_lock,
         pone_select_kept_cards,
+        args.pone_discard_based_on_simulations,
         args.pone_select_each_possible_kept_hand,
         dealer_select_kept_cards,
         args.dealer_select_each_possible_kept_hand,
@@ -2497,6 +2605,7 @@ if __name__ == "__main__":
         args.hide_dealer_hand,
         bool(args.hide_play_actions),
         args.games_per_update,
+        True,
         args.confidence_level,
         start_time_ns,
         args.show_calc_cache_usage_stats,
