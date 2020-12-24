@@ -528,9 +528,6 @@ def get_game_player(player_to_play: Player, hand: int) -> GamePlayer:
     return GamePlayer((player_to_play + hand) % 2)
 
 
-POSSIBLE_DISCARD_COUNT: int = comb(DEALT_CARDS_LEN, DEALT_CARDS_LEN - KEPT_CARDS_LEN)
-
-
 def simulate_game(
     pone_dealt_cards: List[Card],
     dealer_dealt_cards: List[Card],
@@ -542,6 +539,7 @@ def simulate_game(
     pone_discard_based_on_simulations: Optional[int],
     pone_select_each_possible_kept_hand: bool,
     dealer_select_kept_cards,
+    dealer_discard_based_on_simulations: Optional[int],
     dealer_select_each_possible_kept_hand: bool,
     pone_select_play,
     dealer_select_play,
@@ -594,9 +592,13 @@ def simulate_game(
                 random_hand_cards[DEALT_CARDS_LEN:],
             ]
         if not hide_pone_hand:
-            print(f"{get_player_name(0):6} dealt {Hand(dealt_hands[0])}")
+            print(
+                f"{get_player_name(0):6} dealt {Hand(dealt_hands[0])} (sorted: {Hand(sorted(dealt_hands[0], reverse=True))})"
+            )
         if not hide_dealer_hand:
-            print(f"{get_player_name(1):6} dealt {Hand(dealt_hands[1])}")
+            print(
+                f"{get_player_name(1):6} dealt {Hand(dealt_hands[1])} (sorted: {Hand(sorted(dealt_hands[1], reverse=True))})"
+            )
         deck_less_dealt_cards = list(
             set(deck_less_fixed_cards).difference(set(random_hand_cards))
         )
@@ -607,81 +609,13 @@ def simulate_game(
             ]
         elif not (is_first_hand and pone_select_each_possible_kept_hand):
             if pone_discard_based_on_simulations:
-                discard_simulations_per_possible_discard: int = (
-                    pone_discard_based_on_simulations
-                )
-                TOTAL_DISCARD_SIMULATION_COUNT: int = (
-                    POSSIBLE_DISCARD_COUNT * discard_simulations_per_possible_discard
-                )
-                if not hide_pone_hand:
-                    print(
-                        f"Simulating each of the {POSSIBLE_DISCARD_COUNT} possible discard {discard_simulations_per_possible_discard} times in order to select discard"
-                    )
-                manager = Manager()
-                simulated_players_statistics: Dict[
-                    PlayerStatistic, Statistics
-                ] = manager.dict()
-                simulated_players_statistics_lock = Lock()
-                CONFIDENCE_LEVEL: int = 95
-                simulate_games(
-                    TOTAL_DISCARD_SIMULATION_COUNT,
-                    TOTAL_DISCARD_SIMULATION_COUNT,
-                    1,
-                    Points(
-                        game_score.first_pone_initial
-                        + game_score.first_pone_play
-                        + game_score.first_pone_hand
-                        + game_score.first_pone_crib
-                    ),
-                    Points(
-                        game_score.first_dealer_initial
-                        + game_score.first_dealer_play
-                        + game_score.first_dealer_hand
-                        + game_score.first_dealer_crib
-                    ),
+                kept_pone_hand = player_select_kept_cards_based_on_simulation(
+                    pone_discard_based_on_simulations,
+                    hide_pone_hand,
+                    game_score,
                     dealt_hands[0],
-                    [],
-                    [],
-                    [],
-                    (),
-                    simulated_players_statistics,
-                    simulated_players_statistics_lock,
-                    keep_max_post_cut_hand_points_ignoring_suit,
-                    False,
-                    True,
-                    keep_max_post_cut_hand_points_ignoring_suit,
-                    False,
-                    pone_select_play,
-                    dealer_select_play,
-                    False,
-                    True,
-                    True,
-                    True,
-                    sys.maxsize,
-                    False,
-                    CONFIDENCE_LEVEL,
-                    time.time_ns(),
-                    False,
+                    PONE,
                 )
-
-                sorted_simulated_players_statistics = sorted(
-                    simulated_players_statistics.items(),
-                    key=lambda item: (
-                        item[1]["first_pone_minus_first_dealer_game_points"].mean(),
-                        item[1]["first_pone_minus_first_dealer_total_points"].mean(),
-                    ),
-                    reverse=bool(len(pone_dealt_cards) >= len(dealer_dealt_cards)),
-                )
-                if not hide_pone_hand:
-                    for (
-                        keep,
-                        post_initial,
-                    ), keep_stats in sorted_simulated_players_statistics:
-                        print(
-                            f"{Hand(keep)} - {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_total_points'], CONFIDENCE_LEVEL)}"
-                        )
-
-                kept_pone_hand = sorted_simulated_players_statistics[0][0][0]
             else:
                 kept_pone_hand = pone_select_kept_cards(dealt_hands[0])
         elif is_first_hand and pone_dealt_cards:
@@ -698,7 +632,16 @@ def simulate_game(
                 card for card in dealt_hands[1] if card in dealer_kept_cards
             ]
         elif not (is_first_hand and dealer_select_each_possible_kept_hand):
-            kept_dealer_hand = dealer_select_kept_cards(dealt_hands[1])
+            if dealer_discard_based_on_simulations:
+                kept_dealer_hand = player_select_kept_cards_based_on_simulation(
+                    dealer_discard_based_on_simulations,
+                    hide_dealer_hand,
+                    game_score,
+                    dealt_hands[1],
+                    DEALER,
+                )
+            else:
+                kept_dealer_hand = dealer_select_kept_cards(dealt_hands[1])
         elif is_first_hand and dealer_dealt_cards:
             kept_dealer_hand = first_kept_dealer_hand = list(
                 next(dealer_dealt_cards_possible_keeps)
@@ -1039,6 +982,7 @@ def simulate_games(
     pone_discard_based_on_simulations: Optional[int],
     pone_select_each_possible_kept_hand: bool,
     dealer_select_kept_cards,
+    dealer_discard_based_on_simulations: Optional[int],
     dealer_select_each_possible_kept_hand: bool,
     pone_select_play: PlaySelector,
     dealer_select_play: PlaySelector,
@@ -1130,6 +1074,7 @@ def simulate_games(
                     pone_discard_based_on_simulations,
                     pone_select_each_possible_kept_hand,
                     dealer_select_kept_cards,
+                    dealer_discard_based_on_simulations,
                     dealer_select_each_possible_kept_hand,
                     pone_select_play,
                     dealer_select_play,
@@ -1653,6 +1598,9 @@ def keep_max_post_cut_hand_points_ignoring_suit(dealt_cards):
     )
 
 
+DEFAULT_SELECT_KEPT_CARDS = keep_max_post_cut_hand_points_ignoring_suit
+
+
 # TODO: factor out code in common with keep_max_pre_cut_points()
 def keep_max_post_cut_hand_points(dealt_cards):
     max_total_score = None
@@ -2089,6 +2037,9 @@ def play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_t
     )
 
 
+DEFAULT_SELECT_PLAY = play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+
+
 def play_user_selected(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
@@ -2110,6 +2061,87 @@ def simulation_performance_statistics(start_time_ns, games_simulated):
     elapsed_time_ns = time.time_ns() - start_time_ns
     ns_per_s = 1000000000
     return f"{games_simulated / (elapsed_time_ns / ns_per_s):.3f} games/s ({elapsed_time_ns / games_simulated:.0f} ns/game) in {elapsed_time_ns / ns_per_s} s"
+
+
+POSSIBLE_DISCARD_COUNT: int = comb(DEALT_CARDS_LEN, DEALT_CARDS_LEN - KEPT_CARDS_LEN)
+
+
+def player_select_kept_cards_based_on_simulation(
+    simulated_hand_count: int,
+    hide_hand: bool,
+    current_game_score: GameScore,
+    dealt_hand: List[Card],
+    player: Player,
+):
+    TOTAL_DISCARD_SIMULATION_COUNT: int = POSSIBLE_DISCARD_COUNT * simulated_hand_count
+    if not hide_hand:
+        print(
+            f"Simulating each of the {POSSIBLE_DISCARD_COUNT} possible discard {simulated_hand_count} times in order to select discard"
+        )
+    manager = Manager()
+    simulated_players_statistics: Dict[PlayerStatistic, Statistics] = manager.dict()
+    simulated_players_statistics_lock = Lock()
+    CONFIDENCE_LEVEL: int = 95
+    simulate_games(
+        TOTAL_DISCARD_SIMULATION_COUNT,
+        TOTAL_DISCARD_SIMULATION_COUNT,
+        1,
+        Points(
+            current_game_score.first_pone_initial
+            + current_game_score.first_pone_play
+            + current_game_score.first_pone_hand
+            + current_game_score.first_pone_crib
+        ),
+        Points(
+            current_game_score.first_dealer_initial
+            + current_game_score.first_dealer_play
+            + current_game_score.first_dealer_hand
+            + current_game_score.first_dealer_crib
+        ),
+        dealt_hand if player == PONE else [],
+        dealt_hand if player == DEALER else [],
+        [],
+        [],
+        (),
+        simulated_players_statistics,
+        simulated_players_statistics_lock,
+        DEFAULT_SELECT_KEPT_CARDS,
+        False,
+        player == PONE,
+        DEFAULT_SELECT_KEPT_CARDS,
+        False,
+        player == DEALER,
+        DEFAULT_SELECT_PLAY,
+        DEFAULT_SELECT_PLAY,
+        False,
+        True,
+        True,
+        True,
+        sys.maxsize,
+        False,
+        CONFIDENCE_LEVEL,
+        time.time_ns(),
+        False,
+    )
+
+    sorted_simulated_players_statistics = sorted(
+        simulated_players_statistics.items(),
+        key=lambda item: (
+            item[1]["first_pone_minus_first_dealer_game_points"].mean(),
+            item[1]["first_pone_minus_first_dealer_total_points"].mean(),
+        ),
+        reverse=(player == PONE),
+    )
+    if not hide_hand:
+        for (
+            keep,
+            post_initial,
+        ), keep_stats in sorted_simulated_players_statistics:
+            print(
+                f"{Hand(sorted(keep, reverse=True))} - {Hand(sorted(set(dealt_hand) - set(keep), reverse=True))}: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_total_points'], CONFIDENCE_LEVEL)}"
+            )
+
+    return sorted_simulated_players_statistics[0][0][0]
 
 
 if __name__ == "__main__":
@@ -2166,7 +2198,7 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--pone-discard-based-on-simulations",
-        help="have pone keep the cards which on average maximize pone minus dealer game points in simulated games",
+        help="have pone keep the cards which on average maximize pone minus dealer game otherwise scored points in simulated single hands",
         type=int,
     )
 
@@ -2216,6 +2248,12 @@ if __name__ == "__main__":
         "--dealer-maximize-post-cut-hand-plus-crib-points",
         action="store_true",
         help="have dealer keep the cards which maximize points in hand plus crib after the cut",
+    )
+
+    parser.add_argument(
+        "--dealer-discard-based-on-simulations",
+        help="have dealer keep the cards which on average maximize dealer minus pone game otherwise scored points in simulated single hands",
+        type=int,
     )
 
     parser.add_argument(
@@ -2478,7 +2516,7 @@ if __name__ == "__main__":
     elif args.pone_maximize_post_cut_hand_minus_crib_points:
         pone_select_kept_cards = keep_max_post_cut_hand_minus_crib_points
     else:
-        pone_select_kept_cards = keep_max_post_cut_hand_points_ignoring_suit
+        pone_select_kept_cards = DEFAULT_SELECT_KEPT_CARDS
 
     if args.dealer_keep_random:
         dealer_select_kept_cards = keep_random
@@ -2497,7 +2535,7 @@ if __name__ == "__main__":
     elif args.dealer_maximize_post_cut_hand_plus_crib_points:
         dealer_select_kept_cards = keep_max_post_cut_hand_plus_crib_points
     else:
-        dealer_select_kept_cards = keep_max_post_cut_hand_points_ignoring_suit
+        dealer_select_kept_cards = DEFAULT_SELECT_KEPT_CARDS
 
     pone_select_play: PlaySelector
     if args.pone_play_user_entered:
@@ -2529,7 +2567,7 @@ if __name__ == "__main__":
     ):
         pone_select_play = play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     else:
-        pone_select_play = play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+        pone_select_play = DEFAULT_SELECT_PLAY
 
     dealer_play_selector: PlaySelector
     if args.dealer_play_user_entered:
@@ -2563,7 +2601,7 @@ if __name__ == "__main__":
     ):
         dealer_select_play = play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     else:
-        dealer_select_play = play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+        dealer_select_play = DEFAULT_SELECT_PLAY
 
     initial_pone_score = Points(
         int(args.initial_pone_score) if args.initial_pone_score else 0
@@ -2590,6 +2628,7 @@ if __name__ == "__main__":
         args.pone_discard_based_on_simulations,
         args.pone_select_each_possible_kept_hand,
         dealer_select_kept_cards,
+        args.dealer_discard_based_on_simulations,
         args.dealer_select_each_possible_kept_hand,
         pone_select_play,
         dealer_select_play,

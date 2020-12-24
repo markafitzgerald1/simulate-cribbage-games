@@ -31,18 +31,22 @@ All of the following should exit with status code 0 and no raised exception:
 - Simulate all possible leads from a fixed pone hand and discard against random dealer hands: `python simulateCribbageGames.py --pone-dealt-cards JH,TS,6S,6C,4C,AD --pone-kept-cards TS,6S,4C,AD --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 30000`;
 - Simulate all possible pone plays from a mid-play position against partly known dealer hands: `python simulateCribbageGames.py --pone-dealt-cards KC,QD,TC,8S,4D,AH --pone-kept-cards QD,TC,4D,AH --dealer-dealt-cards 8H --initial-played-cards 4D,8H --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 20000`;
 - Simulate all possible dealer plays from a mid-play position against partly known pone and fully known dealer hands: `python simulateCribbageGames.py --dealer-dealt-cards 8C,4D,TH,9S,KC,KD --dealer-kept-cards 8C,4D,TH,9S --pone-dealt-cards 4C --initial-played-cards 4C --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 20000`;
-- Simulate from late in the third leg all possible dealer discards to end of game against reasonable opponent play: `python simulateCribbageGames.py --dealer-dealt-cards AC,2S,6C,TD,JD,KC --dealer-select-each-possible-kept-hand --hide-pone-hand --hide-dealer-hand --hide-play-actions --unlimited-hands-per-game --game-count 20000 --initial-pone-score 87 --initial-dealer-score 85`; and
-- Simulate one hand from deal to end of hand counting using simulation-based pone discarding: `python simulateCribbageGames.py --process-count 1 --game-count 1 --pone-discard-based-on-simulations 320`.
+- Simulate from late in the third leg all possible dealer discards to end of game against reasonable opponent play: `python simulateCribbageGames.py --dealer-dealt-cards AC,2S,6C,TD,JD,KC --dealer-select-each-possible-kept-hand --hide-pone-hand --hide-dealer-hand --hide-play-actions --unlimited-hands-per-game --game-count 20000 --initial-pone-score 87 --initial-dealer-score 85`;
+- Simulate one hand from deal to end of hand counting using simulation-based pone discarding: `python simulateCribbageGames.py --process-count 1 --game-count 1 --pone-discard-based-on-simulations 320`;
+- Simulate one hand from deal to end of hand counting using simulation-based dealer discarding: `python simulateCribbageGames.py --process-count 1 --game-count 1 --dealer-discard-based-on-simulations 320`; and
+- Simulate one hand from deal to end of hand counting using simulation-based pone and dealer discarding: `python simulateCribbageGames.py --process-count 1 --game-count 1 --pone-discard-based-on-simulations 320 --dealer-discard-based-on-simulations 320`.
 
 ## Long-term project goal
 
-Provide efficient discard and play analysis factoring
+Provide efficient, user-friendly discard and play analysis factoring
 in the expected game points differential (and play points differential if no game points differential) to end of hand(s) or game above opponent
 for different possible discards or plays.
 
 ## Current short to medium term goals
 
-- Add simulation-based dealer discard strategy.
+- Incorporate expected post-cut value of held Jack into discard algorithms otherwise ignoring suit - should be a cheap to compute discard improvement.
+- Fall back to suitless discard strategy if flush not possible.
+- Evaluate faster ways to factor in expected crib points ignoring held cards and possibly crib card suits to replace current too slow for much practical use (e.g. simulations) maximize post-cut hand +/- crib points discard strategy.
 - Add play decision analysis support by allowing the set of the initial simulation state to all post-discard, post-initial play states and then simulating all possible next plays to the end of the hand (or multiple hands);
 - Add simulation-based pone and dealer play strategies.
 - Automate execution and verification of above smoke tests.
