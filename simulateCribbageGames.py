@@ -402,80 +402,78 @@ def add_to_game_score(
     points: Points,
 ) -> GameScore:
     # TODO: shorten up this code - very likely unnecessarily verbose
+    current_game_player_score = (
+        (
+            game_score.first_pone_initial
+            + game_score.first_pone_play
+            + game_score.first_pone_hand
+            + game_score.first_pone_crib
+        )
+        if game_player == GamePlayer.FIRST_PONE
+        else game_score.first_dealer_initial
+        + game_score.first_dealer_play
+        + game_score.first_dealer_hand
+        + game_score.first_dealer_crib
+    )
+    maximum_current_game_player_points = MAX_SCORE - current_game_player_score
+    scorable_points = min(points, maximum_current_game_player_points)
+
     return GameScore(
         game_score.first_pone_initial,
         Points(
-            min(
-                game_score.first_pone_play
-                + (
-                    points
-                    if game_player == GamePlayer.FIRST_PONE
-                    and points_type == PointsType.PLAY
-                    else Points(0)
-                ),
-                MAX_SCORE,
-            )
+            game_score.first_pone_play
+            + (
+                scorable_points
+                if game_player == GamePlayer.FIRST_PONE
+                and points_type == PointsType.PLAY
+                else Points(0)
+            ),
         ),
         Points(
-            min(
-                game_score.first_pone_hand
-                + (
-                    points
-                    if game_player == GamePlayer.FIRST_PONE
-                    and points_type == PointsType.HAND
-                    else Points(0)
-                ),
-                MAX_SCORE,
-            )
+            game_score.first_pone_hand
+            + (
+                scorable_points
+                if game_player == GamePlayer.FIRST_PONE
+                and points_type == PointsType.HAND
+                else Points(0)
+            ),
         ),
         Points(
-            min(
-                game_score.first_pone_crib
-                + (
-                    points
-                    if game_player == GamePlayer.FIRST_PONE
-                    and points_type == PointsType.CRIB
-                    else Points(0)
-                ),
-                MAX_SCORE,
-            )
+            game_score.first_pone_crib
+            + (
+                scorable_points
+                if game_player == GamePlayer.FIRST_PONE
+                and points_type == PointsType.CRIB
+                else Points(0)
+            ),
         ),
         game_score.first_dealer_initial,
         Points(
-            min(
-                game_score.first_dealer_play
-                + (
-                    points
-                    if game_player == GamePlayer.FIRST_DEALER
-                    and points_type == PointsType.PLAY
-                    else Points(0)
-                ),
-                MAX_SCORE,
-            )
+            game_score.first_dealer_play
+            + (
+                scorable_points
+                if game_player == GamePlayer.FIRST_DEALER
+                and points_type == PointsType.PLAY
+                else Points(0)
+            ),
         ),
         Points(
-            min(
-                game_score.first_dealer_hand
-                + (
-                    points
-                    if game_player == GamePlayer.FIRST_DEALER
-                    and points_type == PointsType.HAND
-                    else Points(0)
-                ),
-                MAX_SCORE,
-            )
+            game_score.first_dealer_hand
+            + (
+                scorable_points
+                if game_player == GamePlayer.FIRST_DEALER
+                and points_type == PointsType.HAND
+                else Points(0)
+            ),
         ),
         Points(
-            min(
-                game_score.first_dealer_crib
-                + (
-                    points
-                    if game_player == GamePlayer.FIRST_DEALER
-                    and points_type == PointsType.CRIB
-                    else Points(0)
-                ),
-                MAX_SCORE,
-            )
+            game_score.first_dealer_crib
+            + (
+                scorable_points
+                if game_player == GamePlayer.FIRST_DEALER
+                and points_type == PointsType.CRIB
+                else Points(0)
+            ),
         ),
     )
 
@@ -883,26 +881,17 @@ def simulate_game(
             print(
                 f"Pone hand {Hand(reversed(sorted(kept_hands[0])))} with starter {starter} points: {pone_hand_points}"
             )
-
-        dealer_hand_points = score_hand_and_starter(kept_hands[1], starter)
-        if not hide_play_actions:
-            print(
-                f"Dealer hand {Hand(reversed(sorted(kept_hands[1])))} with starter {starter} points: {dealer_hand_points}"
-            )
-
-        crib_cards = pone_discarded_cards + dealer_discarded_cards
-        crib_points = score_hand_and_starter(crib_cards, starter, is_crib=True)
-        if not hide_play_actions:
-            print(
-                f"Crib {Hand(reversed(sorted(crib_cards)))} with starter {starter} points: {crib_points}"
-            )
-
         game_score = add_to_game_score(
             game_score, get_game_player(PONE, hand), PointsType.HAND, pone_hand_points
         )
         if game_over(game_score):
             break
 
+        dealer_hand_points = score_hand_and_starter(kept_hands[1], starter)
+        if not hide_play_actions:
+            print(
+                f"Dealer hand {Hand(reversed(sorted(kept_hands[1])))} with starter {starter} points: {dealer_hand_points}"
+            )
         game_score = add_to_game_score(
             game_score,
             get_game_player(DEALER, hand),
@@ -911,6 +900,13 @@ def simulate_game(
         )
         if game_over(game_score):
             break
+
+        crib_cards = pone_discarded_cards + dealer_discarded_cards
+        crib_points = score_hand_and_starter(crib_cards, starter, is_crib=True)
+        if not hide_play_actions:
+            print(
+                f"Crib {Hand(reversed(sorted(crib_cards)))} with starter {starter} points: {crib_points}"
+            )
         game_score = add_to_game_score(
             game_score, get_game_player(DEALER, hand), PointsType.CRIB, crib_points
         )
