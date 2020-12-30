@@ -44,6 +44,7 @@ for different possible discards or plays.
 
 ## Current short to medium term goals
 
+- Fix issue causing final full game score for winner to often be greater than 121 points.
 - Incorporate expected post-cut value of held Jack into discard algorithms otherwise ignoring suit - should be a cheap to compute discard improvement.
 - Fall back to suitless discard strategy if flush not possible.
 - Evaluate faster ways to factor in expected crib points ignoring held cards and possibly crib card suits to replace current too slow for much practical use (e.g. simulations) maximize post-cut hand +/- crib points discard strategy.
