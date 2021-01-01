@@ -47,8 +47,7 @@ for different possible discards or plays.
 
 ## Current short to medium term goals
 
-- Incorporate expected post-cut value of held Jack into discard algorithms otherwise ignoring suit - should be a cheap to compute discard improvement.
-- Fall back to suitless discard strategy if flush not possible.
+- Fall back to suitless discard strategy if neither flush nor nobs possible.
 - Evaluate faster ways to factor in expected crib points ignoring held cards and possibly crib card suits to replace current too slow for much practical use (e.g. simulations) maximize post-cut hand +/- crib points discard strategy.
 - Add play decision analysis support by allowing the set of the initial simulation state to all post-discard, post-initial play states and then simulating all possible next plays to the end of the hand (or multiple hands);
 - Add simulation-based pone and dealer play strategies.
@@ -59,6 +58,7 @@ for different possible discards or plays.
 
 ## Past project goals
 
+- Incorporate expected post-cut value of held Jack into discard algorithms otherwise ignoring suit - should be a cheap to compute discard improvement. (Abandoned as benefit to pone did not show with statistical significance over more hands than anyone would play in a lifetime (about 5 million) and was if anything a slight loss for dealer.)
 - Add simulation-based pone discard strategy.
 - Add multiple played hands or played hands to end of game simulation support.
 - Add play decision analysis support by allowing the set of the initial simulation state to a post-discard, start or middle of first play to 31 state and then simulating all possible initial plays to the end of the hand (or multiple hands).
