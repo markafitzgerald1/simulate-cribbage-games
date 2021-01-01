@@ -47,8 +47,8 @@ for different possible discards or plays.
 
 ## Current short to medium term goals
 
-- Fall back to suitless discard strategy if neither flush nor nobs possible.
 - Evaluate faster ways to factor in expected crib points ignoring held cards and possibly crib card suits to replace current too slow for much practical use (e.g. simulations) maximize post-cut hand +/- crib points discard strategy.
+- Fall back to suitless discard strategy if neither flush nor nobs possible.
 - Add play decision analysis support by allowing the set of the initial simulation state to all post-discard, post-initial play states and then simulating all possible next plays to the end of the hand (or multiple hands);
 - Add simulation-based pone and dealer play strategies.
 - Automate execution and verification of above smoke tests.
