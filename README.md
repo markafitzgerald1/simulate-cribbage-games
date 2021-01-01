@@ -42,19 +42,20 @@ Provide efficient, user-friendly discard and play analysis factoring
 in the expected game points differential (and play points differential if no game points differential) to end of hand(s) or game above opponent
 for different possible discards or plays.
 
-## Current known bugs
-- First pone and first dealer win percentages do not always exactly add up to 1 and standard deviations do not equal in 10,000+ game simulations.  (They do add up to 1 and have equal standard deviations in <= 5,000 game simulations.)
-
 ## Current short to medium term goals
 
-- Evaluate faster ways to factor in expected crib points ignoring held cards and possibly crib card suits to replace current too slow for much practical use (e.g. simulations) maximize post-cut hand +/- crib points discard strategy.
-- Fall back to suitless discard strategy if neither flush nor nobs possible.
+- Evaluate faster ways to factor in expected crib points ignoring held cards and possibly crib card suits to replace current too slow for much practical use (e.g. simulations) maximize post-cut suited and suitless hand +/- crib points discard strategies.  With any luck this makes factoring in expeted crib value cheap enough to be the default discard strategy.
+- Fall back to suitless discard strategy if neither flush nor nobs possible.  This may allow suit to be factored into discard decisions more often depending how much of a speed boost this buys.
 - Add play decision analysis support by allowing the set of the initial simulation state to all post-discard, post-initial play states and then simulating all possible next plays to the end of the hand (or multiple hands);
 - Add simulation-based pone and dealer play strategies.
 - Automate execution and verification of above smoke tests.
 - Improve user interface via which human players can play against implemented computer discard and play strategies.
 - Increase confidence in implementation by adding further type hints (Python), type checking and unit tests.
 - Increase performance and simulation-based play strategy strengths via performance improvements in Python or other programming language.
+
+## Current known bugs
+
+- First pone and first dealer win percentages do not always exactly add up to 1 and standard deviations do not equal in 10,000+ game simulations.  (They do add up to 1 and have equal standard deviations in <= 5,000 game simulations.)  Perhaps just a rounding error in runstats/Statistics, but perhaps a bug?
 
 ## Past project goals
 
