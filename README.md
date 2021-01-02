@@ -20,7 +20,8 @@ Simulate and analyze the play of cribbage hands between two opponents.
 
 All of the following should exit with status code 0 and no raised exception:
 
-- Simulate play of 10 reasonably well discarded and played hand pairs: `python simulateCribbageGames.py --game-count 10`;
+- Simulate play of 10 reasonably well discarded and played hands of cribbage: `python simulateCribbageGames.py --game-count 10`;
+- Simulate play of 10 reasonably well discarded and played games of cribbage: `python simulateCribbageGames.py --game-count 10 --unlimited-hands-per-game`;
 - Simulate and summarize play of 5,000 reasonably well discarded and played hand pairs: `python simulateCribbageGames.py --game-count 5000 --hide-pone-hand --hide-dealer-hand --hide-play-actions`;
 - Simulate a fixed pone hand and discard against random reasonably well discarded and played dealer hands: `python simulateCribbageGames.py --pone-dealt-cards AC,2D,3H,4S,5C,6D --pone-kept-cards 2D,3H,4S,5C --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 5000`;
 - Simulate a fixed pone hand and discard against random reasonably discarded and played dealer hands with two parallel processes: `python simulateCribbageGames.py --pone-dealt-cards AC,2D,3H,4S,5C,6D --pone-kept-cards 2D,3H,4S,5C --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 5000 --process-count 2`;
