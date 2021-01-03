@@ -49,6 +49,9 @@ class Index:
         return f"{Index.indices[self.index]}"
 
 
+DECK_INDEX_COUNT: int = len(Index.indices)
+
+
 class Card:
     """A French playing card"""
 
@@ -89,7 +92,7 @@ class Card:
         return f"Card({self.index}, {self.suit})"
 
 
-SUIT_COUNT = len(Card.suits)
+DECK_SUIT_COUNT = len(Card.suits)
 
 
 def parse_cards(specifier):
@@ -312,7 +315,11 @@ def statistics_dict_add(
         sum_stats_by_keep_by_type[keep] = new_sum_stats_for_keep
 
 
-DECK_LIST = [Card(number % 13, number // 13) for number in range(52)]
+DECK_CARD_COUNT: int = DECK_INDEX_COUNT * DECK_SUIT_COUNT
+DECK_LIST = [
+    Card(number % DECK_INDEX_COUNT, number // DECK_INDEX_COUNT)
+    for number in range(DECK_CARD_COUNT)
+]
 DECK_SET = set(DECK_LIST)
 
 
@@ -1488,6 +1495,10 @@ def simulate_games(
                         cached_keep_max_pre_cut_hand_points_ignoring_suit.cache_info(),
                     )
                     print(
+                        "expected_random_opponent_discard_crib_points_ignoring_suit:",
+                        expected_random_opponent_discard_crib_points_ignoring_suit.cache_info(),
+                    )
+                    print(
                         "max kept post-cut points ignoring suit",
                         cached_keep_max_post_cut_hand_points_ignoring_suit.cache_info(),
                     )
@@ -1565,9 +1576,9 @@ def cached_keep_max_post_cut_hand_points_ignoring_suit(sorted_dealt_indices):
         sorted_dealt_indices, KEPT_CARDS_LEN
     ):
         all_starters_total_score = 0
-        for starter_index in range(13):
-            available_starter_index_count = SUIT_COUNT - sorted_dealt_indices.count(
-                starter_index
+        for starter_index in range(DECK_INDEX_COUNT):
+            available_starter_index_count = (
+                DECK_SUIT_COUNT - sorted_dealt_indices.count(starter_index)
             )
             possible_post_cut_hand = tuple(
                 sorted([*sorted_kept_indices, starter_index])
@@ -1594,9 +1605,6 @@ def keep_max_post_cut_hand_points_ignoring_suit(dealt_cards):
     )
 
 
-DEFAULT_SELECT_KEPT_CARDS = keep_max_post_cut_hand_points_ignoring_suit
-
-
 # TODO: factor out code in common with keep_max_pre_cut_points()
 def keep_max_post_cut_hand_points(dealt_cards):
     max_total_score = None
@@ -1612,6 +1620,39 @@ def keep_max_post_cut_hand_points(dealt_cards):
     return max_total_score_kept_hand
 
 
+@cache
+def expected_random_opponent_discard_crib_points_ignoring_suit(discard1: int, discard2: int):
+    total_possible_hand_plus_starter_points = 0
+    total_possible_hand_plus_starter_count = 0
+    for starter_index in range(DECK_INDEX_COUNT):
+        available_starter_index_count = (
+            DECK_SUIT_COUNT - [discard1, discard2].count(starter_index)
+        )
+        for possible_opponent_discard_1 in range(DECK_INDEX_COUNT):
+            available_opponent_discard_1_count = (
+                DECK_SUIT_COUNT
+                - [discard1, discard2, starter_index].count(possible_opponent_discard_1)
+            )
+            for possible_opponent_discard_2 in range(DECK_INDEX_COUNT):
+                available_opponent_discard_2_count = DECK_SUIT_COUNT - [discard1, discard2, starter_index, possible_opponent_discard_1].count(possible_opponent_discard_2)
+                possible_hand_plus_starter_count = available_starter_index_count * available_opponent_discard_1_count * available_opponent_discard_2_count
+                total_possible_hand_plus_starter_count += possible_hand_plus_starter_count
+                total_possible_hand_plus_starter_points += possible_hand_plus_starter_count * cached_pairs_runs_and_fifteens_points(
+                    tuple(
+                        sorted(
+                            [
+                                discard1,
+                                discard2,
+                                possible_opponent_discard_1,
+                                possible_opponent_discard_2,
+                                starter_index,
+                            ]
+                        )
+                    )
+                )
+    return total_possible_hand_plus_starter_points / total_possible_hand_plus_starter_count
+
+
 # TODO: factor out code in common with keep_max_post_cut_hand_plus_or_minus_crib_points()
 @cache
 def cached_keep_max_post_cut_hand_plus_or_minus_crib_points_ignoring_suit(
@@ -1623,18 +1664,11 @@ def cached_keep_max_post_cut_hand_plus_or_minus_crib_points_ignoring_suit(
     for sorted_kept_indices in itertools.combinations(
         sorted_dealt_indices, KEPT_CARDS_LEN
     ):
-        sorted_kept_indices_counter = Counter(sorted_kept_indices)
-        discarded_dealt_indices_counter = (
-            sorted_dealt_indices_counter - sorted_kept_indices_counter
-        )
-        discarded_dealt_indices = list(discarded_dealt_indices_counter.elements())
         total_kept_hand_and_starters_hand_score = 0
         kept_hand_and_starter_count = 0
-        total_kept_hand_possible_cribs_score = 0
-        kept_hand_starter_and_opponent_discard_count = 0
-        for starter_index in range(13):
-            available_starter_index_count = SUIT_COUNT - sorted_dealt_indices.count(
-                starter_index
+        for starter_index in range(DECK_INDEX_COUNT):
+            available_starter_index_count = (
+                DECK_SUIT_COUNT - sorted_dealt_indices.count(starter_index)
             )
             total_kept_hand_and_starters_hand_score += (
                 cached_pairs_runs_and_fifteens_points(
@@ -1644,54 +1678,19 @@ def cached_keep_max_post_cut_hand_plus_or_minus_crib_points_ignoring_suit(
             )
             kept_hand_and_starter_count += available_starter_index_count
 
-            for possible_opponent_discard_1 in range(13):
-                dealt_and_starter_indices = [*sorted_dealt_indices, starter_index]
-                available_opponent_discard_1_count = (
-                    SUIT_COUNT
-                    - dealt_and_starter_indices.count(possible_opponent_discard_1)
-                )
-                for possible_opponent_discard_2 in range(13):
-                    available_opponent_discard_2_count = (
-                        SUIT_COUNT
-                        - [
-                            *dealt_and_starter_indices,
-                            possible_opponent_discard_1,
-                        ].count(possible_opponent_discard_2)
-                    )
-                    kept_hand_possible_crib_score = (
-                        cached_pairs_runs_and_fifteens_points(
-                            tuple(
-                                sorted(
-                                    [
-                                        *discarded_dealt_indices,
-                                        possible_opponent_discard_1,
-                                        possible_opponent_discard_2,
-                                        starter_index,
-                                    ]
-                                )
-                            )
-                        )
-                    )
-                    available_opponent_discard_1_and_2_count = (
-                        available_opponent_discard_1_count
-                        * available_opponent_discard_2_count
-                    )
-                    total_kept_hand_possible_cribs_score += (
-                        kept_hand_possible_crib_score
-                        * available_opponent_discard_1_and_2_count
-                    )
-                    kept_hand_starter_and_opponent_discard_count += (
-                        available_opponent_discard_1_and_2_count
-                    )
         average_hand_score = (
             total_kept_hand_and_starters_hand_score / kept_hand_and_starter_count
         )
-        average_crib_score = (
-            (1 if plus_crib else -1)
-            * total_kept_hand_possible_cribs_score
-            / kept_hand_starter_and_opponent_discard_count
+
+        sorted_kept_indices_counter = Counter(sorted_kept_indices)
+        discarded_dealt_indices_counter = (
+            sorted_dealt_indices_counter - sorted_kept_indices_counter
         )
+        discarded_dealt_indices = list(discarded_dealt_indices_counter.elements())
+        average_crib_score = (1 if plus_crib else -1) * expected_random_opponent_discard_crib_points_ignoring_suit(*discarded_dealt_indices)
+
         average_score = average_hand_score + average_crib_score
+
         if not max_average_score or average_score > max_average_score:
             max_average_score = average_score
             max_average_score_kept_hand = sorted_kept_indices
@@ -1719,6 +1718,10 @@ def keep_max_post_cut_hand_plus_crib_points_ignoring_suit(dealt_cards):
     return keep_max_post_cut_hand_plus_or_minus_crib_points_ignoring_suit(
         dealt_cards, plus_crib=True
     )
+
+
+DEFAULT_SELECT_PONE_KEPT_CARDS = keep_max_post_cut_hand_minus_crib_points_ignoring_suit
+DEFAULT_SELECT_DEALER_KEPT_CARDS = keep_max_post_cut_hand_plus_crib_points_ignoring_suit
 
 
 # TODO: make this faster - currently takes about 5.75 seconds on my personal laptop to run on two dealt 6-card hands
@@ -2101,10 +2104,10 @@ def player_select_kept_cards_based_on_simulation(
         (),
         simulated_players_statistics,
         simulated_players_statistics_lock,
-        DEFAULT_SELECT_KEPT_CARDS,
+        DEFAULT_SELECT_PONE_KEPT_CARDS,
         False,
         player == PONE,
-        DEFAULT_SELECT_KEPT_CARDS,
+        DEFAULT_SELECT_DEALER_KEPT_CARDS,
         False,
         player == DEALER,
         DEFAULT_SELECT_PLAY,
@@ -2512,7 +2515,7 @@ if __name__ == "__main__":
     elif args.pone_maximize_post_cut_hand_minus_crib_points:
         pone_select_kept_cards = keep_max_post_cut_hand_minus_crib_points
     else:
-        pone_select_kept_cards = DEFAULT_SELECT_KEPT_CARDS
+        pone_select_kept_cards = DEFAULT_SELECT_PONE_KEPT_CARDS
 
     if args.dealer_keep_random:
         dealer_select_kept_cards = keep_random
@@ -2531,7 +2534,7 @@ if __name__ == "__main__":
     elif args.dealer_maximize_post_cut_hand_plus_crib_points:
         dealer_select_kept_cards = keep_max_post_cut_hand_plus_crib_points
     else:
-        dealer_select_kept_cards = DEFAULT_SELECT_KEPT_CARDS
+        dealer_select_kept_cards = DEFAULT_SELECT_DEALER_KEPT_CARDS
 
     pone_select_play: PlaySelector
     if args.pone_play_user_entered:

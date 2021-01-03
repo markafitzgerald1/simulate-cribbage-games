@@ -45,7 +45,7 @@ for different possible discards or plays.
 
 ## Current short to medium term goals
 
-- Evaluate faster ways to factor in expected crib points ignoring held cards and possibly crib card suits to replace current too slow for much practical use (e.g. simulations) maximize post-cut suited and suitless hand +/- crib points discard strategies.  With any luck this makes factoring in expeted crib value cheap enough to be the default discard strategy.
+- Evaluate faster ways to factor in expected crib points ignoring held cards and possibly crib card suits to replace current too slow for much practical use (e.g. simulations) maximize post-cut suited hand +/- crib points discard strategy.  With any luck this makes factoring in expected crib value cheap enough to be the default discard strategy.
 - Fall back to suitless discard strategy if neither flush nor nobs possible.  This may allow suit to be factored into discard decisions more often depending how much of a speed boost this buys.
 - Add play decision analysis support by allowing the set of the initial simulation state to all post-discard, post-initial play states and then simulating all possible next plays to the end of the hand (or multiple hands);
 - Add simulation-based pone and dealer play strategies.
@@ -60,6 +60,7 @@ for different possible discards or plays.
 
 ## Past project goals
 
+- Evaluate faster way of factoring expected crib points into discard ignoring suit post-cut discard strategies.  (Approach was included as default discard strategy - about as effective as factoring in held cards but only about 20% slower than not factoring in crib value at all.)
 - Incorporate expected post-cut value of held Jack into discard algorithms otherwise ignoring suit - should be a cheap to compute discard improvement. (Abandoned as benefit to pone did not show with statistical significance over more hands than anyone would play in a lifetime (about 5 million) and was if anything a slight loss for dealer.)
 - Add simulation-based pone discard strategy.
 - Add multiple played hands or played hands to end of game simulation support.
