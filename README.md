@@ -47,10 +47,14 @@ for different possible discards or plays.
 
 - Evaluate faster ways to factor in expected crib points ignoring held cards and possibly crib card suits to replace current too slow for much practical use (e.g. simulations) maximize post-cut suited hand +/- crib points discard strategy.  With any luck this makes factoring in expected crib value cheap enough to be the default discard strategy.
 - Fall back to suitless discard strategy if neither flush nor nobs possible.  This may allow suit to be factored into discard decisions more often depending how much of a speed boost this buys.
+- In single all possible discards simulations and simulation-based discard strategy drop possible discards 2 standard deviations worse beyond the current selected confidence level than the current best discard as simulation proceeds save time and get better answers faster.
+- Add support for time-limited discard simulations and simulation-based discard strategies.
 - Add play decision analysis support by allowing the set of the initial simulation state to all post-discard, post-initial play states and then simulating all possible next plays to the end of the hand (or multiple hands);
 - Add simulation-based pone and dealer play strategies.
-- Automate execution and verification of above smoke tests.
 - Improve user interface via which human players can play against implemented computer discard and play strategies.
+- Implement simulation-based discard and play where immediate opponent reponse is also simulation-based but based on fewer simluated games.
+- Implement simulation-based discard and play where multiple subsequent opponent or self play or discard actions are also simulation-based but based on fewer simluated games.  (Keys to success: tuning of decay factor; determining whether the positional evaluation benefits of low (< 32 for discard, for example) simulation counts outweigh their higher error rate costs.)
+- Automate execution and verification of above smoke tests.
 - Increase confidence in implementation by adding further type hints (Python), type checking and unit tests.
 - Increase performance and simulation-based play strategy strengths via performance improvements in Python or other programming language.
 

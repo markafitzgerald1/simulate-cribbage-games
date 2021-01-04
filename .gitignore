@@ -11,3 +11,4 @@
 /bin/
 /__pycache__/
 /\.idea/
+/expected_random_opponent_discard_crib_points_cache/
