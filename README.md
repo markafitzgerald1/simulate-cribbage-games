@@ -45,7 +45,6 @@ for different possible discards or plays.
 
 ## Current short to medium term goals
 
-- Fall back to suitless discard strategy if neither flush nor nobs possible.  This may allow suit to be factored into discard decisions more often depending how much of a speed boost this buys. (Implemented in post-cut excluding crib discard strategy for a 75% speedup.  TODO: same for post-cut including crib discard strategy.)
 - In single all possible discards simulations and simulation-based discard strategy drop possible discards 2 standard deviations worse beyond the current selected confidence level than the current best discard as simulation proceeds save time and get better answers faster.
 - Add support for time-limited discard simulations and simulation-based discard strategies.
 - Add play decision analysis support by allowing the set of the initial simulation state to all post-discard, post-initial play states and then simulating all possible next plays to the end of the hand (or multiple hands);
@@ -63,6 +62,7 @@ for different possible discards or plays.
 
 ## Past project goals
 
+- Discard based on expected hand value ignoring suit when neither flush nor nobs is possible in both maximize hand points and maximize hand +/- crib points discard strategies.  This allows suit to be factored into discard decisions more often as discard maximizing hand value was sped up 75% while discard maximizing hand +/- crib points was sped up about 33%.
 - Evaluate faster way of factoring expected crib points into discard factoring in suit post-cut discard strategies.  (Approach using disk cache increased discard strategy speed from unusuable on my laptop 6 seconds per hand discard pair to 60 discard pairs per second, an approximately 375x speed improvement.  Play strength gains are small - about 0.10 +/- 0.07 points per hand (95% confidence interval) for pone and 0.043 +/- 0.041 points per hand for dealer - thus not using this as the default discard strategy at present.
 - Evaluate faster way of factoring expected crib points into discard ignoring suit post-cut discard strategies.  (Approach was included as default discard strategy - about as effective as factoring in held cards but only about 20% slower than not factoring in crib value at all.)
 - Incorporate expected post-cut value of held Jack into discard algorithms otherwise ignoring suit - should be a cheap to compute discard improvement. (Abandoned as benefit to pone did not show with statistical significance over more hands than anyone would play in a lifetime (about 5 million) and was if anything a slight loss for dealer.)
