@@ -45,7 +45,7 @@ for different possible discards or plays.
 
 ## Current short to medium term goals
 
-- Fall back to suitless discard strategy if neither flush nor nobs possible.  This may allow suit to be factored into discard decisions more often depending how much of a speed boost this buys.
+- Fall back to suitless discard strategy if neither flush nor nobs possible.  This may allow suit to be factored into discard decisions more often depending how much of a speed boost this buys. (Implemented in post-cut excluding crib discard strategy for a 75% speedup.  TODO: same for post-cut including crib discard strategy.)
 - In single all possible discards simulations and simulation-based discard strategy drop possible discards 2 standard deviations worse beyond the current selected confidence level than the current best discard as simulation proceeds save time and get better answers faster.
 - Add support for time-limited discard simulations and simulation-based discard strategies.
 - Add play decision analysis support by allowing the set of the initial simulation state to all post-discard, post-initial play states and then simulating all possible next plays to the end of the hand (or multiple hands);

@@ -1510,7 +1510,9 @@ def simulate_games(
                         "max kept post-cut hand ± crib points ignoring suit",
                         cached_keep_max_post_cut_hand_plus_or_minus_crib_points_ignoring_suit.cache_info(),
                     )
-                    print(f"expected_random_opponent_discard_crib_points_cache.stats(): {expected_random_opponent_discard_crib_points_cache.stats()}")
+                    print(
+                        f"expected_random_opponent_discard_crib_points_cache.stats(): {expected_random_opponent_discard_crib_points_cache.stats()}"
+                    )
                     print(
                         "cached_get_current_play_run_length",
                         cached_get_current_play_run_length.cache_info(),
@@ -1610,8 +1612,21 @@ def keep_max_post_cut_hand_points_ignoring_suit(dealt_cards):
     )
 
 
+def neither_flush_nor_nobs_possible(dealt_cards):
+    return (
+        not (any([dealt_card.index == JACK_INDEX for dealt_card in dealt_cards]))
+        and Counter([dealt_card.suit for dealt_card in dealt_cards]).most_common(1)[0][
+            1
+        ]
+        < KEPT_CARDS_LEN
+    )
+
+
 # TODO: factor out code in common with keep_max_pre_cut_points()
 def keep_max_post_cut_hand_points(dealt_cards):
+    if neither_flush_nor_nobs_possible(dealt_cards):
+        return keep_max_post_cut_hand_points_ignoring_suit(dealt_cards)
+
     max_total_score = None
     max_total_score_kept_hand = None
     for kept_hand in itertools.combinations(dealt_cards, KEPT_CARDS_LEN):
@@ -1626,36 +1641,55 @@ def keep_max_post_cut_hand_points(dealt_cards):
 
 
 @cache
-def expected_random_opponent_discard_crib_points_ignoring_suit(discard1: int, discard2: int):
+def expected_random_opponent_discard_crib_points_ignoring_suit(
+    discard1: int, discard2: int
+):
     total_possible_hand_plus_starter_points = 0
     total_possible_hand_plus_starter_count = 0
     for starter_index in range(DECK_INDEX_COUNT):
-        available_starter_index_count = (
-            DECK_SUIT_COUNT - [discard1, discard2].count(starter_index)
+        available_starter_index_count = DECK_SUIT_COUNT - [discard1, discard2].count(
+            starter_index
         )
         for possible_opponent_discard_1 in range(DECK_INDEX_COUNT):
-            available_opponent_discard_1_count = (
-                DECK_SUIT_COUNT
-                - [discard1, discard2, starter_index].count(possible_opponent_discard_1)
-            )
+            available_opponent_discard_1_count = DECK_SUIT_COUNT - [
+                discard1,
+                discard2,
+                starter_index,
+            ].count(possible_opponent_discard_1)
             for possible_opponent_discard_2 in range(DECK_INDEX_COUNT):
-                available_opponent_discard_2_count = DECK_SUIT_COUNT - [discard1, discard2, starter_index, possible_opponent_discard_1].count(possible_opponent_discard_2)
-                possible_hand_plus_starter_count = available_starter_index_count * available_opponent_discard_1_count * available_opponent_discard_2_count
-                total_possible_hand_plus_starter_count += possible_hand_plus_starter_count
-                total_possible_hand_plus_starter_points += possible_hand_plus_starter_count * cached_pairs_runs_and_fifteens_points(
-                    tuple(
-                        sorted(
-                            [
-                                discard1,
-                                discard2,
-                                possible_opponent_discard_1,
-                                possible_opponent_discard_2,
-                                starter_index,
-                            ]
+                available_opponent_discard_2_count = DECK_SUIT_COUNT - [
+                    discard1,
+                    discard2,
+                    starter_index,
+                    possible_opponent_discard_1,
+                ].count(possible_opponent_discard_2)
+                possible_hand_plus_starter_count = (
+                    available_starter_index_count
+                    * available_opponent_discard_1_count
+                    * available_opponent_discard_2_count
+                )
+                total_possible_hand_plus_starter_count += (
+                    possible_hand_plus_starter_count
+                )
+                total_possible_hand_plus_starter_points += (
+                    possible_hand_plus_starter_count
+                    * cached_pairs_runs_and_fifteens_points(
+                        tuple(
+                            sorted(
+                                [
+                                    discard1,
+                                    discard2,
+                                    possible_opponent_discard_1,
+                                    possible_opponent_discard_2,
+                                    starter_index,
+                                ]
+                            )
                         )
                     )
                 )
-    return total_possible_hand_plus_starter_points / total_possible_hand_plus_starter_count
+    return (
+        total_possible_hand_plus_starter_points / total_possible_hand_plus_starter_count
+    )
 
 
 # TODO: factor out code in common with keep_max_post_cut_hand_plus_or_minus_crib_points()
@@ -1692,7 +1726,11 @@ def cached_keep_max_post_cut_hand_plus_or_minus_crib_points_ignoring_suit(
             sorted_dealt_indices_counter - sorted_kept_indices_counter
         )
         discarded_dealt_indices = list(discarded_dealt_indices_counter.elements())
-        average_crib_score = (1 if plus_crib else -1) * expected_random_opponent_discard_crib_points_ignoring_suit(*discarded_dealt_indices)
+        average_crib_score = (
+            1 if plus_crib else -1
+        ) * expected_random_opponent_discard_crib_points_ignoring_suit(
+            *discarded_dealt_indices
+        )
 
         average_score = average_hand_score + average_crib_score
 
@@ -1729,12 +1767,20 @@ DEFAULT_SELECT_PONE_KEPT_CARDS = keep_max_post_cut_hand_minus_crib_points_ignori
 DEFAULT_SELECT_DEALER_KEPT_CARDS = keep_max_post_cut_hand_plus_crib_points_ignoring_suit
 
 
-expected_random_opponent_discard_crib_points_cache = Cache("expected_random_opponent_discard_crib_points_cache", eviction_policy='none')
+expected_random_opponent_discard_crib_points_cache = Cache(
+    "expected_random_opponent_discard_crib_points_cache", eviction_policy="none"
+)
 
 
 @expected_random_opponent_discard_crib_points_cache.memoize()
-def cached_expected_random_opponent_discard_crib_points(suit_normalized_sorted_discarded_dealt_cards: Tuple[Card]):
-    deck_less_dealt_cards = [card for card in DECK_SET if card not in suit_normalized_sorted_discarded_dealt_cards]
+def cached_expected_random_opponent_discard_crib_points(
+    suit_normalized_sorted_discarded_dealt_cards: Tuple[Card],
+):
+    deck_less_dealt_cards = [
+        card
+        for card in DECK_SET
+        if card not in suit_normalized_sorted_discarded_dealt_cards
+    ]
     total_kept_hand_possible_cribs_score = 0
     kept_hand_starter_and_opponent_discard_count = 0
     for starter in deck_less_dealt_cards:
@@ -1744,23 +1790,40 @@ def cached_expected_random_opponent_discard_crib_points(suit_normalized_sorted_d
         for possible_opponent_discard in itertools.combinations(
             deck_less_dealt_cards_and_starter, 2
         ):
-            possible_crib = [*suit_normalized_sorted_discarded_dealt_cards, *possible_opponent_discard]
+            possible_crib = [
+                *suit_normalized_sorted_discarded_dealt_cards,
+                *possible_opponent_discard,
+            ]
             kept_hand_possible_crib_score = score_hand_and_starter(
                 possible_crib, starter, is_crib=True
             )
             total_kept_hand_possible_cribs_score += kept_hand_possible_crib_score
             kept_hand_starter_and_opponent_discard_count += 1
 
-    average_crib_score = total_kept_hand_possible_cribs_score / kept_hand_starter_and_opponent_discard_count
-    print(f"Adding to disk cache cached_expected_random_opponent_discard_crib_points({Index.indices[suit_normalized_sorted_discarded_dealt_cards[0].index]}-{Index.indices[suit_normalized_sorted_discarded_dealt_cards[1].index]} {'  ' if suit_normalized_sorted_discarded_dealt_cards[0].suit == suit_normalized_sorted_discarded_dealt_cards[1].suit else 'un'}suited) = {average_crib_score}")
+    average_crib_score = (
+        total_kept_hand_possible_cribs_score
+        / kept_hand_starter_and_opponent_discard_count
+    )
+    print(
+        f"Adding to disk cache cached_expected_random_opponent_discard_crib_points({Index.indices[suit_normalized_sorted_discarded_dealt_cards[0].index]}-{Index.indices[suit_normalized_sorted_discarded_dealt_cards[1].index]} {'  ' if suit_normalized_sorted_discarded_dealt_cards[0].suit == suit_normalized_sorted_discarded_dealt_cards[1].suit else 'un'}suited) = {average_crib_score}"
+    )
     return average_crib_score
 
 
 def expected_random_opponent_discard_crib_points(discarded_dealt_cards: List[Card]):
-    is_suited_discard: bool = discarded_dealt_cards[0].suit == discarded_dealt_cards[1].suit
-    sorted_discarded_dealt_cards: List[Card] = sorted(discarded_dealt_cards, reverse=True)
-    suit_normalized_discarded_dealt_cards = [Card(sorted_discarded_dealt_cards[0].index, 0), Card(sorted_discarded_dealt_cards[1].index, 0 if is_suited_discard else 1)]
-    return cached_expected_random_opponent_discard_crib_points(tuple(suit_normalized_discarded_dealt_cards))
+    is_suited_discard: bool = (
+        discarded_dealt_cards[0].suit == discarded_dealt_cards[1].suit
+    )
+    sorted_discarded_dealt_cards: List[Card] = sorted(
+        discarded_dealt_cards, reverse=True
+    )
+    suit_normalized_discarded_dealt_cards = [
+        Card(sorted_discarded_dealt_cards[0].index, 0),
+        Card(sorted_discarded_dealt_cards[1].index, 0 if is_suited_discard else 1),
+    ]
+    return cached_expected_random_opponent_discard_crib_points(
+        tuple(suit_normalized_discarded_dealt_cards)
+    )
 
 
 # TODO: factor out code in common with keep_max_post_cut_hand_points()
@@ -1780,7 +1843,9 @@ def keep_max_post_cut_hand_plus_or_minus_crib_points(dealt_cards, plus_crib):
         average_hand_score = (
             total_kept_hand_and_starters_hand_score / kept_hand_and_starter_count
         )
-        average_crib_score = (1 if plus_crib else -1) * expected_random_opponent_discard_crib_points(discarded_dealt_cards)
+        average_crib_score = (
+            1 if plus_crib else -1
+        ) * expected_random_opponent_discard_crib_points(discarded_dealt_cards)
         average_score = average_hand_score + average_crib_score
         if not max_average_score or average_score > max_average_score:
             max_average_score = average_score
