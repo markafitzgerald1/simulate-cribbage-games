@@ -46,8 +46,8 @@ for different possible discards or plays.
 ## Current short to medium term goals
 
 - In single all possible discards simulations and simulation-based discard strategy drop possible discards 2 standard deviations worse beyond the current selected confidence level than the current best discard as simulation proceeds save time and get better answers faster.
-- Reconsider not ignoring suit by default and not ignoring suit in simulation-based discard strategy.
 - Add support for time-limited discard simulations and simulation-based discard strategies.
+- Reconsider not ignoring suit by default and not ignoring suit in simulation-based discard strategy.
 - Add play decision analysis support by allowing the set of the initial simulation state to all post-discard, post-initial play states and then simulating all possible next plays to the end of the hand (or multiple hands);
 - Add simulation-based pone and dealer play strategies.
 - Improve user interface via which human players can play against implemented computer discard and play strategies.
