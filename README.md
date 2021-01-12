@@ -45,6 +45,7 @@ for different possible discards or plays.
 
 ## Current short to medium term goals
 
+- Stop discard/play simulation and simulation-based discard when only one non-dropped option remains.
 - Add play decision analysis support by allowing the set of the initial simulation state to all post-discard, post-initial play states and then simulating all possible next plays to the end of the hand (or multiple hands);
 - Add support for time-limited discard simulations and simulation-based discard strategies.
 - Reconsider not ignoring suit by default and not ignoring suit in simulation-based discard strategy.
