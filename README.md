@@ -4,7 +4,7 @@ Simulate and analyze the play of cribbage hands between two opponents.
 
 ## Setup
 
-- Install Python 3.9.0
+- Install Python 3.9.1
 - `pip install -r requirements.txt` _(may require local admin to install black globally... or use a [virtualenv](https://virtualenv.pypa.io/en/latest/) instead!)_
 
 ## Test
