@@ -560,6 +560,7 @@ def simulate_game(
     hide_dealer_hand: bool,
     pone_dealt_cards_possible_keeps,  # type: itertools.cycle[Tuple[Card, ...]]
     dealer_dealt_cards_possible_keeps,  # type: itertools.cycle[Tuple[Card, ...]]
+    dropped_keeps,
     initial_first_pone_score: Points,
     initial_first_dealer_score: Points,
     post_initial_play: Optional[Card],
@@ -632,9 +633,11 @@ def simulate_game(
             else:
                 kept_pone_hand = pone_select_kept_cards(dealt_hands[0])
         elif is_first_hand and pone_dealt_cards:
-            kept_pone_hand = first_kept_pone_hand = list(
-                next(pone_dealt_cards_possible_keeps)
-            )
+            kept_pone_hand = None
+            while not kept_pone_hand or tuple(kept_pone_hand) in dropped_keeps:
+                kept_pone_hand = first_kept_pone_hand = list(
+                    next(pone_dealt_cards_possible_keeps)
+                )
         else:
             raise ValueError(
                 "Iterating through all possible kept hands not supported with non-fixed deals."
@@ -656,9 +659,11 @@ def simulate_game(
             else:
                 kept_dealer_hand = dealer_select_kept_cards(dealt_hands[1])
         elif is_first_hand and dealer_dealt_cards:
-            kept_dealer_hand = first_kept_dealer_hand = list(
-                next(dealer_dealt_cards_possible_keeps)
-            )
+            kept_dealer_hand = None
+            while not kept_dealer_hand or tuple(kept_dealer_hand) in dropped_keeps:
+                kept_dealer_hand = first_kept_dealer_hand = list(
+                    next(dealer_dealt_cards_possible_keeps)
+                )
         else:
             raise ValueError(
                 "Iterating through all possible kept hands not supported with non-fixed deals."
@@ -1060,6 +1065,7 @@ def simulate_games(
         dealer_dealt_cards_possible_keeps = itertools.cycle(
             itertools.combinations(dealer_dealt_cards, KEPT_CARDS_LEN)
         )
+        dropped_keeps = set()
         pone_kept_cards_possible_plays = (
             itertools.cycle(pone_kept_cards)
             if pone_kept_cards and select_each_post_initial_play
@@ -1070,6 +1076,7 @@ def simulate_games(
             if dealer_kept_cards and select_each_post_initial_play
             else None
         )
+        dropped_initial_plays = set()
         for game in range(process_game_count):
             post_initial_play: Optional[Card] = None
             game_simulation_result: Optional[GameSimulationResult] = None
@@ -1077,15 +1084,20 @@ def simulate_games(
                 not game_simulation_result
                 or game_simulation_result.non_initial_played_card_played
             ):
-                post_initial_play = (
-                    next(pone_kept_cards_possible_plays)
-                    if pone_kept_cards_possible_plays
-                    else None
-                ) or (
-                    next(dealer_kept_cards_possible_plays)
-                    if dealer_kept_cards_possible_plays
-                    else None
-                )
+                post_initial_play = None
+                if pone_kept_cards_possible_plays:
+                    while (
+                        not post_initial_play
+                        or post_initial_play in dropped_initial_plays
+                    ):
+                        post_initial_play = next(pone_kept_cards_possible_plays)
+                elif dealer_kept_cards_possible_plays:
+                    while (
+                        not post_initial_play
+                        or post_initial_play in dropped_initial_plays
+                    ):
+                        post_initial_play = next(dealer_kept_cards_possible_plays)
+
                 game_simulation_result = simulate_game(
                     pone_dealt_cards,
                     dealer_dealt_cards,
@@ -1105,6 +1117,7 @@ def simulate_games(
                     hide_dealer_hand,
                     pone_dealt_cards_possible_keeps,
                     dealer_dealt_cards_possible_keeps,
+                    dropped_keeps,
                     initial_first_pone_score,
                     initial_first_dealer_score,
                     post_initial_play,
@@ -1418,11 +1431,24 @@ def simulate_games(
                     )
                     drop_confidence_level = 2 * get_z_statistic(confidence_level)
                     if (
-                        mean_game_points_differential_in_stddevs
-                        <= drop_confidence_level
-                    ) and (
-                        mean_total_points_differential_in_stddevs
-                        <= drop_confidence_level
+                        (
+                            mean_game_points_differential_in_stddevs
+                            > drop_confidence_level
+                        )
+                        or mean_game_points_differential_in_stddevs == 0
+                        and (
+                            mean_total_points_differential_in_stddevs
+                            > drop_confidence_level
+                        )
+                    ):
+                        if keep:
+                            dropped_keeps.add(tuple(keep))
+                        if post_initial:
+                            dropped_initial_plays.add(post_initial)
+
+                    if (
+                        keep not in dropped_keeps
+                        and post_initial not in dropped_initial_plays
                     ):
                         if show_statistics_updates:
                             print(
