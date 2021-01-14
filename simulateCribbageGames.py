@@ -558,8 +558,8 @@ def simulate_game(
     dealer_select_play,
     hide_pone_hand: bool,
     hide_dealer_hand: bool,
-    pone_dealt_cards_possible_keeps,  # type: itertools.cycle[Tuple[Card, ...]]
-    dealer_dealt_cards_possible_keeps,  # type: itertools.cycle[Tuple[Card, ...]]
+    pone_dealt_cards_possible_keeps_cycle,  # type: itertools.cycle[Tuple[Card, ...]]
+    dealer_dealt_cards_possible_keeps_cycle,  # type: itertools.cycle[Tuple[Card, ...]]
     dropped_keeps,
     initial_first_pone_score: Points,
     initial_first_dealer_score: Points,
@@ -636,7 +636,7 @@ def simulate_game(
             kept_pone_hand = None
             while not kept_pone_hand or tuple(kept_pone_hand) in dropped_keeps:
                 kept_pone_hand = first_kept_pone_hand = list(
-                    next(pone_dealt_cards_possible_keeps)
+                    next(pone_dealt_cards_possible_keeps_cycle)
                 )
         else:
             raise ValueError(
@@ -662,7 +662,7 @@ def simulate_game(
             kept_dealer_hand = None
             while not kept_dealer_hand or tuple(kept_dealer_hand) in dropped_keeps:
                 kept_dealer_hand = first_kept_dealer_hand = list(
-                    next(dealer_dealt_cards_possible_keeps)
+                    next(dealer_dealt_cards_possible_keeps_cycle)
                 )
         else:
             raise ValueError(
@@ -990,6 +990,15 @@ def get_mean_difference_in_stddevs(statistics1, statistics2):
     return (mean_difference / mean_difference_stddev) if mean_difference else 0
 
 
+def get_length_across_all_keys(players_statistics):
+    return sum(
+        [
+            len(players_statistics[key]["first_pone_total_points"])
+            for (key, stats) in players_statistics.items()
+        ]
+    )
+
+
 def simulate_games(
     process_game_count,
     overall_game_count,
@@ -1059,19 +1068,25 @@ def simulate_games(
             Tuple[Card], Statistics
         ] = {}
 
-        pone_dealt_cards_possible_keeps = itertools.cycle(
+        pone_dealt_cards_possible_keeps = list(
             itertools.combinations(pone_dealt_cards, KEPT_CARDS_LEN)
         )
-        dealer_dealt_cards_possible_keeps = itertools.cycle(
+        pone_dealt_cards_possible_keeps_cycle = itertools.cycle(
+            pone_dealt_cards_possible_keeps
+        )
+        dealer_dealt_cards_possible_keeps = list(
             itertools.combinations(dealer_dealt_cards, KEPT_CARDS_LEN)
         )
+        dealer_dealt_cards_possible_keeps_cycle = itertools.cycle(
+            dealer_dealt_cards_possible_keeps
+        )
         dropped_keeps = set()
-        pone_kept_cards_possible_plays = (
+        pone_kept_cards_possible_plays_cycle = (
             itertools.cycle(pone_kept_cards)
             if pone_kept_cards and select_each_post_initial_play
             else None
         )
-        dealer_kept_cards_possible_plays = (
+        dealer_kept_cards_possible_plays_cycle = (
             itertools.cycle(dealer_kept_cards)
             if dealer_kept_cards and select_each_post_initial_play
             else None
@@ -1085,18 +1100,18 @@ def simulate_games(
                 or game_simulation_result.non_initial_played_card_played
             ):
                 post_initial_play = None
-                if pone_kept_cards_possible_plays:
+                if pone_kept_cards_possible_plays_cycle:
                     while (
                         not post_initial_play
                         or post_initial_play in dropped_initial_plays
                     ):
-                        post_initial_play = next(pone_kept_cards_possible_plays)
-                elif dealer_kept_cards_possible_plays:
+                        post_initial_play = next(pone_kept_cards_possible_plays_cycle)
+                elif dealer_kept_cards_possible_plays_cycle:
                     while (
                         not post_initial_play
                         or post_initial_play in dropped_initial_plays
                     ):
-                        post_initial_play = next(dealer_kept_cards_possible_plays)
+                        post_initial_play = next(dealer_kept_cards_possible_plays_cycle)
 
                 game_simulation_result = simulate_game(
                     pone_dealt_cards,
@@ -1115,8 +1130,8 @@ def simulate_games(
                     dealer_select_play,
                     hide_pone_hand,
                     hide_dealer_hand,
-                    pone_dealt_cards_possible_keeps,
-                    dealer_dealt_cards_possible_keeps,
+                    pone_dealt_cards_possible_keeps_cycle,
+                    dealer_dealt_cards_possible_keeps_cycle,
                     dropped_keeps,
                     initial_first_pone_score,
                     initial_first_dealer_score,
@@ -1369,13 +1384,9 @@ def simulate_games(
                 )
                 first_pone_minus_first_dealer_game_points_statistics.clear()
 
-                players_statistics_length = sum(
-                    [
-                        len(players_statistics[key]["first_pone_total_points"])
-                        for (key, stats) in players_statistics.items()
-                    ]
+                players_statistics_length = get_length_across_all_keys(
+                    players_statistics
                 )
-
                 if show_statistics_updates:
                     if players_statistics_length > 1:
                         print(
@@ -1552,6 +1563,32 @@ def simulate_games(
                         "cached_get_current_play_run_length",
                         cached_get_current_play_run_length.cache_info(),
                     )
+
+                if (
+                    len(pone_dealt_cards_possible_keeps)
+                    + len(dealer_dealt_cards_possible_keeps)
+                    - len(dropped_keeps)
+                    <= 1
+                ):
+                    break
+                elif (
+                    pone_kept_cards
+                    and select_each_post_initial_play
+                    and len(set(pone_kept_cards).difference(set(initial_played_cards)))
+                    - len(dropped_initial_plays)
+                    <= 1
+                ):
+                    break
+                elif (
+                    dealer_kept_cards
+                    and select_each_post_initial_play
+                    and len(
+                        set(dealer_kept_cards).difference(set(initial_played_cards))
+                    )
+                    - len(dropped_initial_plays)
+                    <= 1
+                ):
+                    break
 
     except KeyboardInterrupt:
         sys.exit(0)
@@ -2809,5 +2846,5 @@ if __name__ == "__main__":
             sys.exit(0)
 
     print(
-        f"Simulated {game_count} games with {args.process_count} worker processes at {simulation_performance_statistics(start_time_ns, game_count)}"
+        f"Simulated {get_length_across_all_keys(players_statistics)} games with {args.process_count} worker processes at {simulation_performance_statistics(start_time_ns, game_count)}"
     )
