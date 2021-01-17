@@ -45,7 +45,7 @@ for different possible discards or plays.
 
 ## Current short to medium term goals
 
-- BUG: --initial-played-cards 9-4-9 with 4,4,8 in dealer hand not simulatable because current best play algorithm would have played 8 on first played card.  Same is true of simulation of --initial-played-cards 9-Q with 9-4-2 in pone hand.  (Fix requires possibly not assuming that future plays would match that of the best non-simulation-based play algorithm.)
+- BUG: --initial-played-cards 9-4-9 with 4,4,8 in dealer hand not simulatable because current best play algorithm would have played 8 on first played card.  Same is true of simulation of --initial-played-cards 9-Q with 9-4-2 in pone hand.  (Fix requires possibly not assuming that future plays would match that of the best non-simulation-based play algorithm.  Separate TODO to not respond to 9 lead with 8 setting up two possible opponent run plays below.)
 - BUG: --initial-played-cards 4-8 with A,T,Q in pone hand considers T and Q to be equal plays as the current best non-simulation-based play algorithm would have played 9 on its first play as dealer if it held it thus the simulation does not consider a run off of 4-8-T to be possible for dealer.
 - Add support for play simulations _without_ specifying player under simulation discarded cards.
 - Add support for play simulations _without_ specifying opposing player dealt cards implied by --initial-played-cards.
@@ -58,6 +58,7 @@ for different possible discards or plays.
 - Consider improving default play algorithm to lead A from A-4 (e.g. A-4-T-T), which seems to be about 0.08 points better than a 4 lead according to current simulations with two Tens.
 - Consider improving default play algorithm to lead 3 from 3-9 (e.g. 3-4-8-9) which seems better than a 4 lead if only because a dealer 3 response can be 15-2'ed to even the play score.  (Note: not currently simulatable (BUG - see above) due to 3 not being a play the current best play algorithm would play.)  Similar lead 4 from 4-7 should also be considered here.
 - Consider dealer respond with higher card of pair adding to 11 in response to pone 10 count lead to set up more 31-2's for self - e.g. dealer play 7 from 7-4 or 8 from 8-3 in response to pone 10 count lead.
+- Reconsider adding run setup avoidance to default play strategy.
 - Add play decision analysis support by allowing the set of the initial simulation state to all post-discard, post-initial play states and then simulating all possible next plays to the end of the hand (or multiple hands);
 - Add support for time-limited discard simulations and simulation-based discard strategies.
 - Reconsider not ignoring suit by default and not ignoring suit in simulation-based discard strategy.
