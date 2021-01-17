@@ -276,6 +276,9 @@ def get_z_statistic(confidence_level):
 
 
 def get_stddev_of_mean(statistics):
+    if len(statistics) == 1:
+        return None
+
     return statistics.stddev() / math.sqrt(len(statistics))
 
 
@@ -982,6 +985,9 @@ def game_points(
 
 
 def get_mean_difference_in_stddevs(statistics1, statistics2):
+    if len(statistics1) == 1 or len(statistics2) == 1:
+        return math.inf
+
     mean_difference = abs(statistics1.mean() - statistics2.mean())
     mean_difference_stddev = hypot(
         get_stddev_of_mean(statistics1),
@@ -1424,38 +1430,41 @@ def simulate_games(
                                 f": {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_game_points'], confidence_level)} game points; {keep_stats['first_pone_minus_first_dealer_play'].mean():+9.5f} Δ-peg + {keep_stats['first_pone_minus_first_dealer_hand'].mean():+9.5f} Δ-hand + {keep_stats['first_pone_minus_first_dealer_crib'].mean():+9.5f} crib = {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_total_points'], confidence_level)} overall"
                             )
 
-                    mean_game_points_differential_in_stddevs = (
-                        get_mean_difference_in_stddevs(
-                            keep_stats["first_pone_minus_first_dealer_game_points"],
-                            sorted_players_statistics[-1][1][
-                                "first_pone_minus_first_dealer_game_points"
-                            ],
+                    if len(keep_stats["first_pone_minus_first_dealer_game_points"]) > 1:
+                        mean_game_points_differential_in_stddevs = (
+                            get_mean_difference_in_stddevs(
+                                keep_stats["first_pone_minus_first_dealer_game_points"],
+                                sorted_players_statistics[-1][1][
+                                    "first_pone_minus_first_dealer_game_points"
+                                ],
+                            )
                         )
-                    )
-                    mean_total_points_differential_in_stddevs = (
-                        get_mean_difference_in_stddevs(
-                            keep_stats["first_pone_minus_first_dealer_total_points"],
-                            sorted_players_statistics[-1][1][
-                                "first_pone_minus_first_dealer_total_points"
-                            ],
+                        mean_total_points_differential_in_stddevs = (
+                            get_mean_difference_in_stddevs(
+                                keep_stats[
+                                    "first_pone_minus_first_dealer_total_points"
+                                ],
+                                sorted_players_statistics[-1][1][
+                                    "first_pone_minus_first_dealer_total_points"
+                                ],
+                            )
                         )
-                    )
-                    drop_confidence_level = 2 * get_z_statistic(confidence_level)
-                    if (
-                        (
-                            mean_game_points_differential_in_stddevs
-                            > drop_confidence_level
-                        )
-                        or mean_game_points_differential_in_stddevs == 0
-                        and (
-                            mean_total_points_differential_in_stddevs
-                            > drop_confidence_level
-                        )
-                    ):
-                        if keep:
-                            dropped_keeps.add(tuple(keep))
-                        if post_initial:
-                            dropped_initial_plays.add(post_initial)
+                        drop_confidence_level = 2 * get_z_statistic(confidence_level)
+                        if (
+                            (
+                                mean_game_points_differential_in_stddevs
+                                > drop_confidence_level
+                            )
+                            or mean_game_points_differential_in_stddevs == 0
+                            and (
+                                mean_total_points_differential_in_stddevs
+                                > drop_confidence_level
+                            )
+                        ):
+                            if keep:
+                                dropped_keeps.add(tuple(keep))
+                            if post_initial:
+                                dropped_initial_plays.add(post_initial)
 
                     if (
                         keep not in dropped_keeps

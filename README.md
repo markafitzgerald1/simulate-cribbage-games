@@ -45,8 +45,7 @@ for different possible discards or plays.
 
 ## Current short to medium term goals
 
-- BUG: simulation of all possible plays over just one game fails to complete on a ZeroDivisionError during variance calculation.
-- BUG: --initial-played-cards 9-4-9 with 4,4,8 in dealer hand not simulatable because current best play algorithm would have played 8 on first played card.  (Fix requires possibly not assuming that future plays would match that of the best non-simulation-based play algorithm.)
+- BUG: --initial-played-cards 9-4-9 with 4,4,8 in dealer hand not simulatable because current best play algorithm would have played 8 on first played card.  Same is true of simulation of --initial-played-cards 9-Q with 9-4-2 in pone hand.  (Fix requires possibly not assuming that future plays would match that of the best non-simulation-based play algorithm.)
 - BUG: --initial-played-cards 4-8 with A,T,Q in pone hand considers T and Q to be equal plays as the current best non-simulation-based play algorithm would have played 9 on its first play as dealer if it held it thus the simulation does not consider a run off of 4-8-T to be possible for dealer.
 - Add support for play simulations _without_ specifying player under simulation discarded cards.
 - Add support for play simulations _without_ specifying opposing player dealt cards implied by --initial-played-cards.
@@ -55,6 +54,10 @@ for different possible discards or plays.
 - Add support for --initial-played-cards lacking suit information.
 - Add support for --(pone|dealer)-(dealt|kept)-cards lacking suit information.
 - Add support for --initial-turnup specification.
+- Consider improving default play algorithm to lead from pair (9 from 9-9-4-2), which seems to be about 0.5 points better than a 4 lead according to current simulations.
+- Consider improving default play algorithm to lead A from A-4 (e.g. A-4-T-T), which seems to be about 0.08 points better than a 4 lead according to current simulations with two Tens.
+- Consider improving default play algorithm to lead 3 from 3-9 (e.g. 3-4-8-9) which seems better than a 4 lead if only because a dealer 3 response can be 15-2'ed to even the play score.  (Note: not currently simulatable (BUG - see above) due to 3 not being a play the current best play algorithm would play.)  Similar lead 4 from 4-7 should also be considered here.
+- Consider dealer respond with higher card of pair adding to 11 in response to pone 10 count lead to set up more 31-2's for self - e.g. dealer play 7 from 7-4 or 8 from 8-3 in response to pone 10 count lead.
 - Add play decision analysis support by allowing the set of the initial simulation state to all post-discard, post-initial play states and then simulating all possible next plays to the end of the hand (or multiple hands);
 - Add support for time-limited discard simulations and simulation-based discard strategies.
 - Reconsider not ignoring suit by default and not ignoring suit in simulation-based discard strategy.
@@ -72,6 +75,7 @@ for different possible discards or plays.
 
 ## Past project goals
 
+- BUG: simulation of all possible plays over just one game fails to complete on a ZeroDivisionError during variance calculation.  (Status: fixed.)
 - Stop discard/play simulation and simulation-based discard when only one non-dropped option remains.
 - In single all possible discards simulations and simulation-based discard strategy drop possible discards 2 standard deviations worse beyond the current selected confidence level than the current best discard as simulation proceeds save time and get better answers faster.
 - Discard based on expected hand value ignoring suit when neither flush nor nobs is possible in both maximize hand points and maximize hand +/- crib points discard strategies.  This allows suit to be factored into discard decisions more often as discard maximizing hand value was sped up 75% while discard maximizing hand +/- crib points was sped up about 33%.
