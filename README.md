@@ -49,11 +49,12 @@ for different possible discards or plays.
 - BUG: --initial-played-cards 9-4-9 with 4,4,8 in dealer hand not simulatable because current best play algorithm would have played 8 on first played card.  (Fix requires possibly not assuming that future plays would match that of the best non-simulation-based play algorithm.)
 - BUG: --initial-played-cards 4-8 with A,T,Q in pone hand considers T and Q to be equal plays as the current best non-simulation-based play algorithm would have played 9 on its first play as dealer if it held it thus the simulation does not consider a run off of 4-8-T to be possible for dealer.
 - Add support for play simulations _without_ specifying player under simulation discarded cards.
-- Add support for play simulations _without_ specifying opposing player dealt cards implied by --initial-played-cards
-- Add support for --initial-played-cards containing a Go
-- Add support for --initial-played-cards containing two consecutive Gos - i.e. a count reset
-- Add support for --initial-played-cards lacking suit information
-- Add support for --(pone|dealer)-(dealt|kept)-cards lacking suit information
+- Add support for play simulations _without_ specifying opposing player dealt cards implied by --initial-played-cards.
+- Add support for --initial-played-cards containing a Go.
+- Add support for --initial-played-cards containing two consecutive Gos - i.e. a count reset.
+- Add support for --initial-played-cards lacking suit information.
+- Add support for --(pone|dealer)-(dealt|kept)-cards lacking suit information.
+- Add support for --initial-turnup specification.
 - Add play decision analysis support by allowing the set of the initial simulation state to all post-discard, post-initial play states and then simulating all possible next plays to the end of the hand (or multiple hands);
 - Add support for time-limited discard simulations and simulation-based discard strategies.
 - Reconsider not ignoring suit by default and not ignoring suit in simulation-based discard strategy.
