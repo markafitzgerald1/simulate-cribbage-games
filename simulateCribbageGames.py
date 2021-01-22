@@ -567,7 +567,7 @@ def simulate_game(
     initial_first_pone_score: Points,
     initial_first_dealer_score: Points,
     post_initial_play: Optional[Card],
-    initial_played_cards: Tuple[Card, ...],
+    initial_played_cards: List[Card],
     hide_play_actions: bool,
 ) -> GameSimulationResult:
     first_kept_pone_hand: List[Card] = []
@@ -773,13 +773,14 @@ def simulate_game(
                             playable_cards, play_count, plays_to_31[-1]
                         )
                     ]
-                hands[player_to_play].remove(player_to_play_play)
-                plays_to_31[-1].append(player_to_play_play)
+
                 play_count += player_to_play_play.count
                 if not hide_play_actions:
                     print(
-                        f"{get_player_name(player_to_play):6} plays {player_to_play_play} for {play_count}"
+                        f"{get_player_name(player_to_play):6} plays {player_to_play_play} from {Hand(hands[player_to_play])} for {play_count}"
                     )
+                hands[player_to_play].remove(player_to_play_play)
+                plays_to_31[-1].append(player_to_play_play)
 
                 # Pairs points
                 if player_to_play_play.index == most_recently_played_index:
@@ -1037,7 +1038,7 @@ def simulate_games(
     dealer_dealt_cards: List[Card],
     pone_kept_cards: List[Card],
     dealer_kept_cards: List[Card],
-    initial_played_cards: Tuple[Card, ...],
+    initial_played_cards: List[Card],
     players_statistics,
     players_statistics_lock,
     pone_select_kept_cards,
@@ -1062,12 +1063,18 @@ def simulate_games(
         if show_calc_cache_usage_stats:
             expected_random_opponent_discard_crib_points_cache.stats()
 
+        pone_kept_cards = pone_kept_cards + initial_played_cards[0::2]
+        dealer_kept_cards = dealer_kept_cards + initial_played_cards[1::2]
+
         deck_less_fixed_cards = [
             card
             for card in DECK_SET
             if card
             not in itertools.chain(
-                pone_dealt_cards, pone_kept_cards, dealer_dealt_cards, dealer_kept_cards
+                pone_dealt_cards,
+                pone_kept_cards,
+                dealer_dealt_cards,
+                dealer_kept_cards,
             )
         ]
 
@@ -2342,7 +2349,7 @@ def player_select_kept_cards_based_on_simulation(
         dealt_hand if player == DEALER else [],
         [],
         [],
-        (),
+        [],
         simulated_players_statistics,
         simulated_players_statistics_lock,
         DEFAULT_SELECT_PONE_KEPT_CARDS,
@@ -2710,9 +2717,7 @@ if __name__ == "__main__":
             args.dealer_kept_cards,
         ]
     ]
-    initial_played_cards: Tuple[Card, ...] = tuple(
-        parse_cards(args.initial_played_cards)
-    )
+    initial_played_cards: List[Card] = parse_cards(args.initial_played_cards)
 
     manager = Manager()
     players_statistics: Dict[PlayerStatistic, Statistics] = manager.dict()
