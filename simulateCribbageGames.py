@@ -529,7 +529,7 @@ DEALT_CARDS_LEN: CardCount = CardCount(6)
 class GameSimulationResult(NamedTuple):
     kept_cards: Tuple[Card, ...]
     score: GameScore
-    non_initial_played_card_played: bool
+    non_kept_card_kept_or_non_kept_initial_played_card_played: bool
 
 
 PlayTo31 = NewType("PlayTo31", List[Card])
@@ -582,22 +582,35 @@ def simulate_game(
         Points(0),
         Points(0),
     )
-    non_initial_played_card_played: bool = False
+    non_kept_initial_played_card_played: bool = False
+    not_all_kept_cards_in_kept_hand: bool = False
     for hand in range(maximum_hands_per_game):
         is_first_hand: bool = not hand
-        if is_first_hand and (pone_dealt_cards or dealer_dealt_cards):
+        if is_first_hand and (
+            pone_dealt_cards
+            or pone_kept_cards
+            or dealer_dealt_cards
+            or dealer_kept_cards
+        ):
+            pone_dealt_or_kept_cards = set(pone_dealt_cards + pone_kept_cards)
+            dealer_dealt_or_kept_cards = set(dealer_dealt_cards + dealer_kept_cards)
             random_hand_cards = random.sample(
                 deck_less_fixed_cards,
-                2 * DEALT_CARDS_LEN - len(pone_dealt_cards) - len(dealer_dealt_cards),
+                2 * DEALT_CARDS_LEN
+                - len(pone_dealt_or_kept_cards | dealer_dealt_or_kept_cards),
             )
             dealt_hands = [
                 [
-                    *pone_dealt_cards.copy(),
-                    *random_hand_cards[0 : (DEALT_CARDS_LEN - len(pone_dealt_cards))],
+                    *pone_dealt_or_kept_cards,
+                    *random_hand_cards[
+                        0 : (DEALT_CARDS_LEN - len(pone_dealt_or_kept_cards))
+                    ],
                 ],
                 [
-                    *dealer_dealt_cards.copy(),
-                    *random_hand_cards[(DEALT_CARDS_LEN - len(pone_dealt_cards)) :],
+                    *dealer_dealt_or_kept_cards,
+                    *random_hand_cards[
+                        (DEALT_CARDS_LEN - len(pone_dealt_or_kept_cards)) :
+                    ],
                 ],
             ]
         else:
@@ -628,7 +641,7 @@ def simulate_game(
             else:
                 kept_pone_hand = pone_select_kept_cards(dealt_hands[0])
                 if not all(card in kept_pone_hand for card in pone_kept_cards):
-                    non_initial_played_card_played = True
+                    not_all_kept_cards_in_kept_hand = True
                     break
         elif not (is_first_hand and pone_select_each_possible_kept_hand):
             if pone_discard_based_on_simulations:
@@ -660,7 +673,7 @@ def simulate_game(
             else:
                 kept_dealer_hand = dealer_select_kept_cards(dealt_hands[1])
                 if not all(card in kept_dealer_hand for card in dealer_kept_cards):
-                    non_initial_played_card_played = True
+                    not_all_kept_cards_in_kept_hand = True
                     break
         elif not (is_first_hand and dealer_select_each_possible_kept_hand):
             if dealer_discard_based_on_simulations:
@@ -745,7 +758,7 @@ def simulate_game(
                         remaining_post_initial_play
                         and remaining_post_initial_play not in hands[player_to_play]
                     ):
-                        non_initial_played_card_played = True
+                        non_kept_initial_played_card_played = True
                         break
 
                     player_to_play_play = remaining_post_initial_play
@@ -886,7 +899,11 @@ def simulate_game(
 
             player_to_play = 1 if player_to_play == 0 else 0
 
-        if non_initial_played_card_played or game_over(game_score):
+        if (
+            not_all_kept_cards_in_kept_hand
+            or non_kept_initial_played_card_played
+            or game_over(game_score)
+        ):
             break
 
         # Last Card points
@@ -951,7 +968,7 @@ def simulate_game(
     return GameSimulationResult(
         kept_cards,
         game_score,
-        non_initial_played_card_played,
+        not_all_kept_cards_in_kept_hand or non_kept_initial_played_card_played,
     )
 
 
@@ -1048,7 +1065,10 @@ def simulate_games(
         deck_less_fixed_cards = [
             card
             for card in DECK_SET
-            if card not in pone_dealt_cards and card not in dealer_dealt_cards
+            if card
+            not in itertools.chain(
+                pone_dealt_cards, pone_kept_cards, dealer_dealt_cards, dealer_kept_cards
+            )
         ]
 
         first_pone_play_statistics: Dict[Tuple[Card], Statistics] = {}
@@ -1109,7 +1129,7 @@ def simulate_games(
             game_simulation_result: Optional[GameSimulationResult] = None
             while (
                 not game_simulation_result
-                or game_simulation_result.non_initial_played_card_played
+                or game_simulation_result.non_kept_card_kept_or_non_kept_initial_played_card_played
             ):
                 post_initial_play = None
                 if post_initial_player == PONE and pone_kept_cards_possible_plays_cycle:
@@ -1419,7 +1439,10 @@ def simulate_games(
                         item[1]["first_pone_minus_first_dealer_game_points"].mean(),
                         item[1]["first_pone_minus_first_dealer_total_points"].mean(),
                     ),
-                    reverse=bool(len(pone_dealt_cards) < len(dealer_dealt_cards)),
+                    reverse=bool(
+                        (len(pone_dealt_cards) < len(dealer_dealt_cards))
+                        or (len(pone_kept_cards) < len(dealer_kept_cards))
+                    ),
                 )
                 for (
                     keep,
@@ -1585,12 +1608,9 @@ def simulate_games(
                         cached_get_current_play_run_length.cache_info(),
                     )
 
-                if (
-                    len(pone_dealt_cards_possible_keeps)
-                    + len(dealer_dealt_cards_possible_keeps)
-                    - len(dropped_keeps)
-                    <= 1
-                ):
+                if (game_simulation_result.kept_cards) and len(
+                    pone_dealt_cards_possible_keeps
+                ) + len(dealer_dealt_cards_possible_keeps) - len(dropped_keeps) <= 1:
                     print(
                         "Ending simulation as only one discard option remains under consideration."
                     )
