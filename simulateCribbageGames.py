@@ -25,6 +25,7 @@ from typing import (
     Tuple,
     Literal,
     NamedTuple,
+    Union,
 )
 from enum import Enum
 from math import comb, hypot
@@ -96,10 +97,39 @@ class Card:
 DECK_SUIT_COUNT = len(Card.suits)
 
 
-def parse_cards(specifier):
+def parse_cards(specifier: str) -> List[Card]:
     return [
         Card.from_string(card_specifier)
         for card_specifier in (specifier.split(",") if specifier else [])
+    ]
+
+
+class Go:
+    """A 'Go' Cribbage play action"""
+
+    STR = "Go"
+
+    def __init__(self):
+        self.index = None
+
+    def __str__(self):
+        return Go.STR
+
+    def __repr__(self):
+        return f"Go()"
+
+
+PlayAction = Union[Card, Go]
+
+
+def parse_play_action(specifier: str) -> PlayAction:
+    return Go() if specifier.lower() == Go.STR.lower() else Card.from_string(specifier)
+
+
+def parse_play_actions(specifier: str) -> List[PlayAction]:
+    return [
+        parse_play_action(play_action_specifier)
+        for play_action_specifier in (specifier.split(",") if specifier else [])
     ]
 
 
@@ -354,9 +384,12 @@ def cached_get_current_play_run_length(current_play_play_indices_tuple):
     return 0
 
 
-def get_current_play_run_length(current_play_plays):
+PlayTo31 = NewType("PlayTo31", List[PlayAction])
+
+
+def get_current_play_run_length(current_play_to_31_cards: Sequence[Card]):
     return cached_get_current_play_run_length(
-        tuple([c.index for c in current_play_plays])
+        tuple([card.index for card in current_play_to_31_cards])
     )
 
 
@@ -532,16 +565,17 @@ class GameSimulationResult(NamedTuple):
     non_kept_card_kept_or_non_kept_initial_played_card_played: bool
 
 
-PlayTo31 = NewType("PlayTo31", List[Card])
-
-
 def create_play_to_31() -> PlayTo31:
-    played_cards: List[Card] = []
+    played_cards: List[PlayAction] = []
     return PlayTo31(played_cards)
 
 
 def get_game_player(player_to_play: Player, hand: int) -> GamePlayer:
     return GamePlayer((player_to_play + hand) % 2)
+
+
+def get_play_to_31_cards(play_to_31: PlayTo31) -> Sequence[Card]:
+    return [card for card in play_to_31 if isinstance(card, Card)]
 
 
 def simulate_game(
@@ -567,7 +601,7 @@ def simulate_game(
     initial_first_pone_score: Points,
     initial_first_dealer_score: Points,
     post_initial_play: Optional[Card],
-    initial_played_cards: List[Card],
+    initial_play_actions: List[PlayAction],
     hide_play_actions: bool,
 ) -> GameSimulationResult:
     first_kept_pone_hand: List[Card] = []
@@ -741,46 +775,57 @@ def simulate_game(
         most_recently_played_index = None
         most_recently_played_index_count = 0
         plays_to_31: List[PlayTo31] = [create_play_to_31()]
-        remaining_initial_played_cards: List[Card] = list(initial_played_cards)
+        remaining_initial_play_actions: List[PlayAction] = list(initial_play_actions)
         remaining_post_initial_play = post_initial_play
         while hands[0] or hands[1]:
-            playable_cards = [
+            legal_play_actions: List[PlayAction] = [
                 card
                 for card in hands[player_to_play]
                 if play_count + card.count <= THIRTY_ONE_COUNT
             ]
+            if not legal_play_actions:
+                legal_play_actions = [Go()]
 
-            if playable_cards:
-                player_to_play_play: Card
+            player_to_play_play: PlayAction
 
-                if (not remaining_initial_played_cards) and remaining_post_initial_play:
-                    if not remaining_post_initial_play or (
-                        remaining_post_initial_play
-                        and remaining_post_initial_play not in hands[player_to_play]
-                    ):
-                        non_kept_initial_played_card_played = True
-                        break
+            if (not remaining_initial_play_actions) and remaining_post_initial_play:
+                if not remaining_post_initial_play or (
+                    remaining_post_initial_play
+                    and remaining_post_initial_play not in hands[player_to_play]
+                ):
+                    non_kept_initial_played_card_played = True
+                    break
 
-                    player_to_play_play = remaining_post_initial_play
-                    remaining_post_initial_play = None
-                elif remaining_initial_played_cards:
-                    player_to_play_play = remaining_initial_played_cards.pop(0)
-                else:
-                    player_to_play_play = playable_cards[
-                        pone_select_play(playable_cards, play_count, plays_to_31[-1])
-                        if player_to_play == 0
-                        else dealer_select_play(
-                            playable_cards, play_count, plays_to_31[-1]
-                        )
-                    ]
+                player_to_play_play = remaining_post_initial_play
+                remaining_post_initial_play = None
+            elif remaining_initial_play_actions:
+                player_to_play_play = remaining_initial_play_actions.pop(0)
+            elif len(legal_play_actions) == 1:
+                player_to_play_play = legal_play_actions[0]
+            else:
+                player_to_play_play = legal_play_actions[
+                    pone_select_play(
+                        legal_play_actions,
+                        play_count,
+                        get_play_to_31_cards(plays_to_31[-1]),
+                    )
+                    if player_to_play == 0
+                    else dealer_select_play(
+                        legal_play_actions,
+                        play_count,
+                        get_play_to_31_cards(plays_to_31[-1]),
+                    )
+                ]
 
+            plays_to_31[-1].append(player_to_play_play)
+
+            if isinstance(player_to_play_play, Card):
                 play_count += player_to_play_play.count
                 if not hide_play_actions:
                     print(
                         f"{get_player_name(player_to_play):6} plays {player_to_play_play} from {Hand(hands[player_to_play])} for {play_count}"
                     )
                 hands[player_to_play].remove(player_to_play_play)
-                plays_to_31[-1].append(player_to_play_play)
 
                 # Pairs points
                 if player_to_play_play.index == most_recently_played_index:
@@ -856,7 +901,9 @@ def simulate_game(
                     if game_over(game_score):
                         break
 
-                current_play_run_length = get_current_play_run_length(plays_to_31[-1])
+                current_play_run_length = get_current_play_run_length(
+                    get_play_to_31_cards(plays_to_31[-1])
+                )
                 if current_play_run_length:
                     if not hide_play_actions:
                         print(
@@ -874,7 +921,10 @@ def simulate_game(
                 consecutive_go_count = 0
             else:
                 if not hide_play_actions:
-                    print(f'{get_player_name(player_to_play):6} says "Go!"')
+                    print(
+                        f"{get_player_name(player_to_play):6} says 'Go' holding {Hand(hands[player_to_play])}"
+                    )
+
                 consecutive_go_count += 1
                 if consecutive_go_count == 2:
                     if not hide_play_actions:
@@ -1038,7 +1088,7 @@ def simulate_games(
     dealer_dealt_cards: List[Card],
     pone_kept_cards: List[Card],
     dealer_kept_cards: List[Card],
-    initial_played_cards: List[Card],
+    initial_play_actions: List[PlayAction],
     players_statistics,
     players_statistics_lock,
     pone_select_kept_cards,
@@ -1063,8 +1113,16 @@ def simulate_games(
         if show_calc_cache_usage_stats:
             expected_random_opponent_discard_crib_points_cache.stats()
 
-        pone_kept_cards = pone_kept_cards + initial_played_cards[0::2]
-        dealer_kept_cards = dealer_kept_cards + initial_played_cards[1::2]
+        pone_kept_cards = pone_kept_cards + [
+            initial_play_action
+            for initial_play_action in initial_play_actions[0::2]
+            if isinstance(initial_play_action, Card)
+        ]
+        dealer_kept_cards = dealer_kept_cards + [
+            initial_play_action
+            for initial_play_action in initial_play_actions[1::2]
+            if isinstance(initial_play_action, Card)
+        ]
 
         deck_less_fixed_cards = [
             card
@@ -1130,7 +1188,7 @@ def simulate_games(
             else None
         )
         dropped_initial_plays = set()
-        post_initial_player = len(initial_played_cards) % 2
+        post_initial_player = len(initial_play_actions) % 2
         for game in range(process_game_count):
             post_initial_play: Optional[Card] = None
             game_simulation_result: Optional[GameSimulationResult] = None
@@ -1143,7 +1201,7 @@ def simulate_games(
                     while (
                         not post_initial_play
                         or post_initial_play in dropped_initial_plays
-                        or post_initial_play in initial_played_cards
+                        or post_initial_play in initial_play_actions
                     ):
                         post_initial_play = next(pone_kept_cards_possible_plays_cycle)
                 elif (
@@ -1153,7 +1211,7 @@ def simulate_games(
                     while (
                         not post_initial_play
                         or post_initial_play in dropped_initial_plays
-                        or post_initial_play in initial_played_cards
+                        or post_initial_play in initial_play_actions
                     ):
                         post_initial_play = next(dealer_kept_cards_possible_plays_cycle)
 
@@ -1180,7 +1238,7 @@ def simulate_games(
                     initial_first_pone_score,
                     initial_first_dealer_score,
                     post_initial_play,
-                    initial_played_cards,
+                    initial_play_actions,
                     hide_play_actions,
                 )
 
@@ -1626,7 +1684,7 @@ def simulate_games(
                     pone_kept_cards
                     and select_each_post_initial_play
                     and post_initial_player == PONE
-                    and len(set(pone_kept_cards).difference(set(initial_played_cards)))
+                    and len(set(pone_kept_cards).difference(set(initial_play_actions)))
                     - len(dropped_initial_plays)
                     <= 1
                 ):
@@ -1639,7 +1697,7 @@ def simulate_games(
                     and select_each_post_initial_play
                     and post_initial_player == DEALER
                     and len(
-                        set(dealer_kept_cards).difference(set(initial_played_cards))
+                        set(dealer_kept_cards).difference(set(initial_play_actions))
                     )
                     - len(dropped_initial_plays)
                     <= 1
@@ -2033,7 +2091,7 @@ def keep_max_post_cut_hand_plus_crib_points(dealt_cards):
 def play_first(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
-    current_play_plays: Sequence[Card],
+    current_play_to_31_cards: Sequence[Card],
 ) -> PlayableCardIndex:
     return PlayableCardIndex(0)
 
@@ -2041,7 +2099,7 @@ def play_first(
 def play_random(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
-    current_play_plays: Sequence[Card],
+    current_play_to_31_cards: Sequence[Card],
 ) -> PlayableCardIndex:
     return PlayableCardIndex(random.randrange(0, len(playable_cards)))
 
@@ -2049,7 +2107,7 @@ def play_random(
 def play_highest_count(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
-    current_play_plays: Sequence[Card],
+    current_play_to_31_cards: Sequence[Card],
 ) -> PlayableCardIndex:
     play_card = None
     play_index = None
@@ -2076,11 +2134,11 @@ def play_to_fixed_count(
 
 
 def play_pair(
-    playable_cards: Sequence[Card], current_play_plays: Sequence[Card]
+    playable_cards: Sequence[Card], current_play_to_31_cards: Sequence[Card]
 ) -> Optional[PlayableCardIndex]:
-    if current_play_plays:
+    if current_play_to_31_cards:
         for index, card in enumerate(playable_cards):
-            if card.index == current_play_plays[-1].index:
+            if card.index == current_play_to_31_cards[-1].index:
                 return PlayableCardIndex(index)
     return None
 
@@ -2088,7 +2146,7 @@ def play_pair(
 def play_15_or_31_else_highest_count(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
-    current_play_plays: Sequence[Card],
+    current_play_to_31_cards: Sequence[Card],
 ) -> PlayableCardIndex:
     play_to_fixed_count_index = play_to_fixed_count(
         playable_cards, current_play_count, FIFTEEN_COUNT, THIRTY_ONE_COUNT
@@ -2096,27 +2154,31 @@ def play_15_or_31_else_highest_count(
     return (
         play_to_fixed_count_index
         if play_to_fixed_count_index is not None
-        else play_highest_count(playable_cards, current_play_count, current_play_plays)
+        else play_highest_count(
+            playable_cards, current_play_count, current_play_to_31_cards
+        )
     )
 
 
 def play_pair_else_15_or_31_else_highest_count(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
-    current_play_plays: Sequence[Card],
+    current_play_to_31_cards: Sequence[Card],
 ) -> PlayableCardIndex:
-    if (play_pair_index := play_pair(playable_cards, current_play_plays)) is not None:
+    if (
+        play_pair_index := play_pair(playable_cards, current_play_to_31_cards)
+    ) is not None:
         return play_pair_index
 
     return play_15_or_31_else_highest_count(
-        playable_cards, current_play_count, current_play_plays
+        playable_cards, current_play_count, current_play_to_31_cards
     )
 
 
 def play_15_else_pair_else_31_else_highest_count(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
-    current_play_plays: Sequence[Card],
+    current_play_to_31_cards: Sequence[Card],
 ) -> PlayableCardIndex:
     if (
         play_15_index := play_to_fixed_count(
@@ -2125,7 +2187,9 @@ def play_15_else_pair_else_31_else_highest_count(
     ) is not None:
         return play_15_index
 
-    if (play_pair_index := play_pair(playable_cards, current_play_plays)) is not None:
+    if (
+        play_pair_index := play_pair(playable_cards, current_play_to_31_cards)
+    ) is not None:
         return play_pair_index
 
     if (
@@ -2135,17 +2199,19 @@ def play_15_else_pair_else_31_else_highest_count(
     ) is not None:
         return play_31_index
 
-    return play_highest_count(playable_cards, current_play_count, current_play_plays)
+    return play_highest_count(
+        playable_cards, current_play_count, current_play_to_31_cards
+    )
 
 
 def play_run(
-    playable_cards: Sequence[Card], current_play_plays: Sequence[Card]
+    playable_cards: Sequence[Card], current_play_to_31_cards: Sequence[Card]
 ) -> Optional[PlayableCardIndex]:
     best_play_index: Optional[PlayableCardIndex] = None
     best_play_run_length: Optional[int] = None
     for index, playable_card in enumerate(playable_cards):
         play_run_length = get_current_play_run_length(
-            [*current_play_plays, playable_card]
+            [*current_play_to_31_cards, playable_card]
         )
         if play_run_length and (
             best_play_index is None or play_run_length > best_play_run_length
@@ -2158,13 +2224,13 @@ def play_run(
 def play_run_else_15_else_pair_else_31_else_highest_count(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
-    current_play_plays: Sequence[Card],
+    current_play_to_31_cards: Sequence[Card],
 ) -> PlayableCardIndex:
-    if (run_index := play_run(playable_cards, current_play_plays)) is not None:
+    if (run_index := play_run(playable_cards, current_play_to_31_cards)) is not None:
         return run_index
 
     return play_15_else_pair_else_31_else_highest_count(
-        playable_cards, current_play_count, current_play_plays
+        playable_cards, current_play_count, current_play_to_31_cards
     )
 
 
@@ -2186,7 +2252,7 @@ def play_low_lead(
 def play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
-    current_play_plays: Sequence[Card],
+    current_play_to_31_cards: Sequence[Card],
 ) -> PlayableCardIndex:
     if (
         low_lead_index := play_low_lead(playable_cards, current_play_count)
@@ -2194,16 +2260,16 @@ def play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count(
         return low_lead_index
 
     return play_run_else_15_else_pair_else_31_else_highest_count(
-        playable_cards, current_play_count, current_play_plays
+        playable_cards, current_play_count, current_play_to_31_cards
     )
 
 
 def play_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
-    current_play_plays: Sequence[Card],
+    current_play_to_31_cards: Sequence[Card],
 ) -> PlayableCardIndex:
-    if (run_index := play_run(playable_cards, current_play_plays)) is not None:
+    if (run_index := play_run(playable_cards, current_play_to_31_cards)) is not None:
         return run_index
 
     if (
@@ -2213,7 +2279,9 @@ def play_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count(
     ) is not None:
         return play_15_index
 
-    if (play_pair_index := play_pair(playable_cards, current_play_plays)) is not None:
+    if (
+        play_pair_index := play_pair(playable_cards, current_play_to_31_cards)
+    ) is not None:
         return play_pair_index
 
     if (
@@ -2232,13 +2300,15 @@ def play_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count(
     ) is not None:
         return play_16_to_20_index
 
-    return play_highest_count(playable_cards, current_play_count, current_play_plays)
+    return play_highest_count(
+        playable_cards, current_play_count, current_play_to_31_cards
+    )
 
 
 def play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
-    current_play_plays: Sequence[Card],
+    current_play_to_31_cards: Sequence[Card],
 ) -> PlayableCardIndex:
     if (
         low_lead_index := play_low_lead(playable_cards, current_play_count)
@@ -2246,19 +2316,19 @@ def play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_hi
         return low_lead_index
 
     return play_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count(
-        playable_cards, current_play_count, current_play_plays
+        playable_cards, current_play_count, current_play_to_31_cards
     )
 
 
 def play_pairs_royale(
-    playable_cards: Sequence[Card], current_play_plays: Sequence[Card]
+    playable_cards: Sequence[Card], current_play_to_31_cards: Sequence[Card]
 ) -> Optional[PlayableCardIndex]:
-    if len(current_play_plays) >= 2:
+    if len(current_play_to_31_cards) >= 2:
         for index, card in enumerate(playable_cards):
             if (
                 card.index
-                == current_play_plays[-1].index
-                == current_play_plays[-2].index
+                == current_play_to_31_cards[-1].index
+                == current_play_to_31_cards[-2].index
             ):
                 return PlayableCardIndex(index)
     return None
@@ -2267,7 +2337,7 @@ def play_pairs_royale(
 def play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
-    current_play_plays: Sequence[Card],
+    current_play_to_31_cards: Sequence[Card],
 ) -> PlayableCardIndex:
     if (
         low_lead_index := play_low_lead(playable_cards, current_play_count)
@@ -2275,12 +2345,14 @@ def play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_t
         return low_lead_index
 
     if (
-        play_pairs_royale_index := play_pairs_royale(playable_cards, current_play_plays)
+        play_pairs_royale_index := play_pairs_royale(
+            playable_cards, current_play_to_31_cards
+        )
     ) is not None:
         return play_pairs_royale_index
 
     return play_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count(
-        playable_cards, current_play_count, current_play_plays
+        playable_cards, current_play_count, current_play_to_31_cards
     )
 
 
@@ -2290,7 +2362,7 @@ DEFAULT_SELECT_PLAY = play_low_lead_else_pairs_royale_else_run_else_15_else_pair
 def play_user_selected(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
-    current_play_plays: Sequence[Card],
+    current_play_to_31_cards: Sequence[Card],
 ) -> PlayableCardIndex:
     print(f"Playable cards are {','.join([str(card) for card in playable_cards])}.")
     selected_card: Optional[PlayableCardIndex] = None
@@ -2702,8 +2774,8 @@ if __name__ == "__main__":
     parser.add_argument("--initial-pone-score")
     parser.add_argument("--initial-dealer-score")
     parser.add_argument(
-        "--initial-played-cards",
-        help="cards already played in the current hand in their played order",
+        "--initial-play-actions",
+        help="play actions (cards or 'go') already taken in the current hand in their taken order",
     )
 
     args = parser.parse_args()
@@ -2717,7 +2789,9 @@ if __name__ == "__main__":
             args.dealer_kept_cards,
         ]
     ]
-    initial_played_cards: List[Card] = parse_cards(args.initial_played_cards)
+    initial_play_actions: List[PlayAction] = parse_play_actions(
+        args.initial_play_actions
+    )
 
     manager = Manager()
     players_statistics: Dict[PlayerStatistic, Statistics] = manager.dict()
@@ -2866,7 +2940,7 @@ if __name__ == "__main__":
         dealer_dealt_cards,
         pone_kept_cards,
         dealer_kept_cards,
-        initial_played_cards,
+        initial_play_actions,
         players_statistics,
         players_statistics_lock,
         pone_select_kept_cards,

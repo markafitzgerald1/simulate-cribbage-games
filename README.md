@@ -26,17 +26,18 @@ All of the following should exit with status code 0 and no raised exception:
 - Simulate a fixed pone hand and discard against random reasonably well discarded and played dealer hands: `python simulateCribbageGames.py --pone-dealt-cards AC,2D,3H,4S,5C,6D --pone-kept-cards 2D,3H,4S,5C --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 5000`;
 - Simulate a fixed pone hand and discard against random reasonably discarded and played dealer hands with two parallel processes: `python simulateCribbageGames.py --pone-dealt-cards AC,2D,3H,4S,5C,6D --pone-kept-cards 2D,3H,4S,5C --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 5000 --process-count 2`;
 - Simulate to the end of single hand play a fixed dealer hand and discard against random pone hands: `python simulateCribbageGames.py --dealer-dealt-cards AC,2D,3H,4S,5C,6D --dealer-kept-cards AC,2D,3H,4S --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 5000`;
-- Simulate all possible discards from a fixed pone hand against random dealer hands: `python simulateCribbageGames.py --pone-dealt-cards AC,2D,3H,4S,5C,6D --pone-select-each-possible-kept-hand --hide-pone-hand --hide-dealer-hand --hide-play-actions --games-per-update 10000 --game-count 10000`;
-- Simulate all possible discards from a fixed dealer hand against random pone hands: `python simulateCribbageGames.py --dealer-dealt-cards AC,2D,3H,4S,5C,6D --dealer-select-each-possible-kept-hand --hide-pone-hand --hide-dealer-hand --hide-play-actions --games-per-update 10000 --game-count 10000`;
-- Simulate all possible discards from a fixed dealer hand against random pone hands at a greater than 0-0 game score: `python simulateCribbageGames.py --dealer-dealt-cards JH,TS,6S,6C,4C,AD --dealer-select-each-possible-kept-hand --initial-pone-score 105 --initial-dealer-score 117 --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 20000`;
-- Simulate all possible leads from a fixed pone hand and discard against random dealer hands: `python simulateCribbageGames.py --pone-dealt-cards JH,TS,6S,6C,4C,AD --pone-kept-cards TS,6S,4C,AD --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 30000`;
-- Simulate all possible leads from a fixed pone kept hand against random dealer hands: `python simulateCribbageGames.py --pone-kept-cards TS,6S,4C,AD --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 30000`;
-- Simulate all possible pone plays with known pone discard from a mid-play position against partly known dealer hands: `python simulateCribbageGames.py --pone-dealt-cards KC,QD,TC,8S,4D,AH --pone-kept-cards QD,TC,4D,AH --initial-played-cards 4D,8H --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 20000`;
-- Simulate all possible pone plays from a mid-play position against partly known dealer hands: `python simulateCribbageGames.py --pone-kept-cards QD,TC,4D,AH --initial-played-cards 4D,8H --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 20000`;
-- Simulate all possible dealer plays from a mid-play position against partly known pone kept and fully known dealer dealt and kept hands: `python simulateCribbageGames.py --dealer-dealt-cards 8C,4D,TH,9S,KC,KD --dealer-kept-cards 8C,4D,TH,9S --initial-played-cards 4C --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 20000`;
-- Simulate all possible dealer plays from a mid-play position against partly known pone and fully known dealer kept hands: `python simulateCribbageGames.py --dealer-kept-cards 8C,4D,TH,9S --initial-played-cards 4C --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 20000`;
-- Simulate all possible pone plays from a mid-play position against partly known dealer hands where the already executed pone play is not what the play strategy in use would have selected: `python simulateCribbageGames.py --pone-dealt-cards 2s,4h,9s,9c,7c,qh --pone-kept-cards 2s,4h,9s,9c --initial-played-cards 9c,qs --select-each-post-initial-play --infinite-game-count --hide-play-actions --hide-pone-hand --hide-dealer-hand --process-count 2`;
-- Simulate from late in the third leg all possible dealer discards to end of game against reasonable opponent play: `python simulateCribbageGames.py --dealer-dealt-cards AC,2S,6C,TD,JD,KC --dealer-select-each-possible-kept-hand --hide-pone-hand --hide-dealer-hand --hide-play-actions --unlimited-hands-per-game --game-count 20000 --initial-pone-score 87 --initial-dealer-score 85`;
+- Simulate all possible discards from a fixed pone hand against random dealer hands: `python simulateCribbageGames.py --pone-dealt-cards AC,2D,3H,4S,5C,6D --pone-select-each-possible-kept-hand --hide-pone-hand --hide-dealer-hand --hide-play-actions --games-per-update 1000 --game-count 10000`;
+- Simulate all possible discards from a fixed dealer hand against random pone hands: `python simulateCribbageGames.py --dealer-dealt-cards AC,2D,3H,4S,5C,6D --dealer-select-each-possible-kept-hand --hide-pone-hand --hide-dealer-hand --hide-play-actions --games-per-update 1000 --game-count 10000`;
+- Simulate all possible discards from a fixed dealer hand against random pone hands at a greater than 0-0 game score: `python simulateCribbageGames.py --dealer-dealt-cards JH,TS,6S,6C,4C,AD --dealer-select-each-possible-kept-hand --initial-pone-score 105 --initial-dealer-score 117 --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 20000 --games-per-update 2000`;
+- Simulate all possible leads from a fixed pone hand and discard against random dealer hands: `python simulateCribbageGames.py --pone-dealt-cards JH,TS,6S,6C,4C,AD --pone-kept-cards TS,6S,4C,AD --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 30000 --games-per-update 3000`;
+- Simulate all possible leads from a fixed pone kept hand against random dealer hands: `python simulateCribbageGames.py --pone-kept-cards TS,6S,4C,AD --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 30000 --games-per-update 3000`;
+- Simulate all possible pone plays with known pone discard from a mid-play position against partly known dealer hands: `python simulateCribbageGames.py --pone-dealt-cards KC,QD,TC,8S,4D,AH --pone-kept-cards QD,TC,4D,AH --initial-play-actions 4D,8H --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 20000 --games-per-update 2000`;
+- Simulate all possible pone plays from a mid-play position against partly known dealer hands: `python simulateCribbageGames.py --pone-kept-cards QD,TC,4D,AH --initial-play-actions 4D,8H --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 20000 --games-per-update 2000`;
+- Simulate all possible dealer plays from a mid-play position against partly known pone kept and fully known dealer dealt and kept hands: `python simulateCribbageGames.py --dealer-dealt-cards 8C,4D,TH,9S,KC,KD --dealer-kept-cards 8C,4D,TH,9S --initial-play-actions 4C --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 20000 --games-per-update 2000`;
+- Simulate all possible dealer plays from a mid-play position against partly known pone and fully known dealer kept hands: `python simulateCribbageGames.py --dealer-kept-cards 8C,4D,TH,9S --initial-play-actions 4C --select-each-post-initial-play --hide-pone-hand --hide-dealer-hand --hide-play-actions --game-count 20000 --games-per-update 2000`;
+- Simulate all possible pone plays from a mid-play position against partly known dealer hands where the already executed pone play is not what the play strategy in use would have selected: `python simulateCribbageGames.py --pone-dealt-cards 2s,4h,9s,9c,7c,qh --pone-kept-cards 2s,4h,9s,9c --initial-play-actions 9c,qs --select-each-post-initial-play --infinite-game-count --hide-play-actions --hide-pone-hand --hide-dealer-hand --process-count 2`;
+- Simulate all possible dealer plays from start of the second play where dealer has two more cards than pone: `python simulateCribbageGames.py --dealer-kept-cards tc,3s,8c,9h --initial-play-actions th,tc,td,go,ac,go,go --select-each-post-initial-play --game-count 5000 --games-per-update 1000 --hide-pone-hand --hide-dealer-hand --hide-play-actions`;
+- Simulate from late in the third leg all possible dealer discards to end of game against reasonable opponent play: `python simulateCribbageGames.py --dealer-dealt-cards AC,2S,6C,TD,JD,KC --dealer-select-each-possible-kept-hand --hide-pone-hand --hide-dealer-hand --hide-play-actions --unlimited-hands-per-game --game-count 20000 --initial-pone-score 87 --initial-dealer-score 85 --games-per-update 1000`;
 - Simulate one hand from deal to end of hand counting using simulation-based pone discarding: `python simulateCribbageGames.py --process-count 1 --game-count 1 --pone-discard-based-on-simulations 320`;
 - Simulate one hand from deal to end of hand counting using simulation-based dealer discarding: `python simulateCribbageGames.py --process-count 1 --game-count 1 --dealer-discard-based-on-simulations 320`; and
 - Simulate one hand from deal to end of hand counting using simulation-based pone and dealer discarding: `python simulateCribbageGames.py --process-count 1 --game-count 1 --pone-discard-based-on-simulations 320 --dealer-discard-based-on-simulations 320`.
@@ -49,27 +50,29 @@ for different possible discards or plays.
 
 ## Current short to medium term goals
 
-- Add play decision analysis support by allowing the set of the initial simulation state to all post-discard, post-initial play states and then simulating all possible next plays to the end of the hand (or multiple hands):
-  - add support for --initial-played-cards containing a Go,
-  - add support for --initial-played-cards containing two consecutive Gos - i.e. a count reset,
-  - add support for --initial-played-cards lacking suit information,
-  - add support for --(pone|dealer)-(dealt|kept)-cards lacking suit information, and
-  - add support for --initial-turnup specification.
+- Add support for time-limited discard simulations and simulation-based discard strategies.
+- UI/UX improvements:
+  - improve user interface via which human players can play against implemented computer discard and play strategies;
+  - add support for --(pone|dealer)-(dealt|kept)-cards lacking suit information; and
+  - add support for --initial-turnup specification to slightly improve simulation-based play accuracy.
+- Further improve current best discard strategy:
+  - reconsider not ignoring suit by default and not ignoring suit in simulation-based discard strategy.
 - Further improve current best play strategy:
+  - add simulation-based pone and dealer play strategies;
+  - add support for --initial-play-actions lacking suit information;
   - consider improving default play algorithm to lead from pair (9 from 9-9-4-2), which seems to be about 0.5 points better than a 4 lead according to current simulations;
   - consider improving default play algorithm to lead A from A-4 (e.g. A-4-T-T), which seems to be about 0.08 points better than a 4 lead according to current simulations with two Tens;
   - consider improving default play algorithm to lead 3 from 3-9 (e.g. 3-4-8-9) which seems better than a 4 lead if only because a dealer 3 response can be 15-2'ed to even the play score.  (Note: not currently simulatable (BUG - see above) due to 3 not being a play the current best play algorithm would play.)  Similar lead 4 from 4-7 should also be considered here;
   - consider dealer respond with higher card of pair adding to 11 in response to pone 10 count lead to set up more 31-2's for self - e.g. dealer play 7 from 7-4 or 8 from 8-3 in response to pone 10 count lead; and
   - reconsider adding run setup avoidance to default play strategy.
-- Add support for time-limited discard simulations and simulation-based discard strategies.
-- Reconsider not ignoring suit by default and not ignoring suit in simulation-based discard strategy.
-- Add simulation-based pone and dealer play strategies.
-- Improve user interface via which human players can play against implemented computer discard and play strategies.
-- Implement simulation-based discard and play where immediate opponent reponse is also simulation-based but based on fewer simluated games.
-- Implement simulation-based discard and play where multiple subsequent opponent or self play or discard actions are also simulation-based but based on fewer simluated games.  (Keys to success: tuning of decay factor; determining whether the positional evaluation benefits of low (< 32 for discard, for example) simulation counts outweigh their higher error rate costs.)
-- Automate execution and verification of above smoke tests.
-- Increase confidence in implementation by adding further type hints (Python), type checking and unit tests.
-- Increase performance and simulation-based play strategy strengths via performance improvements in Python or other programming language.
+- Improve both discard and play strategies:
+  - Implement simulation-based discard and play where immediate opponent reponse is also simulation-based but based on fewer simluated games.
+  - Implement simulation-based discard and play where multiple subsequent opponent or self play or discard actions are also simulation-based but based on fewer simluated games.  (Keys to success: tuning of decay factor; determining whether the positional evaluation benefits of low (< 32 for discard, for example) simulation counts outweigh their higher error rate costs.)
+- Improve development speed and quality:
+  - Automate execution and verification of above smoke tests.
+  - Increase confidence in implementation by adding further type hints (Python), type checking and unit tests.
+- Improve simulation-based play and discard speed and strength:
+  - Increase performance and simulation-based play strategy strengths via performance improvements in Python or other programming language.
 
 ## Current known bugs
 
@@ -78,10 +81,12 @@ for different possible discards or plays.
 ## Past project goals
 
 - Add play decision analysis support by allowing the set of the initial simulation state to all post-discard, post-initial play states and then simulating all possible next plays to the end of the hand (or multiple hands):
-  - add support for play simulations without specifying player not under simulation dealt or kept cards - can be inferred from --initial-played-cards (status: implemented),
+  - add support for play simulations without specifying player not under simulation dealt or kept cards - can be inferred from --initial-play-actions (status: implemented),
   - add support for play simulations without specifying player under simulation dealt but not kept (discarded) cards - often not known, remembered or all that relevant (status: implemented);
-- BUG: --initial-played-cards 9-4-9 with 4,4,8 in dealer hand not simulatable because current best play algorithm would have played 8 on first played card.  Same is true of simulation of --initial-played-cards 9-Q with 9-4-2 in pone hand.  (Fix requires possibly not assuming that future plays would match that of the best non-simulation-based play algorithm.  Separate TODO to not respond to 9 lead with 8 setting up two possible opponent run plays below.)  (Status: fixed.)
-- BUG: --initial-played-cards 4-8 with A,T,Q in pone hand considers T and Q to be equal plays as the current best non-simulation-based play algorithm would have played 9 on its first play as dealer if it held it thus the simulation does not consider a run off of 4-8-T to be possible for dealer.   (Status: fixed.)
+  - add support for --initial-play-actions containing a Go (status: implemented),
+  - add support for --initial-play-actions containing two consecutive Gos - i.e. a count reset (status: implemented);
+- BUG: --initial-play-actions 9-4-9 with 4,4,8 in dealer hand not simulatable because current best play algorithm would have played 8 on first played card.  Same is true of simulation of --initial-play-actions 9-Q with 9-4-2 in pone hand.  (Fix requires possibly not assuming that future plays would match that of the best non-simulation-based play algorithm.  Separate TODO to not respond to 9 lead with 8 setting up two possible opponent run plays below.)  (Status: fixed.)
+- BUG: --initial-play-actions 4-8 with A,T,Q in pone hand considers T and Q to be equal plays as the current best non-simulation-based play algorithm would have played 9 on its first play as dealer if it held it thus the simulation does not consider a run off of 4-8-T to be possible for dealer.   (Status: fixed.)
 - BUG: simulation of all possible plays over just one game fails to complete on a ZeroDivisionError during variance calculation.  (Status: fixed.)
 - Stop discard/play simulation and simulation-based discard when only one non-dropped option remains.
 - In single all possible discards simulations and simulation-based discard strategy drop possible discards 2 standard deviations worse beyond the current selected confidence level than the current best discard as simulation proceeds save time and get better answers faster.
