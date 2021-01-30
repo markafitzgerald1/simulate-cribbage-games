@@ -618,6 +618,7 @@ def simulate_game(
     )
     non_kept_initial_played_card_played: bool = False
     not_all_kept_cards_in_kept_hand: bool = False
+    post_initial_play_is_illegal: bool = False
     for hand in range(maximum_hands_per_game):
         is_first_hand: bool = not hand
         if is_first_hand and (
@@ -674,7 +675,18 @@ def simulate_game(
                 ]
             else:
                 kept_pone_hand = pone_select_kept_cards(dealt_hands[0])
-                if not all(card in kept_pone_hand for card in pone_kept_cards):
+                if not hide_pone_hand:
+                    print(
+                        f"{get_player_name(0):6} keeps {Hand(kept_pone_hand)} (sorted: {Hand(sorted(kept_pone_hand, reverse=True))})"
+                    )
+                if not all(
+                    pone_kept_card in kept_pone_hand
+                    for pone_kept_card in pone_kept_cards
+                ):
+                    if not hide_pone_hand:
+                        print(
+                            f"...but then {Hand(set(pone_kept_cards).difference(kept_pone_hand))} would not be kept by pone"
+                        )
                     not_all_kept_cards_in_kept_hand = True
                     break
         elif not (is_first_hand and pone_select_each_possible_kept_hand):
@@ -706,7 +718,18 @@ def simulate_game(
                 ]
             else:
                 kept_dealer_hand = dealer_select_kept_cards(dealt_hands[1])
-                if not all(card in kept_dealer_hand for card in dealer_kept_cards):
+                if not hide_dealer_hand:
+                    print(
+                        f"{get_player_name(1):6} would keep {Hand(kept_dealer_hand)} (sorted: {Hand(sorted(kept_dealer_hand, reverse=True))})"
+                    )
+                if not all(
+                    dealer_kept_card in kept_dealer_hand
+                    for dealer_kept_card in dealer_kept_cards
+                ):
+                    if not hide_dealer_hand:
+                        print(
+                            f"...but then {Hand(set(dealer_kept_cards).difference(kept_dealer_hand))} would not be kept by dealer"
+                        )
                     not_all_kept_cards_in_kept_hand = True
                     break
         elif not (is_first_hand and dealer_select_each_possible_kept_hand):
@@ -789,13 +812,12 @@ def simulate_game(
             player_to_play_play: PlayAction
 
             if (not remaining_initial_play_actions) and remaining_post_initial_play:
-                if not remaining_post_initial_play or (
-                    remaining_post_initial_play
-                    and remaining_post_initial_play not in hands[player_to_play]
-                ):
+                if remaining_post_initial_play not in hands[player_to_play]:
                     non_kept_initial_played_card_played = True
                     break
-
+                if play_count + remaining_post_initial_play.count > THIRTY_ONE_COUNT:
+                    post_initial_play_is_illegal = True
+                    break
                 player_to_play_play = remaining_post_initial_play
                 remaining_post_initial_play = None
             elif remaining_initial_play_actions:
@@ -953,6 +975,7 @@ def simulate_game(
         if (
             not_all_kept_cards_in_kept_hand
             or non_kept_initial_played_card_played
+            or post_initial_play_is_illegal
             or game_over(game_score)
         ):
             break
@@ -1019,7 +1042,9 @@ def simulate_game(
     return GameSimulationResult(
         kept_cards,
         game_score,
-        not_all_kept_cards_in_kept_hand or non_kept_initial_played_card_played,
+        not_all_kept_cards_in_kept_hand
+        or non_kept_initial_played_card_played
+        or post_initial_play_is_illegal,
     )
 
 
@@ -1113,16 +1138,26 @@ def simulate_games(
         if show_calc_cache_usage_stats:
             expected_random_opponent_discard_crib_points_cache.stats()
 
-        pone_kept_cards = pone_kept_cards + [
-            initial_play_action
-            for initial_play_action in initial_play_actions[0::2]
-            if isinstance(initial_play_action, Card)
-        ]
-        dealer_kept_cards = dealer_kept_cards + [
-            initial_play_action
-            for initial_play_action in initial_play_actions[1::2]
-            if isinstance(initial_play_action, Card)
-        ]
+        pone_kept_cards = list(
+            set(
+                pone_kept_cards
+                + [
+                    initial_play_action
+                    for initial_play_action in initial_play_actions[0::2]
+                    if isinstance(initial_play_action, Card)
+                ]
+            )
+        )
+        dealer_kept_cards = list(
+            set(
+                dealer_kept_cards
+                + [
+                    initial_play_action
+                    for initial_play_action in initial_play_actions[1::2]
+                    if isinstance(initial_play_action, Card)
+                ]
+            )
+        )
 
         deck_less_fixed_cards = [
             card
