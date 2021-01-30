@@ -51,20 +51,20 @@ for different possible discards or plays.
 ## Current short to medium term goals
 
 - Add support for time-limited discard simulations and simulation-based discard strategies.
+- Further improve current best play strategy:
+  - add simulation-based pone and dealer play strategies;
+  - consider improving default play algorithm to lead from pair (9 from 9-9-4-2), which seems to be about 0.5 points better than a 4 lead according to current simulations;
+  - consider improving default play algorithm to lead A from A-4 (e.g. A-4-T-T), which seems to be about 0.08 points better than a 4 lead according to current simulations with two Tens;
+  - consider improving default play algorithm to lead 3 from 3-9 (e.g. 3-4-8-9) which seems better than a 4 lead if only because a dealer 3 response can be 15-2'ed to even the play score.  Similar lead 4 from 4-7 should also be considered here;
+  - consider dealer respond with higher card of pair adding to 11 in response to pone 10 count lead to set up more 31-2's for self - e.g. dealer play 7 from 7-4 or 8 from 8-3 in response to pone 10 count lead;
+  - add support for --initial-play-actions lacking suit information; and
+  - reconsider adding run setup avoidance to default play strategy.
 - UI/UX improvements:
   - improve user interface via which human players can play against implemented computer discard and play strategies;
   - add support for --(pone|dealer)-(dealt|kept)-cards lacking suit information; and
   - add support for --initial-turnup specification to slightly improve simulation-based play accuracy.
 - Further improve current best discard strategy:
   - reconsider not ignoring suit by default and not ignoring suit in simulation-based discard strategy.
-- Further improve current best play strategy:
-  - add simulation-based pone and dealer play strategies;
-  - add support for --initial-play-actions lacking suit information;
-  - consider improving default play algorithm to lead from pair (9 from 9-9-4-2), which seems to be about 0.5 points better than a 4 lead according to current simulations;
-  - consider improving default play algorithm to lead A from A-4 (e.g. A-4-T-T), which seems to be about 0.08 points better than a 4 lead according to current simulations with two Tens;
-  - consider improving default play algorithm to lead 3 from 3-9 (e.g. 3-4-8-9) which seems better than a 4 lead if only because a dealer 3 response can be 15-2'ed to even the play score.  Similar lead 4 from 4-7 should also be considered here;
-  - consider dealer respond with higher card of pair adding to 11 in response to pone 10 count lead to set up more 31-2's for self - e.g. dealer play 7 from 7-4 or 8 from 8-3 in response to pone 10 count lead; and
-  - reconsider adding run setup avoidance to default play strategy.
 - Improve both discard and play strategies:
   - Implement simulation-based discard and play where immediate opponent reponse is also simulation-based but based on fewer simluated games.
   - Implement simulation-based discard and play where multiple subsequent opponent or self play or discard actions are also simulation-based but based on fewer simluated games.  (Keys to success: tuning of decay factor; determining whether the positional evaluation benefits of low (< 32 for discard, for example) simulation counts outweigh their higher error rate costs.)
