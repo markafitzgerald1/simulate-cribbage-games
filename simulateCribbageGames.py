@@ -811,7 +811,11 @@ def simulate_game(
 
             player_to_play_play: PlayAction
 
-            if (not remaining_initial_play_actions) and remaining_post_initial_play:
+            if (
+                is_first_hand
+                and (not remaining_initial_play_actions)
+                and remaining_post_initial_play
+            ):
                 if remaining_post_initial_play not in hands[player_to_play]:
                     non_kept_initial_played_card_played = True
                     break
@@ -820,7 +824,7 @@ def simulate_game(
                     break
                 player_to_play_play = remaining_post_initial_play
                 remaining_post_initial_play = None
-            elif remaining_initial_play_actions:
+            elif is_first_hand and remaining_initial_play_actions:
                 player_to_play_play = remaining_initial_play_actions.pop(0)
             elif len(legal_play_actions) == 1:
                 player_to_play_play = legal_play_actions[0]
