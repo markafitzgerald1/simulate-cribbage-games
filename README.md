@@ -54,7 +54,6 @@ for different possible discards or plays.
 - Further improve current best play strategy:
   - add simulation-based pone and dealer play strategies;
   - consider improving default play algorithm to lead from pair (9 from 9-9-4-2), which seems to be about 0.5 points better than a 4 lead according to current simulations;
-  - consider improving default play algorithm to lead 3 from 3-9 (e.g. 3-4-8-9) which seems better than a 4 lead if only because a dealer 3 response can be 15-2'ed to even the play score.  Similar lead 4 from 4-7 should also be considered here;
   - consider dealer respond with higher card of pair adding to 11 in response to pone 10 count lead to set up more 31-2's for self - e.g. dealer play 7 from 7-4 or 8 from 8-3 in response to pone 10 count lead;
   - add support for --initial-play-actions lacking suit information; and
   - reconsider adding run setup avoidance to default play strategy.
@@ -80,7 +79,8 @@ for different possible discards or plays.
 ## Past project goals
 
 - Further improve current best play strategy:
-  - consider improving default play algorithm to lead A from A-4 (e.g. A-4-T-T), which seems to be about 0.08 points better than a 4 lead according to current simulations with two Tens (status: rejected - 4 and A about equal leads holding both; similar for lead from 2-3 - about equal leads as pone)
+  - consider improving default play algorithm to lead A from A-4 (e.g. A-4-T-T), which seems to be about 0.08 points better than a 4 lead according to current simulations with two Tens (status: rejected - 4 and A about equal leads holding both; similar for lead from 2-3 - about equal leads as pone); and
+  - consider improving default play algorithm to lead 3 from 3-9 (e.g. 3-4-8-9) which seems better than a 4 lead if only because a dealer 3 response can be 15-2'ed to even the play score.  Similar lead 4 from 4-7 should also be considered here (status: rejected - 0.005 +/- 0.014 points worse for pone in simulations).
 - Add play decision analysis support by allowing the set of the initial simulation state to all post-discard, post-initial play states and then simulating all possible next plays to the end of the hand (or multiple hands):
   - add support for play simulations without specifying player not under simulation dealt or kept cards - can be inferred from --initial-play-actions (status: implemented),
   - add support for play simulations without specifying player under simulation dealt but not kept (discarded) cards - often not known, remembered or all that relevant (status: implemented);
