@@ -2403,7 +2403,9 @@ def play_user_selected(
     current_play_count: PlayCount,
     current_play_to_31_cards: Sequence[Card],
 ) -> PlayableCardIndex:
-    print(f"Playable cards are {','.join([str(card) for card in playable_cards])}.")
+    print(
+        f"{Hand(current_play_to_31_cards)} played so far; count is {current_play_count}; playable cards are {','.join([str(card) for card in playable_cards])}."
+    )
     selected_card: Optional[PlayableCardIndex] = None
     while selected_card not in range(0, len(playable_cards)):
         selected_card_input = input("Enter the base-0 card index to play: ")
