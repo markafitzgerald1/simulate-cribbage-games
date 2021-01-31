@@ -50,6 +50,9 @@ for different possible discards or plays.
 
 ## Current short to medium term goals
 
+- UI/UX improvements:
+  - replace --(pone|dealer)-play-user-entered with --first-(pone|dealer)-play-user-entered and do same for all other possible play algorithm selections; and
+  - add --first-(pone|dealer)-keep-user-entered discard strategy allow for complete human play against this program.
 - Improve both discard and play strategies:
   - Implement simulation-based discard and play where immediate opponent reponse is also simulation-based but based on fewer simluated games.
   - Implement simulation-based discard and play where multiple subsequent opponent or self play or discard actions are also simulation-based but based on fewer simluated games.  (Keys to success: tuning of decay factor; determining whether the positional evaluation benefits of low (< 32 for discard, for example) simulation counts outweigh their higher error rate costs.)
