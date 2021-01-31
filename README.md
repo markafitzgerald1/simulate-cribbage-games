@@ -50,22 +50,21 @@ for different possible discards or plays.
 
 ## Current short to medium term goals
 
+- Improve both discard and play strategies:
+  - Implement simulation-based discard and play where immediate opponent reponse is also simulation-based but based on fewer simluated games.
+  - Implement simulation-based discard and play where multiple subsequent opponent or self play or discard actions are also simulation-based but based on fewer simluated games.  (Keys to success: tuning of decay factor; determining whether the positional evaluation benefits of low (< 32 for discard, for example) simulation counts outweigh their higher error rate costs.)
 - Add support for time-limited discard simulations and simulation-based discard strategies.
 - Further improve current best play strategy:
   - add simulation-based pone and dealer play strategies;
   - consider improving default play algorithm to lead from pair (9 from 9-9-4-2), which seems to be about 0.5 points better than a 4 lead according to current simulations;
   - consider dealer respond with higher card of pair adding to 11 in response to pone 10 count lead to set up more 31-2's for self - e.g. dealer play 7 from 7-4 or 8 from 8-3 in response to pone 10 count lead;
-  - add support for --initial-play-actions lacking suit information; and
-  - reconsider adding run setup avoidance to default play strategy.
+  - reconsider adding run setup avoidance to default play strategy; and
+  - add support for --initial-turnup specification to slightly improve simulation-based play accuracy.
 - UI/UX improvements:
   - improve user interface via which human players can play against implemented computer discard and play strategies;
-  - add support for --(pone|dealer)-(dealt|kept)-cards lacking suit information; and
-  - add support for --initial-turnup specification to slightly improve simulation-based play accuracy.
+  - add support for --(pone|dealer)-(dealt|kept)-cards and --initial-play-actions lacking suit information; and
 - Further improve current best discard strategy:
   - reconsider not ignoring suit by default and not ignoring suit in simulation-based discard strategy.
-- Improve both discard and play strategies:
-  - Implement simulation-based discard and play where immediate opponent reponse is also simulation-based but based on fewer simluated games.
-  - Implement simulation-based discard and play where multiple subsequent opponent or self play or discard actions are also simulation-based but based on fewer simluated games.  (Keys to success: tuning of decay factor; determining whether the positional evaluation benefits of low (< 32 for discard, for example) simulation counts outweigh their higher error rate costs.)
 - Improve development speed and quality:
   - Automate execution and verification of above smoke tests.
   - Increase confidence in implementation by adding further type hints (Python), type checking and unit tests.
