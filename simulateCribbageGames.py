@@ -320,18 +320,52 @@ def get_confidence_interval(statistics, confidence_level):
     return f"{statistics.mean():+10.5f} ± {get_z_statistic(confidence_level) * get_stddev_of_mean(statistics):8.5f}"
 
 
-def statistics_push(statistics_dict, key, value):
-    if key not in statistics_dict:
-        statistics_dict[key] = Statistics()
-    statistics_dict[key].push(value)
+GamePoints = NewType("GamePoints", int)
+NextAction = Tuple[Tuple[Card, ...], Optional[Card]]
+
+
+def statistics_push(
+    statistics_by_next_action: Dict[NextAction, Statistics],
+    key: NextAction,
+    value: Union[Points, GamePoints, bool],
+):
+    if key not in statistics_by_next_action:
+        statistics_by_next_action[key] = Statistics()
+    statistics_by_next_action[key].push(value)
+
+
+# TODO: replace repeated constant strings with constants or Enum
+PlayersStatistic = Literal[
+    "first_pone_play",
+    "first_pone_hand",
+    "first_pone_crib",
+    "first_pone_total_points",
+    "first_pone_game_points",
+    "first_pone_wins",
+    "first_dealer_play",
+    "first_dealer_hand",
+    "first_dealer_crib",
+    "first_dealer_total_points",
+    "first_dealer_game_points",
+    "first_dealer_wins",
+    "first_pone_minus_first_dealer_play",
+    "first_pone_minus_first_dealer_hand",
+    "first_pone_minus_first_dealer_crib",
+    "first_pone_minus_first_dealer_total_points",
+    "first_pone_minus_first_dealer_game_points",
+]
 
 
 def statistics_dict_add(
-    sum_stats_by_keep_by_type, stat_type_name, addend_stats_by_keep
+    sum_stats_by_next_action_by_type: Dict[
+        NextAction, Dict[PlayersStatistic, Statistics]
+    ],
+    player_statistic_type: PlayersStatistic,
+    addend_stats_by_next_action: Dict[NextAction, Statistics],
 ):
-    for keep, addend_stats in addend_stats_by_keep.items():
-        if keep in sum_stats_by_keep_by_type:
-            new_sum_stats_for_keep = sum_stats_by_keep_by_type[keep]
+    for next_action, addend_stats in addend_stats_by_next_action.items():
+        if next_action in sum_stats_by_next_action_by_type:
+            new_sum_stats_for_keep = sum_stats_by_next_action_by_type[next_action]
         else:
             new_sum_stats_for_keep = {
                 "first_pone_play": Statistics(),
@@ -353,8 +387,8 @@ def statistics_dict_add(
                 "first_pone_minus_first_dealer_game_points": Statistics(),
             }
 
-        new_sum_stats_for_keep[stat_type_name] += addend_stats
-        sum_stats_by_keep_by_type[keep] = new_sum_stats_for_keep
+        new_sum_stats_for_keep[player_statistic_type] += addend_stats
+        sum_stats_by_next_action_by_type[next_action] = new_sum_stats_for_keep
 
 
 DECK_CARD_COUNT: int = DECK_INDEX_COUNT * DECK_SUIT_COUNT
@@ -397,28 +431,6 @@ def get_current_play_run_length(current_play_to_31_cards: Sequence[Card]):
 PlayableCardIndex = NewType("PlayableCardIndex", int)
 PlaySelector = Callable[[Sequence[Card], PlayCount, Sequence[Card]], PlayableCardIndex]
 START_OF_PLAY_COUNT: PlayCount = PlayCount(0)
-
-
-# TODO: replace repeated constant strings with constants or Enum
-PlayerStatistic = Literal[
-    "first_pone_play",
-    "first_pone_hand",
-    "first_pone_crib",
-    "first_pone_total_points",
-    "first_pone_game_points",
-    "first_pone_wins",
-    "first_dealer_play",
-    "first_dealer_hand",
-    "first_dealer_crib",
-    "first_dealer_total_points",
-    "first_dealer_game_points",
-    "first_dealer_wins",
-    "first_pone_minus_first_dealer_play",
-    "first_pone_minus_first_dealer_hand",
-    "first_pone_minus_first_dealer_crib",
-    "first_pone_minus_first_dealer_total_points",
-    "first_pone_minus_first_dealer_game_points",
-]
 
 
 Player = Literal[0, 1]
@@ -1081,9 +1093,6 @@ def get_skunks(score: Points) -> Skunks:
         return Skunks(0)
 
 
-GamePoints = NewType("GamePoints", int)
-
-
 def game_points(
     pone_score: Points, dealer_score: Points
 ) -> Tuple[GamePoints, GamePoints]:
@@ -1127,7 +1136,7 @@ def simulate_games(
     pone_kept_cards: List[Card],
     dealer_kept_cards: List[Card],
     initial_play_actions: List[PlayAction],
-    players_statistics,
+    players_statistics: Dict[NextAction, Statistics],
     players_statistics_lock,
     pone_select_kept_cards,
     pone_discard_based_on_simulations: Optional[int],
@@ -1184,32 +1193,26 @@ def simulate_games(
             )
         ]
 
-        first_pone_play_statistics: Dict[Tuple[Card], Statistics] = {}
-        first_pone_hand_statistics: Dict[Tuple[Card], Statistics] = {}
-        first_pone_crib_statistics: Dict[Tuple[Card], Statistics] = {}
-        overall_first_pone_points_statistics: Dict[Tuple[Card], Statistics] = {}
-        first_pone_game_points_statistics: Dict[Tuple[Card], Statistics] = {}
-        first_pone_wins_statistics: Dict[Tuple[Card], Statistics] = {}
-        first_dealer_play_statistics: Dict[Tuple[Card], Statistics] = {}
-        first_dealer_hand_statistics: Dict[Tuple[Card], Statistics] = {}
-        first_dealer_crib_statistics: Dict[Tuple[Card], Statistics] = {}
-        overall_first_dealer_points_statistics: Dict[Tuple[Card], Statistics] = {}
-        first_dealer_game_points_statistics: Dict[Tuple[Card], Statistics] = {}
-        first_dealer_wins_statistics: Dict[Tuple[Card], Statistics] = {}
-        first_pone_minus_first_dealer_play_statistics: Dict[
-            Tuple[Card], Statistics
-        ] = {}
-        first_pone_minus_first_dealer_hand_statistics: Dict[
-            Tuple[Card], Statistics
-        ] = {}
-        first_pone_minus_first_dealer_crib_statistics: Dict[
-            Tuple[Card], Statistics
-        ] = {}
+        first_pone_play_statistics: Dict[NextAction, Statistics] = {}
+        first_pone_hand_statistics: Dict[NextAction, Statistics] = {}
+        first_pone_crib_statistics: Dict[NextAction, Statistics] = {}
+        overall_first_pone_points_statistics: Dict[NextAction, Statistics] = {}
+        first_pone_game_points_statistics: Dict[NextAction, Statistics] = {}
+        first_pone_wins_statistics: Dict[NextAction, Statistics] = {}
+        first_dealer_play_statistics: Dict[NextAction, Statistics] = {}
+        first_dealer_hand_statistics: Dict[NextAction, Statistics] = {}
+        first_dealer_crib_statistics: Dict[NextAction, Statistics] = {}
+        overall_first_dealer_points_statistics: Dict[NextAction, Statistics] = {}
+        first_dealer_game_points_statistics: Dict[NextAction, Statistics] = {}
+        first_dealer_wins_statistics: Dict[NextAction, Statistics] = {}
+        first_pone_minus_first_dealer_play_statistics: Dict[NextAction, Statistics] = {}
+        first_pone_minus_first_dealer_hand_statistics: Dict[NextAction, Statistics] = {}
+        first_pone_minus_first_dealer_crib_statistics: Dict[NextAction, Statistics] = {}
         first_pone_minus_first_dealer_total_points_statistics: Dict[
-            Tuple[Card], Statistics
+            NextAction, Statistics
         ] = {}
         first_pone_minus_first_dealer_game_points_statistics: Dict[
-            Tuple[Card], Statistics
+            NextAction, Statistics
         ] = {}
 
         pone_dealt_cards_possible_keeps = list(
@@ -1290,12 +1293,12 @@ def simulate_games(
                     hide_play_actions,
                 )
 
-            first_pone_total_points = (
+            first_pone_total_points = Points(
                 game_simulation_result.score.first_pone_play
                 + game_simulation_result.score.first_pone_hand
                 + game_simulation_result.score.first_pone_crib
             )
-            first_dealer_total_points = (
+            first_dealer_total_points = Points(
                 game_simulation_result.score.first_dealer_play
                 + game_simulation_result.score.first_dealer_hand
                 + game_simulation_result.score.first_dealer_crib
@@ -1322,98 +1325,105 @@ def simulate_games(
                 print()
 
             # TODO: used namedtuple
-            statistics_key = tuple(
-                [game_simulation_result.kept_cards, post_initial_play]
+            next_action: NextAction = (
+                game_simulation_result.kept_cards,
+                post_initial_play,
             )
             statistics_push(
                 first_pone_play_statistics,
-                statistics_key,
+                next_action,
                 game_simulation_result.score.first_pone_play,
             )
             statistics_push(
                 first_pone_hand_statistics,
-                statistics_key,
+                next_action,
                 game_simulation_result.score.first_pone_hand,
             )
             statistics_push(
                 first_pone_crib_statistics,
-                statistics_key,
+                next_action,
                 game_simulation_result.score.first_pone_crib,
             )
             statistics_push(
                 overall_first_pone_points_statistics,
-                statistics_key,
+                next_action,
                 first_pone_total_points,
             )
             statistics_push(
                 first_pone_game_points_statistics,
-                statistics_key,
+                next_action,
                 first_pone_game_points,
             )
             statistics_push(
                 first_pone_wins_statistics,
-                statistics_key,
+                next_action,
                 first_pone_game_points > 0,
             )
 
             statistics_push(
                 first_dealer_play_statistics,
-                statistics_key,
+                next_action,
                 game_simulation_result.score.first_dealer_play,
             )
             statistics_push(
                 first_dealer_hand_statistics,
-                statistics_key,
+                next_action,
                 game_simulation_result.score.first_dealer_hand,
             )
             statistics_push(
                 first_dealer_crib_statistics,
-                statistics_key,
+                next_action,
                 game_simulation_result.score.first_dealer_crib,
             )
             statistics_push(
                 overall_first_dealer_points_statistics,
-                statistics_key,
+                next_action,
                 first_dealer_total_points,
             )
             statistics_push(
                 first_dealer_game_points_statistics,
-                statistics_key,
+                next_action,
                 first_dealer_game_points,
             )
             statistics_push(
                 first_dealer_wins_statistics,
-                statistics_key,
+                next_action,
                 first_dealer_game_points > 0,
             )
 
             statistics_push(
                 first_pone_minus_first_dealer_play_statistics,
-                statistics_key,
-                game_simulation_result.score.first_pone_play
-                - game_simulation_result.score.first_dealer_play,
+                next_action,
+                Points(
+                    game_simulation_result.score.first_pone_play
+                    - game_simulation_result.score.first_dealer_play
+                ),
             )
             statistics_push(
                 first_pone_minus_first_dealer_hand_statistics,
-                statistics_key,
-                game_simulation_result.score.first_pone_hand
-                - game_simulation_result.score.first_dealer_hand,
+                next_action,
+                Points(
+                    game_simulation_result.score.first_pone_hand
+                    - game_simulation_result.score.first_dealer_hand
+                ),
             )
             statistics_push(
                 first_pone_minus_first_dealer_crib_statistics,
-                statistics_key,
-                game_simulation_result.score.first_pone_crib
-                - game_simulation_result.score.first_dealer_crib,
+                next_action,
+                Points(
+                    game_simulation_result.score.first_pone_crib
+                    - game_simulation_result.score.first_dealer_crib
+                ),
             )
             statistics_push(
                 first_pone_minus_first_dealer_total_points_statistics,
-                statistics_key,
-                first_pone_total_points - first_dealer_total_points,
+                next_action,
+                Points(first_pone_total_points - first_dealer_total_points),
             )
             statistics_push(
                 first_pone_minus_first_dealer_game_points_statistics,
-                statistics_key,
-                first_pone_game_points - first_dealer_game_points,
+                next_action,
+                Points(first_pone_game_points - first_dealer_game_points),
             )
 
             if (
@@ -2448,7 +2458,7 @@ def player_select_kept_cards_based_on_simulation(
             f"Simulating each of the {POSSIBLE_DISCARD_COUNT} possible discard {simulated_hand_count} times in order to select discard"
         )
     manager = Manager()
-    simulated_players_statistics: Dict[PlayerStatistic, Statistics] = manager.dict()
+    simulated_players_statistics: Dict[NextAction, Statistics] = manager.dict()
     simulated_players_statistics_lock = Lock()
     CONFIDENCE_LEVEL: int = 95
     simulate_games(
@@ -2844,7 +2854,7 @@ if __name__ == "__main__":
     )
 
     manager = Manager()
-    players_statistics: Dict[PlayerStatistic, Statistics] = manager.dict()
+    players_statistics: Dict[NextAction, Statistics] = manager.dict()
     players_statistics_lock = Lock()
     game_count = (
         sys.maxsize
