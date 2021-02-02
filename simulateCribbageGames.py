@@ -13,12 +13,11 @@ from runstats import Statistics  # type: ignore
 from statistics import NormalDist
 import itertools
 from functools import cache
-from collections import Counter, namedtuple
+from collections import Counter
 from typing import (
     Callable,
     Optional,
     Sequence,
-    NoReturn,
     NewType,
     List,
     Dict,
@@ -30,7 +29,7 @@ from typing import (
 )
 from enum import Enum
 from math import comb, hypot
-from diskcache import Cache
+from diskcache import Cache  # type: ignore
 
 
 MAX_CARD_COUNTING_VALUE = 10
