@@ -701,11 +701,15 @@ def simulate_game(
             else:
                 kept_pone_hand = pone_select_kept_cards(dealt_hands[0])
         elif is_first_hand and pone_dealt_cards:
-            kept_pone_hand = None
-            while not kept_pone_hand or tuple(kept_pone_hand) in dropped_keeps:
-                kept_pone_hand = first_kept_pone_hand = list(
+            optional_kept_pone_hand = None
+            while (
+                not optional_kept_pone_hand
+                or tuple(optional_kept_pone_hand) in dropped_keeps
+            ):
+                optional_kept_pone_hand = list(
                     next(pone_dealt_cards_possible_keeps_cycle)
                 )
+            kept_pone_hand = first_kept_pone_hand = optional_kept_pone_hand
         else:
             raise ValueError(
                 "Iterating through all possible kept hands not supported with non-fixed deals."
@@ -744,11 +748,15 @@ def simulate_game(
             else:
                 kept_dealer_hand = dealer_select_kept_cards(dealt_hands[1])
         elif is_first_hand and dealer_dealt_cards:
-            kept_dealer_hand = None
-            while not kept_dealer_hand or tuple(kept_dealer_hand) in dropped_keeps:
-                kept_dealer_hand = first_kept_dealer_hand = list(
+            optional_kept_dealer_hand = None
+            while (
+                not optional_kept_dealer_hand
+                or tuple(optional_kept_dealer_hand) in dropped_keeps
+            ):
+                optional_kept_dealer_hand = list(
                     next(dealer_dealt_cards_possible_keeps_cycle)
                 )
+            kept_dealer_hand = first_kept_dealer_hand = optional_kept_dealer_hand
         else:
             raise ValueError(
                 "Iterating through all possible kept hands not supported with non-fixed deals."
