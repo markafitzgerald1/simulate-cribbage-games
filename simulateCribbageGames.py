@@ -2017,7 +2017,7 @@ expected_random_opponent_discard_crib_points_cache = Cache(
 
 @expected_random_opponent_discard_crib_points_cache.memoize()
 def cached_expected_random_opponent_discard_crib_points(
-    suit_normalized_sorted_discarded_dealt_cards: Tuple[Card],
+    suit_normalized_sorted_discarded_dealt_cards: Tuple[Card, ...],
 ):
     deck_less_dealt_cards = [
         card
