@@ -26,6 +26,7 @@ from typing import (
     Literal,
     NamedTuple,
     Union,
+    Set,
 )
 from enum import Enum
 from math import comb, hypot
@@ -1223,7 +1224,7 @@ def simulate_games(
         dealer_dealt_cards_possible_keeps_cycle = itertools.cycle(
             dealer_dealt_cards_possible_keeps
         )
-        dropped_keeps = set()
+        dropped_keeps: Set[Tuple[Card, ...]] = set()
         pone_kept_cards_possible_plays_cycle = (
             itertools.cycle(pone_kept_cards)
             if pone_kept_cards and select_each_post_initial_play
