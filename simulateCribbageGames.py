@@ -869,7 +869,7 @@ def simulate_game(
                 play_count += player_to_play_play.count
                 if not hide_play_actions:
                     print(
-                        f"{get_player_name(player_to_play):6} plays {player_to_play_play} from {Hand(hands[player_to_play])} for {play_count}"
+                        f"{get_player_name(player_to_play):6} plays {player_to_play_play} for {play_count}"
                     )
                 hands[player_to_play].remove(player_to_play_play)
 
@@ -967,9 +967,7 @@ def simulate_game(
                 consecutive_go_count = 0
             else:
                 if not hide_play_actions:
-                    print(
-                        f"{get_player_name(player_to_play):6} says 'Go' holding {Hand(hands[player_to_play])}"
-                    )
+                    print(f"{get_player_name(player_to_play):6} says 'Go'")
 
                 consecutive_go_count += 1
                 if consecutive_go_count == 2:
