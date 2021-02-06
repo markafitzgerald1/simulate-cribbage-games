@@ -91,6 +91,8 @@ for different possible discards or plays.
 ## Past project goals
 
 - UI/UX improvements:
+  - show score after every score change;
+  - allow user to press enter when they have only one play option or must say go; and
   - replace `--(pone|dealer)-play-user-entered` with `--first-(pone|dealer)-play-user-entered` and do same for all other possible play algorithm selections so that a human can play against a consistent computer opponent and so that two different computer opponents can be compared in multi-hand games - likely necessary to improve play when a small but greater than 1 number of hands remain - i.e. in a positional play position.
 - Further improve current best play strategy:
   - add support for --initial-starter specification to slightly improve simulation-based play accuracy;
