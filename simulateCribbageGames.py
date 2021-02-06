@@ -596,6 +596,7 @@ def simulate_game(
     deck_less_fixed_cards: Sequence[Card],
     first_pone_kept_cards: List[Card],
     first_dealer_kept_cards: List[Card],
+    initial_starter: Optional[Card],
     maximum_hands_per_game: int,
     first_pone_select_kept_cards,
     first_pone_discard_based_on_simulations: Optional[int],
@@ -822,7 +823,11 @@ def simulate_game(
         if show_dealer_hand:
             print(f"{get_player_name(1):6} kept {Hand(hands[1])}")
 
-        starter = random.sample(deck_less_dealt_cards, 1)[0]
+        starter = (
+            initial_starter
+            if is_first_hand and initial_starter
+            else random.sample(deck_less_dealt_cards, 1)[0]
+        )
         if not hide_play_actions:
             print(f"Cut/starter card is: {starter}")
         if starter.index == 10:
@@ -1172,6 +1177,7 @@ def simulate_games(
     first_dealer_dealt_cards: List[Card],
     first_pone_kept_cards: List[Card],
     first_dealer_kept_cards: List[Card],
+    initial_starter: Optional[Card],
     initial_play_actions: List[PlayAction],
     players_statistics: Dict[NextAction, Statistics],
     players_statistics_lock,
@@ -1227,6 +1233,7 @@ def simulate_games(
                 first_pone_kept_cards,
                 first_dealer_dealt_cards,
                 first_dealer_kept_cards,
+                [initial_starter] if initial_starter else [],
             )
         ]
 
@@ -1309,6 +1316,7 @@ def simulate_games(
                     deck_less_fixed_cards,
                     first_pone_kept_cards,
                     first_dealer_kept_cards,
+                    initial_starter,
                     maximum_hands_per_game,
                     first_pone_select_kept_cards,
                     first_pone_discard_based_on_simulations,
@@ -2522,6 +2530,7 @@ def player_select_kept_cards_based_on_simulation(
         dealt_hand if player == DEALER else [],
         [],
         [],
+        None,
         [],
         simulated_players_statistics,
         simulated_players_statistics_lock,
@@ -2872,6 +2881,8 @@ if __name__ == "__main__":
         help="cards kept by first dealer",
     )
 
+    parser.add_argument("--initial-starter")
+
     parser.add_argument("--initial-pone-score")
     parser.add_argument("--initial-dealer-score")
     parser.add_argument(
@@ -2895,6 +2906,9 @@ if __name__ == "__main__":
             args.first_dealer_kept_cards,
         ]
     ]
+    initial_starter: Optional[Card] = (
+        Card.from_string(args.initial_starter) if args.initial_starter else None
+    )
     initial_play_actions: List[PlayAction] = parse_play_actions(
         args.initial_play_actions
     )
@@ -3052,6 +3066,7 @@ if __name__ == "__main__":
         first_dealer_dealt_cards,
         first_pone_kept_cards,
         first_dealer_kept_cards,
+        initial_starter,
         initial_play_actions,
         players_statistics,
         players_statistics_lock,
