@@ -591,24 +591,24 @@ def get_play_to_31_cards(play_to_31: PlayTo31) -> Sequence[Card]:
 
 
 def simulate_game(
-    pone_dealt_cards: List[Card],
-    dealer_dealt_cards: List[Card],
+    first_pone_dealt_cards: List[Card],
+    first_dealer_dealt_cards: List[Card],
     deck_less_fixed_cards: Sequence[Card],
-    pone_kept_cards: List[Card],
-    dealer_kept_cards: List[Card],
+    first_pone_kept_cards: List[Card],
+    first_dealer_kept_cards: List[Card],
     maximum_hands_per_game: int,
-    pone_select_kept_cards,
-    pone_discard_based_on_simulations: Optional[int],
-    pone_select_each_possible_kept_hand: bool,
-    dealer_select_kept_cards,
-    dealer_discard_based_on_simulations: Optional[int],
-    dealer_select_each_possible_kept_hand: bool,
-    pone_select_play,
-    dealer_select_play,
-    hide_pone_hand: bool,
-    hide_dealer_hand: bool,
-    pone_dealt_cards_possible_keeps_cycle,  # type: itertools.cycle[Tuple[Card, ...]]
-    dealer_dealt_cards_possible_keeps_cycle,  # type: itertools.cycle[Tuple[Card, ...]]
+    first_pone_select_kept_cards,
+    first_pone_discard_based_on_simulations: Optional[int],
+    first_pone_select_each_possible_kept_hand: bool,
+    first_dealer_select_kept_cards,
+    first_dealer_discard_based_on_simulations: Optional[int],
+    first_dealer_select_each_possible_kept_hand: bool,
+    first_pone_select_play,
+    first_dealer_select_play,
+    hide_first_pone_hand: bool,
+    hide_first_dealer_hand: bool,
+    first_pone_dealt_cards_possible_keeps_cycle,  # type: itertools.cycle[Tuple[Card, ...]]
+    first_dealer_dealt_cards_possible_keeps_cycle,  # type: itertools.cycle[Tuple[Card, ...]]
     dropped_keeps,
     initial_first_pone_score: Points,
     initial_first_dealer_score: Points,
@@ -634,13 +634,17 @@ def simulate_game(
     for hand in range(maximum_hands_per_game):
         is_first_hand: bool = not hand
         if is_first_hand and (
-            pone_dealt_cards
-            or pone_kept_cards
-            or dealer_dealt_cards
-            or dealer_kept_cards
+            first_pone_dealt_cards
+            or first_pone_kept_cards
+            or first_dealer_dealt_cards
+            or first_dealer_kept_cards
         ):
-            pone_dealt_or_kept_cards = set(pone_dealt_cards + pone_kept_cards)
-            dealer_dealt_or_kept_cards = set(dealer_dealt_cards + dealer_kept_cards)
+            pone_dealt_or_kept_cards = set(
+                first_pone_dealt_cards + first_pone_kept_cards
+            )
+            dealer_dealt_or_kept_cards = set(
+                first_dealer_dealt_cards + first_dealer_kept_cards
+            )
             random_hand_cards = random.sample(
                 deck_less_fixed_cards,
                 2 * DEALT_CARDS_LEN
@@ -668,11 +672,22 @@ def simulate_game(
                 random_hand_cards[0:DEALT_CARDS_LEN],
                 random_hand_cards[DEALT_CARDS_LEN:],
             ]
-        if not hide_pone_hand:
+
+        pone_is_first_pone: bool = hand % 2 == 0
+        pone_is_first_dealer: bool = not pone_is_first_pone
+        dealer_is_first_dealer: bool = pone_is_first_pone
+        dealer_is_first_pone: bool = not dealer_is_first_dealer
+        show_pone_hand: bool = (pone_is_first_pone and not hide_first_pone_hand) or (
+            pone_is_first_dealer and not hide_first_dealer_hand
+        )
+        if show_pone_hand:
             print(
                 f"{get_player_name(0):6} dealt {Hand(dealt_hands[0])} (sorted: {Hand(sorted(dealt_hands[0], reverse=True))})"
             )
-        if not hide_dealer_hand:
+        show_dealer_hand: bool = (
+            dealer_is_first_dealer and not hide_first_dealer_hand
+        ) or (dealer_is_first_pone and not hide_first_pone_hand)
+        if show_dealer_hand:
             print(
                 f"{get_player_name(1):6} dealt {Hand(dealt_hands[1])} (sorted: {Hand(sorted(dealt_hands[1], reverse=True))})"
             )
@@ -680,46 +695,50 @@ def simulate_game(
             set(deck_less_fixed_cards).difference(set(random_hand_cards))
         )
 
-        if is_first_hand and pone_kept_cards:
-            if len(pone_kept_cards) == KEPT_CARDS_LEN:
+        if is_first_hand and first_pone_kept_cards:
+            if len(first_pone_kept_cards) == KEPT_CARDS_LEN:
                 kept_pone_hand = [
-                    card for card in dealt_hands[0] if card in pone_kept_cards
+                    card for card in dealt_hands[0] if card in first_pone_kept_cards
                 ]
             else:
-                kept_pone_hand = pone_select_kept_cards(dealt_hands[0])
-                if not hide_pone_hand:
+                kept_pone_hand = first_pone_select_kept_cards(dealt_hands[0])
+                if not hide_first_pone_hand:
                     print(
                         f"{get_player_name(0):6} keeps {Hand(kept_pone_hand)} (sorted: {Hand(sorted(kept_pone_hand, reverse=True))})"
                     )
                 if not all(
                     pone_kept_card in kept_pone_hand
-                    for pone_kept_card in pone_kept_cards
+                    for pone_kept_card in first_pone_kept_cards
                 ):
-                    if not hide_pone_hand:
+                    if not hide_first_pone_hand:
                         print(
-                            f"...but then {Hand(set(pone_kept_cards).difference(kept_pone_hand))} would not be kept by pone"
+                            f"...but then {Hand(set(first_pone_kept_cards).difference(kept_pone_hand))} would not be kept by pone"
                         )
                     not_all_kept_cards_in_kept_hand = True
                     break
-        elif not (is_first_hand and pone_select_each_possible_kept_hand):
-            if pone_discard_based_on_simulations:
+        elif not (is_first_hand and first_pone_select_each_possible_kept_hand):
+            if first_pone_discard_based_on_simulations:
                 kept_pone_hand = player_select_kept_cards_based_on_simulation(
-                    pone_discard_based_on_simulations,
-                    hide_pone_hand,
+                    first_pone_discard_based_on_simulations,
+                    hide_first_pone_hand,
                     game_score,
                     dealt_hands[0],
                     PONE,
                 )
             else:
-                kept_pone_hand = pone_select_kept_cards(dealt_hands[0])
-        elif is_first_hand and pone_dealt_cards:
+                kept_pone_hand = (
+                    first_pone_select_kept_cards(dealt_hands[0])
+                    if pone_is_first_pone
+                    else first_dealer_select_kept_cards(dealt_hands[0])
+                )
+        elif is_first_hand and first_pone_dealt_cards:
             optional_kept_pone_hand = None
             while (
                 not optional_kept_pone_hand
                 or tuple(optional_kept_pone_hand) in dropped_keeps
             ):
                 optional_kept_pone_hand = list(
-                    next(pone_dealt_cards_possible_keeps_cycle)
+                    next(first_pone_dealt_cards_possible_keeps_cycle)
                 )
             kept_pone_hand = first_kept_pone_hand = optional_kept_pone_hand
         else:
@@ -727,46 +746,50 @@ def simulate_game(
                 "Iterating through all possible kept hands not supported with non-fixed deals."
             )
 
-        if is_first_hand and dealer_kept_cards:
-            if len(dealer_kept_cards) == KEPT_CARDS_LEN:
+        if is_first_hand and first_dealer_kept_cards:
+            if len(first_dealer_kept_cards) == KEPT_CARDS_LEN:
                 kept_dealer_hand = [
-                    card for card in dealt_hands[1] if card in dealer_kept_cards
+                    card for card in dealt_hands[1] if card in first_dealer_kept_cards
                 ]
             else:
-                kept_dealer_hand = dealer_select_kept_cards(dealt_hands[1])
-                if not hide_dealer_hand:
+                kept_dealer_hand = first_dealer_select_kept_cards(dealt_hands[1])
+                if not hide_first_dealer_hand:
                     print(
                         f"{get_player_name(1):6} would keep {Hand(kept_dealer_hand)} (sorted: {Hand(sorted(kept_dealer_hand, reverse=True))})"
                     )
                 if not all(
                     dealer_kept_card in kept_dealer_hand
-                    for dealer_kept_card in dealer_kept_cards
+                    for dealer_kept_card in first_dealer_kept_cards
                 ):
-                    if not hide_dealer_hand:
+                    if not hide_first_dealer_hand:
                         print(
-                            f"...but then {Hand(set(dealer_kept_cards).difference(kept_dealer_hand))} would not be kept by dealer"
+                            f"...but then {Hand(set(first_dealer_kept_cards).difference(kept_dealer_hand))} would not be kept by dealer"
                         )
                     not_all_kept_cards_in_kept_hand = True
                     break
-        elif not (is_first_hand and dealer_select_each_possible_kept_hand):
-            if dealer_discard_based_on_simulations:
+        elif not (is_first_hand and first_dealer_select_each_possible_kept_hand):
+            if first_dealer_discard_based_on_simulations:
                 kept_dealer_hand = player_select_kept_cards_based_on_simulation(
-                    dealer_discard_based_on_simulations,
-                    hide_dealer_hand,
+                    first_dealer_discard_based_on_simulations,
+                    hide_first_dealer_hand,
                     game_score,
                     dealt_hands[1],
                     DEALER,
                 )
             else:
-                kept_dealer_hand = dealer_select_kept_cards(dealt_hands[1])
-        elif is_first_hand and dealer_dealt_cards:
+                kept_dealer_hand = (
+                    first_dealer_select_kept_cards(dealt_hands[1])
+                    if dealer_is_first_dealer
+                    else first_pone_select_kept_cards(dealt_hands[1])
+                )
+        elif is_first_hand and first_dealer_dealt_cards:
             optional_kept_dealer_hand = None
             while (
                 not optional_kept_dealer_hand
                 or tuple(optional_kept_dealer_hand) in dropped_keeps
             ):
                 optional_kept_dealer_hand = list(
-                    next(dealer_dealt_cards_possible_keeps_cycle)
+                    next(first_dealer_dealt_cards_possible_keeps_cycle)
                 )
             kept_dealer_hand = first_kept_dealer_hand = optional_kept_dealer_hand
         else:
@@ -780,13 +803,13 @@ def simulate_game(
         pone_discarded_cards = [
             card for card in dealt_hands[0] if card not in kept_hands[0]
         ]
-        if not hide_pone_hand:
+        if show_pone_hand:
             print(f"{get_player_name(0):6} discarded {Hand(pone_discarded_cards)}")
 
         dealer_discarded_cards = [
             card for card in dealt_hands[1] if card not in kept_hands[1]
         ]
-        if not hide_dealer_hand:
+        if show_dealer_hand:
             print(f"{get_player_name(1):6} discarded {Hand(dealer_discarded_cards)}")
 
         if len(hands[0]) > KEPT_CARDS_LEN or len(hands[1]) > KEPT_CARDS_LEN:
@@ -794,9 +817,9 @@ def simulate_game(
                 f"Kept too many cards in one of {Hand(hands[0])} or {Hand(hands[1])}"
             )
 
-        if not hide_pone_hand:
+        if show_pone_hand:
             print(f"{get_player_name(0):6} kept {Hand(hands[0])}")
-        if not hide_dealer_hand:
+        if show_dealer_hand:
             print(f"{get_player_name(1):6} kept {Hand(hands[1])}")
 
         starter = random.sample(deck_less_dealt_cards, 1)[0]
@@ -850,13 +873,18 @@ def simulate_game(
                 player_to_play_play = legal_play_actions[0]
             else:
                 player_to_play_play = legal_play_actions[
-                    pone_select_play(
+                    first_pone_select_play(
                         legal_play_actions,
                         play_count,
                         get_play_to_31_cards(plays_to_31[-1]),
                     )
-                    if player_to_play == 0
-                    else dealer_select_play(
+                    if (
+                        player_to_play == 0
+                        and pone_is_first_pone
+                        or player_to_play == 1
+                        and dealer_is_first_pone
+                    )
+                    else first_dealer_select_play(
                         legal_play_actions,
                         play_count,
                         get_play_to_31_cards(plays_to_31[-1]),
@@ -1051,12 +1079,24 @@ def simulate_game(
         game_score = add_to_game_score(
             game_score, get_game_player(DEALER, hand), PointsType.CRIB, crib_points
         )
+        if not hide_play_actions:
+            print(
+                f"Game score after {hand+1} hands: {game_score.first_pone_initial + game_score.first_pone_play + game_score.first_pone_hand + game_score.first_pone_crib} - {game_score.first_dealer_initial + game_score.first_dealer_play + game_score.first_dealer_hand + game_score.first_dealer_crib}"
+            )
         if game_over(game_score):
             break
 
-    if pone_dealt_cards and len(pone_dealt_cards) > 1 and not pone_kept_cards:
+    if (
+        first_pone_dealt_cards
+        and len(first_pone_dealt_cards) > 1
+        and not first_pone_kept_cards
+    ):
         kept_cards = tuple(first_kept_pone_hand)
-    elif dealer_dealt_cards and len(dealer_dealt_cards) > 1 and not dealer_kept_cards:
+    elif (
+        first_dealer_dealt_cards
+        and len(first_dealer_dealt_cards) > 1
+        and not first_dealer_kept_cards
+    ):
         kept_cards = tuple(first_kept_dealer_hand)
     else:
         kept_cards = tuple()
@@ -1128,24 +1168,24 @@ def simulate_games(
     maximum_hands_per_game: int,
     initial_first_pone_score: Points,
     initial_first_dealer_score: Points,
-    pone_dealt_cards: List[Card],
-    dealer_dealt_cards: List[Card],
-    pone_kept_cards: List[Card],
-    dealer_kept_cards: List[Card],
+    first_pone_dealt_cards: List[Card],
+    first_dealer_dealt_cards: List[Card],
+    first_pone_kept_cards: List[Card],
+    first_dealer_kept_cards: List[Card],
     initial_play_actions: List[PlayAction],
     players_statistics: Dict[NextAction, Statistics],
     players_statistics_lock,
-    pone_select_kept_cards,
-    pone_discard_based_on_simulations: Optional[int],
-    pone_select_each_possible_kept_hand: bool,
-    dealer_select_kept_cards,
-    dealer_discard_based_on_simulations: Optional[int],
-    dealer_select_each_possible_kept_hand: bool,
-    pone_select_play: PlaySelector,
-    dealer_select_play: PlaySelector,
+    first_pone_select_kept_cards,
+    first_pone_discard_based_on_simulations: Optional[int],
+    first_pone_select_each_possible_kept_hand: bool,
+    first_dealer_select_kept_cards,
+    first_dealer_discard_based_on_simulations: Optional[int],
+    first_dealer_select_each_possible_kept_hand: bool,
+    first_pone_select_play: PlaySelector,
+    first_dealer_select_play: PlaySelector,
     select_each_post_initial_play: bool,
-    hide_pone_hand,
-    hide_dealer_hand,
+    hide_first_pone_hand,
+    hide_first_dealer_hand,
     hide_play_actions: bool,
     games_per_update: int,
     show_statistics_updates: bool,
@@ -1157,9 +1197,9 @@ def simulate_games(
         if show_calc_cache_usage_stats:
             expected_random_opponent_discard_crib_points_cache.stats()
 
-        pone_kept_cards = list(
+        first_pone_kept_cards = list(
             set(
-                pone_kept_cards
+                first_pone_kept_cards
                 + [
                     initial_play_action
                     for initial_play_action in initial_play_actions[0::2]
@@ -1167,9 +1207,9 @@ def simulate_games(
                 ]
             )
         )
-        dealer_kept_cards = list(
+        first_dealer_kept_cards = list(
             set(
-                dealer_kept_cards
+                first_dealer_kept_cards
                 + [
                     initial_play_action
                     for initial_play_action in initial_play_actions[1::2]
@@ -1183,10 +1223,10 @@ def simulate_games(
             for card in DECK_SET
             if card
             not in itertools.chain(
-                pone_dealt_cards,
-                pone_kept_cards,
-                dealer_dealt_cards,
-                dealer_kept_cards,
+                first_pone_dealt_cards,
+                first_pone_kept_cards,
+                first_dealer_dealt_cards,
+                first_dealer_kept_cards,
             )
         ]
 
@@ -1213,26 +1253,26 @@ def simulate_games(
         ] = {}
 
         pone_dealt_cards_possible_keeps = list(
-            itertools.combinations(pone_dealt_cards, KEPT_CARDS_LEN)
+            itertools.combinations(first_pone_dealt_cards, KEPT_CARDS_LEN)
         )
         pone_dealt_cards_possible_keeps_cycle = itertools.cycle(
             pone_dealt_cards_possible_keeps
         )
         dealer_dealt_cards_possible_keeps = list(
-            itertools.combinations(dealer_dealt_cards, KEPT_CARDS_LEN)
+            itertools.combinations(first_dealer_dealt_cards, KEPT_CARDS_LEN)
         )
         dealer_dealt_cards_possible_keeps_cycle = itertools.cycle(
             dealer_dealt_cards_possible_keeps
         )
         dropped_keeps: Set[Tuple[Card, ...]] = set()
         pone_kept_cards_possible_plays_cycle = (
-            itertools.cycle(pone_kept_cards)
-            if pone_kept_cards and select_each_post_initial_play
+            itertools.cycle(first_pone_kept_cards)
+            if first_pone_kept_cards and select_each_post_initial_play
             else None
         )
         dealer_kept_cards_possible_plays_cycle = (
-            itertools.cycle(dealer_kept_cards)
-            if dealer_kept_cards and select_each_post_initial_play
+            itertools.cycle(first_dealer_kept_cards)
+            if first_dealer_kept_cards and select_each_post_initial_play
             else None
         )
         dropped_initial_plays = set()
@@ -1264,22 +1304,22 @@ def simulate_games(
                         post_initial_play = next(dealer_kept_cards_possible_plays_cycle)
 
                 game_simulation_result = simulate_game(
-                    pone_dealt_cards,
-                    dealer_dealt_cards,
+                    first_pone_dealt_cards,
+                    first_dealer_dealt_cards,
                     deck_less_fixed_cards,
-                    pone_kept_cards,
-                    dealer_kept_cards,
+                    first_pone_kept_cards,
+                    first_dealer_kept_cards,
                     maximum_hands_per_game,
-                    pone_select_kept_cards,
-                    pone_discard_based_on_simulations,
-                    pone_select_each_possible_kept_hand,
-                    dealer_select_kept_cards,
-                    dealer_discard_based_on_simulations,
-                    dealer_select_each_possible_kept_hand,
-                    pone_select_play,
-                    dealer_select_play,
-                    hide_pone_hand,
-                    hide_dealer_hand,
+                    first_pone_select_kept_cards,
+                    first_pone_discard_based_on_simulations,
+                    first_pone_select_each_possible_kept_hand,
+                    first_dealer_select_kept_cards,
+                    first_dealer_discard_based_on_simulations,
+                    first_dealer_select_each_possible_kept_hand,
+                    first_pone_select_play,
+                    first_dealer_select_play,
+                    hide_first_pone_hand,
+                    hide_first_dealer_hand,
                     pone_dealt_cards_possible_keeps_cycle,
                     dealer_dealt_cards_possible_keeps_cycle,
                     dropped_keeps,
@@ -1560,8 +1600,8 @@ def simulate_games(
                         item[1]["first_pone_minus_first_dealer_total_points"].mean(),
                     ),
                     reverse=bool(
-                        (len(pone_dealt_cards) < len(dealer_dealt_cards))
-                        or (len(pone_kept_cards) < len(dealer_kept_cards))
+                        (len(first_pone_dealt_cards) < len(first_dealer_dealt_cards))
+                        or (len(first_pone_kept_cards) < len(first_dealer_kept_cards))
                     ),
                 )
                 for (
@@ -1572,7 +1612,7 @@ def simulate_games(
                         keep_stats_len = len(keep_stats["first_pone_total_points"])
                         if keep:
                             print(
-                                f"{Hand(keep)} - {Hand(set(pone_dealt_cards or dealer_dealt_cards) - set(keep))} (n={keep_stats_len})",
+                                f"{Hand(keep)} - {Hand(set(first_pone_dealt_cards or first_dealer_dealt_cards) - set(keep))} (n={keep_stats_len})",
                                 end="",
                             )
                         if post_initial:
@@ -1736,10 +1776,12 @@ def simulate_games(
                     )
                     break
                 elif (
-                    pone_kept_cards
+                    first_pone_kept_cards
                     and select_each_post_initial_play
                     and post_initial_player == PONE
-                    and len(set(pone_kept_cards).difference(set(initial_play_actions)))
+                    and len(
+                        set(first_pone_kept_cards).difference(set(initial_play_actions))
+                    )
                     - len(dropped_initial_plays)
                     <= 1
                 ):
@@ -1748,11 +1790,13 @@ def simulate_games(
                     )
                     break
                 elif (
-                    dealer_kept_cards
+                    first_dealer_kept_cards
                     and select_each_post_initial_play
                     and post_initial_player == DEALER
                     and len(
-                        set(dealer_kept_cards).difference(set(initial_play_actions))
+                        set(first_dealer_kept_cards).difference(
+                            set(initial_play_actions)
+                        )
                     )
                     - len(dropped_initial_plays)
                     <= 1
@@ -2530,213 +2574,213 @@ if __name__ == "__main__":
         default=1,
     )
 
-    pone_discard_algorithm_group = parser.add_mutually_exclusive_group()
-    pone_discard_algorithm_group.add_argument(
-        "--pone-keep-random",
+    first_pone_discard_algorithm_group = parser.add_mutually_exclusive_group()
+    first_pone_discard_algorithm_group.add_argument(
+        "--first-pone-keep-random",
         action="store_true",
-        help="have pone discard randomly",
+        help="have first pone discard randomly",
     )
-    pone_discard_algorithm_group.add_argument(
-        "--pone-keep-first-four",
+    first_pone_discard_algorithm_group.add_argument(
+        "--first-pone-keep-first-four",
         action="store_true",
-        help="have pone keep the first four cards dealt to pone",
+        help="have first pone keep the first four cards dealt to pone",
     )
-    pone_discard_algorithm_group.add_argument(
-        "--pone-maximize-pre-cut-hand-points-ignoring-suit",
+    first_pone_discard_algorithm_group.add_argument(
+        "--first-pone-maximize-pre-cut-hand-points-ignoring-suit",
         action="store_true",
-        help="have pone keep the cards which maximize points in hand before the cut ignoring suit",
+        help="have first pone keep the cards which maximize points in hand before the cut ignoring suit",
     )
-    pone_discard_algorithm_group.add_argument(
-        "--pone-maximize-pre-cut-hand-points",
+    first_pone_discard_algorithm_group.add_argument(
+        "--first-pone-maximize-pre-cut-hand-points",
         action="store_true",
-        help="have pone keep the cards which maximize points in hand before the cut",
+        help="have first pone keep the cards which maximize points in hand before the cut",
     )
-    pone_discard_algorithm_group.add_argument(
-        "--pone-maximize-post-cut-hand-points-ignoring-suit",
+    first_pone_discard_algorithm_group.add_argument(
+        "--first-pone-maximize-post-cut-hand-points-ignoring-suit",
         action="store_true",
-        help="have pone keep the cards which maximize points in hand after the cut ignoring suit",
+        help="have first pone keep the cards which maximize points in hand after the cut ignoring suit",
     )
-    pone_discard_algorithm_group.add_argument(
-        "--pone-maximize-post-cut-hand-points",
+    first_pone_discard_algorithm_group.add_argument(
+        "--first-pone-maximize-post-cut-hand-points",
         action="store_true",
-        help="have pone keep the cards which maximize points in hand after the cut",
+        help="have first pone keep the cards which maximize points in hand after the cut",
     )
-    pone_discard_algorithm_group.add_argument(
-        "--pone-maximize-post-cut-hand-minus-crib-points-ignoring-suit",
+    first_pone_discard_algorithm_group.add_argument(
+        "--first-pone-maximize-post-cut-hand-minus-crib-points-ignoring-suit",
         action="store_true",
-        help="have pone keep the cards which maximize points in hand minus crib ignoring suit after the cut",
+        help="have first pone keep the cards which maximize points in hand minus crib ignoring suit after the cut",
     )
-    pone_discard_algorithm_group.add_argument(
-        "--pone-maximize-post-cut-hand-minus-crib-points",
+    first_pone_discard_algorithm_group.add_argument(
+        "--first-pone-maximize-post-cut-hand-minus-crib-points",
         action="store_true",
-        help="have pone keep the cards which maximize points in hand minus crib after the cut",
+        help="have first pone keep the cards which maximize points in hand minus crib after the cut",
     )
 
     parser.add_argument(
-        "--pone-discard-based-on-simulations",
-        help="have pone keep the cards which on average maximize pone minus dealer game otherwise scored points in simulated single hands",
+        "--first-pone-discard-based-on-simulations",
+        help="have first pone keep the cards which on average maximize pone minus dealer game otherwise scored points in simulated single hands",
         type=int,
     )
 
     parser.add_argument(
-        "--pone-select-each-possible-kept-hand",
+        "--first-pone-select-each-possible-kept-hand",
         action="store_true",
-        help="have pone keep each possible kept hand",
+        help="have first pone keep each possible kept hand",
     )
 
-    dealer_discard_algorithm_group = parser.add_mutually_exclusive_group()
-    dealer_discard_algorithm_group.add_argument(
-        "--dealer-keep-random",
+    first_dealer_discard_algorithm_group = parser.add_mutually_exclusive_group()
+    first_dealer_discard_algorithm_group.add_argument(
+        "--first-dealer-keep-random",
         action="store_true",
-        help="have dealer discard randomly",
+        help="have first dealer discard randomly",
     )
-    dealer_discard_algorithm_group.add_argument(
-        "--dealer-keep-first-four",
+    first_dealer_discard_algorithm_group.add_argument(
+        "--first-dealer-keep-first-four",
         action="store_true",
-        help="have dealer keep the first four cards dealt to dealer",
+        help="have first dealer keep the first four cards dealt to dealer",
     )
-    dealer_discard_algorithm_group.add_argument(
-        "--dealer-maximize-pre-cut-hand-points-ignoring-suit",
+    first_dealer_discard_algorithm_group.add_argument(
+        "--first-dealer-maximize-pre-cut-hand-points-ignoring-suit",
         action="store_true",
-        help="have dealer keep the cards which maximize points in hand before the cut ignoring suit",
+        help="have first dealer keep the cards which maximize points in hand before the cut ignoring suit",
     )
-    dealer_discard_algorithm_group.add_argument(
-        "--dealer-maximize-pre-cut-hand-points",
+    first_dealer_discard_algorithm_group.add_argument(
+        "--first-dealer-maximize-pre-cut-hand-points",
         action="store_true",
-        help="have dealer keep the cards which maximize points in hand before the cut",
+        help="have first dealer keep the cards which maximize points in hand before the cut",
     )
-    dealer_discard_algorithm_group.add_argument(
-        "--dealer-maximize-post-cut-hand-points-ignoring-suit",
+    first_dealer_discard_algorithm_group.add_argument(
+        "--first-dealer-maximize-post-cut-hand-points-ignoring-suit",
         action="store_true",
-        help="have dealer keep the cards which maximize points in hand after the cut ignoring suit",
+        help="have first dealer keep the cards which maximize points in hand after the cut ignoring suit",
     )
-    dealer_discard_algorithm_group.add_argument(
-        "--dealer-maximize-post-cut-hand-points",
+    first_dealer_discard_algorithm_group.add_argument(
+        "--first-dealer-maximize-post-cut-hand-points",
         action="store_true",
-        help="have dealer keep the cards which maximize points in hand after the cut",
+        help="have first dealer keep the cards which maximize points in hand after the cut",
     )
-    dealer_discard_algorithm_group.add_argument(
-        "--dealer-maximize-post-cut-hand-plus-crib-points-ignoring-suit",
+    first_dealer_discard_algorithm_group.add_argument(
+        "--first-dealer-maximize-post-cut-hand-plus-crib-points-ignoring-suit",
         action="store_true",
-        help="have dealer keep the cards which maximize points in hand plus crib after the cut ignoring suit",
+        help="have first dealer keep the cards which maximize points in hand plus crib after the cut ignoring suit",
     )
-    dealer_discard_algorithm_group.add_argument(
-        "--dealer-maximize-post-cut-hand-plus-crib-points",
+    first_dealer_discard_algorithm_group.add_argument(
+        "--first-dealer-maximize-post-cut-hand-plus-crib-points",
         action="store_true",
-        help="have dealer keep the cards which maximize points in hand plus crib after the cut",
+        help="have first dealer keep the cards which maximize points in hand plus crib after the cut",
     )
 
     parser.add_argument(
-        "--dealer-discard-based-on-simulations",
-        help="have dealer keep the cards which on average maximize dealer minus pone game otherwise scored points in simulated single hands",
+        "--first-dealer-discard-based-on-simulations",
+        help="have first dealer keep the cards which on average maximize dealer minus pone game otherwise scored points in simulated single hands",
         type=int,
     )
 
     parser.add_argument(
-        "--dealer-select-each-possible-kept-hand",
+        "--first-dealer-select-each-possible-kept-hand",
         action="store_true",
-        help="have dealer keep each possible kept hand",
+        help="have first dealer keep each possible kept hand",
     )
 
-    pone_play_algorithm_group = parser.add_mutually_exclusive_group()
-    pone_play_algorithm_group.add_argument(
-        "--pone-play-user-entered",
+    first_pone_play_algorithm_group = parser.add_mutually_exclusive_group()
+    first_pone_play_algorithm_group.add_argument(
+        "--first-pone-play-user-entered",
         action="store_true",
-        help="prompt user to enter pone plays",
+        help="prompt user to enter first pone plays",
     )
-    pone_play_algorithm_group.add_argument(
-        "--pone-play-first",
+    first_pone_play_algorithm_group.add_argument(
+        "--first-pone-play-first",
         action="store_true",
-        help="have pone play first legal card from hand",
+        help="have first pone play first legal card from hand",
     )
-    pone_play_algorithm_group.add_argument(
-        "--pone-play-random",
+    first_pone_play_algorithm_group.add_argument(
+        "--first-pone-play-random",
         action="store_true",
-        help="have pone play random legal card from hand",
+        help="have first pone play random legal card from hand",
     )
-    pone_play_algorithm_group.add_argument(
-        "--pone-play-highest-count",
+    first_pone_play_algorithm_group.add_argument(
+        "--first-pone-play-highest-count",
         action="store_true",
-        help="have pone play highest count legal card from hand",
+        help="have first pone play highest count legal card from hand",
     )
-    pone_play_algorithm_group.add_argument(
-        "--pone-play-15-or-31-else-highest-count",
+    first_pone_play_algorithm_group.add_argument(
+        "--first-pone-play-15-or-31-else-highest-count",
         action="store_true",
-        help="have pone play 15-2 or 31 for 2 otherwise the highest count legal card from hand",
+        help="have first pone play 15-2 or 31 for 2 otherwise the highest count legal card from hand",
     )
-    pone_play_algorithm_group.add_argument(
-        "--pone-play-pair-else-15-or-31-else-highest-count",
-        action="store_true",
-    )
-    pone_play_algorithm_group.add_argument(
-        "--pone-play-15-else-pair-else-31-else-highest-count",
+    first_pone_play_algorithm_group.add_argument(
+        "--first-pone-play-pair-else-15-or-31-else-highest-count",
         action="store_true",
     )
-    pone_play_algorithm_group.add_argument(
-        "--pone-play-run-else-15-else-pair-else-31-else-highest-count",
+    first_pone_play_algorithm_group.add_argument(
+        "--first-pone-play-15-else-pair-else-31-else-highest-count",
         action="store_true",
     )
-    pone_play_algorithm_group.add_argument(
-        "--pone-play-low-lead-else-run-else-15-else-pair-else-31-else-highest-count",
+    first_pone_play_algorithm_group.add_argument(
+        "--first-pone-play-run-else-15-else-pair-else-31-else-highest-count",
         action="store_true",
     )
-    pone_play_algorithm_group.add_argument(
-        "--pone-play-low-lead-else-run-else-15-else-pair-else-31-else-16-to-20-count-else-highest-count",
+    first_pone_play_algorithm_group.add_argument(
+        "--first-pone-play-low-lead-else-run-else-15-else-pair-else-31-else-highest-count",
         action="store_true",
     )
-    pone_play_algorithm_group.add_argument(
-        "--pone-play-low-lead-else-pairs-royale-else-run-else-15-else-pair-else-31-else-16-to-20-count-else-highest-count",
+    first_pone_play_algorithm_group.add_argument(
+        "--first-pone-play-low-lead-else-run-else-15-else-pair-else-31-else-16-to-20-count-else-highest-count",
+        action="store_true",
+    )
+    first_pone_play_algorithm_group.add_argument(
+        "--first-pone-play-low-lead-else-pairs-royale-else-run-else-15-else-pair-else-31-else-16-to-20-count-else-highest-count",
         action="store_true",
     )
 
-    dealer_play_algorithm_group = parser.add_mutually_exclusive_group()
-    dealer_play_algorithm_group.add_argument(
-        "--dealer-play-user-entered",
+    first_dealer_play_algorithm_group = parser.add_mutually_exclusive_group()
+    first_dealer_play_algorithm_group.add_argument(
+        "--first-dealer-play-user-entered",
         action="store_true",
-        help="prompt user to enter dealer plays",
+        help="prompt user to enter first dealer plays",
     )
-    dealer_play_algorithm_group.add_argument(
-        "--dealer-play-first",
+    first_dealer_play_algorithm_group.add_argument(
+        "--first-dealer-play-first",
         action="store_true",
-        help="have dealer play first legal card from hand",
+        help="have first dealer play first legal card from hand",
     )
-    dealer_play_algorithm_group.add_argument(
-        "--dealer-play-random",
+    first_dealer_play_algorithm_group.add_argument(
+        "--first-dealer-play-random",
         action="store_true",
-        help="have dealer play random legal card from hand",
+        help="have first dealer play random legal card from hand",
     )
-    dealer_play_algorithm_group.add_argument(
-        "--dealer-play-highest-count",
+    first_dealer_play_algorithm_group.add_argument(
+        "--first-dealer-play-highest-count",
         action="store_true",
-        help="have dealer play highest count legal card from hand",
+        help="have first dealer play highest count legal card from hand",
     )
-    dealer_play_algorithm_group.add_argument(
-        "--dealer-play-15-or-31-else-highest-count",
+    first_dealer_play_algorithm_group.add_argument(
+        "--first-dealer-play-15-or-31-else-highest-count",
         action="store_true",
-        help="have dealer play 15-2 or 31 for 2 otherwise the highest count legal card from hand",
+        help="have first dealer play 15-2 or 31 for 2 otherwise the highest count legal card from hand",
     )
-    dealer_play_algorithm_group.add_argument(
-        "--dealer-play-pair-else-15-or-31-else-highest-count",
-        action="store_true",
-    )
-    dealer_play_algorithm_group.add_argument(
-        "--dealer-play-15-else-pair-else-31-else-highest-count",
+    first_dealer_play_algorithm_group.add_argument(
+        "--first-dealer-play-pair-else-15-or-31-else-highest-count",
         action="store_true",
     )
-    dealer_play_algorithm_group.add_argument(
-        "--dealer-play-run-else-15-else-pair-else-31-else-highest-count",
+    first_dealer_play_algorithm_group.add_argument(
+        "--first-dealer-play-15-else-pair-else-31-else-highest-count",
         action="store_true",
     )
-    dealer_play_algorithm_group.add_argument(
-        "--dealer-play-low-lead-else-run-else-15-else-pair-else-31-else-highest-count",
+    first_dealer_play_algorithm_group.add_argument(
+        "--first-dealer-play-run-else-15-else-pair-else-31-else-highest-count",
         action="store_true",
     )
-    dealer_play_algorithm_group.add_argument(
-        "--dealer-play-low-lead-else-run-else-15-else-pair-else-31-else-16-to-20-count-else-highest-count",
+    first_dealer_play_algorithm_group.add_argument(
+        "--first-dealer-play-low-lead-else-run-else-15-else-pair-else-31-else-highest-count",
         action="store_true",
     )
-    dealer_play_algorithm_group.add_argument(
-        "--dealer-play-low-lead-else-pairs-royale-else-run-else-15-else-pair-else-31-else-16-to-20-count-else-highest-count",
+    first_dealer_play_algorithm_group.add_argument(
+        "--first-dealer-play-low-lead-else-run-else-15-else-pair-else-31-else-16-to-20-count-else-highest-count",
+        action="store_true",
+    )
+    first_dealer_play_algorithm_group.add_argument(
+        "--first-dealer-play-low-lead-else-pairs-royale-else-run-else-15-else-pair-else-31-else-16-to-20-count-else-highest-count",
         action="store_true",
     )
 
@@ -2778,14 +2822,14 @@ if __name__ == "__main__":
         help="hide the workers startup details message",
     )
     parser.add_argument(
-        "--hide-pone-hand",
+        "--hide-first-pone-hand",
         action="store_true",
-        help="suppress output of pone dealt hand and discard",
+        help="suppress output of first pone dealt hand and discard",
     )
     parser.add_argument(
-        "--hide-dealer-hand",
+        "--hide-first-dealer-hand",
         action="store_true",
-        help="suppress output of dealer hand and discard",
+        help="suppress output of first dealer hand and discard",
     )
     parser.add_argument(
         "--hide-play-actions",
@@ -2811,21 +2855,21 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--pone-dealt-cards",
-        help="cards dealt to pone",
+        "--first-pone-dealt-cards",
+        help="cards dealt to first pone",
     )
     parser.add_argument(
-        "--dealer-dealt-cards",
-        help="cards dealt to dealer",
+        "--first-dealer-dealt-cards",
+        help="cards dealt to first dealer",
     )
 
     parser.add_argument(
-        "--pone-kept-cards",
-        help="cards kept by pone",
+        "--first-pone-kept-cards",
+        help="cards kept by first pone",
     )
     parser.add_argument(
-        "--dealer-kept-cards",
-        help="cards kept by dealer",
+        "--first-dealer-kept-cards",
+        help="cards kept by first dealer",
     )
 
     parser.add_argument("--initial-pone-score")
@@ -2837,13 +2881,18 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    [pone_dealt_cards, dealer_dealt_cards, pone_kept_cards, dealer_kept_cards,] = [
+    [
+        first_pone_dealt_cards,
+        first_dealer_dealt_cards,
+        first_pone_kept_cards,
+        first_dealer_kept_cards,
+    ] = [
         parse_cards(specifier)
         for specifier in [
-            args.pone_dealt_cards,
-            args.dealer_dealt_cards,
-            args.pone_kept_cards,
-            args.dealer_kept_cards,
+            args.first_pone_dealt_cards,
+            args.first_dealer_dealt_cards,
+            args.first_pone_kept_cards,
+            args.first_dealer_kept_cards,
         ]
     ]
     initial_play_actions: List[PlayAction] = parse_play_actions(
@@ -2875,109 +2924,115 @@ if __name__ == "__main__":
         print()
 
     # TODO: eliminate snake case to kebab case args names duplication from code
-    if args.pone_keep_random:
-        pone_select_kept_cards = keep_random
-    elif args.pone_keep_first_four:
-        pone_select_kept_cards = keep_first_four
-    elif args.pone_maximize_pre_cut_hand_points_ignoring_suit:
-        pone_select_kept_cards = keep_max_pre_cut_hand_points_ignoring_suit
-    elif args.pone_maximize_pre_cut_hand_points:
-        pone_select_kept_cards = keep_max_pre_cut_hand_points
-    elif args.pone_maximize_post_cut_hand_points_ignoring_suit:
-        pone_select_kept_cards = keep_max_post_cut_hand_points_ignoring_suit
-    elif args.pone_maximize_post_cut_hand_points:
-        pone_select_kept_cards = keep_max_post_cut_hand_points
-    elif args.pone_maximize_post_cut_hand_minus_crib_points_ignoring_suit:
-        pone_select_kept_cards = keep_max_post_cut_hand_minus_crib_points_ignoring_suit
-    elif args.pone_maximize_post_cut_hand_minus_crib_points:
-        pone_select_kept_cards = keep_max_post_cut_hand_minus_crib_points
+    if args.first_pone_keep_random:
+        first_pone_select_kept_cards = keep_random
+    elif args.first_pone_keep_first_four:
+        first_pone_select_kept_cards = keep_first_four
+    elif args.first_pone_maximize_pre_cut_hand_points_ignoring_suit:
+        first_pone_select_kept_cards = keep_max_pre_cut_hand_points_ignoring_suit
+    elif args.first_pone_maximize_pre_cut_hand_points:
+        first_pone_select_kept_cards = keep_max_pre_cut_hand_points
+    elif args.first_pone_maximize_post_cut_hand_points_ignoring_suit:
+        first_pone_select_kept_cards = keep_max_post_cut_hand_points_ignoring_suit
+    elif args.first_pone_maximize_post_cut_hand_points:
+        first_pone_select_kept_cards = keep_max_post_cut_hand_points
+    elif args.first_pone_maximize_post_cut_hand_minus_crib_points_ignoring_suit:
+        first_pone_select_kept_cards = (
+            keep_max_post_cut_hand_minus_crib_points_ignoring_suit
+        )
+    elif args.first_pone_maximize_post_cut_hand_minus_crib_points:
+        first_pone_select_kept_cards = keep_max_post_cut_hand_minus_crib_points
     else:
-        pone_select_kept_cards = DEFAULT_SELECT_PONE_KEPT_CARDS
+        first_pone_select_kept_cards = DEFAULT_SELECT_PONE_KEPT_CARDS
 
-    if args.dealer_keep_random:
-        dealer_select_kept_cards = keep_random
-    elif args.dealer_keep_first_four:
-        dealer_select_kept_cards = keep_first_four
-    elif args.dealer_maximize_pre_cut_hand_points_ignoring_suit:
-        dealer_select_kept_cards = keep_max_pre_cut_hand_points_ignoring_suit
-    elif args.dealer_maximize_pre_cut_hand_points:
-        dealer_select_kept_cards = keep_max_pre_cut_hand_points
-    elif args.dealer_maximize_post_cut_hand_points_ignoring_suit:
-        dealer_select_kept_cards = keep_max_post_cut_hand_points_ignoring_suit
-    elif args.dealer_maximize_post_cut_hand_points:
-        dealer_select_kept_cards = keep_max_post_cut_hand_points
-    elif args.dealer_maximize_post_cut_hand_plus_crib_points_ignoring_suit:
-        dealer_select_kept_cards = keep_max_post_cut_hand_plus_crib_points_ignoring_suit
-    elif args.dealer_maximize_post_cut_hand_plus_crib_points:
-        dealer_select_kept_cards = keep_max_post_cut_hand_plus_crib_points
+    if args.first_dealer_keep_random:
+        first_dealer_select_kept_cards = keep_random
+    elif args.first_dealer_keep_first_four:
+        first_dealer_select_kept_cards = keep_first_four
+    elif args.first_dealer_maximize_pre_cut_hand_points_ignoring_suit:
+        first_dealer_select_kept_cards = keep_max_pre_cut_hand_points_ignoring_suit
+    elif args.first_dealer_maximize_pre_cut_hand_points:
+        first_dealer_select_kept_cards = keep_max_pre_cut_hand_points
+    elif args.first_dealer_maximize_post_cut_hand_points_ignoring_suit:
+        first_dealer_select_kept_cards = keep_max_post_cut_hand_points_ignoring_suit
+    elif args.first_dealer_maximize_post_cut_hand_points:
+        first_dealer_select_kept_cards = keep_max_post_cut_hand_points
+    elif args.first_dealer_maximize_post_cut_hand_plus_crib_points_ignoring_suit:
+        first_dealer_select_kept_cards = (
+            keep_max_post_cut_hand_plus_crib_points_ignoring_suit
+        )
+    elif args.first_dealer_maximize_post_cut_hand_plus_crib_points:
+        first_dealer_select_kept_cards = keep_max_post_cut_hand_plus_crib_points
     else:
-        dealer_select_kept_cards = DEFAULT_SELECT_DEALER_KEPT_CARDS
+        first_dealer_select_kept_cards = DEFAULT_SELECT_DEALER_KEPT_CARDS
 
-    pone_select_play: PlaySelector
-    if args.pone_play_user_entered:
-        pone_select_play = play_user_selected
-    elif args.pone_play_first:
-        pone_select_play = play_first
-    elif args.pone_play_random:
-        pone_select_play = play_random
-    elif args.pone_play_highest_count:
-        pone_select_play = play_highest_count
-    elif args.pone_play_15_or_31_else_highest_count:
-        pone_select_play = play_15_or_31_else_highest_count
-    elif args.pone_play_pair_else_15_or_31_else_highest_count:
-        pone_select_play = play_pair_else_15_or_31_else_highest_count
-    elif args.pone_play_15_else_pair_else_31_else_highest_count:
-        pone_select_play = play_15_else_pair_else_31_else_highest_count
-    elif args.pone_play_run_else_15_else_pair_else_31_else_highest_count:
-        pone_select_play = play_run_else_15_else_pair_else_31_else_highest_count
-    elif args.pone_play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count:
-        pone_select_play = (
+    first_pone_select_play: PlaySelector
+    if args.first_pone_play_user_entered:
+        first_pone_select_play = play_user_selected
+    elif args.first_pone_play_first:
+        first_pone_select_play = play_first
+    elif args.first_pone_play_random:
+        first_pone_select_play = play_random
+    elif args.first_pone_play_highest_count:
+        first_pone_select_play = play_highest_count
+    elif args.first_pone_play_15_or_31_else_highest_count:
+        first_pone_select_play = play_15_or_31_else_highest_count
+    elif args.first_pone_play_pair_else_15_or_31_else_highest_count:
+        first_pone_select_play = play_pair_else_15_or_31_else_highest_count
+    elif args.first_pone_play_15_else_pair_else_31_else_highest_count:
+        first_pone_select_play = play_15_else_pair_else_31_else_highest_count
+    elif args.first_pone_play_run_else_15_else_pair_else_31_else_highest_count:
+        first_pone_select_play = play_run_else_15_else_pair_else_31_else_highest_count
+    elif (
+        args.first_pone_play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count
+    ):
+        first_pone_select_play = (
             play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count
         )
     elif (
-        args.pone_play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+        args.first_pone_play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     ):
-        pone_select_play = play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+        first_pone_select_play = play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     elif (
-        args.pone_play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+        args.first_pone_play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     ):
-        pone_select_play = play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+        first_pone_select_play = play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     else:
-        pone_select_play = DEFAULT_SELECT_PLAY
+        first_pone_select_play = DEFAULT_SELECT_PLAY
 
     dealer_play_selector: PlaySelector
-    if args.dealer_play_user_entered:
-        dealer_select_play = play_user_selected
-    elif args.dealer_play_first:
-        dealer_select_play = play_first
-    elif args.dealer_play_random:
-        dealer_select_play = play_random
-    elif args.dealer_play_highest_count:
-        dealer_select_play = play_highest_count
-    elif args.dealer_play_15_or_31_else_highest_count:
-        dealer_select_play = play_15_or_31_else_highest_count
-    elif args.dealer_play_pair_else_15_or_31_else_highest_count:
-        dealer_select_play = play_pair_else_15_or_31_else_highest_count
-    elif args.dealer_play_15_else_pair_else_31_else_highest_count:
-        dealer_select_play = play_15_else_pair_else_31_else_highest_count
-    elif args.dealer_play_run_else_15_else_pair_else_31_else_highest_count:
-        dealer_select_play = play_run_else_15_else_pair_else_31_else_highest_count
+    if args.first_dealer_play_user_entered:
+        first_dealer_select_play = play_user_selected
+    elif args.first_dealer_play_first:
+        first_dealer_select_play = play_first
+    elif args.first_dealer_play_random:
+        first_dealer_select_play = play_random
+    elif args.first_dealer_play_highest_count:
+        first_dealer_select_play = play_highest_count
+    elif args.first_dealer_play_15_or_31_else_highest_count:
+        first_dealer_select_play = play_15_or_31_else_highest_count
+    elif args.first_dealer_play_pair_else_15_or_31_else_highest_count:
+        first_dealer_select_play = play_pair_else_15_or_31_else_highest_count
+    elif args.first_dealer_play_15_else_pair_else_31_else_highest_count:
+        first_dealer_select_play = play_15_else_pair_else_31_else_highest_count
+    elif args.first_dealer_play_run_else_15_else_pair_else_31_else_highest_count:
+        first_dealer_select_play = play_run_else_15_else_pair_else_31_else_highest_count
     elif (
-        args.dealer_play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count
+        args.first_dealer_play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count
     ):
-        dealer_select_play = (
+        first_dealer_select_play = (
             play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count
         )
     elif (
-        args.dealer_play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+        args.first_dealer_play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     ):
-        dealer_select_play = play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+        first_dealer_select_play = play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     elif (
-        args.dealer_play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+        args.first_dealer_play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     ):
-        dealer_select_play = play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+        first_dealer_select_play = play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     else:
-        dealer_select_play = DEFAULT_SELECT_PLAY
+        first_dealer_select_play = DEFAULT_SELECT_PLAY
 
     initial_pone_score = Points(
         int(args.initial_pone_score) if args.initial_pone_score else 0
@@ -2993,24 +3048,24 @@ if __name__ == "__main__":
         maximum_hands_per_game,
         initial_pone_score,
         initial_dealer_score,
-        pone_dealt_cards,
-        dealer_dealt_cards,
-        pone_kept_cards,
-        dealer_kept_cards,
+        first_pone_dealt_cards,
+        first_dealer_dealt_cards,
+        first_pone_kept_cards,
+        first_dealer_kept_cards,
         initial_play_actions,
         players_statistics,
         players_statistics_lock,
-        pone_select_kept_cards,
-        args.pone_discard_based_on_simulations,
-        args.pone_select_each_possible_kept_hand,
-        dealer_select_kept_cards,
-        args.dealer_discard_based_on_simulations,
-        args.dealer_select_each_possible_kept_hand,
-        pone_select_play,
-        dealer_select_play,
+        first_pone_select_kept_cards,
+        args.first_pone_discard_based_on_simulations,
+        args.first_pone_select_each_possible_kept_hand,
+        first_dealer_select_kept_cards,
+        args.first_dealer_discard_based_on_simulations,
+        args.first_dealer_select_each_possible_kept_hand,
+        first_pone_select_play,
+        first_dealer_select_play,
         args.select_each_post_initial_play,
-        args.hide_pone_hand,
-        args.hide_dealer_hand,
+        args.hide_first_pone_hand,
+        args.hide_first_dealer_hand,
         bool(args.hide_play_actions),
         args.games_per_update,
         True,
