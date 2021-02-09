@@ -1854,6 +1854,22 @@ def simulate_games(
         sys.exit(0)
 
 
+# TODO: change return type from Sequence[Card] to Tuple[Card, Card] for increased type checking precision
+def keep_user_selected(dealt_cards: Sequence[Card]) -> Sequence[Card]:
+    print(f"Dealt hand is {Hand(dealt_cards)}.")
+    selected_discards: Sequence[Card] = []
+    while len(selected_discards) < DEALT_CARDS_LEN - KEPT_CARDS_LEN:
+        selected_discards_input: str = input("Enter the cards to discard: ")
+        try:
+            selected_discards = parse_cards(selected_discards_input)
+        except ValueError:
+            print(f"{selected_discards_input} is not a valid selected discard")
+    assert selected_discards is not None
+    return [
+        dealt_card for dealt_card in dealt_cards if dealt_card not in selected_discards
+    ]
+
+
 def keep_random(dealt_cards):
     return random.sample(dealt_cards, KEPT_CARDS_LEN)
 
@@ -2621,6 +2637,11 @@ if __name__ == "__main__":
 
     first_pone_discard_algorithm_group = parser.add_mutually_exclusive_group()
     first_pone_discard_algorithm_group.add_argument(
+        "--first-pone-keep-user-selected",
+        action="store_true",
+        help="have first pone discard based on user selections",
+    )
+    first_pone_discard_algorithm_group.add_argument(
         "--first-pone-keep-random",
         action="store_true",
         help="have first pone discard randomly",
@@ -2674,6 +2695,11 @@ if __name__ == "__main__":
     )
 
     first_dealer_discard_algorithm_group = parser.add_mutually_exclusive_group()
+    first_dealer_discard_algorithm_group.add_argument(
+        "--first-dealer-keep-user-selected",
+        action="store_true",
+        help="have first dealer discard based on user selections",
+    )
     first_dealer_discard_algorithm_group.add_argument(
         "--first-dealer-keep-random",
         action="store_true",
@@ -2974,7 +3000,9 @@ if __name__ == "__main__":
         print()
 
     # TODO: eliminate snake case to kebab case args names duplication from code
-    if args.first_pone_keep_random:
+    if args.first_pone_keep_user_selected:
+        first_pone_select_kept_cards = keep_user_selected
+    elif args.first_pone_keep_random:
         first_pone_select_kept_cards = keep_random
     elif args.first_pone_keep_first_four:
         first_pone_select_kept_cards = keep_first_four
@@ -2995,7 +3023,9 @@ if __name__ == "__main__":
     else:
         first_pone_select_kept_cards = DEFAULT_SELECT_PONE_KEPT_CARDS
 
-    if args.first_dealer_keep_random:
+    if args.first_dealer_keep_user_selected:
+        first_dealer_select_kept_cards = keep_user_selected
+    elif args.first_dealer_keep_random:
         first_dealer_select_kept_cards = keep_random
     elif args.first_dealer_keep_first_four:
         first_dealer_select_kept_cards = keep_first_four

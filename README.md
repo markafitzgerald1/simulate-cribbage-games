@@ -53,8 +53,6 @@ in the expected game points differential (and play points differential if no gam
 for different possible discards or plays.
 
 ## Definite pre-first version or release goals
-- UI/UX improvements:
-  - add `--first-(pone|dealer)-keep-user-entered` discard strategy allow for complete human play against this program.
 - Further improve current best play strategy:
   - add simulation-based pone and dealer play strategies;
 - Add support for time-limited discard simulations and simulation-based discard strategies.
@@ -95,6 +93,7 @@ for different possible discards or plays.
 ## Past project goals
 
 - UI/UX improvements:
+  - add `--first-(pone|dealer)-keep-user-entered` discard strategy allow for complete human play against this program (status: implemented);
   - accept card instead of hand index entry on play select (status: implemented);
   - allow user to press enter when they have only one play option or must say Go (status: implemented);
   - show score after every score change (status: implemented);
