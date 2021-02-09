@@ -446,6 +446,30 @@ class GameScore(NamedTuple):
     first_dealer_hand: Points
     first_dealer_crib: Points
 
+    @property
+    def pone_total(self) -> Points:
+        return Points(
+            self.first_pone_initial
+            + self.first_pone_play
+            + self.first_pone_hand
+            + self.first_pone_crib
+        )
+
+    @property
+    def dealer_total(self) -> Points:
+        return Points(
+            self.first_dealer_initial
+            + self.first_dealer_play
+            + self.first_dealer_hand
+            + self.first_dealer_crib
+        )
+
+    def __str__(self) -> str:
+        return f"{self.pone_total}-{self.dealer_total}"
+
+    def __repr__(self) -> str:
+        return f"GameScore({self.first_pone_initial}, {self.first_pone_play}, {self.first_pone_hand}, {self.first_pone_crib}, {self.first_dealer_initial}, {self.first_dealer_play}, {self.first_dealer_hand}, {self.first_dealer_crib})"
+
 
 class GamePlayer(Enum):
     FIRST_PONE = 0
@@ -831,12 +855,12 @@ def simulate_game(
         if not hide_play_actions:
             print(f"Cut/starter card is: {starter}")
         if starter.index == 10:
-            if not hide_play_actions:
-                print(f"His heels/nibs for 2 for {get_player_name(1)}")
             dealer_game_player = GamePlayer((hand + 1) % 2)
             game_score = add_to_game_score(
                 game_score, dealer_game_player, PointsType.PLAY, NIBS_SCORE_POINTS
             )
+            if not hide_play_actions:
+                print(f"His heels/nibs for 2 for {get_player_name(1)} [{game_score}]")
             if game_over(game_score):
                 break
 
@@ -910,42 +934,42 @@ def simulate_game(
                 if player_to_play_play.index == most_recently_played_index:
                     most_recently_played_index_count += 1
                     if most_recently_played_index_count == 4:
-                        if not hide_play_actions:
-                            print(
-                                f"!Double pairs royale for {DOUBLE_PAIRS_ROYALE_POINTS} points for {get_player_name(player_to_play)}."
-                            )
                         game_score = add_to_game_score(
                             game_score,
                             get_game_player(player_to_play, hand),
                             PointsType.PLAY,
                             DOUBLE_PAIRS_ROYALE_POINTS,
                         )
+                        if not hide_play_actions:
+                            print(
+                                f"!Double pairs royale for {DOUBLE_PAIRS_ROYALE_POINTS} points for {get_player_name(player_to_play)}. [{game_score}]"
+                            )
                         if game_over(game_score):
                             break
                     elif most_recently_played_index_count == 3:
-                        if not hide_play_actions:
-                            print(
-                                f"!Pairs royale for {PAIRS_ROYALE_POINTS} points for {get_player_name(player_to_play)}."
-                            )
                         game_score = add_to_game_score(
                             game_score,
                             get_game_player(player_to_play, hand),
                             PointsType.PLAY,
                             PAIRS_ROYALE_POINTS,
                         )
+                        if not hide_play_actions:
+                            print(
+                                f"!Pairs royale for {PAIRS_ROYALE_POINTS} points for {get_player_name(player_to_play)}. [{game_score}]"
+                            )
                         if game_over(game_score):
                             break
                     elif most_recently_played_index_count == 2:
-                        if not hide_play_actions:
-                            print(
-                                f"!Pair for {PAIR_POINTS} points for {get_player_name(player_to_play)}."
-                            )
                         game_score = add_to_game_score(
                             game_score,
                             get_game_player(player_to_play, hand),
                             PointsType.PLAY,
                             PAIR_POINTS,
                         )
+                        if not hide_play_actions:
+                            print(
+                                f"!Pair for {PAIR_POINTS} points for {get_player_name(player_to_play)}. [{game_score}]"
+                            )
                         if game_over(game_score):
                             break
                 else:
@@ -954,29 +978,29 @@ def simulate_game(
 
                 # 15 and 31 count points
                 if play_count == FIFTEEN_COUNT:
-                    if not hide_play_actions:
-                        print(
-                            f"!{FIFTEEN_COUNT} for {FIFTEENS_POINTS} points for {get_player_name(player_to_play)}."
-                        )
                     game_score = add_to_game_score(
                         game_score,
                         get_game_player(player_to_play, hand),
                         PointsType.PLAY,
                         FIFTEENS_POINTS,
                     )
+                    if not hide_play_actions:
+                        print(
+                            f"!{FIFTEEN_COUNT} for {FIFTEENS_POINTS} points for {get_player_name(player_to_play)}. [{game_score}]"
+                        )
                     if game_over(game_score):
                         break
                 elif play_count == THIRTY_ONE_COUNT:
-                    if not hide_play_actions:
-                        print(
-                            f"!{THIRTY_ONE_COUNT} for {THIRTY_ONE_COUNT_POINTS} point for {get_player_name(player_to_play)}."
-                        )
                     game_score = add_to_game_score(
                         game_score,
                         get_game_player(player_to_play, hand),
                         PointsType.PLAY,
                         THIRTY_ONE_COUNT_POINTS,
                     )
+                    if not hide_play_actions:
+                        print(
+                            f"!{THIRTY_ONE_COUNT} for {THIRTY_ONE_COUNT_POINTS} point for {get_player_name(player_to_play)}. [{game_score}]"
+                        )
                     if game_over(game_score):
                         break
 
@@ -984,16 +1008,16 @@ def simulate_game(
                     get_play_to_31_cards(plays_to_31[-1])
                 )
                 if current_play_run_length:
-                    if not hide_play_actions:
-                        print(
-                            f"!Run for {current_play_run_length} points for {get_player_name(player_to_play)}."
-                        )
                     game_score = add_to_game_score(
                         game_score,
                         get_game_player(player_to_play, hand),
                         PointsType.PLAY,
                         current_play_run_length,
                     )
+                    if not hide_play_actions:
+                        print(
+                            f"!Run for {current_play_run_length} points for {get_player_name(player_to_play)}. [{game_score}]"
+                        )
                     if game_over(game_score):
                         break
 
@@ -1004,16 +1028,16 @@ def simulate_game(
 
                 consecutive_go_count += 1
                 if consecutive_go_count == 2:
-                    if not hide_play_actions:
-                        print(
-                            f"!Go for {GO_POINTS} point for {get_player_name(player_to_play)}."
-                        )
                     game_score = add_to_game_score(
                         game_score,
                         get_game_player(player_to_play, hand),
                         PointsType.PLAY,
                         GO_POINTS,
                     )
+                    if not hide_play_actions:
+                        print(
+                            f"!Go for {GO_POINTS} point for {get_player_name(player_to_play)}. [{game_score}]"
+                        )
                     if game_over(game_score):
                         break
 
@@ -1037,57 +1061,57 @@ def simulate_game(
 
         # Last Card points
         last_player_to_play: Player = 1 if player_to_play == 0 else 0
-        if not hide_play_actions:
-            print(
-                f"!Last card for {LAST_CARD_POINTS} point for {get_player_name(last_player_to_play)}."
-            )
         game_score = add_to_game_score(
             game_score,
             get_game_player(last_player_to_play, hand),
             PointsType.PLAY,
             LAST_CARD_POINTS,
         )
+        if not hide_play_actions:
+            print(
+                f"!Last card for {LAST_CARD_POINTS} point for {get_player_name(last_player_to_play)} [{game_score}]."
+            )
         if game_over(game_score):
             break
 
         pone_hand_points = score_hand_and_starter(kept_hands[0], starter)
-        if not hide_play_actions:
-            print(
-                f"Pone hand {Hand(reversed(sorted(kept_hands[0])))} with starter {starter} points: {pone_hand_points}"
-            )
         game_score = add_to_game_score(
             game_score, get_game_player(PONE, hand), PointsType.HAND, pone_hand_points
         )
+        if not hide_play_actions:
+            print(
+                f"!{Hand(reversed(sorted(kept_hands[0])))} hand + starter {starter} scores {pone_hand_points:2} points for Pone.   [{game_score}]"
+            )
         if game_over(game_score):
             break
 
         dealer_hand_points = score_hand_and_starter(kept_hands[1], starter)
-        if not hide_play_actions:
-            print(
-                f"Dealer hand {Hand(reversed(sorted(kept_hands[1])))} with starter {starter} points: {dealer_hand_points}"
-            )
         game_score = add_to_game_score(
             game_score,
             get_game_player(DEALER, hand),
             PointsType.HAND,
             dealer_hand_points,
         )
+        if not hide_play_actions:
+            print(
+                f"!{Hand(reversed(sorted(kept_hands[1])))} hand + starter {starter} scores {dealer_hand_points:2} points for Dealer. [{game_score}]"
+            )
         if game_over(game_score):
             break
 
         crib_cards = pone_discarded_cards + dealer_discarded_cards
         crib_points = score_hand_and_starter(crib_cards, starter, is_crib=True)
-        if not hide_play_actions:
-            print(
-                f"Crib {Hand(reversed(sorted(crib_cards)))} with starter {starter} points: {crib_points}"
-            )
         game_score = add_to_game_score(
             game_score, get_game_player(DEALER, hand), PointsType.CRIB, crib_points
         )
         if not hide_play_actions:
             print(
-                f"Game score after {hand+1} hands: {game_score.first_pone_initial + game_score.first_pone_play + game_score.first_pone_hand + game_score.first_pone_crib} - {game_score.first_dealer_initial + game_score.first_dealer_play + game_score.first_dealer_hand + game_score.first_dealer_crib}"
+                f"!{Hand(reversed(sorted(crib_cards)))} crib + starter {starter} scores {crib_points:2} points for Dealer. [{game_score}]"
             )
+            print(
+                f"+++ Game score is [{game_score}] for first pone and first dealer after {hand+1} hands played."
+            )
+            print()
         if game_over(game_score):
             break
 
@@ -1362,10 +1386,10 @@ def simulate_games(
 
             if not hide_play_actions:
                 print(
-                    f"+++ Score at end of game simulation: {(initial_first_pone_score + first_pone_total_points, initial_first_dealer_score + first_dealer_total_points)}"
+                    f"+++ Score at end of game simulation: [{initial_first_pone_score + first_pone_total_points}-{initial_first_dealer_score + first_dealer_total_points}] for first pone and first dealer."
                 )
                 print(
-                    f"### Game points at end of game simulation: {(first_pone_game_points, first_dealer_game_points)}"
+                    f"### Game points at end of game simulation: [[{first_pone_game_points}-{first_dealer_game_points}]] for pone and dealer."
                 )
                 print()
 
