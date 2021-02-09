@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+from __future__ import annotations
 import sys
 import random
 import time
@@ -67,14 +68,19 @@ class Card:
         self.str = f"{Index.indices[index]}{Card.suits[suit]}"
 
     @classmethod
-    def from_string(cls, specifier):
-        return Card(
-            Index.indices.find(specifier[0].capitalize()),
-            max(
-                Card.english_suits.find(specifier[1].capitalize()),
-                Card.suits.find(specifier[1]),
-            ),
+    def from_string(cls, specifier: str) -> Card:
+        if len(specifier) < 2:
+            raise ValueError(f"Invalid card specifier: {specifier}")
+
+        indices_index: int = Index.indices.find(specifier[0].capitalize())
+        suits_index: int = max(
+            Card.english_suits.find(specifier[1].capitalize()),
+            Card.suits.find(specifier[1]),
         )
+        if indices_index == -1 or suits_index == -1:
+            raise ValueError(f"Invalid card specifier: {specifier}")
+
+        return Card(indices_index, suits_index)
 
     def __eq__(self, value):
         return self.index == value.index and self.suit == value.suit
@@ -883,6 +889,16 @@ def simulate_game(
 
             player_to_play_play: PlayAction
 
+            select_play = (
+                first_pone_select_play
+                if (
+                    player_to_play == 0
+                    and pone_is_first_pone
+                    or player_to_play == 1
+                    and dealer_is_first_pone
+                )
+                else first_dealer_select_play
+            )
             if (
                 is_first_hand
                 and (not remaining_initial_play_actions)
@@ -898,22 +914,18 @@ def simulate_game(
                 remaining_post_initial_play = None
             elif is_first_hand and remaining_initial_play_actions:
                 player_to_play_play = remaining_initial_play_actions.pop(0)
-            elif len(legal_play_actions) == 1:
+            elif len(legal_play_actions) == 1 and select_play != play_user_selected:
+                player_to_play_play = legal_play_actions[0]
+            elif (
+                len(legal_play_actions) == 1
+                and select_play == play_user_selected
+                and str(legal_play_actions[0]) == Go.STR
+            ):
+                input(f"Press enter to say Go: ")
                 player_to_play_play = legal_play_actions[0]
             else:
                 player_to_play_play = legal_play_actions[
-                    first_pone_select_play(
-                        legal_play_actions,
-                        play_count,
-                        get_play_to_31_cards(plays_to_31[-1]),
-                    )
-                    if (
-                        player_to_play == 0
-                        and pone_is_first_pone
-                        or player_to_play == 1
-                        and dealer_is_first_pone
-                    )
-                    else first_dealer_select_play(
+                    select_play(
                         legal_play_actions,
                         play_count,
                         get_play_to_31_cards(plays_to_31[-1]),
@@ -2498,15 +2510,15 @@ def play_user_selected(
     print(
         f"{Hand(current_play_to_31_cards)} played so far; count is {current_play_count}; playable cards are {','.join([str(card) for card in playable_cards])}."
     )
-    selected_card: Optional[PlayableCardIndex] = None
-    while selected_card not in range(0, len(playable_cards)):
-        selected_card_input = input("Enter the base-0 card index to play: ")
+    selected_card: Optional[Card] = None
+    while not selected_card or selected_card not in playable_cards:
+        selected_card_input: str = input("Enter the card to play: ")
         try:
-            selected_card = PlayableCardIndex(int(selected_card_input))
+            selected_card = Card.from_string(selected_card_input)
         except ValueError:
             print(f"{selected_card_input} is not a valid selection")
     assert selected_card is not None
-    return selected_card
+    return PlayableCardIndex(playable_cards.index(selected_card))
 
 
 def simulation_performance_statistics(start_time_ns, games_simulated):

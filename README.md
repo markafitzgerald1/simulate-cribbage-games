@@ -54,7 +54,6 @@ for different possible discards or plays.
 
 ## Definite pre-first version or release goals
 - UI/UX improvements:
-  - allow user to press enter when they have only one play option or must say go; and
   - add `--first-(pone|dealer)-keep-user-entered` discard strategy allow for complete human play against this program.
 - Further improve current best play strategy:
   - add simulation-based pone and dealer play strategies;
@@ -96,6 +95,8 @@ for different possible discards or plays.
 ## Past project goals
 
 - UI/UX improvements:
+  - accept card instead of hand index entry on play select (status: implemented);
+  - allow user to press enter when they have only one play option or must say Go (status: implemented);
   - show score after every score change (status: implemented);
   - replace `--(pone|dealer)-play-user-entered` with `--first-(pone|dealer)-play-user-entered` and do same for all other possible play algorithm selections so that a human can play against a consistent computer opponent and so that two different computer opponents can be compared in multi-hand games - likely necessary to improve play when a small but greater than 1 number of hands remain - i.e. in a positional play position.
 - Further improve current best play strategy:
