@@ -1856,7 +1856,6 @@ def simulate_games(
 
 # TODO: change return type from Sequence[Card] to Tuple[Card, Card] for increased type checking precision
 def keep_user_selected(dealt_cards: Sequence[Card]) -> Sequence[Card]:
-    print(f"Dealt hand is {Hand(dealt_cards)}.")
     selected_discards: Sequence[Card] = []
     while (
         len(selected_discards) < DEALT_CARDS_LEN - KEPT_CARDS_LEN
@@ -1864,7 +1863,9 @@ def keep_user_selected(dealt_cards: Sequence[Card]) -> Sequence[Card]:
         or selected_discards[1] not in dealt_cards
         or selected_discards[0] == selected_discards[1]
     ):
-        selected_discards_input: str = input("Enter the cards to discard: ")
+        selected_discards_input: str = input(
+            f"Enter the cards to discard from {Hand(sorted(dealt_cards, reverse=True))}: "
+        )
         try:
             selected_discards = parse_cards(selected_discards_input)
         except ValueError:
