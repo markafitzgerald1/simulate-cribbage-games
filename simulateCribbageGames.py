@@ -938,7 +938,7 @@ def simulate_game(
                 play_count += player_to_play_play.count
                 if not hide_play_actions:
                     print(
-                        f"{get_player_name(player_to_play):6} plays {player_to_play_play} for {play_count}"
+                        f"{get_player_name(player_to_play):6} plays {player_to_play_play} for {play_count} ({';'.join([str(Hand(p)) for p in plays_to_31])})"
                     )
                 hands[player_to_play].remove(player_to_play_play)
 
@@ -1858,7 +1858,12 @@ def simulate_games(
 def keep_user_selected(dealt_cards: Sequence[Card]) -> Sequence[Card]:
     print(f"Dealt hand is {Hand(dealt_cards)}.")
     selected_discards: Sequence[Card] = []
-    while len(selected_discards) < DEALT_CARDS_LEN - KEPT_CARDS_LEN:
+    while (
+        len(selected_discards) < DEALT_CARDS_LEN - KEPT_CARDS_LEN
+        or selected_discards[0] not in dealt_cards
+        or selected_discards[1] not in dealt_cards
+        or selected_discards[0] == selected_discards[1]
+    ):
         selected_discards_input: str = input("Enter the cards to discard: ")
         try:
             selected_discards = parse_cards(selected_discards_input)
@@ -2523,12 +2528,11 @@ def play_user_selected(
     current_play_count: PlayCount,
     current_play_to_31_cards: Sequence[Card],
 ) -> PlayableCardIndex:
-    print(
-        f"{Hand(current_play_to_31_cards)} played so far; count is {current_play_count}; playable cards are {','.join([str(card) for card in playable_cards])}."
-    )
     selected_card: Optional[Card] = None
     while not selected_card or selected_card not in playable_cards:
-        selected_card_input: str = input("Enter the card to play: ")
+        selected_card_input: str = input(
+            f"Enter the card to play (legal plays = [{','.join([str(card) for card in playable_cards])}]): "
+        )
         try:
             selected_card = Card.from_string(selected_card_input)
         except ValueError:
