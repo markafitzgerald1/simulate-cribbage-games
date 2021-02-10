@@ -62,6 +62,8 @@ for different possible discards or plays.
   - add a 'coach mode': show the user computer recommended action after user has taken a play (including discard) action.
 - Improve both discard and play strategies:
   - Implement simulation-based discard and play where immediate opponent reponse is also simulation-based but based on fewer simluated games.
+- Improve current best non-simulation-based play strategy:
+  - reconsider adding a cheap (most recent card within 1 or 2 avoid) run setup avoidance to default play strategy.
 
 ## Probably not pre-first version or release goals
 - Improve simulation-based discard strategy:
@@ -69,8 +71,7 @@ for different possible discards or plays.
 - Improve play simulation and play simulation based play accuracy:
   - Factor the minimum possible count value of all remaining opponent cards implied by saying Go into play simulations and play simulation based play.
 - Improve current best non-simulation-based play strategy:
-  - consider dealer respond with higher card of pair adding to 11 in response to pone 10 count lead to set up more 31-2's for self - e.g. dealer play 7 from 7-4 or 8 from 8-3 in response to pone 10 count lead;
-  - reconsider adding run setup avoidance to default play strategy; and
+  - consider dealer respond with higher card of pair adding to 11 in response to pone 10 count lead to set up more 31-2's for self - e.g. dealer play 7 from 7-4 or 8 from 8-3 in response to pone 10 count lead; and
   - consider improving default play algorithm to lead from high (> 5) pair (e.g. 9 from T-9-9-6) when low lead not possible (1.2 points better than T lead based on simulations).
 - Improve development speed and quality:
   - Automate execution and verification of above smoke tests.
