@@ -53,15 +53,6 @@ in the expected game points differential (and play points differential if no gam
 for different possible discards or plays.
 
 ## Definite pre-first version or release goals
-- Improve current best non-simulation-based play strategy:
-  - reconsider adding a cheap (most recent card within 1 or 2 avoid) run setup avoidance to default play strategy;
-  - evaluate whether _any_ card in the 16-20 range, as currently implemented, is worse than the _highest_ card in the 16-20 range;
-  - evaluate whether playing the highest count card is better than keeping the count in the 16-20 range on average;
-  - evaluate lead from low pair before lead from highest low card;
-  - evaluate lead 2 or 3 from 2-3 before lead from highest low card;
-  - evaluate lead A from A-4 before lead from highest low card;
-  - consider dealer respond with higher card of pair adding to 11 in response to pone 10 count lead to set up more 31-2's for self - e.g. dealer play 7 from 7-4 or 8 from 8-3 in response to pone 10 count lead; and
-  - consider improving default play algorithm to lead from high (> 5) pair (e.g. 9 from T-9-9-6) when low lead not possible (1.2 points better than T lead based on simulations).
 - Further improve current best play strategy:
   - add simulation-based pone and dealer play strategies;
 - Add support for time-limited discard simulations and simulation-based discard strategies.
@@ -79,6 +70,13 @@ for different possible discards or plays.
   - Factor the minimum possible count value of all remaining opponent cards implied by saying Go into play simulations and play simulation based play.
 - Improve development speed and quality:
   - Automate execution and verification of above smoke tests.
+- Improve current best non-simulation-based play strategy:
+  - reconsider adding a cheap (most recent card within 1 or 2 avoid) run setup avoidance to default play strategy;
+  - evaluate lead from low pair before lead from highest low card;
+  - evaluate lead 2 or 3 from 2-3 before lead from highest low card;
+  - evaluate lead A from A-4 before lead from highest low card;
+  - consider dealer respond with higher card of pair adding to 11 in response to pone 10 count lead to set up more 31-2's for self - e.g. dealer play 7 from 7-4 or 8 from 8-3 in response to pone 10 count lead; and
+  - consider improving default play algorithm to lead from high (> 5) pair (e.g. 9 from T-9-9-6) when low lead not possible (1.2 points better than T lead based on simulations).
 
 ## Post-first version or release short to medium term goals
 - Further improve current best discard strategy:
@@ -104,6 +102,9 @@ for different possible discards or plays.
   - show score after every score change (status: implemented);
   - replace `--(pone|dealer)-play-user-entered` with `--first-(pone|dealer)-play-user-entered` and do same for all other possible play algorithm selections so that a human can play against a consistent computer opponent and so that two different computer opponents can be compared in multi-hand games - likely necessary to improve play when a small but greater than 1 number of hands remain - i.e. in a positional play position.
 - Further improve current best play strategy:
+  - avoid 10 count lead (status: perhaps 0.01 +/- 0.01 points better for either pone or dealer, but at 400kHands simulated confidence never much above and sometimes below 95%);
+  - evaluate whether _any_ card in the 16-20 range, as currently implemented, is worse than the _highest_ card in the 16-20 range (result: about 0.06 +/- 0.024 points worse for pone, 0.018 +/- 0.023 worse for dealer);
+  - evaluate whether playing the highest count card is better than keeping the count in the 16-20 range on average (result: about 0.035 +/- 0.023 points worse for pone, 0.025 +/- 0.023 worse for dealer);
   - add support for --initial-starter specification to slightly improve simulation-based play accuracy;
   - consider improving default play algorithm to lead A from A-4 (e.g. A-4-T-T), which seems to be about 0.08 points better than a 4 lead according to current simulations with two Tens (status: rejected - 4 and A about equal leads holding both; similar for lead from 2-3 - about equal leads as pone); and
   - consider improving default play algorithm to lead 3 from 3-9 (e.g. 3-4-8-9) which seems better than a 4 lead if only because a dealer 3 response can be 15-2'ed to even the play score. Similar lead 4 from 4-7 should also be considered here (status: rejected - 0.005 +/- 0.014 points worse for pone in simulations).
