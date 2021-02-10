@@ -2537,7 +2537,10 @@ def play_user_selected(
         try:
             selected_card = Card.from_string(selected_card_input)
         except ValueError:
-            print(f"{selected_card_input} is not a valid selection")
+            if not selected_card_input and len(playable_cards) == 1:
+                selected_card = playable_cards[0]
+            else:
+                print(f"{selected_card_input} is not a valid selection")
     assert selected_card is not None
     return PlayableCardIndex(playable_cards.index(selected_card))
 
