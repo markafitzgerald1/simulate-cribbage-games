@@ -1858,7 +1858,7 @@ def simulate_games(
 def keep_user_selected(dealt_cards: Sequence[Card]) -> Sequence[Card]:
     selected_discards: Sequence[Card] = []
     while (
-        len(selected_discards) < DEALT_CARDS_LEN - KEPT_CARDS_LEN
+        len(selected_discards) != DEALT_CARDS_LEN - KEPT_CARDS_LEN
         or selected_discards[0] not in dealt_cards
         or selected_discards[1] not in dealt_cards
         or selected_discards[0] == selected_discards[1]
