@@ -1,6 +1,6 @@
-# Play Cribbage Hand
+# Simulate Cribbage Games
 
-Simulate and analyze the play of cribbage hands between two opponents.
+Simulate and analyze the play of hands and games of cribbage between two opponents.
 
 ## Setup
 
