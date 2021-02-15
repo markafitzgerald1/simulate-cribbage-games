@@ -254,10 +254,10 @@ def flush_points(kept_hand, starter, is_crib=False):
         if kept_card_suit != kept_hand_suits[0]:
             return 0
 
-    if is_crib and starter.suit == kept_hand_suits[0]:
+    if starter.suit == kept_hand_suits[0]:
         return 5
 
-    return 4
+    return 4 if not is_crib else 0
 
 
 JACK_INDEX = 10

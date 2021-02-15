@@ -95,6 +95,9 @@ for different possible discards or plays.
 
 ## Past project goals
 
+- Bugs:
+  - All cards in crib having same suit but starter not having same suit was scoring 4 points in crib when it should have been scoring 0.
+  - All cards in hand having same suit and starter having same suit was scoring 0 points in hand when it should have been scoring 5.
 - UI/UX improvements:
   - add `--first-(pone|dealer)-keep-user-entered` discard strategy allow for complete human play against this program (status: implemented);
   - accept card instead of hand index entry on play select (status: implemented);
