@@ -32,8 +32,9 @@ All of the following should exit with status code 0 and no raised exception:
 - Simulate all possible discards from a fixed pone hand against random dealer hands: `python simulateCribbageGames.py --first-pone-dealt-cards AC,2D,3H,4S,5C,6D --first-pone-select-each-possible-kept-hand --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --games-per-update 1000 --game-count 10000`;
 - Simulate all possible discards from a fixed dealer hand against random pone hands: `python simulateCribbageGames.py --first-dealer-dealt-cards AC,2D,3H,4S,5C,6D --first-dealer-select-each-possible-kept-hand --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --games-per-update 1000 --game-count 10000`;
 - Simulate all possible discards from a fixed dealer hand against random pone hands at a greater than 0-0 game score: `python simulateCribbageGames.py --first-dealer-dealt-cards JH,TS,6S,6C,4C,AD --first-dealer-select-each-possible-kept-hand --initial-pone-score 105 --initial-dealer-score 117 --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --game-count 20000 --games-per-update 2000`;
+- Simulate all possible leads from a fixed pone hand and discard against random dealer hands: `python simulateCribbageGames.py --first-pone-dealt-cards JH,TS,6S,6C,4C,AD --first-pone-kept-cards TS,6S,4C,AD --initial-starter 2S --select-each-post-initial-play --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --game-count 30000 --games-per-update 3000`;
 - Simulate all possible leads from a fixed pone hand and discard against random dealer hands: `python simulateCribbageGames.py --first-pone-dealt-cards JH,TS,6S,6C,4C,AD --first-pone-kept-cards TS,6S,4C,AD --select-each-post-initial-play --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --game-count 30000 --games-per-update 3000`;
-- Simulate all possible leads from a fixed pone kept hand against random dealer hands: `python simulateCribbageGames.py --first-pone-kept-cards TS,6S,4C,AD --select-each-post-initial-play --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --game-count 30000 --games-per-update 3000`;
+- Simulate all possible leads from a fixed pone kept hand against random dealer hands: `python simulateCribbageGames.py --first-pone-kept-cards TS,6S,4C,AD --select-each-post-initial-play --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --game-count 30000 --games-per-update 3000`, `python simulateCribbageGames.py --first-pone-kept-cards 6c,7d,8h,9s --select-each-post-initial-play --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --game-count 30000 --games-per-update 3000`;
 - Simulate all possible leads from a partially known pone kept hand against random dealer hands: `python simulateCribbageGames.py --first-pone-kept-cards 4C,AD --select-each-post-initial-play --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --game-count 30000 --games-per-update 3000`;
 - Simulate all possible pone plays with known pone discard from a mid-play position (dealer hand now partially known): `python simulateCribbageGames.py --first-pone-dealt-cards KC,QD,TC,8S,4D,AH --first-pone-kept-cards QD,TC,4D,AH --initial-play-actions 4D,8H --select-each-post-initial-play --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --game-count 20000 --games-per-update 2000`;
 - Simulate all possible pone plays with an unknown discard from a mid-play position (pone hand now partially known): `python simulateCribbageGames.py --first-pone-kept-cards QD,TC,4D,AH --initial-play-actions 4D,8H --select-each-post-initial-play --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --game-count 20000 --games-per-update 2000`;
@@ -43,8 +44,11 @@ All of the following should exit with status code 0 and no raised exception:
 - Simulate all possible pone plays from a mid-play position against partly known dealer hands where the already executed pone play is not what the play strategy in use would have selected: `python simulateCribbageGames.py --first-pone-dealt-cards 2s,4h,9s,9c,7c,qh --first-pone-kept-cards 2s,4h,9s,9c --initial-play-actions 9c,qs --select-each-post-initial-play --infinite-game-count --hide-play-actions --hide-first-pone-hand --hide-first-dealer-hand --process-count 2`;
 - Simulate all possible dealer plays from a mid-play position where the already executed dealer discard is not what the dealer discard strategy would have discarded: `python simulateCribbageGames.py --first-dealer-dealt-cards 2d,3h,6h,8d,9d,qc --first-dealer-kept-cards 2d,3h,8d,qc --initial-play-actions 4c,8d,kd --select-each-post-initial-play --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --game-count 20000 --games-per-update 1000`;
 - Simulate all possible dealer plays from start of the second play where dealer has two more cards than pone: `python simulateCribbageGames.py --first-dealer-kept-cards tc,3s,8c,9h --initial-play-actions th,tc,td,go,ac,go,go --select-each-post-initial-play --game-count 20000 --games-per-update 2000 --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions`;
-- Simulate from late in the third leg all possible dealer discards to end of game against reasonable opponent play: `python simulateCribbageGames.py --first-dealer-dealt-cards AC,2S,6C,TD,JD,KC --first-dealer-select-each-possible-kept-hand --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --unlimited-hands-per-game --game-count 20000 --initial-pone-score 87 --initial-dealer-score 85 --games-per-update 1000`; and
-- Simulate one hand from deal to end of hand counting using simulation-based pone and dealer discarding: `python simulateCribbageGames.py --process-count 1 --game-count 1 --first-pone-discard-based-on-simulations 320 --first-dealer-discard-based-on-simulations 320`.
+- Simulate from late in the third leg all possible dealer discards to end of game against reasonable opponent play: `python simulateCribbageGames.py --first-dealer-dealt-cards AC,2S,6C,TD,JD,KC --first-dealer-select-each-possible-kept-hand --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --unlimited-hands-per-game --game-count 20000 --initial-pone-score 87 --initial-dealer-score 85 --games-per-update 1000`;
+- Simulate one hand from deal to end of hand counting using simulation-based pone and dealer discarding: `python simulateCribbageGames.py --process-count 1 --game-count 1 --first-pone-discard-based-on-simulations 320 --first-dealer-discard-based-on-simulations 320`;
+- Simulate one hand from deal to end of hand counting using simulation-based pone and dealer discarding and playing: `python simulateCribbageGames.py --process-count 1 --game-count 1 --first-pone-discard-based-on-simulations 320 --first-dealer-discard-based-on-simulations 320 --first-pone-play-based-on-simulations 1800 --first-dealer-play-based-on-simulations 1800`;
+- Play one game as first pone against the computer playing as first dealer using simulation-based play and discard strategies: `python simulateCribbageGames.py --first-pone-keep-user-selected --first-pone-play-user-entered --first-dealer-discard-based-on-simulations 320 --first-dealer-play-based-on-simulations 1800 --hide-first-dealer-hand --unlimited-hands-per-game`; and
+- Play one game as first dealer against the computer playing as first pone using simulation-based play and discard strategies: `python simulateCribbageGames.py --first-pone-discard-based-on-simulations 320 --first-pone-play-based-on-simulations 1800 --hide-first-pone-hand --first-dealer-keep-user-selected --first-dealer-play-user-entered --unlimited-hands-per-game`.
 
 ## Long-term project goal
 
@@ -53,18 +57,16 @@ in the expected game points differential (and play points differential if no gam
 for different possible discards or plays.
 
 ## Definite pre-first version or release goals
-- Further improve current best play strategy:
-  - add simulation-based pone and dealer play strategies;
+- UI/UX improvements:
+  - add a 'coach mode': show the user computer recommended action after user has taken a play (including discard) action.
 - Add support for time-limited discard simulations and simulation-based discard strategies.
 
 ## Maybe pre-first version or release goals
-- UI/UX improvements:
-  - add a 'coach mode': show the user computer recommended action after user has taken a play (including discard) action.
-- Improve both discard and play strategies:
-  - Implement simulation-based discard and play where immediate opponent reponse is also simulation-based but based on fewer simluated games.
 
 ## Probably not pre-first version or release goals
-- Improve simulation-based discard strategy:
+- Improve simulation-based discard and play strategies:
+  - Simulate to end of game not end of hand to avoid making positional errors near or in the fourth leg (91-120 points) of play.
+  - Implement simulation-based discard and play where immediate opponent reponse is also simulation-based but based on fewer simluated games; then
   - Implement simulation-based discard and play where multiple subsequent opponent or self play or discard actions are also simulation-based but based on fewer simluated games. (Keys to success: tuning of decay factor; determining whether the positional evaluation benefits of low (< 32 for discard, for example) simulation counts outweigh their higher error rate costs.)
 - Improve play simulation and play simulation based play accuracy:
   - Factor the minimum possible count value of all remaining opponent cards implied by saying Go into play simulations and play simulation based play.
@@ -73,17 +75,16 @@ for different possible discards or plays.
 - Improve current best non-simulation-based play strategy:
   - reconsider adding a cheap (most recent card within 1 or 2 avoid) run setup avoidance to default play strategy;
   - evaluate lead from low pair before lead from highest low card;
-  - evaluate lead 2 or 3 from 2-3 before lead from highest low card;
-  - evaluate lead A from A-4 before lead from highest low card;
-  - consider dealer respond with higher card of pair adding to 11 in response to pone 10 count lead to set up more 31-2's for self - e.g. dealer play 7 from 7-4 or 8 from 8-3 in response to pone 10 count lead; and
-  - consider improving default play algorithm to lead from high (> 5) pair (e.g. 9 from T-9-9-6) when low lead not possible (1.2 points better than T lead based on simulations).
+  - consider dealer respond with higher card of pair adding to 11 in response to pone 10 count lead to set up more 31-2's for self - e.g. dealer play 7 from 7-4 or 8 from 8-3 in response to pone 10 count lead;
+  - consider improving default play algorithm to lead from high (> 5) pair (e.g. 9 from T-9-9-6) when low lead not possible (1.2 points better than T lead based on simulations); and
+  - consider preferring responding to low (< 5) lead with non-ten-count cards over ten-count cards.
 
 ## Post-first version or release short to medium term goals
 - Further improve current best discard strategy:
   - reconsider not ignoring suit by default and not ignoring suit in simulation-based discard strategy.
 - UI/UX improvements:
-  - improve user interface via which human players can play against implemented computer discard and play strategies;
-  - add support for --(pone|dealer)-(dealt|kept)-cards and --initial-play-actions lacking suit information; and
+  - improve user interface via which human players can play against implemented computer discard and play strategies; and
+  - add support for --(pone|dealer)-(dealt|kept)-cards and --initial-play-actions lacking suit information.
 - Improve development speed and quality:
   - Increase confidence in implementation by adding further type hints (Python), type checking and unit tests.
 - Improve simulation-based play and discard speed and strength:
@@ -95,6 +96,8 @@ for different possible discards or plays.
 
 ## Past project goals
 
+- Further improve current best play strategy:
+  - add simulation-based pone and dealer play strategies.
 - Bugs:
   - All cards in crib having same suit but starter not having same suit was scoring 4 points in crib when it should have been scoring 0.
   - All cards in hand having same suit and starter having same suit was scoring 0 points in hand when it should have been scoring 5.
@@ -144,7 +147,7 @@ for different possible discards or plays.
 
 #### Main implementation
 
-- Python 3.9.0
+- Python 3.9.1
 
 #### Backup, partial implementation
 
