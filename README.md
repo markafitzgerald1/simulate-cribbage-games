@@ -57,9 +57,9 @@ in the expected game points differential (and play points differential if no gam
 for different possible discards or plays.
 
 ## Definite pre-first version or release goals
-- Add support for time-limited discard simulations and simulation-based discard strategies.
 
 ## Maybe pre-first version or release goals
+- Add support for time-limited discard simulations and simulation-based discard strategies.
 
 ## Probably not pre-first version or release goals
 - Improve simulation-based discard and play strategies:
