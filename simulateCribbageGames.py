@@ -821,6 +821,47 @@ def simulate_game(
                     if pone_is_first_pone
                     else first_dealer_select_kept_cards(dealt_hands[0])
                 )
+                if (
+                    first_pone_select_kept_cards == keep_user_selected
+                    and pone_is_first_pone
+                    or first_dealer_select_kept_cards == keep_user_selected
+                    and pone_is_first_dealer
+                ):
+                    static_strategy_pone_kept_cards = (
+                        BEST_STATIC_SELECT_PONE_KEPT_CARDS(dealt_hands[0])
+                    )
+                    if set(kept_pone_hand) != set(static_strategy_pone_kept_cards):
+                        print(
+                            f"(Static discard coach would have kept: {Hand(sorted(static_strategy_pone_kept_cards, reverse=True))})"
+                        )
+                    else:
+                        print(
+                            "(Static coach would have kept the same cards as user did.)"
+                        )
+
+                    dynamic_strategy_pone_kept_cards = (
+                        player_select_kept_cards_based_on_simulation(
+                            320,
+                            hide_first_pone_hand
+                            if pone_is_first_pone
+                            else hide_first_dealer_hand,
+                            game_score,
+                            dealt_hands[0],
+                            PONE,
+                        )
+                    )
+                    dynamic_and_static_pone_discard_coaches_agree = set(
+                        static_strategy_pone_kept_cards
+                    ) == set(dynamic_strategy_pone_kept_cards)
+                    if set(kept_pone_hand) != set(dynamic_strategy_pone_kept_cards):
+                        print(
+                            f"(Dynamic discard coach {'agrees' if dynamic_and_static_pone_discard_coaches_agree else 'disagrees'} with static discard coach and {'also ' if dynamic_and_static_pone_discard_coaches_agree else ''}would have instead kept: {Hand(sorted(dynamic_strategy_pone_kept_cards, reverse=True))})"
+                        )
+                    else:
+                        print(
+                            "(Dynamic discard coach would have kept the same cards as user did.)"
+                        )
+
         elif is_first_simulation_hand and first_pone_dealt_cards:
             optional_kept_pone_hand = None
             while (
@@ -891,6 +932,47 @@ def simulate_game(
                     if dealer_is_first_dealer
                     else first_pone_select_kept_cards(dealt_hands[1])
                 )
+                if (
+                    first_dealer_select_kept_cards == keep_user_selected
+                    and dealer_is_first_dealer
+                    or first_pone_select_kept_cards == keep_user_selected
+                    and dealer_is_first_pone
+                ):
+                    static_strategy_dealer_kept_cards = (
+                        BEST_STATIC_SELECT_DEALER_KEPT_CARDS(dealt_hands[1])
+                    )
+                    if set(kept_dealer_hand) != set(static_strategy_dealer_kept_cards):
+                        print(
+                            f"(Static discard coach would have instead kept: {Hand(sorted(static_strategy_dealer_kept_cards, reverse=True))}.)"
+                        )
+                    else:
+                        print(
+                            "(Static discard coach would have kept the same cards as user did.)"
+                        )
+
+                    dynamic_strategy_dealer_kept_cards = (
+                        player_select_kept_cards_based_on_simulation(
+                            320,
+                            hide_first_dealer_hand
+                            if dealer_is_first_dealer
+                            else hide_first_pone_hand,
+                            game_score,
+                            dealt_hands[1],
+                            DEALER,
+                        )
+                    )
+                    dynamic_and_static_discard_coaches_agree = set(
+                        static_strategy_dealer_kept_cards
+                    ) == set(dynamic_strategy_dealer_kept_cards)
+                    if set(kept_dealer_hand) != set(dynamic_strategy_dealer_kept_cards):
+                        print(
+                            f"(Dynamic discard coach {'agrees' if dynamic_and_static_discard_coaches_agree else 'disagrees'} with static discard coach and {'also ' if dynamic_and_static_discard_coaches_agree else ''}would have instead kept: {Hand(sorted(dynamic_strategy_dealer_kept_cards, reverse=True))}.)"
+                        )
+                    else:
+                        print(
+                            "(Dynamic discard coach would have kept the same cards as user did.)"
+                        )
+
         elif is_first_simulation_hand and first_dealer_dealt_cards:
             optional_kept_dealer_hand = None
             while (
@@ -1043,6 +1125,58 @@ def simulate_game(
                             get_play_to_31_cards(plays_to_31[-1]),
                         )
                     ]
+                    if (
+                        select_play == play_user_selected
+                        and len(legal_play_actions) > 1
+                    ):
+                        static_strategy_player_to_play_play = legal_play_actions[
+                            DEFAULT_SELECT_PLAY(
+                                [
+                                    playable_card
+                                    for playable_card in legal_play_actions
+                                    if isinstance(playable_card, Card)
+                                ],
+                                play_count,
+                                get_play_to_31_cards(plays_to_31[-1]),
+                            )
+                        ]
+                        if player_to_play_play != static_strategy_player_to_play_play:
+                            print(
+                                f"(Static play coach would have instead played: {static_strategy_player_to_play_play}.)"
+                            )
+                        else:
+                            print(
+                                "(Static play coach would have played the same card as user did.)"
+                            )
+
+                        dynamic_strategy_player_to_play_play = play_based_on_simulation(
+                            1800,
+                            False,
+                            game_score,
+                            first_pone_to_play,
+                            dealt_hands[player_to_play],
+                            kept_hands[player_to_play],
+                            starter,
+                            [
+                                play_action
+                                for play_to_31 in plays_to_31
+                                for play_action in play_to_31
+                            ],
+                            player_to_play,
+                            pone_is_first_pone,
+                        )
+                        dynamic_and_static_play_coaches_agree = (
+                            static_strategy_player_to_play_play
+                            == dynamic_strategy_player_to_play_play
+                        )
+                        if player_to_play_play != dynamic_strategy_player_to_play_play:
+                            print(
+                                f"(Dynamic play coach {'agrees' if dynamic_and_static_play_coaches_agree else 'disagrees'} with static play coach and {'also ' if dynamic_and_static_play_coaches_agree else ''}would have instead played: {dynamic_strategy_player_to_play_play}.)"
+                            )
+                        else:
+                            print(
+                                "(Dynamic play coach would have played the same card as user did.)"
+                            )
 
             plays_to_31[-1].append(player_to_play_play)
 
@@ -2411,6 +2545,10 @@ def keep_max_post_cut_hand_plus_crib_points(dealt_cards):
     return keep_max_post_cut_hand_plus_or_minus_crib_points(dealt_cards, plus_crib=True)
 
 
+BEST_STATIC_SELECT_PONE_KEPT_CARDS = keep_max_post_cut_hand_minus_crib_points
+BEST_STATIC_SELECT_DEALER_KEPT_CARDS = keep_max_post_cut_hand_plus_crib_points
+
+
 def play_first(
     playable_cards: Sequence[Card],
     current_play_count: PlayCount,
@@ -2780,7 +2918,7 @@ def play_based_on_simulation(
             post_initial,
         ), post_initial_stats in sorted_simulated_players_statistics:
             print(
-                f"{post_initial} first play: {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_play'], CONFIDENCE_LEVEL)}"
+                f"{post_initial} first play: {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_game_points'], CONFIDENCE_LEVEL)} game points; {post_initial_stats['first_pone_minus_first_dealer_play'].mean():+9.5f} Δ-peg + {post_initial_stats['first_pone_minus_first_dealer_hand'].mean():+9.5f} Δ-hand + {post_initial_stats['first_pone_minus_first_dealer_crib'].mean():+9.5f} crib = {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_total_points'], CONFIDENCE_LEVEL)} overall"
             )
 
     return sorted_simulated_players_statistics[0][0][1]
@@ -2891,7 +3029,7 @@ def player_select_kept_cards_based_on_simulation(
             post_initial,
         ), keep_stats in sorted_simulated_players_statistics:
             print(
-                f"{Hand(sorted(keep, reverse=True))} - {Hand(sorted(set(dealt_hand) - set(keep), reverse=True))}: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_total_points'], CONFIDENCE_LEVEL)}"
+                f"{Hand(sorted(keep, reverse=True))} - {Hand(sorted(set(dealt_hand) - set(keep), reverse=True))}: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_game_points'], CONFIDENCE_LEVEL)} game points; {keep_stats['first_pone_minus_first_dealer_play'].mean():+9.5f} Δ-peg + {keep_stats['first_pone_minus_first_dealer_hand'].mean():+9.5f} Δ-hand + {keep_stats['first_pone_minus_first_dealer_crib'].mean():+9.5f} crib = {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_total_points'], CONFIDENCE_LEVEL)} overall"
             )
 
     return sorted_simulated_players_statistics[0][0][0]

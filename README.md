@@ -57,15 +57,13 @@ in the expected game points differential (and play points differential if no gam
 for different possible discards or plays.
 
 ## Definite pre-first version or release goals
-- UI/UX improvements:
-  - add a 'coach mode': show the user computer recommended action after user has taken a play (including discard) action.
 - Add support for time-limited discard simulations and simulation-based discard strategies.
 
 ## Maybe pre-first version or release goals
 
 ## Probably not pre-first version or release goals
 - Improve simulation-based discard and play strategies:
-  - Simulate to end of game not end of hand to avoid making positional errors near or in the fourth leg (91-120 points) of play.
+  - Simulate to end of game not end of hand to avoid making positional errors near or in the fourth leg (91-120 points) of play... or horizon effect errors prioritizing moves ending the game in player's favour over possibly superior plays which do not end the play in this hand.
   - Implement simulation-based discard and play where immediate opponent reponse is also simulation-based but based on fewer simluated games; then
   - Implement simulation-based discard and play where multiple subsequent opponent or self play or discard actions are also simulation-based but based on fewer simluated games. (Keys to success: tuning of decay factor; determining whether the positional evaluation benefits of low (< 32 for discard, for example) simulation counts outweigh their higher error rate costs.)
 - Improve play simulation and play simulation based play accuracy:
@@ -90,6 +88,10 @@ for different possible discards or plays.
 - Improve simulation-based play and discard speed and strength:
   - Increase performance and simulation-based play strategy strengths via performance improvements in Python or other programming language.
 
+## Current known shortcomings
+
+- Horizon effect: discard or play based on simulation at a score where the game _may_ end in the current hand prioritizes discards or plays that _may_ end the game in the simulation in favour of the player to play over discards or plays that do not end the game this hand regardless of quality of move - e.g. pone discard from T♣,9♥,9♣,5♠,2♦,2♣ at 94(pone)-79(dealer), dealer response to 3h lead holding kh,qh,td,5c with 9d,4h discarded and kc starter.
+
 ## Current known bugs
 
 - First pone and first dealer win percentages do not always exactly add up to 1 and standard deviations do not equal in 10,000+ game simulations. (They do add up to 1 and have equal standard deviations in <= 5,000 game simulations.) Perhaps just a rounding error in runstats/Statistics, but perhaps a bug?
@@ -102,6 +104,7 @@ for different possible discards or plays.
   - All cards in crib having same suit but starter not having same suit was scoring 4 points in crib when it should have been scoring 0.
   - All cards in hand having same suit and starter having same suit was scoring 0 points in hand when it should have been scoring 5.
 - UI/UX improvements:
+  - add a 'coach mode': show the user computer recommended action after user has taken a play (including discard) action.
   - add `--first-(pone|dealer)-keep-user-entered` discard strategy allow for complete human play against this program (status: implemented);
   - accept card instead of hand index entry on play select (status: implemented);
   - allow user to press enter when they have only one play option or must say Go (status: implemented);
