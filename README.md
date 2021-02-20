@@ -56,6 +56,10 @@ Provide efficient, user-friendly discard and play analysis factoring
 in the expected game points differential (and play points differential if no game points differential) to end of hand(s) or game above opponent
 for different possible discards or plays.
 
+## Next version goals
+- Eliminate horizon effect in sim-based play:
+  - (Somehow) Gather and report on win%, gamePts% to end of game from various start of hand game score (first pone points to first dealer points). (Can use this to estimate win% in simulated hands which do not end in a win or a loss!)
+
 ## Definite pre-first version or release goals
 
 ## Maybe pre-first version or release goals
@@ -79,7 +83,7 @@ for different possible discards or plays.
 - Improve development speed and quality:
   - Automate execution and verification of above smoke tests.
 - Improve simulation-based discard and play strategies:
-  - Simulate to end of game not end of hand to avoid making positional errors near or in the fourth leg (91-120 points) of play... or horizon effect errors prioritizing moves ending the game in player's favour over possibly superior plays which do not end the play in this hand. (Too slow in 2021-02-20 Python implementation - requires one or more of more cacheing, better algorithms and a faster programming language.)
+  - Simulate to end of game not end of hand to avoid making positional errors near or in the fourth leg (91-120 points) of play... or horizon effect errors prioritizing moves ending the game in player's favour over possibly superior plays which do not end the play in this hand. (Too slow in 2021-02-20 Python implementation - requires one or more of more cacheing (cache win %, E(gamePoints) stats at all end of hand firstPone-firstDealer scores), better algorithms and a faster programming language.)
   - Implement simulation-based discard and play where immediate opponent reponse is also simulation-based but based on fewer simluated games; then
   - Implement simulation-based discard and play where multiple subsequent opponent or self play or discard actions are also simulation-based but based on fewer simluated games. (Keys to success: tuning of decay factor; determining whether the positional evaluation benefits of low (< 32 for discard, for example) simulation counts outweigh their higher error rate costs.)
 - Further improve current best discard strategy:
