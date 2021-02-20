@@ -638,8 +638,8 @@ def simulate_game(
     first_pone_play_based_on_simulations: Optional[int],
     first_dealer_select_play,
     first_dealer_play_based_on_simulations: Optional[int],
-    hide_first_pone_hand: bool,
-    hide_first_dealer_hand: bool,
+    hide_first_pone_hands: bool,
+    hide_first_dealer_hands: bool,
     first_pone_dealt_cards_possible_keeps_cycle,  # type: itertools.cycle[Tuple[Card, ...]]
     first_dealer_dealt_cards_possible_keeps_cycle,  # type: itertools.cycle[Tuple[Card, ...]]
     dropped_keeps,
@@ -748,16 +748,16 @@ def simulate_game(
             and len(dealt_hands[1]) == DEALT_CARDS_LEN
         ), f"{DEALT_CARDS_LEN} dealt cards expected in each hand but {len(dealt_hands[0])} and {len(dealt_hands[1])} actually dealt"
 
-        show_pone_hand: bool = (pone_is_first_pone and not hide_first_pone_hand) or (
-            pone_is_first_dealer and not hide_first_dealer_hand
+        show_pone_hand: bool = (pone_is_first_pone and not hide_first_pone_hands) or (
+            pone_is_first_dealer and not hide_first_dealer_hands
         )
         if show_pone_hand:
             print(
                 f"{get_player_name(0):6} dealt {Hand(dealt_hands[0])} (sorted: {Hand(sorted(dealt_hands[0], reverse=True))})"
             )
         show_dealer_hand: bool = (
-            dealer_is_first_dealer and not hide_first_dealer_hand
-        ) or (dealer_is_first_pone and not hide_first_pone_hand)
+            dealer_is_first_dealer and not hide_first_dealer_hands
+        ) or (dealer_is_first_pone and not hide_first_pone_hands)
         if show_dealer_hand:
             print(
                 f"{get_player_name(1):6} dealt {Hand(dealt_hands[1])} (sorted: {Hand(sorted(dealt_hands[1], reverse=True))})"
@@ -776,7 +776,7 @@ def simulate_game(
                 ]
             else:
                 kept_pone_hand = first_pone_select_kept_cards(dealt_hands[0])
-                if not hide_first_pone_hand:
+                if not hide_first_pone_hands:
                     print(
                         f"{get_player_name(0):6} keeps {Hand(kept_pone_hand)} (sorted: {Hand(sorted(kept_pone_hand, reverse=True))})"
                     )
@@ -784,7 +784,7 @@ def simulate_game(
                     pone_kept_card in kept_pone_hand
                     for pone_kept_card in pone_kept_cards
                 ):
-                    if not hide_first_pone_hand:
+                    if not hide_first_pone_hands:
                         print(
                             f"...but then {Hand(set(pone_kept_cards).difference(kept_pone_hand))} would not be kept by pone"
                         )
@@ -808,9 +808,9 @@ def simulate_game(
 
                 kept_pone_hand = player_select_kept_cards_based_on_simulation(
                     simulated_hand_count,
-                    hide_first_pone_hand
+                    hide_first_pone_hands
                     if pone_is_first_pone
-                    else hide_first_dealer_hand,
+                    else hide_first_dealer_hands,
                     game_score,
                     dealt_hands[0],
                     PONE,
@@ -842,9 +842,9 @@ def simulate_game(
                     dynamic_strategy_pone_kept_cards = (
                         player_select_kept_cards_based_on_simulation(
                             320,
-                            hide_first_pone_hand
+                            hide_first_pone_hands
                             if pone_is_first_pone
-                            else hide_first_dealer_hand,
+                            else hide_first_dealer_hands,
                             game_score,
                             dealt_hands[0],
                             PONE,
@@ -887,7 +887,7 @@ def simulate_game(
                 ]
             else:
                 kept_dealer_hand = first_dealer_select_kept_cards(dealt_hands[1])
-                if not hide_first_dealer_hand:
+                if not hide_first_dealer_hands:
                     print(
                         f"{get_player_name(1):6} would keep {Hand(kept_dealer_hand)} (sorted: {Hand(sorted(kept_dealer_hand, reverse=True))})"
                     )
@@ -895,7 +895,7 @@ def simulate_game(
                     dealer_kept_card in kept_dealer_hand
                     for dealer_kept_card in dealer_kept_cards
                 ):
-                    if not hide_first_dealer_hand:
+                    if not hide_first_dealer_hands:
                         print(
                             f"...but then {Hand(set(dealer_kept_cards).difference(kept_dealer_hand))} would not be kept by dealer"
                         )
@@ -919,9 +919,9 @@ def simulate_game(
 
                 kept_dealer_hand = player_select_kept_cards_based_on_simulation(
                     simulated_hand_count,
-                    hide_first_dealer_hand
+                    hide_first_dealer_hands
                     if dealer_is_first_dealer
-                    else hide_first_pone_hand,
+                    else hide_first_pone_hands,
                     game_score,
                     dealt_hands[1],
                     DEALER,
@@ -953,9 +953,9 @@ def simulate_game(
                     dynamic_strategy_dealer_kept_cards = (
                         player_select_kept_cards_based_on_simulation(
                             320,
-                            hide_first_dealer_hand
+                            hide_first_dealer_hands
                             if dealer_is_first_dealer
-                            else hide_first_pone_hand,
+                            else hide_first_pone_hands,
                             game_score,
                             dealt_hands[1],
                             DEALER,
@@ -1474,8 +1474,8 @@ def simulate_games(
     first_dealer_select_play: PlaySelector,
     first_dealer_play_based_on_simulations: Optional[int],
     select_each_post_initial_play: bool,
-    hide_first_pone_hand: bool,
-    hide_first_dealer_hand: bool,
+    hide_first_pone_hands: bool,
+    hide_first_dealer_hands: bool,
     hide_play_actions: bool,
     games_per_update: int,
     show_statistics_updates: bool,
@@ -1629,8 +1629,8 @@ def simulate_games(
                     first_pone_play_based_on_simulations,
                     first_dealer_select_play,
                     first_dealer_play_based_on_simulations,
-                    hide_first_pone_hand,
-                    hide_first_dealer_hand,
+                    hide_first_pone_hands,
+                    hide_first_dealer_hands,
                     pone_dealt_cards_possible_keeps_cycle,
                     dealer_dealt_cards_possible_keeps_cycle,
                     dropped_keeps,
@@ -3315,12 +3315,12 @@ if __name__ == "__main__":
         help="hide the workers startup details message",
     )
     parser.add_argument(
-        "--hide-first-pone-hand",
+        "--hide-first-pone-hands",
         action="store_true",
         help="suppress output of first pone dealt hand and discard",
     )
     parser.add_argument(
-        "--hide-first-dealer-hand",
+        "--hide-first-dealer-hands",
         action="store_true",
         help="suppress output of first dealer hand and discard",
     )
@@ -3569,8 +3569,8 @@ if __name__ == "__main__":
         first_dealer_select_play,
         args.first_dealer_play_based_on_simulations,
         args.select_each_post_initial_play,
-        args.hide_first_pone_hand,
-        args.hide_first_dealer_hand,
+        args.hide_first_pone_hands,
+        args.hide_first_dealer_hands,
         bool(args.hide_play_actions),
         args.games_per_update,
         True,
