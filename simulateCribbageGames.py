@@ -333,7 +333,7 @@ NextAction = Tuple[Tuple[Card, ...], Optional[Card]]
 def statistics_push(
     statistics_by_next_action: Dict[NextAction, Statistics],
     key: NextAction,
-    value: Union[Points, GamePoints, bool],
+    value: Union[Points, Wins, GamePoints, bool],
 ):
     if key not in statistics_by_next_action:
         statistics_by_next_action[key] = Statistics()
@@ -1504,6 +1504,10 @@ class GameScoreResultsTallies(NamedTuple):
         return f"{self.first_pone_wins}-{self.first_dealer_wins} wins, {self.first_pone_game_points}-{self.first_dealer_game_points} game points"
 
 
+Wins = NewType("Wins", int)
+ExpectedWins = NewType("ExpectedWins", float)
+
+
 def simulate_games(
     process_game_count,
     overall_game_count,
@@ -1529,6 +1533,7 @@ def simulate_games(
     first_dealer_select_play: PlaySelector,
     first_dealer_play_based_on_simulations: Optional[int],
     tally_start_of_hand_position_results: bool,
+    estimate_incomplete_game_wins_and_game_points: bool,
     start_of_hand_position_results_tallies: shelve.DbfilenameShelf,
     select_each_post_initial_play: bool,
     hide_first_pone_hands: bool,
@@ -1716,18 +1721,22 @@ def simulate_games(
                 initial_first_dealer_score + first_dealer_total_points
             )
 
+            first_pone_game_points: GamePoints
+            first_dealer_game_points: GamePoints
             (first_pone_game_points, first_dealer_game_points) = game_points(
                 final_first_pone_score, final_first_dealer_score
             )
 
-            first_pone_wins: bool = first_pone_game_points > 0
-            first_dealer_wins: bool = first_dealer_game_points > 0
+            first_pone_wins: Wins = Wins(1 if first_pone_game_points > 0 else 0)
+            first_dealer_wins: Wins = Wins(1 if first_dealer_game_points > 0 else 0)
 
             if tally_start_of_hand_position_results:
                 for (
-                    start_of_next_hand_score
+                    game_simulation_result_start_of_next_hand_score
                 ) in game_simulation_result.start_of_hand_scores:
-                    shelf_start_of_hand_score_key: str = str(start_of_next_hand_score)
+                    shelf_start_of_hand_score_key: str = str(
+                        game_simulation_result_start_of_next_hand_score
+                    )
                     if (
                         shelf_start_of_hand_score_key
                         not in start_of_hand_position_results_tallies
@@ -1750,7 +1759,67 @@ def simulate_games(
                         )
                     )
                     print(
-                        f"Start of hand score {start_of_next_hand_score} game results tallies incremented to {start_of_hand_position_results_tallies[shelf_start_of_hand_score_key]}"
+                        f"Start of hand score {game_simulation_result_start_of_next_hand_score} game results tallies incremented to {start_of_hand_position_results_tallies[shelf_start_of_hand_score_key]}"
+                    )
+
+            next_action: NextAction = (
+                game_simulation_result.kept_cards,
+                post_initial_play,
+            )
+
+            if (
+                estimate_incomplete_game_wins_and_game_points
+                and first_pone_game_points == 0
+                and first_dealer_game_points == 0
+            ):
+                next_dealer_is_first_pone: bool = (
+                    len(game_simulation_result.start_of_hand_scores) % 2 == 1
+                )
+                start_of_next_hand_score: StartOfHandScore = StartOfHandScore(
+                    final_first_pone_score,
+                    final_first_dealer_score,
+                    next_dealer_is_first_pone,
+                )
+                try:
+                    start_of_hand_position_results_tallies_entry: GameScoreResultsTallies = start_of_hand_position_results_tallies[
+                        str(start_of_next_hand_score)
+                    ]
+                    tallied_game_count = (
+                        start_of_hand_position_results_tallies_entry.first_pone_wins
+                        + start_of_hand_position_results_tallies_entry.first_dealer_wins
+                    )
+                    if tallied_game_count:
+                        first_pone_expected_wins: ExpectedWins = ExpectedWins(
+                            (
+                                start_of_hand_position_results_tallies_entry.first_pone_wins
+                            )
+                            / tallied_game_count
+                        )
+                        first_pone_expected_game_points: ExpectedWins = ExpectedWins(
+                            (
+                                start_of_hand_position_results_tallies_entry.first_pone_game_points
+                            )
+                            / tallied_game_count
+                        )
+                        first_dealer_expected_wins: ExpectedWins = ExpectedWins(
+                            (
+                                start_of_hand_position_results_tallies_entry.first_dealer_wins
+                            )
+                            / tallied_game_count
+                        )
+                        first_dealer_expected_game_points: ExpectedWins = ExpectedWins(
+                            (
+                                start_of_hand_position_results_tallies_entry.first_dealer_game_points
+                            )
+                            / tallied_game_count
+                        )
+                        # TODO: remove 'COULD BE' and actually use the expected game points estimate
+                        print(
+                            f"{first_pone_expected_wins-first_dealer_expected_wins:+5.3f} wins Δ, {first_pone_expected_game_points-first_dealer_expected_game_points:+5.3f} game points Δ over {tallied_game_count} simulated games COULD BE substituted in at {start_of_next_hand_score=} after NextAction: ({Hand(sorted(next_action[0], reverse=True))}, {next_action[1]})."
+                        )
+                except KeyError:
+                    print(
+                        f"{0:+5.3f} wins Δ, {0:+5.3f} game points Δ retained as no simulated games are available at {start_of_next_hand_score=} after NextAction: ({Hand(sorted(next_action[0], reverse=True))}, {next_action[1]})."
                     )
 
             if not hide_play_actions:
@@ -1763,10 +1832,6 @@ def simulate_games(
                 print()
 
             # TODO: used namedtuple
-            next_action: NextAction = (
-                game_simulation_result.kept_cards,
-                post_initial_play,
-            )
             statistics_push(
                 first_pone_play_statistics,
                 next_action,
@@ -2999,6 +3064,7 @@ def play_based_on_simulation(
         DEFAULT_SELECT_PLAY,
         None,
         tally_start_of_hand_position_results,
+        estimate_incomplete_game_wins_and_game_points,
         start_of_hand_position_results_tallies,
         True,
         True,
@@ -3443,6 +3509,10 @@ if __name__ == "__main__":
         action="store_true",
     )
     parser.add_argument(
+        "--estimate-incomplete-game-wins-and-game-points",
+        action="store_true",
+    )
+    parser.add_argument(
         "--show-calc-cache-usage-stats",
         action="store_true",
         help="show calculation cache usage statistics",
@@ -3715,6 +3785,7 @@ if __name__ == "__main__":
         first_dealer_select_play,
         args.first_dealer_play_based_on_simulations,
         tally_start_of_hand_position_results,
+        args.estimate_incomplete_game_wins_and_game_points,
         start_of_hand_position_results_tallies,
         args.select_each_post_initial_play,
         args.hide_first_pone_hands,
