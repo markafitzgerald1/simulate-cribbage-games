@@ -652,6 +652,7 @@ def simulate_game(
     first_pone_play_based_on_simulations: Optional[int],
     first_dealer_select_play,
     first_dealer_play_based_on_simulations: Optional[int],
+    estimate_incomplete_game_wins_and_game_points: bool,
     hide_first_pone_hands: bool,
     hide_first_dealer_hands: bool,
     first_pone_dealt_cards_possible_keeps_cycle,  # type: itertools.cycle[Tuple[Card, ...]]
@@ -836,6 +837,7 @@ def simulate_game(
                     game_score,
                     dealt_hands[0],
                     PONE,
+                    estimate_incomplete_game_wins_and_game_points,
                 )
             else:
                 kept_pone_hand = (
@@ -870,6 +872,7 @@ def simulate_game(
                             game_score,
                             dealt_hands[0],
                             PONE,
+                            estimate_incomplete_game_wins_and_game_points,
                         )
                     )
                     dynamic_and_static_pone_discard_coaches_agree = set(
@@ -947,6 +950,7 @@ def simulate_game(
                     game_score,
                     dealt_hands[1],
                     DEALER,
+                    estimate_incomplete_game_wins_and_game_points,
                 )
             else:
                 kept_dealer_hand = (
@@ -981,6 +985,7 @@ def simulate_game(
                             game_score,
                             dealt_hands[1],
                             DEALER,
+                            estimate_incomplete_game_wins_and_game_points,
                         )
                     )
                     dynamic_and_static_discard_coaches_agree = set(
@@ -1105,6 +1110,7 @@ def simulate_game(
                     ],
                     player_to_play,
                     pone_is_first_pone,
+                    estimate_incomplete_game_wins_and_game_points,
                 )
             else:
                 select_play = (
@@ -1186,6 +1192,7 @@ def simulate_game(
                             ],
                             player_to_play,
                             pone_is_first_pone,
+                            estimate_incomplete_game_wins_and_game_points,
                         )
                         dynamic_and_static_play_coaches_agree = (
                             static_strategy_player_to_play_play
@@ -1691,6 +1698,7 @@ def simulate_games(
                     first_pone_play_based_on_simulations,
                     first_dealer_select_play,
                     first_dealer_play_based_on_simulations,
+                    estimate_incomplete_game_wins_and_game_points,
                     hide_first_pone_hands,
                     hide_first_dealer_hands,
                     pone_dealt_cards_possible_keeps_cycle,
@@ -3001,6 +3009,7 @@ def play_based_on_simulation(
     initial_play_actions: List[PlayAction],
     player: Player,
     pone_is_parent_game_first_pone: bool,
+    estimate_incomplete_game_wins_and_game_points: bool,
 ):
     played_cards: List[Card] = [
         initial_play_action
@@ -3133,6 +3142,7 @@ def player_select_kept_cards_based_on_simulation(
     current_game_score: GameScore,
     dealt_hand: List[Card],
     player: Player,
+    estimate_incomplete_game_wins_and_game_points: bool,
 ):
     TOTAL_DISCARD_SIMULATION_COUNT: int = POSSIBLE_DISCARD_COUNT * simulated_hand_count
     if not hide_hand:
@@ -3178,6 +3188,7 @@ def player_select_kept_cards_based_on_simulation(
         DEFAULT_SELECT_PLAY,
         None,
         tally_start_of_hand_position_results,
+        estimate_incomplete_game_wins_and_game_points,
         start_of_hand_position_results_tallies,
         False,
         True,
