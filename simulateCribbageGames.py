@@ -31,6 +31,7 @@ from typing import (
 from enum import Enum
 from math import comb, hypot
 from diskcache import Cache  # type: ignore
+import shelve
 
 
 MAX_CARD_COUNTING_VALUE = 10
@@ -604,6 +605,7 @@ DEALT_CARDS_LEN: CardCount = CardCount(6)
 class GameSimulationResult(NamedTuple):
     kept_cards: Tuple[Card, ...]
     score: GameScore
+    start_of_hand_scores: List[StartOfHandScore]
     non_kept_card_kept_or_non_kept_initial_played_card_played: bool
 
 
@@ -618,6 +620,18 @@ def get_game_player(player_to_play: Player, hand: int) -> GamePlayer:
 
 def get_play_to_31_cards(play_to_31: PlayTo31) -> Sequence[Card]:
     return [card for card in play_to_31 if isinstance(card, Card)]
+
+
+class StartOfHandScore(NamedTuple):
+    first_pone_points: Points
+    first_dealer_points: Points
+    dealer_is_first_pone: bool
+
+    def __repr__(self) -> str:
+        return f"StartOfHandScore({self.first_pone_points}, {self.first_dealer_points}, {self.dealer_is_first_pone})"
+
+    def __str__(self) -> str:
+        return f"{self.first_pone_points}{'[D]' if self.dealer_is_first_pone else ''}-{self.first_dealer_points}{'' if self.dealer_is_first_pone else '[D]'}"
 
 
 def simulate_game(
@@ -671,11 +685,19 @@ def simulate_game(
     non_kept_initial_played_card_played: bool = False
     not_all_kept_cards_in_kept_hand: bool = False
     post_initial_play_is_illegal: bool = False
+    start_of_hand_scores: List[StartOfHandScore] = []
     for hand in range(maximum_hands_per_game):
         pone_is_first_pone: bool = hand % 2 == 0
         pone_is_first_dealer: bool = not pone_is_first_pone
         dealer_is_first_dealer: bool = pone_is_first_pone
         dealer_is_first_pone: bool = not dealer_is_first_dealer
+
+        start_of_hand_scores.append(
+            StartOfHandScore(
+                game_score.pone_total, game_score.dealer_total, dealer_is_first_pone
+            )
+        )
+
         is_first_simulation_hand: bool = not hand
         if is_first_simulation_hand and (
             first_pone_dealt_cards
@@ -1391,6 +1413,7 @@ def simulate_game(
     return GameSimulationResult(
         kept_cards,
         game_score,
+        start_of_hand_scores,
         not_all_kept_cards_in_kept_hand
         or non_kept_initial_played_card_played
         or post_initial_play_is_illegal,
@@ -1449,6 +1472,38 @@ def get_length_across_all_keys(players_statistics):
     )
 
 
+Tally = NewType("Tally", int)
+
+
+class GameScoreResultsTallies(NamedTuple):
+    first_pone_wins: Tally
+    first_dealer_wins: Tally
+    first_pone_game_points: Tally
+    first_dealer_game_points: Tally
+
+    def add(
+        self, game_score_results_talles: GameScoreResultsTallies
+    ) -> GameScoreResultsTallies:
+        return GameScoreResultsTallies(
+            Tally(self.first_pone_wins + game_score_results_talles.first_pone_wins),
+            Tally(self.first_dealer_wins + game_score_results_talles.first_dealer_wins),
+            Tally(
+                self.first_pone_game_points
+                + game_score_results_talles.first_pone_game_points
+            ),
+            Tally(
+                self.first_dealer_game_points
+                + game_score_results_talles.first_dealer_game_points
+            ),
+        )
+
+    def __repr__(self) -> str:
+        return f"GameScoreResultsTallies({self.first_pone_wins}, {self.first_dealer_wins}, {self.first_pone_game_points}, {self.first_dealer_game_points})"
+
+    def __str__(self) -> str:
+        return f"{self.first_pone_wins}-{self.first_dealer_wins} wins, {self.first_pone_game_points}-{self.first_dealer_game_points} game points"
+
+
 def simulate_games(
     process_game_count,
     overall_game_count,
@@ -1473,6 +1528,8 @@ def simulate_games(
     first_pone_play_based_on_simulations: Optional[int],
     first_dealer_select_play: PlaySelector,
     first_dealer_play_based_on_simulations: Optional[int],
+    tally_start_of_hand_position_results: bool,
+    start_of_hand_position_results_tallies: shelve.DbfilenameShelf,
     select_each_post_initial_play: bool,
     hide_first_pone_hands: bool,
     hide_first_dealer_hands: bool,
@@ -1663,6 +1720,39 @@ def simulate_games(
                 final_first_pone_score, final_first_dealer_score
             )
 
+            first_pone_wins: bool = first_pone_game_points > 0
+            first_dealer_wins: bool = first_dealer_game_points > 0
+
+            if tally_start_of_hand_position_results:
+                for (
+                    start_of_next_hand_score
+                ) in game_simulation_result.start_of_hand_scores:
+                    shelf_start_of_hand_score_key: str = str(start_of_next_hand_score)
+                    if (
+                        shelf_start_of_hand_score_key
+                        not in start_of_hand_position_results_tallies
+                    ):
+                        start_of_hand_position_results_tallies[
+                            shelf_start_of_hand_score_key
+                        ] = GameScoreResultsTallies(
+                            Tally(0), Tally(0), Tally(0), Tally(0)
+                        )
+                    start_of_hand_position_results_tallies[
+                        shelf_start_of_hand_score_key
+                    ] = start_of_hand_position_results_tallies[
+                        shelf_start_of_hand_score_key
+                    ].add(
+                        GameScoreResultsTallies(
+                            Tally(first_pone_wins),
+                            Tally(first_dealer_wins),
+                            Tally(first_pone_game_points),
+                            Tally(first_dealer_game_points),
+                        )
+                    )
+                    print(
+                        f"Start of hand score {start_of_next_hand_score} game results tallies incremented to {start_of_hand_position_results_tallies[shelf_start_of_hand_score_key]}"
+                    )
+
             if not hide_play_actions:
                 print(
                     f"+++ Score at end of game simulation: [{initial_first_pone_score + first_pone_total_points}-{initial_first_dealer_score + first_dealer_total_points}] for first pone and first dealer."
@@ -1705,7 +1795,7 @@ def simulate_games(
             statistics_push(
                 first_pone_wins_statistics,
                 next_action,
-                first_pone_game_points > 0,
+                first_pone_wins,
             )
 
             statistics_push(
@@ -1736,7 +1826,7 @@ def simulate_games(
             statistics_push(
                 first_dealer_wins_statistics,
                 next_action,
-                first_dealer_game_points > 0,
+                first_dealer_wins,
             )
 
             statistics_push(
@@ -2081,6 +2171,21 @@ def simulate_games(
                     print(
                         "cached_get_current_play_run_length",
                         cached_get_current_play_run_length.cache_info(),
+                    )
+                    print(
+                        "start_of_hand_position_results_tallies unique position count",
+                        len(start_of_hand_position_results_tallies),
+                    )
+                    start_of_hand_position_results_tallies_all_positions_occurrence_count: int = sum(
+                        [
+                            game_score_results_tally.first_pone_wins
+                            + game_score_results_tally.first_dealer_wins
+                            for game_score_results_tally in start_of_hand_position_results_tallies.values()
+                        ]
+                    )
+                    print(
+                        "start_of_hand_position_results_tallies all positions occurrence count",
+                        f"{start_of_hand_position_results_tallies_all_positions_occurrence_count}",
                     )
 
                 if (game_simulation_result.kept_cards) and len(
@@ -2893,6 +2998,8 @@ def play_based_on_simulation(
         None,
         DEFAULT_SELECT_PLAY,
         None,
+        tally_start_of_hand_position_results,
+        start_of_hand_position_results_tallies,
         True,
         True,
         True,
@@ -3004,6 +3111,8 @@ def player_select_kept_cards_based_on_simulation(
         None,
         DEFAULT_SELECT_PLAY,
         None,
+        tally_start_of_hand_position_results,
+        start_of_hand_position_results_tallies,
         False,
         True,
         True,
@@ -3330,6 +3439,10 @@ if __name__ == "__main__":
         help="suppress output of play actions (cards played, Go, points scored, count reset)",
     )
     parser.add_argument(
+        "--tally-start-of-hand-position-results",
+        action="store_true",
+    )
+    parser.add_argument(
         "--show-calc-cache-usage-stats",
         action="store_true",
         help="show calculation cache usage statistics",
@@ -3543,6 +3656,39 @@ if __name__ == "__main__":
         int(args.initial_dealer_score) if args.initial_dealer_score else 0
     )
 
+    tally_start_of_hand_position_results: bool = (
+        args.tally_start_of_hand_position_results
+        and args.process_count == 1
+        and not first_pone_dealt_cards
+        and not first_dealer_dealt_cards
+        and not first_pone_kept_cards
+        and not first_dealer_kept_cards
+        and not initial_starter
+        and not initial_play_actions
+        and first_pone_select_kept_cards == DEFAULT_SELECT_PONE_KEPT_CARDS
+        and first_dealer_select_kept_cards == DEFAULT_SELECT_DEALER_KEPT_CARDS
+        and first_pone_select_play == DEFAULT_SELECT_PLAY
+        and first_dealer_select_play == DEFAULT_SELECT_PLAY
+        and initial_pone_score == 0
+        and initial_dealer_score == 0
+        and not args.first_pone_select_each_possible_kept_hand
+        and not args.first_dealer_select_each_possible_kept_hand
+        and not args.select_each_post_initial_play
+    )
+    start_of_hand_position_results_tallies: shelve.DbfilenameShelf
+    start_of_hand_position_results_tallies_shelf_name: str = (
+        "start_of_hand_position_results_tallies_shelf"
+    )
+    try:
+        start_of_hand_position_results_tallies = shelve.open(
+            start_of_hand_position_results_tallies_shelf_name,
+            flag=("c" if tally_start_of_hand_position_results else "r"),
+        )
+    except Exception:
+        start_of_hand_position_results_tallies = shelve.open(
+            start_of_hand_position_results_tallies_shelf_name
+        )
+
     start_time_ns = time.time_ns()
     simulate_games_args = (
         game_count // args.process_count,
@@ -3568,6 +3714,8 @@ if __name__ == "__main__":
         args.first_pone_play_based_on_simulations,
         first_dealer_select_play,
         args.first_dealer_play_based_on_simulations,
+        tally_start_of_hand_position_results,
+        start_of_hand_position_results_tallies,
         args.select_each_post_initial_play,
         args.hide_first_pone_hands,
         args.hide_first_dealer_hands,
