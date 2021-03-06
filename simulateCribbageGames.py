@@ -887,7 +887,7 @@ def simulate_game(
                         )
 
                     dynamic_strategy_pone_kept_cards = player_select_kept_cards_based_on_simulation(
-                        320,  # TODO: make coach simulation length command-line configurable
+                        160,  # TODO: make coach simulation length command-line configurable
                         hide_first_pone_hands
                         if hand_pone_is_this_simulation_first_pone
                         else hide_first_dealer_hands,
@@ -915,7 +915,7 @@ def simulate_game(
                         or estimate_first_dealer_incomplete_game_wins_and_game_points
                     ):
                         dynamic_result_estimating_strategy_pone_kept_cards = player_select_kept_cards_based_on_simulation(
-                            320,  # TODO: make coach simulation length command-line configurable
+                            160,  # TODO: make coach simulation length command-line configurable
                             hide_first_pone_hands
                             if hand_pone_is_this_simulation_first_pone
                             else hide_first_dealer_hands,
@@ -1050,7 +1050,7 @@ def simulate_game(
                         )
 
                     dynamic_strategy_dealer_kept_cards = player_select_kept_cards_based_on_simulation(
-                        320,  # TODO: make coach simulation length command-line configurable
+                        160,  # TODO: make coach simulation length command-line configurable
                         hide_first_dealer_hands
                         if hand_dealer_is_this_simulation_first_dealer
                         else hide_first_pone_hands,
@@ -1078,7 +1078,7 @@ def simulate_game(
                         or estimate_first_dealer_incomplete_game_wins_and_game_points
                     ):
                         dynamic_result_estimating_strategy_pone_kept_cards = player_select_kept_cards_based_on_simulation(
-                            320,  # TODO: make coach simulation length command-line configurable
+                            160,  # TODO: make coach simulation length command-line configurable
                             hide_first_dealer_hands
                             if hand_dealer_is_this_simulation_first_dealer
                             else hide_first_pone_hands,
@@ -1302,7 +1302,7 @@ def simulate_game(
                             )
 
                         dynamic_strategy_player_to_play_play = play_based_on_simulation(
-                            1800,  # TODO: make coach simulation length command-line configurable
+                            900,  # TODO: make coach simulation length command-line configurable
                             hide_first_pone_hands
                             if hand_pone_is_this_simulation_first_pone
                             else hide_first_dealer_hands,
@@ -1340,7 +1340,7 @@ def simulate_game(
                             or estimate_first_dealer_incomplete_game_wins_and_game_points
                         ):
                             dynamic_result_estimating_strategy_player_to_play_play = play_based_on_simulation(
-                                1800,  # TODO: make coach simulation length command-line configurable
+                                900,  # TODO: make coach simulation length command-line configurable
                                 hide_first_pone_hands
                                 if hand_pone_is_this_simulation_first_pone
                                 else hide_first_dealer_hands,
