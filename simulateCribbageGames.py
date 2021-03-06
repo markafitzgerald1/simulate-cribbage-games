@@ -2009,7 +2009,7 @@ def simulate_games(
                         )
                 except KeyError:
                     if (
-                        not hide_play_actions
+                        (next_action[1] is None or not hide_play_actions)
                         and not (
                             first_pone_select_each_possible_kept_hand
                             and hide_first_pone_hands
