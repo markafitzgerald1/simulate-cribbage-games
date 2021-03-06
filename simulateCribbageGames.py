@@ -2008,6 +2008,17 @@ def simulate_games(
                             f"{first_pone_expected_wins-first_dealer_expected_wins:+5.3f} wins Δ, {first_pone_expected_game_points-first_dealer_expected_game_points:+5.3f} game points Δ over {tallied_game_count} simulated games COULD BE substituted in at {start_of_next_hand_score=} after NextAction: ({Hand(sorted(next_action[0], reverse=True))}, {next_action[1]})."
                         )
                 except KeyError:
+                    if (
+                        not hide_play_actions
+                        and not (
+                            first_pone_select_each_possible_kept_hand
+                            and hide_first_pone_hands
+                        )
+                        and not (
+                            first_dealer_select_each_possible_kept_hand
+                            and hide_first_dealer_hands
+                        )
+                    ):
                         print(
                             f"{0:+5.3f} wins Δ, {0:+5.3f} game points Δ retained as no simulated games are available at {start_of_next_hand_score=} after NextAction: ({Hand(sorted(next_action[0], reverse=True))}, {next_action[1]})."
                         )
