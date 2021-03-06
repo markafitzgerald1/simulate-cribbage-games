@@ -319,11 +319,11 @@ def get_stddev_of_mean(statistics):
     return statistics.stddev() / math.sqrt(len(statistics))
 
 
-def get_confidence_interval(statistics, confidence_level):
+def get_confidence_interval(statistics, confidence_level, precision=5):
     if len(statistics) == 1:
-        return f"{statistics.mean():+10.5f}"
+        return f"{statistics.mean():+{precision + 5}.{precision}f}"
 
-    return f"{statistics.mean():+10.5f} ± {get_z_statistic(confidence_level) * get_stddev_of_mean(statistics):8.5f}"
+    return f"{statistics.mean():+{precision + 5}.{precision}f} ± {get_z_statistic(confidence_level) * get_stddev_of_mean(statistics):{precision + 3}.{precision}f}"
 
 
 GamePoints = NewType("GamePoints", int)
@@ -2008,9 +2008,9 @@ def simulate_games(
                             f"{first_pone_expected_wins-first_dealer_expected_wins:+5.3f} wins Δ, {first_pone_expected_game_points-first_dealer_expected_game_points:+5.3f} game points Δ over {tallied_game_count} simulated games COULD BE substituted in at {start_of_next_hand_score=} after NextAction: ({Hand(sorted(next_action[0], reverse=True))}, {next_action[1]})."
                         )
                 except KeyError:
-                    print(
-                        f"{0:+5.3f} wins Δ, {0:+5.3f} game points Δ retained as no simulated games are available at {start_of_next_hand_score=} after NextAction: ({Hand(sorted(next_action[0], reverse=True))}, {next_action[1]})."
-                    )
+                        print(
+                            f"{0:+5.3f} wins Δ, {0:+5.3f} game points Δ retained as no simulated games are available at {start_of_next_hand_score=} after NextAction: ({Hand(sorted(next_action[0], reverse=True))}, {next_action[1]})."
+                        )
 
             if not hide_play_actions:
                 print(
@@ -3285,7 +3285,7 @@ def play_based_on_simulation(
             post_initial,
         ), post_initial_stats in sorted_simulated_players_statistics:
             print(
-                f"{post_initial} first play: {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_game_points'], CONFIDENCE_LEVEL)} game points; {post_initial_stats['first_pone_minus_first_dealer_play'].mean():+9.5f} Δ-peg + {post_initial_stats['first_pone_minus_first_dealer_hand'].mean():+9.5f} Δ-hand + {post_initial_stats['first_pone_minus_first_dealer_crib'].mean():+9.5f} crib = {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_total_points'], CONFIDENCE_LEVEL)} overall"
+                f"{post_initial} first play: {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_game_points'], CONFIDENCE_LEVEL, precision = 3)} game points; {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_play'], CONFIDENCE_LEVEL, precision = 3)} Δ-peg + {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_hand'], CONFIDENCE_LEVEL, precision = 3)} Δ-hand + {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_crib'], CONFIDENCE_LEVEL, precision = 3)} crib = {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_total_points'], CONFIDENCE_LEVEL, precision = 3)} overall"
             )
 
     return sorted_simulated_players_statistics[0][0][1]
@@ -3404,7 +3404,7 @@ def player_select_kept_cards_based_on_simulation(
             post_initial,
         ), keep_stats in sorted_simulated_players_statistics:
             print(
-                f"{Hand(sorted(keep, reverse=True))} - {Hand(sorted(set(dealt_hand) - set(keep), reverse=True))}: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_game_points'], CONFIDENCE_LEVEL)} game points; {keep_stats['first_pone_minus_first_dealer_play'].mean():+9.5f} Δ-peg + {keep_stats['first_pone_minus_first_dealer_hand'].mean():+9.5f} Δ-hand + {keep_stats['first_pone_minus_first_dealer_crib'].mean():+9.5f} crib = {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_total_points'], CONFIDENCE_LEVEL)} overall"
+                f"{Hand(sorted(keep, reverse=True))} - {Hand(sorted(set(dealt_hand) - set(keep), reverse=True))}: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_game_points'], CONFIDENCE_LEVEL, precision = 3)} game points; {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_play'], CONFIDENCE_LEVEL, precision = 3)} Δ-peg + {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_hand'], CONFIDENCE_LEVEL, precision = 3)} Δ-hand + {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_crib'], CONFIDENCE_LEVEL, precision = 3)} crib = {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_total_points'], CONFIDENCE_LEVEL, precision = 3)} overall"
             )
 
     return sorted_simulated_players_statistics[0][0][0]
