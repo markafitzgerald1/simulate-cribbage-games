@@ -1214,7 +1214,7 @@ def simulate_game(
                 player_to_play_play = play_based_on_simulation(
                     simulated_play_count,
                     hide_first_pone_hands
-                    if hand_pone_is_this_simulation_first_pone
+                    if first_pone_to_play
                     else hide_first_dealer_hands,
                     game_score,
                     first_pone_to_play,
@@ -1304,7 +1304,7 @@ def simulate_game(
                         dynamic_strategy_player_to_play_play = play_based_on_simulation(
                             900,  # TODO: make coach simulation length command-line configurable
                             hide_first_pone_hands
-                            if hand_pone_is_this_simulation_first_pone
+                            if first_pone_to_play
                             else hide_first_dealer_hands,
                             game_score,
                             first_pone_to_play,
@@ -1342,7 +1342,7 @@ def simulate_game(
                             dynamic_result_estimating_strategy_player_to_play_play = play_based_on_simulation(
                                 900,  # TODO: make coach simulation length command-line configurable
                                 hide_first_pone_hands
-                                if hand_pone_is_this_simulation_first_pone
+                                if first_pone_to_play
                                 else hide_first_dealer_hands,
                                 game_score,
                                 first_pone_to_play,
