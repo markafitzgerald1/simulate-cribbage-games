@@ -863,7 +863,6 @@ def simulate_game(
                     hide_first_pone_hands
                     if hand_pone_is_this_simulation_first_pone
                     else hide_first_dealer_hands,
-                    hand_pone_is_this_simulation_first_pone,
                 )
             else:
                 kept_pone_hand = (
@@ -902,7 +901,6 @@ def simulate_game(
                         hide_first_pone_hands
                         if hand_pone_is_this_simulation_first_pone
                         else hide_first_dealer_hands,
-                        hand_pone_is_this_simulation_first_pone,
                     )
                     dynamic_and_static_pone_discard_coaches_agree = set(
                         static_strategy_pone_kept_cards
@@ -937,7 +935,6 @@ def simulate_game(
                             hide_first_pone_hands
                             if hand_pone_is_this_simulation_first_pone
                             else hide_first_dealer_hands,
-                            hand_pone_is_this_simulation_first_pone,
                         )
                         dynamic_result_estimating_and_dynamic_discard_coaches_agree: bool = set(
                             dynamic_strategy_pone_kept_cards
@@ -1035,7 +1032,6 @@ def simulate_game(
                     hide_first_dealer_hands
                     if hand_dealer_is_this_simulation_first_dealer
                     else hide_first_pone_hands,
-                    hand_dealer_is_this_simulation_first_pone,
                 )
             else:
                 kept_dealer_hand = (
@@ -1074,7 +1070,6 @@ def simulate_game(
                         hide_first_dealer_hands
                         if hand_dealer_is_this_simulation_first_dealer
                         else hide_first_pone_hands,
-                        hand_dealer_is_this_simulation_first_pone,
                     )
                     dynamic_and_static_discard_coaches_agree = set(
                         static_strategy_dealer_kept_cards
@@ -1109,7 +1104,6 @@ def simulate_game(
                             hide_first_dealer_hands
                             if hand_dealer_is_this_simulation_first_dealer
                             else hide_first_pone_hands,
-                            hand_dealer_is_this_simulation_first_pone,
                         )
                         dynamic_result_estimating_and_dynamic_discard_coaches_agree = (
                             set(dynamic_strategy_dealer_kept_cards)
@@ -1255,7 +1249,6 @@ def simulate_game(
                     hide_first_pone_hands
                     if first_pone_to_play
                     else hide_first_dealer_hands,
-                    hand_pone_is_this_simulation_first_pone,
                 )
             else:
                 select_play = (
@@ -1344,7 +1337,6 @@ def simulate_game(
                             hide_first_pone_hands
                             if first_pone_to_play
                             else hide_first_dealer_hands,
-                            hand_pone_is_this_simulation_first_pone,
                         )
                         dynamic_and_static_play_coaches_agree = (
                             static_strategy_player_to_play_play
@@ -1389,7 +1381,6 @@ def simulate_game(
                                 hide_first_pone_hands
                                 if first_pone_to_play
                                 else hide_first_dealer_hands,
-                                hand_pone_is_this_simulation_first_pone,
                             )
                             dynamic_result_estimating_and_dynamic_play_coaches_agree = (
                                 dynamic_strategy_player_to_play_play
@@ -1743,7 +1734,6 @@ def simulate_games(
     estimate_first_pone_incomplete_game_wins_and_game_points: bool,
     estimate_first_dealer_incomplete_game_wins_and_game_points: bool,
     hide_missing_incomplete_game_wins_and_game_points_estimates: bool,
-    first_pone_is_root_simulation_first_pone: bool,
     start_of_hand_position_results_tallies: shelve.DbfilenameShelf,
     select_each_post_initial_play: bool,
     hide_first_pone_hands: bool,
@@ -3221,7 +3211,6 @@ def play_based_on_simulation(
     estimate_first_pone_incomplete_game_wins_and_game_points: bool,
     estimate_first_dealer_incomplete_game_wins_and_game_points: bool,
     hide_missing_incomplete_game_wins_and_game_points_estimates: bool,
-    this_simulation_first_pone_is_root_simulation_first_pone: bool,
 ):
     played_cards: List[Card] = [
         initial_play_action
@@ -3289,7 +3278,6 @@ def play_based_on_simulation(
         estimate_first_pone_incomplete_game_wins_and_game_points,
         estimate_first_dealer_incomplete_game_wins_and_game_points,
         hide_missing_incomplete_game_wins_and_game_points_estimates,
-        this_simulation_first_pone_is_root_simulation_first_pone,
         start_of_hand_position_results_tallies,
         True,
         True,
@@ -3361,7 +3349,6 @@ def player_select_kept_cards_based_on_simulation(
     estimate_first_pone_incomplete_game_wins_and_game_points: bool,
     estimate_first_dealer_incomplete_game_wins_and_game_points: bool,
     hide_missing_incomplete_game_wins_and_game_points_estimates: bool,
-    this_simulation_first_pone_is_root_simulation_first_pone: bool,
 ):
     TOTAL_DISCARD_SIMULATION_COUNT: int = POSSIBLE_DISCARD_COUNT * simulated_hand_count
     if not hide_hand:
@@ -3410,7 +3397,6 @@ def player_select_kept_cards_based_on_simulation(
         estimate_first_pone_incomplete_game_wins_and_game_points,
         estimate_first_dealer_incomplete_game_wins_and_game_points,
         hide_missing_incomplete_game_wins_and_game_points_estimates,
-        this_simulation_first_pone_is_root_simulation_first_pone,
         start_of_hand_position_results_tallies,
         False,
         True,
@@ -4024,7 +4010,6 @@ if __name__ == "__main__":
         tally_start_of_hand_position_results,
         args.estimate_first_pone_incomplete_game_wins_and_game_points,
         args.estimate_first_dealer_incomplete_game_wins_and_game_points,
-        True,
         True,
         start_of_hand_position_results_tallies,
         args.select_each_post_initial_play,
