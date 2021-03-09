@@ -333,7 +333,7 @@ NextAction = Tuple[Tuple[Card, ...], Optional[Card]]
 def statistics_push(
     statistics_by_next_action: Dict[NextAction, Statistics],
     key: NextAction,
-    value: Union[Points, Wins, GamePoints, bool],
+    value: Union[Points, Wins, GamePoints, ExpectedWins, ExpectedGamePoints, bool],
 ):
     if key not in statistics_by_next_action:
         statistics_by_next_action[key] = Statistics()
@@ -652,8 +652,10 @@ def simulate_game(
     first_pone_play_based_on_simulations: Optional[int],
     first_dealer_select_play,
     first_dealer_play_based_on_simulations: Optional[int],
+    tally_start_of_hand_position_results: bool,
     estimate_first_pone_incomplete_game_wins_and_game_points: bool,
     estimate_first_dealer_incomplete_game_wins_and_game_points: bool,
+    start_of_hand_position_results_tallies: shelve.DbfilenameShelf,
     hide_first_pone_hands: bool,
     hide_first_dealer_hands: bool,
     first_pone_dealt_cards_possible_keeps_cycle,  # type: itertools.cycle[Tuple[Card, ...]]
@@ -854,6 +856,7 @@ def simulate_game(
                     game_score,
                     dealt_hands[0],
                     PONE,
+                    False,
                     estimate_first_pone_incomplete_game_wins_and_game_points
                     if hand_pone_is_this_simulation_first_pone
                     else estimate_first_dealer_incomplete_game_wins_and_game_points,
@@ -863,6 +866,7 @@ def simulate_game(
                     hide_first_pone_hands
                     if hand_pone_is_this_simulation_first_pone
                     else hide_first_dealer_hands,
+                    start_of_hand_position_results_tallies,
                 )
             else:
                 kept_pone_hand = (
@@ -898,9 +902,11 @@ def simulate_game(
                         PONE,
                         False,
                         False,
+                        False,
                         hide_first_pone_hands
                         if hand_pone_is_this_simulation_first_pone
                         else hide_first_dealer_hands,
+                        start_of_hand_position_results_tallies,
                     )
                     dynamic_and_static_pone_discard_coaches_agree = set(
                         static_strategy_pone_kept_cards
@@ -926,6 +932,7 @@ def simulate_game(
                             game_score,
                             dealt_hands[0],
                             PONE,
+                            False,
                             estimate_first_pone_incomplete_game_wins_and_game_points
                             if hand_pone_is_this_simulation_first_pone
                             else estimate_first_dealer_incomplete_game_wins_and_game_points,
@@ -935,6 +942,7 @@ def simulate_game(
                             hide_first_pone_hands
                             if hand_pone_is_this_simulation_first_pone
                             else hide_first_dealer_hands,
+                            start_of_hand_position_results_tallies,
                         )
                         dynamic_result_estimating_and_dynamic_discard_coaches_agree: bool = set(
                             dynamic_strategy_pone_kept_cards
@@ -1023,6 +1031,7 @@ def simulate_game(
                     game_score,
                     dealt_hands[1],
                     DEALER,
+                    tally_start_of_hand_position_results,
                     estimate_first_pone_incomplete_game_wins_and_game_points
                     if hand_dealer_is_this_simulation_first_pone
                     else estimate_first_dealer_incomplete_game_wins_and_game_points,
@@ -1032,6 +1041,7 @@ def simulate_game(
                     hide_first_dealer_hands
                     if hand_dealer_is_this_simulation_first_dealer
                     else hide_first_pone_hands,
+                    start_of_hand_position_results_tallies,
                 )
             else:
                 kept_dealer_hand = (
@@ -1067,9 +1077,11 @@ def simulate_game(
                         DEALER,
                         False,
                         False,
+                        False,
                         hide_first_dealer_hands
                         if hand_dealer_is_this_simulation_first_dealer
                         else hide_first_pone_hands,
+                        start_of_hand_position_results_tallies,
                     )
                     dynamic_and_static_discard_coaches_agree = set(
                         static_strategy_dealer_kept_cards
@@ -1095,6 +1107,7 @@ def simulate_game(
                             game_score,
                             dealt_hands[1],
                             DEALER,
+                            False,
                             estimate_first_pone_incomplete_game_wins_and_game_points
                             if hand_dealer_is_this_simulation_first_pone
                             else estimate_first_dealer_incomplete_game_wins_and_game_points,
@@ -1104,6 +1117,7 @@ def simulate_game(
                             hide_first_dealer_hands
                             if hand_dealer_is_this_simulation_first_dealer
                             else hide_first_pone_hands,
+                            start_of_hand_position_results_tallies,
                         )
                         dynamic_result_estimating_and_dynamic_discard_coaches_agree = (
                             set(dynamic_strategy_dealer_kept_cards)
@@ -1240,6 +1254,7 @@ def simulate_game(
                     ],
                     player_to_play,
                     hand_pone_is_this_simulation_first_pone,
+                    False,
                     estimate_first_pone_incomplete_game_wins_and_game_points
                     if hand_pone_is_this_simulation_first_pone
                     else estimate_first_dealer_incomplete_game_wins_and_game_points,
@@ -1249,6 +1264,7 @@ def simulate_game(
                     hide_first_pone_hands
                     if first_pone_to_play
                     else hide_first_dealer_hands,
+                    start_of_hand_position_results_tallies,
                 )
             else:
                 select_play = (
@@ -1334,9 +1350,11 @@ def simulate_game(
                             hand_pone_is_this_simulation_first_pone,
                             False,
                             False,
+                            False,
                             hide_first_pone_hands
                             if first_pone_to_play
                             else hide_first_dealer_hands,
+                            start_of_hand_position_results_tallies,
                         )
                         dynamic_and_static_play_coaches_agree = (
                             static_strategy_player_to_play_play
@@ -1372,6 +1390,7 @@ def simulate_game(
                                 ],
                                 player_to_play,
                                 hand_pone_is_this_simulation_first_pone,
+                                False,
                                 estimate_first_pone_incomplete_game_wins_and_game_points
                                 if hand_pone_is_this_simulation_first_pone
                                 else estimate_first_dealer_incomplete_game_wins_and_game_points,
@@ -1381,6 +1400,7 @@ def simulate_game(
                                 hide_first_pone_hands
                                 if first_pone_to_play
                                 else hide_first_dealer_hands,
+                                start_of_hand_position_results_tallies,
                             )
                             dynamic_result_estimating_and_dynamic_play_coaches_agree = (
                                 dynamic_strategy_player_to_play_play
@@ -1704,6 +1724,7 @@ class GameScoreResultsTallies(NamedTuple):
 
 Wins = NewType("Wins", int)
 ExpectedWins = NewType("ExpectedWins", float)
+ExpectedGamePoints = NewType("ExpectedGamePoints", float)
 
 
 def simulate_games(
@@ -1891,8 +1912,10 @@ def simulate_games(
                     first_pone_play_based_on_simulations,
                     first_dealer_select_play,
                     first_dealer_play_based_on_simulations,
+                    tally_start_of_hand_position_results,
                     estimate_first_pone_incomplete_game_wins_and_game_points,
                     estimate_first_dealer_incomplete_game_wins_and_game_points,
+                    start_of_hand_position_results_tallies,
                     hide_first_pone_hands,
                     hide_first_dealer_hands,
                     pone_dealt_cards_possible_keeps_cycle,
@@ -1969,6 +1992,10 @@ def simulate_games(
                 post_initial_play,
             )
 
+            first_pone_expected_wins: Optional[ExpectedWins] = None
+            first_pone_expected_game_points: Optional[ExpectedGamePoints] = None
+            first_dealer_expected_wins: Optional[ExpectedWins] = None
+            first_dealer_expected_game_points: Optional[ExpectedGamePoints] = None
             is_first_pone_next_to_play: bool = len(initial_play_actions) % 2 == 0
             if (
                 first_pone_game_points == 0
@@ -1997,33 +2024,29 @@ def simulate_games(
                         + start_of_hand_position_results_tallies_entry.first_dealer_wins
                     )
                     if tallied_game_count:
-                        first_pone_expected_wins: ExpectedWins = ExpectedWins(
+                        first_pone_expected_wins = ExpectedWins(
                             (
                                 start_of_hand_position_results_tallies_entry.first_pone_wins
                             )
                             / tallied_game_count
                         )
-                        first_pone_expected_game_points: ExpectedWins = ExpectedWins(
+                        first_pone_expected_game_points = ExpectedGamePoints(
                             (
                                 start_of_hand_position_results_tallies_entry.first_pone_game_points
                             )
                             / tallied_game_count
                         )
-                        first_dealer_expected_wins: ExpectedWins = ExpectedWins(
+                        first_dealer_expected_wins = ExpectedWins(
                             (
                                 start_of_hand_position_results_tallies_entry.first_dealer_wins
                             )
                             / tallied_game_count
                         )
-                        first_dealer_expected_game_points: ExpectedWins = ExpectedWins(
+                        first_dealer_expected_game_points = ExpectedGamePoints(
                             (
                                 start_of_hand_position_results_tallies_entry.first_dealer_game_points
                             )
                             / tallied_game_count
-                        )
-                        # TODO: remove 'COULD BE' and actually use the expected game points estimate
-                        print(
-                            f"{first_pone_expected_wins-first_dealer_expected_wins:+5.3f} wins Δ, {first_pone_expected_game_points-first_dealer_expected_game_points:+5.3f} game points Δ over {tallied_game_count} simulated games COULD BE substituted in at {start_of_next_hand_score=} after NextAction: ({Hand(sorted(next_action[0], reverse=True))}, {next_action[1]})."
                         )
                 except KeyError:
                     if not hide_missing_incomplete_game_wins_and_game_points_estimates:
@@ -2031,12 +2054,26 @@ def simulate_games(
                             f"No incomplete game wins and game points estimate available at {start_of_next_hand_score=} after initial action {Hand(sorted(next_action[0], reverse=True))}, {next_action[1]}."
                         )
 
+            possibly_estimated_first_pone_game_points: Union[
+                GamePoints, ExpectedGamePoints
+            ] = (
+                first_pone_expected_game_points
+                if first_pone_expected_game_points is not None
+                else first_pone_game_points
+            )
+            possibly_estimated_first_dealer_game_points: Union[
+                GamePoints, ExpectedGamePoints
+            ] = (
+                first_dealer_expected_game_points
+                if first_dealer_expected_game_points is not None
+                else first_dealer_game_points
+            )
             if not hide_play_actions:
                 print(
                     f"+++ Score at end of game simulation: [{initial_first_pone_score + first_pone_total_points}-{initial_first_dealer_score + first_dealer_total_points}] for first pone and first dealer."
                 )
                 print(
-                    f"### Game points at end of game simulation: [[{first_pone_game_points}-{first_dealer_game_points}]] for pone and dealer."
+                    f"### Game points at end of game simulation: [[{possibly_estimated_first_pone_game_points:7.5f}-{possibly_estimated_first_dealer_game_points:7.5f}]] for pone and dealer."
                 )
                 print()
 
@@ -2064,12 +2101,14 @@ def simulate_games(
             statistics_push(
                 first_pone_game_points_statistics,
                 next_action,
-                first_pone_game_points,
+                possibly_estimated_first_pone_game_points,
             )
             statistics_push(
                 first_pone_wins_statistics,
                 next_action,
-                first_pone_wins,
+                first_pone_expected_wins
+                if first_pone_expected_wins is not None
+                else first_pone_wins,
             )
 
             statistics_push(
@@ -2095,12 +2134,14 @@ def simulate_games(
             statistics_push(
                 first_dealer_game_points_statistics,
                 next_action,
-                first_dealer_game_points,
+                possibly_estimated_first_dealer_game_points,
             )
             statistics_push(
                 first_dealer_wins_statistics,
                 next_action,
-                first_dealer_wins,
+                first_dealer_expected_wins
+                if first_dealer_expected_wins is not None
+                else first_dealer_wins,
             )
 
             statistics_push(
@@ -2135,7 +2176,10 @@ def simulate_games(
             statistics_push(
                 first_pone_minus_first_dealer_game_points_statistics,
                 next_action,
-                Points(first_pone_game_points - first_dealer_game_points),
+                ExpectedGamePoints(
+                    possibly_estimated_first_pone_game_points
+                    - possibly_estimated_first_dealer_game_points
+                ),
             )
 
             if (
@@ -3208,9 +3252,11 @@ def play_based_on_simulation(
     initial_play_actions: List[PlayAction],
     player: Player,
     pone_is_parent_game_first_pone: bool,
+    tally_start_of_hand_position_results: bool,
     estimate_first_pone_incomplete_game_wins_and_game_points: bool,
     estimate_first_dealer_incomplete_game_wins_and_game_points: bool,
     hide_missing_incomplete_game_wins_and_game_points_estimates: bool,
+    start_of_hand_position_results_tallies: shelve.DbfilenameShelf,
 ):
     played_cards: List[Card] = [
         initial_play_action
@@ -3346,9 +3392,11 @@ def player_select_kept_cards_based_on_simulation(
     current_game_score: GameScore,
     dealt_hand: List[Card],
     player: Player,
+    tally_start_of_hand_position_results: bool,
     estimate_first_pone_incomplete_game_wins_and_game_points: bool,
     estimate_first_dealer_incomplete_game_wins_and_game_points: bool,
     hide_missing_incomplete_game_wins_and_game_points_estimates: bool,
+    start_of_hand_position_results_tallies: shelve.DbfilenameShelf,
 ):
     TOTAL_DISCARD_SIMULATION_COUNT: int = POSSIBLE_DISCARD_COUNT * simulated_hand_count
     if not hide_hand:
