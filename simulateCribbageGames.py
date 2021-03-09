@@ -2178,7 +2178,7 @@ def simulate_games(
                     "first_pone_wins",
                     first_pone_wins_statistics,
                 )
-                first_pone_game_points_statistics.clear()
+                first_pone_wins_statistics.clear()
 
                 statistics_dict_add(
                     players_statistics,
