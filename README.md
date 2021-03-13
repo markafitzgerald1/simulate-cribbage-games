@@ -6,14 +6,19 @@ Simulate and analyze the play of hands and games of cribbage between two opponen
 
 - Install Python 3.9.1
 - `pip install -r requirements.txt` _(may require local admin to install black globally... or use a [virtualenv](https://virtualenv.pypa.io/en/latest/) instead!)_
+- _Optional:_ Build the start of hand position + current dealer wins, losses and game points database to improve positional play of simulation-based play and discard strategies' (takes about 30 minutes on my laptop): `python simulateCribbageGames.py --unlimited-hands-per-game --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions --games-per-update 2000 --tally-start-of-hand-position-results --game-count 1000000--show-calc-cache-usage-stats`. Can be run longer (`--infinite-game-count` then Control+C to stop) for likely better results - point of diminshing returns not yet established.
 
 ## Test
 
-- Check for type errors - should only find one about `runstats` module not having type hints: `mypy simulateCribbageGames.py`
+- Check for type errors - should not find any errors: `mypy simulateCribbageGames.py`
 
 ## Use
 
 - Simulate one hand from deal to end of hand counting: `python simulateCribbageGames.py`
+- Play against static (not simulation-based) discard and play strategies as first pone: `python simulateCribbageGames.py --first-pone-keep-user-selected --first-pone-play-user-entered --hide-first-dealer-hand --unlimited-hands-per-game`
+- Play against static (not simulation-based) discard and play strategies as first dealer: `python simulateCribbageGames.py --first-dealer-keep-user-selected --first-dealer-play-user-entered --hide-first-pone-hand --unlimited-hands-per-game`
+- Play one game as first pone against a first dealer using dynamic (simulation-based) discard and play strategies assisted by end of dynamic player simulation position game points estimates: `python simulateCribbageGames.py --first-pone-keep-user-selected --first-pone-play-user-entered --first-dealer-discard-based-on-simulations 160 --first-dealer-play-based-on-simulations 900 --hide-first-dealer-hand --unlimited-hands-per-game --estimate-first-pone-incomplete-game-wins-and-game-points --estimate-first-dealer-incomplete-game-wins-and-game-points`
+- Play one game as first dealer against a first pone using dynamic (simulation-based) discard and play strategies assisted by end of dynamic player simulation position game points estimates: `python simulateCribbageGames.py --first-dealer-keep-user-selected --first-dealer-play-user-entered --first-pone-discard-based-on-simulations 160 --first-pone-play-based-on-simulations 900 --hide-first-pone-hand --unlimited-hands-per-game --estimate-first-pone-incomplete-game-wins-and-game-points --estimate-first-dealer-incomplete-game-wins-and-game-points`
 - Help on additional simulation options: `python simulateCribbageGames.py --help`
 
 ## Smoke Tests and Usage Examples
@@ -45,31 +50,27 @@ All of the following should exit with status code 0 and no raised exception:
 - Simulate all possible dealer plays from a mid-play position where the already executed dealer discard is not what the dealer discard strategy would have discarded: `python simulateCribbageGames.py --first-dealer-dealt-cards 2d,3h,6h,8d,9d,qc --first-dealer-kept-cards 2d,3h,8d,qc --initial-play-actions 4c,8d,kd --select-each-post-initial-play --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions --game-count 20000 --games-per-update 1000`;
 - Simulate all possible dealer plays from start of the second play where dealer has two more cards than pone: `python simulateCribbageGames.py --first-dealer-kept-cards tc,3s,8c,9h --initial-play-actions th,tc,td,go,ac,go,go --select-each-post-initial-play --game-count 20000 --games-per-update 2000 --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions`;
 - Simulate from late in the third leg all possible dealer discards to end of game against reasonable opponent play: `python simulateCribbageGames.py --first-dealer-dealt-cards AC,2S,6C,TD,JD,KC --first-dealer-select-each-possible-kept-hand --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions --unlimited-hands-per-game --game-count 20000 --initial-pone-score 87 --initial-dealer-score 85 --games-per-update 1000`;
-- Simulate one hand from deal to end of hand counting using simulation-based pone and dealer discarding: `python simulateCribbageGames.py --process-count 1 --game-count 1 --first-pone-discard-based-on-simulations 320 --first-dealer-discard-based-on-simulations 320`;
-- Simulate one hand from deal to end of hand counting using simulation-based pone and dealer discarding and playing: `python simulateCribbageGames.py --process-count 1 --game-count 1 --first-pone-discard-based-on-simulations 320 --first-dealer-discard-based-on-simulations 320 --first-pone-play-based-on-simulations 1800 --first-dealer-play-based-on-simulations 1800`;
-- Play one game as first pone against the computer playing as first dealer using simulation-based play and discard strategies: `python simulateCribbageGames.py --first-pone-keep-user-selected --first-pone-play-user-entered --first-dealer-discard-based-on-simulations 320 --first-dealer-play-based-on-simulations 1800 --hide-first-dealer-hands --unlimited-hands-per-game`; and
-- Play one game as first dealer against the computer playing as first pone using simulation-based play and discard strategies: `python simulateCribbageGames.py --first-pone-discard-based-on-simulations 320 --first-pone-play-based-on-simulations 1800 --hide-first-pone-hands --first-dealer-keep-user-selected --first-dealer-play-user-entered --unlimited-hands-per-game`.
+- Simulate one hand from deal to end of hand counting using dynamic (simulation-based) pone and dealer discarding: `python simulateCribbageGames.py --process-count 1 --game-count 1 --first-pone-discard-based-on-simulations 320 --first-dealer-discard-based-on-simulations 320`;
+- Simulate one hand from deal to end of hand counting using dynamic (simulation-based) pone and dealer discarding and playing: `python simulateCribbageGames.py --process-count 1 --game-count 1 --first-pone-discard-based-on-simulations 320 --first-dealer-discard-based-on-simulations 320 --first-pone-play-based-on-simulations 1800 --first-dealer-play-based-on-simulations 1800`;
+- Play one game as first pone against a first dealer using dynamic discard and play strategies: `python simulateCribbageGames.py --first-pone-keep-user-selected --first-pone-play-user-entered --first-dealer-discard-based-on-simulations 320 --first-dealer-play-based-on-simulations 1800 --hide-first-dealer-hands --unlimited-hands-per-game`;
+- Play one game as first dealer against a first pone using dynamic discard and play strategies: `python simulateCribbageGames.py --first-pone-discard-based-on-simulations 320 --first-pone-play-based-on-simulations 1800 --hide-first-pone-hands --first-dealer-keep-user-selected --first-dealer-play-user-entered --unlimited-hands-per-game`; and
+- Simulate one game of cribbage with both players using dynamic discard and play strategies assisted by end of dynamic player simulation position game points estimates: `python simulateCribbageGames.py --first-pone-discard-based-on-simulations 320 --first-pone-play-based-on-simulations 1800 --first-dealer-discard-based-on-simulations 320 --first-dealer-play-based-on-simulations 1800 --unlimited-hands-per-game --estimate-first-pone-incomplete-game-wins-and-game-points --estimate-first-dealer-incomplete-game-wins-and-game-points`.
 
-## Long-term project goal
+## Long-term project goals
 
-Provide efficient, user-friendly discard and play analysis factoring
+* Provide efficient, user-friendly discard and play analysis factoring
 in the expected game points differential (and play points differential if no game points differential) to end of hand(s) or game above opponent
 for different possible discards or plays.
+  * Provide an automated opponent against which to play and practice if the above analyses are good enough to provide an opponent from which the user may directly or indirectly (via throught-provoking plays) learn.
 
-## Next version goals
-- Eliminate horizon effect in sim-based play:
-  - (Somehow) Gather and report on win%, gamePts% to end of game from various start of hand game score (first pone points to first dealer points). (Can use this to estimate win% in simulated hands which do not end in a win or a loss!)
+## First version goals
 
-## Definite pre-first version or release goals
-
-## Maybe pre-first version or release goals
+- Measure point of diminshing returns on build of expected wins, losses and game points per start of hand position and current dealer database.
+## Post-first version or release short to medium term goals
 
 - Improve current best non-simulation-based play strategy:
   - consider improving default play algorithm to lead from high (> 5) pair (e.g. 9 from T-9-9-6) when low lead not possible (1.2 points better than T lead based on simulations); and
   - consider preferring responding to low (< 5) lead with non-ten-count cards over ten-count cards.
-
-## Probably not pre-first version or release goals
-
 - Add support for time-limited discard simulations and simulation-based discard strategies.
 - Improve play simulation and play simulation based play accuracy:
   - Factor the minimum possible count value of all remaining opponent cards implied by saying Go into play simulations and play simulation based play.
@@ -77,13 +78,9 @@ for different possible discards or plays.
   - reconsider adding a cheap (most recent card within 1 or 2 avoid) run setup avoidance to default play strategy;
   - evaluate lead from low pair before lead from highest low card; and
   - consider dealer respond with higher card of pair adding to 11 in response to pone 10 count lead to set up more 31-2's for self - e.g. dealer play 7 from 7-4 or 8 from 8-3 in response to pone 10 count lead.
-
-## Post-first version or release short to medium term goals
-
 - Improve development speed and quality:
   - Automate execution and verification of above smoke tests.
 - Improve simulation-based discard and play strategies:
-  - Simulate to end of game not end of hand to avoid making positional errors near or in the fourth leg (91-120 points) of play... or horizon effect errors prioritizing moves ending the game in player's favour over possibly superior plays which do not end the play in this hand. (Too slow in 2021-02-20 Python implementation - requires one or more of more cacheing (cache win %, E(gamePoints) stats at all end of hand firstPone-firstDealer scores), better algorithms and a faster programming language.)
   - Implement simulation-based discard and play where immediate opponent reponse is also simulation-based but based on fewer simluated games; then
   - Implement simulation-based discard and play where multiple subsequent opponent or self play or discard actions are also simulation-based but based on fewer simluated games. (Keys to success: tuning of decay factor; determining whether the positional evaluation benefits of low (< 32 for discard, for example) simulation counts outweigh their higher error rate costs.)
 - Further improve current best discard strategy:
@@ -98,14 +95,22 @@ for different possible discards or plays.
 
 ## Current known shortcomings
 
-- Horizon effect: discard or play based on simulation at a score where the game _may_ end in the current hand prioritizes discards or plays that _may_ end the game in the simulation in favour of the player to play over discards or plays that do not end the game this hand regardless of quality of move - e.g. pone discard from T♣,9♥,9♣,5♠,2♦,2♣ at 94(pone)-79(dealer), dealer response to 3h lead holding kh,qh,td,5c with 9d,4h discarded and kc starter.
+* None not already in above post-first version or release short to medium term goals.
 
 ## Current known bugs
 
-- First pone and first dealer win percentages do not always exactly add up to 1 and standard deviations do not equal in 10,000+ game simulations. (They do add up to 1 and have equal standard deviations in <= 5,000 game simulations.) Perhaps just a rounding error in runstats/Statistics, but perhaps a bug?
+* None confirmed.
+
+## Current possible bugs
+
+* Coach reported expected game points can be misleading - sign seemed to reflect current pone minus current pone expected end of game points during discard coaching but first pone minus first dealer expected game points during play coaching.
 
 ## Past project goals
 
+- Improve simulation-based discard and play strategies:
+  - Simulate to end of game not end of hand to avoid making positional errors near or in the fourth leg (91-120 points) of play... or horizon effect errors prioritizing moves ending the game in player's favour over possibly superior plays which do not end the play in this hand. (Too slow in 2021-02-20 Python implementation - requires one or more of more cacheing (cache win %, E(gamePoints) stats at all end of hand firstPone-firstDealer scores), better algorithms and a faster programming language.) (Status: Implemented via cache.)
+  - Add positional awareness / mitigate or eliminate search horizon effect: Discard or play based on simulation at a score where the game _may_ end in the current hand prioritizes discards or plays that _may_ end the game in the simulation in favour of the player to play over discards or plays that do not end the game this hand regardless of quality of move - e.g. pone discard from T♣,9♥,9♣,5♠,2♦,2♣ at 94(pone)-79(dealer), dealer response to 3h lead holding kh,qh,td,5c with 9d,4h discarded and kc starter. (Status: FIXED! Former scenario: +0.708 +/- 0.005 game points favoring 9-2 discard simulating to 1 hand ahead; +0.727 +/- 0.002 game points favoring 9-9 (or even 2-2) discard with end of player hand simulation expected game points estimates factored into discard decision.)
+- First pone and first dealer win percentages do not always exactly add up to 1 and standard deviations do not equal in 10,000+ game simulations. (They do add up to 1 and have equal standard deviations in <= 5,000 game simulations.) Perhaps just a rounding error in runstats/Statistics, but perhaps a bug? (Status: FIXED!)
 - Further improve current best play strategy:
   - add simulation-based pone and dealer play strategies.
 - Bugs:
