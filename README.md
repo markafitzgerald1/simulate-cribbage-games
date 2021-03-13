@@ -66,6 +66,13 @@ for different possible discards or plays.
 ## First version goals
 
 - Measure point of diminshing returns on build of expected wins, losses and game points per start of hand position and current dealer database.
+- Identify whether current pone or current dealer is discarding in discard coach and simulation-based discard output.
+- Add best pre-cut, post-cut discard coaches so that human players can learn where expected cut and crib values may affect discard decisions.
+- Make coach usage and output optional - may want to play blind sometimes to train differently.  (Also constant coaching of what the computer thinks is optimal against a static player may or may not be useful depending on whether the human player's goal is to play better than they currently play or whether it is to play better than the dynamic computer player.)
+- Automatically computer dynamic player actions against best static player actions and output when significantly different in order to highlight weaknesses in the best static player that could possibly be improved without simulation.
+- Review license usage - is MPL 2.0 most suitable for project goals going forward from here now that a likely good computer player has been created?
+- Formally tag, version and release a specific commit of this source code repository, perhaps adding release notes and/or moving the below informal change log to a separate file.
+
 ## Post-first version or release short to medium term goals
 
 - Improve current best non-simulation-based play strategy:
@@ -84,7 +91,8 @@ for different possible discards or plays.
   - Implement simulation-based discard and play where immediate opponent reponse is also simulation-based but based on fewer simluated games; then
   - Implement simulation-based discard and play where multiple subsequent opponent or self play or discard actions are also simulation-based but based on fewer simluated games. (Keys to success: tuning of decay factor; determining whether the positional evaluation benefits of low (< 32 for discard, for example) simulation counts outweigh their higher error rate costs.)
 - Further improve current best discard strategy:
-  - reconsider not ignoring suit by default and not ignoring suit in simulation-based discard strategy.
+  - reconsider not ignoring suit by default and not ignoring suit in simulation-based discard strategy; and
+  - tally and optionally use a suitless pre-cut kept hand expected play points database during discard.
 - UI/UX improvements:
   - improve user interface via which human players can play against implemented computer discard and play strategies; and
   - add support for --(pone|dealer)-(dealt|kept)-cards and --initial-play-actions lacking suit information.
