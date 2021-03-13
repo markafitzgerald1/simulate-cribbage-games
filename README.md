@@ -101,6 +101,10 @@ for different possible discards or plays.
   - Increase confidence in implementation by adding further type hints (Python), type checking and unit tests.
 - Improve simulation-based play and discard speed and strength:
   - Increase performance and simulation-based play strategy strengths via performance improvements in Python or other programming language.
+- Add support for recording of partial or complete played games.
+- Add supoprt for analysis of partial or complete played games.
+- Add support for starting simulation, analysis or against computer play at the end state of a recorded partial game.
+- Add support for starting simulation, analysis or against computer play at any non-end state of a recorded partial or complete game.
 
 ## Current known shortcomings
 
