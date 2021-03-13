@@ -71,6 +71,7 @@ for different possible discards or plays.
 - Make coach usage and output optional - may want to play blind sometimes to train differently.  (Also constant coaching of what the computer thinks is optimal against a static player may or may not be useful depending on whether the human player's goal is to play better than they currently play or whether it is to play better than the dynamic computer player.)
 - Automatically compare dynamic player actions against best static player actions and output when significantly different in order to highlight weaknesses in the best static player that could possibly be improved without simulation.
 - Review license usage - is MPL 2.0 most suitable for project goals going forward from here now that a likely good computer player has been created?
+- Consider giving project a name reflecting that you can simulate cribbage games with it, analyze cribbage decisions (not games yet) with it and play games against it.
 - Formally tag, version and release a specific commit of this source code repository, perhaps adding release notes and/or moving the below informal change log to a separate file.
 
 ## Post-first version or release short to medium term goals
