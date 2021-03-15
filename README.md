@@ -117,7 +117,7 @@ for different possible discards or plays.
 ## Current possible bugs
 
 * Coach reported expected game points can be misleading - sign seemed to reflect current pone minus current pone expected end of game points during discard coaching but first pone minus first dealer expected game points during play coaching.
-* `python simulateCribbageGames.py --initial-dealer-score 7 --initial-pone-score 12 --first-dealer-dealt-cards 3c,5c,6h,6s,8s,jc --first-dealer-select-each-possible-kept-hand --infinite-game-count --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --games-per-update 1000 --process-count 4 --estimate-first-dealer-incomplete-game-wins-and-game-points` was (incorrectly) not using the position result estimate database in its discard calculations, but _was_ using it if `--estimate-first-pone-incomplete-game-wins-and-game-points` was added.
+* `python simulateCribbageGames.py --initial-dealer-score 7 --initial-pone-score 12 --first-dealer-dealt-cards 3c,5c,6h,6s,8s,jc --first-dealer-select-each-possible-kept-hand --infinite-game-count --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --games-per-update 1000 --process-count 4 --estimate-first-dealer-incomplete-game-wins-and-game-points` is not using the position result estimate database in its discard calculations, but _is_ using it if `--estimate-first-pone-incomplete-game-wins-and-game-points` was added.  I've confirmed this is not an issue for simulation-based players and is not an issue for `--first-pone-select-each-possible-kept-hand` but is an issue for `--first-dealer-select-each-possible-kept-hand`.
 
 ## Past project goals
 
