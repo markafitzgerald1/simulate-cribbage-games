@@ -74,6 +74,10 @@ for different possible discards or plays.
 - Consider giving project a name reflecting that you can simulate cribbage games with it, analyze cribbage decisions (not games yet) with it and play games against it.
 - Formally tag, version and release a specific commit of this source code repository, perhaps adding release notes and/or moving the below informal change log to a separate file.
 
+## Maybe first version goals
+
+- Add support for specification of current pone and dealer as something order than first pone and first dealer, respectively at start of simulations starting at not 0-0 scores for ease of usage when manually interfacing with non-simulate-cribbage-hands opponents.
+
 ## Post-first version or release short to medium term goals
 
 - Improve current best non-simulation-based play strategy:
