@@ -121,19 +121,14 @@ for different possible discards or plays.
 ## Current possible bugs
 
 * Coach reported expected game points can be misleading - sign seemed to reflect current pone minus current pone expected end of game points during discard coaching but first pone minus first dealer expected game points during play coaching.
-* `python simulateCribbageGames.py --initial-dealer-score 7 --initial-pone-score 12 --first-dealer-dealt-cards 3c,5c,6h,6s,8s,jc --first-dealer-select-each-possible-kept-hand --infinite-game-count --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --games-per-update 1000 --process-count 4 --estimate-first-dealer-incomplete-game-wins-and-game-points` is not using the position result estimate database in its discard calculations, but _is_ using it if `--estimate-first-pone-incomplete-game-wins-and-game-points` was added.  I've confirmed this is not an issue for simulation-based players, is not an issue for `--first-pone-select-each-possible-kept-hand`, is not an issue for `--select-each-post-initial-play` (play analysis iteration over possibilities is implemented differently) but is an issue for `--first-dealer-select-each-possible-kept-hand`.
 
 ## Past project goals
 
 - Improve simulation-based discard and play strategies:
   - Simulate to end of game not end of hand to avoid making positional errors near or in the fourth leg (91-120 points) of play... or horizon effect errors prioritizing moves ending the game in player's favour over possibly superior plays which do not end the play in this hand. (Too slow in 2021-02-20 Python implementation - requires one or more of more cacheing (cache win %, E(gamePoints) stats at all end of hand firstPone-firstDealer scores), better algorithms and a faster programming language.) (Status: Implemented via cache.)
   - Add positional awareness / mitigate or eliminate search horizon effect: Discard or play based on simulation at a score where the game _may_ end in the current hand prioritizes discards or plays that _may_ end the game in the simulation in favour of the player to play over discards or plays that do not end the game this hand regardless of quality of move - e.g. pone discard from T♣,9♥,9♣,5♠,2♦,2♣ at 94(pone)-79(dealer), dealer response to 3h lead holding kh,qh,td,5c with 9d,4h discarded and kc starter. (Status: FIXED! Former scenario: +0.708 +/- 0.005 game points favoring 9-2 discard simulating to 1 hand ahead; +0.727 +/- 0.002 game points favoring 9-9 (or even 2-2) discard with end of player hand simulation expected game points estimates factored into discard decision.)
-- First pone and first dealer win percentages do not always exactly add up to 1 and standard deviations do not equal in 10,000+ game simulations. (They do add up to 1 and have equal standard deviations in <= 5,000 game simulations.) Perhaps just a rounding error in runstats/Statistics, but perhaps a bug? (Status: FIXED!)
 - Further improve current best play strategy:
   - add simulation-based pone and dealer play strategies.
-- Bugs:
-  - All cards in crib having same suit but starter not having same suit was scoring 4 points in crib when it should have been scoring 0.
-  - All cards in hand having same suit and starter having same suit was scoring 0 points in hand when it should have been scoring 5.
 - UI/UX improvements:
   - add a 'coach mode': show the user computer recommended action after user has taken a play (including discard) action.
   - add `--first-(pone|dealer)-keep-user-entered` discard strategy allow for complete human play against this program (status: implemented);
@@ -153,9 +148,6 @@ for different possible discards or plays.
   - add support for play simulations without specifying player under simulation dealt but not kept (discarded) cards - often not known, remembered or all that relevant (status: implemented);
   - add support for --initial-play-actions containing a Go (status: implemented),
   - add support for --initial-play-actions containing two consecutive Gos - i.e. a count reset (status: implemented);
-- BUG: --initial-play-actions 9-4-9 with 4,4,8 in dealer hand not simulatable because current best play algorithm would have played 8 on first played card. Same is true of simulation of --initial-play-actions 9-Q with 9-4-2 in pone hand. (Fix requires possibly not assuming that future plays would match that of the best non-simulation-based play algorithm. Separate TODO to not respond to 9 lead with 8 setting up two possible opponent run plays below.) (Status: fixed.)
-- BUG: --initial-play-actions 4-8 with A,T,Q in pone hand considers T and Q to be equal plays as the current best non-simulation-based play algorithm would have played 9 on its first play as dealer if it held it thus the simulation does not consider a run off of 4-8-T to be possible for dealer. (Status: fixed.)
-- BUG: simulation of all possible plays over just one game fails to complete on a ZeroDivisionError during variance calculation. (Status: fixed.)
 - Stop discard/play simulation and simulation-based discard when only one non-dropped option remains.
 - In single all possible discards simulations and simulation-based discard strategy drop possible discards 2 standard deviations worse beyond the current selected confidence level than the current best discard as simulation proceeds save time and get better answers faster.
 - Discard based on expected hand value ignoring suit when neither flush nor nobs is possible in both maximize hand points and maximize hand +/- crib points discard strategies. This allows suit to be factored into discard decisions more often as discard maximizing hand value was sped up 75% while discard maximizing hand +/- crib points was sped up about 33%.
@@ -174,6 +166,16 @@ for different possible discards or plays.
   given the longer term goal of providing discard and play analysis factoring
   in the expected play points differential - to end of hand - above opponent
   for different possible discards or plays. (_Result:_ decided to go with Python to start then reimplement in Node.js when and/or if reimplementation cost is less than the time spent waiting for Python-based simulations to complete.)
+
+## Fixed past project bugs
+
+- `python simulateCribbageGames.py --initial-dealer-score 7 --initial-pone-score 12 --first-dealer-dealt-cards 3c,5c,6h,6s,8s,jc --first-dealer-select-each-possible-kept-hand --infinite-game-count --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --games-per-update 1000 --process-count 4 --estimate-first-dealer-incomplete-game-wins-and-game-points` is not using the position result estimate database in its discard calculations, but _is_ using it if `--estimate-first-pone-incomplete-game-wins-and-game-points` was added.  I've confirmed this is not an issue for simulation-based players, is not an issue for `--first-pone-select-each-possible-kept-hand`, is not an issue for `--select-each-post-initial-play` (play analysis iteration over possibilities is implemented differently) but is an issue for `--first-dealer-select-each-possible-kept-hand`.
+- First pone and first dealer win percentages do not always exactly add up to 1 and standard deviations do not equal in 10,000+ game simulations. (They do add up to 1 and have equal standard deviations in <= 5,000 game simulations.) Perhaps just a rounding error in runstats/Statistics, but perhaps a bug? (Turned out to be caused by not clearing the child Statistics object when adding to the parent overall tally Statistics object, resulting in multiple-counting of results when more than one add to the global tally in a single run was done.)
+- All cards in crib having same suit but starter not having same suit was scoring 4 points in crib when it should have been scoring 0.
+- All cards in hand having same suit and starter having same suit was scoring 0 points in hand when it should have been scoring 5.
+- `--initial-play-actions` 9-4-9 with 4,4,8 in dealer hand not simulatable because current best play algorithm would have played 8 on first played card. Same is true of simulation of --initial-play-actions 9-Q with 9-4-2 in pone hand. (Fix requires possibly not assuming that future plays would match that of the best non-simulation-based play algorithm. Separate TODO to not respond to 9 lead with 8 setting up two possible opponent run plays below.)
+- `--initial-play-actions` 4-8 with A,T,Q in pone hand considers T and Q to be equal plays as the current best non-simulation-based play algorithm would have played 9 on its first play as dealer if it held it thus the simulation does not consider a run off of 4-8-T to be possible for dealer.
+- simulation of all possible plays over just one game fails to complete on a ZeroDivisionError during variance calculation.
 
 ## Technology stack
 

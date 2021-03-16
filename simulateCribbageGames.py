@@ -1996,20 +1996,34 @@ def simulate_games(
             first_pone_expected_game_points: Optional[ExpectedGamePoints] = None
             first_dealer_expected_wins: Optional[ExpectedWins] = None
             first_dealer_expected_game_points: Optional[ExpectedGamePoints] = None
-            is_first_pone_next_to_play: bool = len(initial_play_actions) % 2 == 0
+            is_first_pone_next_to_play: bool = (
+                post_initial_play is not None and len(initial_play_actions) % 2 == 0
+            )
+            is_first_dealer_next_to_play: bool = (
+                post_initial_play is not None and len(initial_play_actions) % 2 == 1
+            )
+            next_dealer_is_first_dealer: bool = (
+                len(game_simulation_result.start_of_hand_scores) % 2 == 0
+            )
+            next_dealer_is_first_pone: bool = (
+                len(game_simulation_result.start_of_hand_scores) % 2 == 1
+            )
             if (
                 first_pone_game_points == 0
                 and first_dealer_game_points == 0
                 and (
-                    is_first_pone_next_to_play
+                    (
+                        is_first_pone_next_to_play
+                        or first_pone_select_each_possible_kept_hand
+                    )
                     and estimate_first_pone_incomplete_game_wins_and_game_points
-                    or not is_first_pone_next_to_play
+                    or (
+                        is_first_dealer_next_to_play
+                        or first_dealer_select_each_possible_kept_hand
+                    )
                     and estimate_first_dealer_incomplete_game_wins_and_game_points
                 )
             ):
-                next_dealer_is_first_pone: bool = (
-                    len(game_simulation_result.start_of_hand_scores) % 2 == 1
-                )
                 start_of_next_hand_score: StartOfHandScore = StartOfHandScore(
                     final_first_pone_score,
                     final_first_dealer_score,
@@ -3442,8 +3456,12 @@ def player_select_kept_cards_based_on_simulation(
         DEFAULT_SELECT_PLAY,
         None,
         tally_start_of_hand_position_results,
-        estimate_first_pone_incomplete_game_wins_and_game_points,
-        estimate_first_dealer_incomplete_game_wins_and_game_points,
+        estimate_first_pone_incomplete_game_wins_and_game_points
+        if player == PONE
+        else estimate_first_dealer_incomplete_game_wins_and_game_points,
+        estimate_first_dealer_incomplete_game_wins_and_game_points
+        if player == PONE
+        else estimate_first_pone_incomplete_game_wins_and_game_points,
         hide_missing_incomplete_game_wins_and_game_points_estimates,
         start_of_hand_position_results_tallies,
         False,
