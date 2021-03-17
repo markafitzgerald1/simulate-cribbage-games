@@ -77,6 +77,7 @@ for different possible discards or plays.
 
 ## Maybe first version goals
 
+- Replace non-ASCII plus or minus symbol with +/- so that it renders correctly by default in Windows Git (MSYS) bash.
 - Add support for specification of current pone and dealer as something other than first pone and first dealer, respectively at start of simulations starting at not 0-0 scores for ease of usage when manually interfacing with non-simulate-cribbage-hands opponents.
 
 ## Post-first version or release short to medium term goals
@@ -117,7 +118,7 @@ for different possible discards or plays.
 
 ## Current known bugs
 
-* None confirmed.
+* Long runs using the current position and dealer to end of game results database tend to hang after 1-4 hours of execution.
 
 ## Current possible bugs
 
