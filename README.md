@@ -118,7 +118,7 @@ for different possible discards or plays.
 
 ## Current known bugs
 
-* Long runs using the current position and dealer to end of game results database tend to hang after 1-4 hours of execution.
+* Long runs using the current position and dealer to end of game results database tend to hang after 1-4 hours of execution.  This occurs even then winpty is not used to run python.  This also occurs when the tally database is openend in read-only mode by multiple processes ([which is safe](https://docs.python.org/3/library/shelve.html#restrictions)).
 
 ## Current possible bugs
 
