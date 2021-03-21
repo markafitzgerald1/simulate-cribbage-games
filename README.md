@@ -6,7 +6,7 @@ Simulate and analyze the play of hands and games of cribbage between two opponen
 
 - Install Python 3.9.1
 - `pip install -r requirements.txt` _(may require local admin to install black globally... or use a [virtualenv](https://virtualenv.pypa.io/en/latest/) instead!)_
-- _Optional:_ Build the start of hand position + current dealer wins, losses and game points database to improve positional play of simulation-based play and discard strategies' (takes about 30 minutes on my laptop): `python simulateCribbageGames.py --unlimited-hands-per-game --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions --games-per-update 2000 --tally-start-of-hand-position-results --game-count 1000000--show-calc-cache-usage-stats`. Can be run longer (`--infinite-game-count` then Control+C to stop) for likely better results - point of diminshing returns not yet established.
+- _Optional:_ Build the start of hand position + current dealer wins, losses and game points database to improve positional play of simulation-based play and discard strategies' (takes about 30 minutes on my laptop): `python simulateCribbageGames.py --unlimited-hands-per-game --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions --games-per-update 2000 --tally-start-of-hand-position-results --game-count 1000000--show-calc-cache-usage-stats`. Can be run longer (`--infinite-game-count` then Control+C to stop) for likely better results - exact point of diminshing returns currently hard to measure for performance and open bug reasons and not yet established.
 
 ## Test
 
@@ -65,7 +65,6 @@ for different possible discards or plays.
 
 ## First version goals
 
-- Measure point of diminshing returns on build of expected wins, losses and game points per start of hand position and current dealer database.
 - Eliminate (via new `--first-(pone|dealer)-discarded-cards` flag) or reduce (via replace of `--first(pone|dealer)-kept-cards` with `--first-(pone|dealer)-discarded-cards`) double data entry between dealt and kept cards on `--select-each-post-initial-play` analysis.
 - Identify whether current pone or current dealer is discarding in discard coach and simulation-based discard output.
 - Add best pre-cut, post-cut discard coaches so that human players can learn where expected cut and crib values may affect discard decisions.
@@ -82,6 +81,7 @@ for different possible discards or plays.
 
 ## Post-first version or release short to medium term goals
 
+- Measure point of diminshing returns on build of expected wins, losses and game points per start of hand position and current dealer database. (Currently difficult to measure due to slow execution times and the open issue with long runs using the position and current score end game result database hanging.)
 - Improve current best non-simulation-based play strategy:
   - consider improving default play algorithm to lead from high (> 5) pair (e.g. 9 from T-9-9-6) when low lead not possible (1.2 points better than T lead based on simulations); and
   - consider preferring responding to low (< 5) lead with non-ten-count cards over ten-count cards.
@@ -118,7 +118,7 @@ for different possible discards or plays.
 
 ## Current known bugs
 
-* Long runs using the current position and dealer to end of game results database tend to hang after 1-4 hours of execution.  This occurs even then winpty is not used to run python.  This also occurs when the tally database is openend in read-only mode by multiple processes ([which is safe](https://docs.python.org/3/library/shelve.html#restrictions)).
+* Long runs using the current position and dealer to end of game results database tend to hang after 1-4 hours of execution.  This occurs even then winpty is not used to run python.  This also occurs when the tally database is openend in read-only mode by multiple processes ([which is safe](https://docs.python.org/3/library/shelve.html#restrictions)).  This does _not_ happen if the current position and dealer to end of game results database is _not_ in use.  Perhaps it does _not_ happen when only _one_ process is accessing the dealer-position-results shelf?
 
 ## Current possible bugs
 
