@@ -65,22 +65,21 @@ for different possible discards or plays.
 
 ## First version goals
 
+- Review license usage - is MPL 2.0 most suitable for project goals going forward from here now that a likely good computer player has been created?
+- Consider giving project a name reflecting that you can simulate cribbage games with it, analyze cribbage decisions (not games yet) with it and play games against it.
+- Formally tag, version and release a specific commit of this source code repository, perhaps adding release notes and/or moving the below informal change log to a separate file.
+
+## Post-first version or release short to medium term goals
+
+- UI/UX improvements:
+  - improve user interface via which human players can play against implemented computer discard and play strategies; and
 - Eliminate (via new `--first-(pone|dealer)-discarded-cards` flag) or reduce (via replace of `--first(pone|dealer)-kept-cards` with `--first-(pone|dealer)-discarded-cards`) double data entry between dealt and kept cards on `--select-each-post-initial-play` analysis.
 - Identify whether current pone or current dealer is discarding in discard coach and simulation-based discard output.
 - Add best pre-cut, post-cut discard coaches so that human players can learn where expected cut and crib values may affect discard decisions.
 - Make coach usage and output optional - may want to play blind sometimes to train differently.  (Also constant coaching of what the computer thinks is optimal against a static player may or may not be useful depending on whether the human player's goal is to play better than they currently play or whether it is to play better than the dynamic computer player.)
 - Automatically compare dynamic player actions against best static player actions and output when significantly different in order to highlight weaknesses in the best static player that could possibly be improved without simulation.
-- Review license usage - is MPL 2.0 most suitable for project goals going forward from here now that a likely good computer player has been created?
-- Consider giving project a name reflecting that you can simulate cribbage games with it, analyze cribbage decisions (not games yet) with it and play games against it.
-- Formally tag, version and release a specific commit of this source code repository, perhaps adding release notes and/or moving the below informal change log to a separate file.
-
-## Maybe first version goals
-
 - Replace non-ASCII plus or minus symbol with +/- so that it renders correctly by default in Windows Git (MSYS) bash.
 - Add support for specification of current pone and dealer as something other than first pone and first dealer, respectively at start of simulations starting at not 0-0 scores for ease of usage when manually interfacing with non-simulate-cribbage-hands opponents.
-
-## Post-first version or release short to medium term goals
-
 - Measure point of diminshing returns on build of expected wins, losses and game points per start of hand position and current dealer database. (Currently difficult to measure due to slow execution times and the open issue with long runs using the position and current score end game result database hanging.)
 - Improve current best non-simulation-based play strategy:
   - consider improving default play algorithm to lead from high (> 5) pair (e.g. 9 from T-9-9-6) when low lead not possible (1.2 points better than T lead based on simulations); and
@@ -101,7 +100,6 @@ for different possible discards or plays.
   - reconsider not ignoring suit by default and not ignoring suit in simulation-based discard strategy; and
   - tally and optionally use a suitless pre-cut kept hand expected play points database during discard.
 - UI/UX improvements:
-  - improve user interface via which human players can play against implemented computer discard and play strategies; and
   - add support for --(pone|dealer)-(dealt|kept)-cards and --initial-play-actions lacking suit information.
 - Improve development speed and quality:
   - Increase confidence in implementation by adding further type hints (Python), type checking and unit tests.
