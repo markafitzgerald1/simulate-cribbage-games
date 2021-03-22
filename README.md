@@ -65,10 +65,10 @@ for different possible discards or plays.
 
 ## Short to medium term and lower level project goals
 
+- Formally tag, version and release a specific commit of this source code repository, perhaps adding release notes and/or moving the below informal change log to a separate file.
+- Consider giving project a name reflecting that you can simulate cribbage games with it, analyze cribbage decisions (not games yet) with it and play games against it.
 - UI/UX improvements:
   - improve user interface via which human players can play against implemented computer discard and play strategies.
-- Consider giving project a name reflecting that you can simulate cribbage games with it, analyze cribbage decisions (not games yet) with it and play games against it.
-- Formally tag, version and release a specific commit of this source code repository, perhaps adding release notes and/or moving the below informal change log to a separate file.
 - Eliminate (via new `--first-(pone|dealer)-discarded-cards` flag) or reduce (via replace of `--first(pone|dealer)-kept-cards` with `--first-(pone|dealer)-discarded-cards`) double data entry between dealt and kept cards on `--select-each-post-initial-play` analysis.
 - Identify whether current pone or current dealer is discarding in discard coach and simulation-based discard output.
 - Add best pre-cut, post-cut discard coaches so that human players can learn where expected cut and crib values may affect discard decisions.
