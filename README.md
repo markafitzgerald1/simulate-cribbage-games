@@ -65,8 +65,6 @@ for different possible discards or plays.
 
 ## Short to medium term and lower level project goals
 
-- Formally tag, version and release a specific commit of this source code repository, perhaps adding release notes and/or moving the below informal change log to a separate file.
-- Consider giving project a name reflecting that you can simulate cribbage games with it, analyze cribbage decisions (not games yet) with it and play games against it.
 - UI/UX improvements:
   - improve user interface via which human players can play against implemented computer discard and play strategies.
 - Eliminate (via new `--first-(pone|dealer)-discarded-cards` flag) or reduce (via replace of `--first(pone|dealer)-kept-cards` with `--first-(pone|dealer)-discarded-cards`) double data entry between dealt and kept cards on `--select-each-post-initial-play` analysis.
@@ -120,6 +118,8 @@ for different possible discards or plays.
 
 ## Past project goals
 
+- Formally tag, version and release a specific commit of this source code repository, perhaps adding release notes and/or moving the below informal change log to a separate file. (Resolution: current Python implementation versioned via `setup.py`.  Move of completed items into release notes, possibly in a separate file will likely get done on split of the current all-in-one program into separate play against, simulate and analyze programs.)
+- Consider giving project a name reflecting that you can simulate cribbage games with it, analyze cribbage decisions (not games yet) with it and play games against it. (Resolution: not going to do right now - will likely and naturally get done on split of the current all-in-one program into separate play against, simulate and analyze programs.)
 - Review license usage - is MPL 2.0 most suitable for project goals going forward from here now that a likely good computer player has been created? (Answer: MPL 2.0 is still the most suitable project license as of 2021-03-22.  Rationale: MPL 2.0 is [LGPL 2.1+, GPL 2.0+ and AGPL 3+ compatible](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#copyleft-scope).  [MPL 2.0's per-file scope copyleft](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#copyleft-scope) allows for non-MPL 2.0 or even proprietary separate file extensions as per project intent which LGPL (library-scope copyleft) and GPL (software-scope copyleft) do not.  Conclusion: MPL 2.0 most suitable server-side.  Client-side [MPL 2.0 is BSD and Apache compatible](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#mpl-bsd-and-apache) which should make most presently forseeable browser-based projects buildable without blocking licensing issues.)
 - Improve simulation-based discard and play strategies:
   - Simulate to end of game not end of hand to avoid making positional errors near or in the fourth leg (91-120 points) of play... or horizon effect errors prioritizing moves ending the game in player's favour over possibly superior plays which do not end the play in this hand. (Too slow in 2021-02-20 Python implementation - requires one or more of more cacheing (cache win %, E(gamePoints) stats at all end of hand firstPone-firstDealer scores), better algorithms and a faster programming language.) (Status: Implemented via cache.)
