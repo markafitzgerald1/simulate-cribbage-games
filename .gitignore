@@ -16,3 +16,5 @@
 /start_of_hand_position_results_tallies_shelf\.dat
 /start_of_hand_position_results_tallies_shelf\.dir
 /start_of_hand_position_results_tallies_shelf_backups/
+/\.cache/
+/dist/

@@ -4,11 +4,19 @@
   "description": "Play a cribbage hand between two opponents.",
   "main": "playCribbageHand.js",
   "dependencies": {
-    "random-js": "^2.1.0"
+    "random-js": "^2.1.0",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "http-server": "^0.12.3",
+    "parcel-bundler": "^1.12.5"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "parcel index.html",
+    "build": "parcel build index.html",
+    "serve": "http-server dist/"
   },
   "author": "Mark Fitzgerald <mark.a.fitzgerald1@gmail.com> (https://github.com/markafitzgerald1)",
   "license": "MPL-2.0"
