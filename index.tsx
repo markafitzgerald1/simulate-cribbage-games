@@ -3,17 +3,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import React from "react";
 import ReactDOM from "react-dom";
+import { Helmet } from "react-helmet";
 
 console.log("Hello from simulate-cribbage-games!");
 
-function DealCardsButton() {
-  return <button type="button">Deal</button>;
-}
-
-ReactDOM.render(
+const DealCardsButton = () => <button type="button">Deal</button>;
+const TitleAndH1 = (props) => (
   <div>
-    <h1>Play Cribbage</h1>
-    <DealCardsButton />
-  </div>,
-  document.getElementById("root")
+    <Helmet>
+      <title>{props.title}</title>
+    </Helmet>
+    <h1>{props.title}</h1>
+  </div>
 );
+const CribbageApplication = () => (
+  <div>
+    <TitleAndH1 title="Play Cribbage" />
+    <DealCardsButton />
+  </div>
+);
+
+ReactDOM.render(<CribbageApplication />, document.getElementById("root"));
