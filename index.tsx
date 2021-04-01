@@ -17,14 +17,28 @@ const TitleAndH1: React.FunctionComponent<{ title: string }> = (props: {
     <h1>{props.title}</h1>
   </div>
 );
+
 const DealCardsButton: React.FunctionComponent = (): JSX.Element => (
   <button type="button">Deal</button>
 );
-const CribbageApplication: React.FunctionComponent = (): JSX.Element => (
-  <div>
-    <TitleAndH1 title="Play Cribbage" />
-    <DealCardsButton />
-  </div>
-);
+class CribbageApplication extends React.Component<
+  {},
+  { cards: Array<string> }
+> {
+  constructor(props) {
+    super(props);
+    this.state = { cards: ["AC", "2D", "3H", "4S"] };
+  }
+
+  render() {
+    return (
+      <div>
+        <TitleAndH1 title="Play Cribbage" />
+        <DealCardsButton />
+        <div>{this.state.cards.toString()}</div>
+      </div>
+    );
+  }
+}
 
 ReactDOM.render(<CribbageApplication />, document.getElementById("root"));
