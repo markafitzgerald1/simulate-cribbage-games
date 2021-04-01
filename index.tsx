@@ -7,7 +7,9 @@ import { Helmet } from "react-helmet";
 
 console.log("Hello from simulate-cribbage-games!");
 
-const TitleAndH1 = (props) => (
+const TitleAndH1: React.FunctionComponent<{ title: string }> = (props: {
+  title: string;
+}): JSX.Element => (
   <div>
     <Helmet>
       <title>{props.title}</title>
@@ -15,8 +17,10 @@ const TitleAndH1 = (props) => (
     <h1>{props.title}</h1>
   </div>
 );
-const DealCardsButton = () => <button type="button">Deal</button>;
-const CribbageApplication = () => (
+const DealCardsButton: React.FunctionComponent = (): JSX.Element => (
+  <button type="button">Deal</button>
+);
+const CribbageApplication: React.FunctionComponent = (): JSX.Element => (
   <div>
     <TitleAndH1 title="Play Cribbage" />
     <DealCardsButton />
