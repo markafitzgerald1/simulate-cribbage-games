@@ -7,7 +7,6 @@ import { Helmet } from "react-helmet";
 
 console.log("Hello from simulate-cribbage-games!");
 
-const DealCardsButton = () => <button type="button">Deal</button>;
 const TitleAndH1 = (props) => (
   <div>
     <Helmet>
@@ -16,6 +15,7 @@ const TitleAndH1 = (props) => (
     <h1>{props.title}</h1>
   </div>
 );
+const DealCardsButton = () => <button type="button">Deal</button>;
 const CribbageApplication = () => (
   <div>
     <TitleAndH1 title="Play Cribbage" />
