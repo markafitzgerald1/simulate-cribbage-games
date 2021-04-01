@@ -7,9 +7,9 @@ import { Helmet } from "react-helmet";
 
 console.log("Hello from simulate-cribbage-games!");
 
-const TitleAndH1: React.FunctionComponent<{ title: string }> = (props: {
-  title: string;
-}): JSX.Element => (
+const TitleAndH1: React.FunctionComponent<{ title: string }> = (
+  props
+): JSX.Element => (
   <div>
     <Helmet>
       <title>{props.title}</title>
@@ -18,9 +18,17 @@ const TitleAndH1: React.FunctionComponent<{ title: string }> = (props: {
   </div>
 );
 
-const DealCardsButton: React.FunctionComponent = (): JSX.Element => (
-  <button type="button">Deal</button>
+const DealCardsButton: React.FunctionComponent<{
+  setCards: (newCards: Array<string>) => void;
+}> = (props): JSX.Element => (
+  <button
+    type="button"
+    onClick={() => props.setCards(["KS", "QD", "JH", "5C"])}
+  >
+    Deal
+  </button>
 );
+
 class CribbageApplication extends React.Component<
   {},
   { cards: Array<string> }
@@ -34,10 +42,14 @@ class CribbageApplication extends React.Component<
     return (
       <div>
         <TitleAndH1 title="Play Cribbage" />
-        <DealCardsButton />
+        <DealCardsButton setCards={this.setCards.bind(this)} />
         <div>{this.state.cards.toString()}</div>
       </div>
     );
+  }
+
+  setCards(newCards: Array<string>) {
+    this.setState({ cards: newCards });
   }
 }
 
