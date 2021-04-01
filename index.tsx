@@ -4,4 +4,4 @@ import ReactDOM from "react-dom";
 
 console.log("Hello from tsx!");
 
-ReactDOM.render(<p>Hello</p>, document.getElementById("root"));
+ReactDOM.render(<h1>Play Cribbage</h1>, document.getElementById("root"));
