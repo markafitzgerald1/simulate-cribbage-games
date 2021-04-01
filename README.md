@@ -67,6 +67,7 @@ for different possible discards or plays.
 
 - UI/UX improvements:
   - improve user interface via which human players can play against implemented computer discard and play strategies. (Status: Planning to run the JavaScript version of this program in browser then bring it up to the Python level of Cribbage play and analysis functionality as the existing Python version is not easily run in the browser: Most Python in browser tools unmaintained; Pyodide pre-v1 and did not support return value of called Python code after micropip install of not built in to Pyodide dependency; and Brython did not include the CPython `statistics` module and failed to make it into a Brython package due to a Unicode byte order mark in some non-`statistics.py` file.)
+    - Add button to deal some random cards.
 - Eliminate (via new `--first-(pone|dealer)-discarded-cards` flag) or reduce (via replace of `--first(pone|dealer)-kept-cards` with `--first-(pone|dealer)-discarded-cards`) double data entry between dealt and kept cards on `--select-each-post-initial-play` analysis.
 - Identify whether current pone or current dealer is discarding in discard coach and simulation-based discard output.
 - Add best pre-cut, post-cut discard coaches so that human players can learn where expected cut and crib values may affect discard decisions.
