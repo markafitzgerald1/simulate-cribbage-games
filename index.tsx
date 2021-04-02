@@ -33,7 +33,7 @@ class CribbageApplication extends React.Component<
   {},
   { cards: Array<string> }
 > {
-  constructor(props) {
+  constructor(props: {}) {
     super(props);
     this.state = { cards: ["AC", "2D", "3H", "4S"] };
   }
