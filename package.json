@@ -1,6 +1,6 @@
 {
-  "name": "play-cribbage-hand",
-  "version": "0.0.2",
+  "name": "simulate-cribbage-games",
+  "version": "0.0.1",
   "description": "Play a cribbage hand between two opponents.",
   "main": "playCribbageHand.js",
   "dependencies": {
