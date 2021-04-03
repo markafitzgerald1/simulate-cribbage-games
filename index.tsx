@@ -5,6 +5,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { Helmet } from "react-helmet";
 import Card from "./src/Card";
+import CardComponent from "./src/components/CardComponent";
 import Index from "./src/Index";
 import Suit from "./src/Suit";
 
@@ -58,7 +59,11 @@ class CribbageApplication extends React.Component<{}, { cards: Array<Card> }> {
       <div>
         <TitleAndH1 title="Play Cribbage" />
         <DealCardsButton setCards={this.setCards} />
-        <div>{this.state.cards.toString()}</div>
+        <ul>
+          {this.state.cards.map((card) => (
+            <CardComponent card={card} key={card.toString()} />
+          ))}
+        </ul>
       </div>
     );
   }
