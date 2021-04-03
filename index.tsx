@@ -50,13 +50,14 @@ class CribbageApplication extends React.Component<{}, { cards: Array<Card> }> {
         new Card(new Index(3), new Suit(3)),
       ],
     };
+    this.setCards = this.setCards.bind(this);
   }
 
   render() {
     return (
       <div>
         <TitleAndH1 title="Play Cribbage" />
-        <DealCardsButton setCards={this.setCards.bind(this)} />
+        <DealCardsButton setCards={this.setCards} />
         <div>{this.state.cards.toString()}</div>
       </div>
     );
