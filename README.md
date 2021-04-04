@@ -67,10 +67,12 @@ All of the following should exit with status code 0 and no raised exception:
 
 - UI/UX improvements:
   - Improve user interface via which human players can play against implemented computer discard and play strategies:
-    - Add discard support;
     - add starter cut support;
-    - add play first card (as pone) support; and
-    - add cut for the deal support;
+    - add play first card (as pone) support;
+    - add play first computer (as dealer) card support;
+    - add play second card (as pone) support;
+    - add first complete play to 31 support;
+    - add all plays to 31 support.
 - Eliminate (via new `--first-(pone|dealer)-discarded-cards` flag) or reduce (via replace of `--first(pone|dealer)-kept-cards` with `--first-(pone|dealer)-discarded-cards`) double data entry between dealt and kept cards on `--select-each-post-initial-play` analysis.
 - Identify whether current pone or current dealer is discarding in discard coach and simulation-based discard output.
 - Add best pre-cut, post-cut discard coaches so that human players can learn where expected cut and crib values may affect discard decisions.
