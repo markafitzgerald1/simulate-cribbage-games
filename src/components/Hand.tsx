@@ -1,12 +1,12 @@
 import React from "react";
-import Card from "../Card";
-import CardComponent from "./CardComponent";
+import Hand from "../Hand";
+import CardComponent from "./Card";
 
-const HandComponent: React.FunctionComponent<{ cards: Card[] }> = (
+const HandComponent: React.FunctionComponent<{ hand: Hand }> = (
   props
 ): JSX.Element => (
   <ul>
-    {props.cards.map((card) => (
+    {props.hand.cards.map((card) => (
       <CardComponent card={card} key={card.toString()}></CardComponent>
     ))}
   </ul>

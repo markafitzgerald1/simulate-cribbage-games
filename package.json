@@ -1,6 +1,6 @@
 {
   "name": "simulate-cribbage-games",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Play a cribbage hand between two opponents.",
   "main": "playCribbageHand.js",
   "dependencies": {
@@ -22,7 +22,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "parcel index.html",
     "build": "parcel build index.html",
-    "serve": "http-server dist/"
+    "serve": "http-server dist/",
+    "tsc-build": "tsc --jsx react",
+    "clean": "rm -rf .cache/ dist/ index.js src/*.js src/components/*.js"
   },
   "author": "Mark Fitzgerald <mark.a.fitzgerald1@gmail.com> (https://github.com/markafitzgerald1)",
   "license": "MPL-2.0"

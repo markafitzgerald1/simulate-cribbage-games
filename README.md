@@ -58,23 +58,23 @@ All of the following should exit with status code 0 and no raised exception:
 
 ## Long-term project goals
 
-* Provide efficient, user-friendly discard and play analysis factoring
-in the expected game points differential (and play points differential if no game points differential) to end of hand(s) or game above opponent
-for different possible discards or plays.
-  * Provide an automated opponent against which to play and practice if the above analyses are good enough to provide an opponent from which the user may directly or indirectly (via throught-provoking plays) learn.
+- Provide efficient, user-friendly discard and play analysis factoring
+  in the expected game points differential (and play points differential if no game points differential) to end of hand(s) or game above opponent
+  for different possible discards or plays.
+  - Provide an automated opponent against which to play and practice if the above analyses are good enough to provide an opponent from which the user may directly or indirectly (via throught-provoking plays) learn.
 
 ## Short to medium term and lower level project goals
 
 - UI/UX improvements:
-  - improve user interface via which human players can play against implemented computer discard and play strategies. (Status: Planning to run the JavaScript version of this program in browser then bring it up to the Python level of Cribbage play and analysis functionality as the existing Python version is not easily run in the browser: Most Python in browser tools unmaintained; Pyodide pre-v1 and did not support return value of called Python code after micropip install of not built in to Pyodide dependency; and Brython did not include the CPython `statistics` module and failed to make it into a Brython package due to a Unicode byte order mark in some non-`statistics.py` file.) Subtasks:
-    - add button to deal some random cards;
-    - add discard support;
+  - Improve user interface via which human players can play against implemented computer discard and play strategies:
+    - Add discard support;
     - add starter cut support;
-    - add play first card (as pone) support.
+    - add play first card (as pone) support; and
+    - add cut for the deal support;
 - Eliminate (via new `--first-(pone|dealer)-discarded-cards` flag) or reduce (via replace of `--first(pone|dealer)-kept-cards` with `--first-(pone|dealer)-discarded-cards`) double data entry between dealt and kept cards on `--select-each-post-initial-play` analysis.
 - Identify whether current pone or current dealer is discarding in discard coach and simulation-based discard output.
 - Add best pre-cut, post-cut discard coaches so that human players can learn where expected cut and crib values may affect discard decisions.
-- Make coach usage and output optional - may want to play blind sometimes to train differently.  (Also constant coaching of what the computer thinks is optimal against a static player may or may not be useful depending on whether the human player's goal is to play better than they currently play or whether it is to play better than the dynamic computer player.)
+- Make coach usage and output optional - may want to play blind sometimes to train differently. (Also constant coaching of what the computer thinks is optimal against a static player may or may not be useful depending on whether the human player's goal is to play better than they currently play or whether it is to play better than the dynamic computer player.)
 - Automatically compare dynamic player actions against best static player actions and output when significantly different in order to highlight weaknesses in the best static player that could possibly be improved without simulation.
 - Replace non-ASCII plus or minus symbol with +/- so that it renders correctly by default in Windows Git (MSYS) bash.
 - Add support for specification of current pone and dealer as something other than first pone and first dealer, respectively at start of simulations starting at not 0-0 scores for ease of usage when manually interfacing with non-simulate-cribbage-hands opponents.
@@ -110,21 +110,28 @@ for different possible discards or plays.
 
 ## Current known shortcomings
 
-* None not already in above post-first version or release short to medium term goals.
+- None not already in above post-first version or release short to medium term goals.
 
 ## Current known bugs
 
-* Long program executions using the current position and dealer to end of game results database tend to hang after 1-4 hours of execution.  This occurs even then winpty is not used to run python.  This also occurs when the tally database is openend in read-only mode by multiple processes ([which is safe](https://docs.python.org/3/library/shelve.html#restrictions)).  This does _not_ happen if the current position and dealer to end of game results database is _not_ in use.  Perhaps it does _not_ happen when only _one_ process is accessing the dealer-position-results shelf?
+- Long program executions using the current position and dealer to end of game results database tend to hang after 1-4 hours of execution. This occurs even then winpty is not used to run python. This also occurs when the tally database is openend in read-only mode by multiple processes ([which is safe](https://docs.python.org/3/library/shelve.html#restrictions)). This does _not_ happen if the current position and dealer to end of game results database is _not_ in use. Perhaps it does _not_ happen when only _one_ process is accessing the dealer-position-results shelf?
 
 ## Current possible bugs
 
-* Coach reported expected game points can be misleading - sign seemed to reflect current pone minus current pone expected end of game points during discard coaching but first pone minus first dealer expected game points during play coaching.
+- Coach reported expected game points can be misleading - sign seemed to reflect current pone minus current pone expected end of game points during discard coaching but first pone minus first dealer expected game points during play coaching.
 
 ## Past project goals
 
-- Formally tag, version and release a specific commit of this source code repository, perhaps adding release notes and/or moving the below informal change log to a separate file. (Resolution: current Python implementation versioned via `setup.py`.  Move of completed items into release notes, possibly in a separate file will likely get done on split of the current all-in-one program into separate play against, simulate and analyze programs.)
+- UI/UX improvements:
+  - Improve user interface via which human players can play against implemented computer discard and play strategies:
+    - Determine whether execution of existing Python as-is or transpiled to JavaScript is feasible in-browser. (Status: not feasible.)
+    - Create web UI;
+    - add fixed cards;
+    - add Deal button to change fixed cards; and
+    - update Deal button to deal random cards.
+- Formally tag, version and release a specific commit of this source code repository, perhaps adding release notes and/or moving the below informal change log to a separate file. (Resolution: current Python implementation versioned via `setup.py`. Move of completed items into release notes, possibly in a separate file will likely get done on split of the current all-in-one program into separate play against, simulate and analyze programs.)
 - Consider giving project a name reflecting that you can simulate cribbage games with it, analyze cribbage decisions (not games yet) with it and play games against it. (Resolution: not going to do right now - will likely and naturally get done on split of the current all-in-one program into separate play against, simulate and analyze programs.)
-- Review license usage - is MPL 2.0 most suitable for project goals going forward from here now that a likely good computer player has been created? (Answer: MPL 2.0 is still the most suitable project license as of 2021-03-22.  Rationale: MPL 2.0 is [LGPL 2.1+, GPL 2.0+ and AGPL 3+ compatible](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#copyleft-scope).  [MPL 2.0's per-file scope copyleft](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#copyleft-scope) allows for non-MPL 2.0 or even proprietary separate file extensions as per project intent which LGPL (library-scope copyleft) and GPL (software-scope copyleft) do not.  Conclusion: MPL 2.0 most suitable server-side.  Client-side [MPL 2.0 is BSD and Apache compatible](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#mpl-bsd-and-apache) which should make most presently forseeable browser-based projects buildable without blocking licensing issues.)
+- Review license usage - is MPL 2.0 most suitable for project goals going forward from here now that a likely good computer player has been created? (Answer: MPL 2.0 is still the most suitable project license as of 2021-03-22. Rationale: MPL 2.0 is [LGPL 2.1+, GPL 2.0+ and AGPL 3+ compatible](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#copyleft-scope). [MPL 2.0's per-file scope copyleft](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#copyleft-scope) allows for non-MPL 2.0 or even proprietary separate file extensions as per project intent which LGPL (library-scope copyleft) and GPL (software-scope copyleft) do not. Conclusion: MPL 2.0 most suitable server-side. Client-side [MPL 2.0 is BSD and Apache compatible](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#mpl-bsd-and-apache) which should make most presently forseeable browser-based projects buildable without blocking licensing issues.)
 - Improve simulation-based discard and play strategies:
   - Simulate to end of game not end of hand to avoid making positional errors near or in the fourth leg (91-120 points) of play... or horizon effect errors prioritizing moves ending the game in player's favour over possibly superior plays which do not end the play in this hand. (Too slow in 2021-02-20 Python implementation - requires one or more of more cacheing (cache win %, E(gamePoints) stats at all end of hand firstPone-firstDealer scores), better algorithms and a faster programming language.) (Status: Implemented via cache.)
   - Add positional awareness / mitigate or eliminate search horizon effect: Discard or play based on simulation at a score where the game _may_ end in the current hand prioritizes discards or plays that _may_ end the game in the simulation in favour of the player to play over discards or plays that do not end the game this hand regardless of quality of move - e.g. pone discard from T♣,9♥,9♣,5♠,2♦,2♣ at 94(pone)-79(dealer), dealer response to 3h lead holding kh,qh,td,5c with 9d,4h discarded and kc starter. (Status: FIXED! Former scenario: +0.708 +/- 0.005 game points favoring 9-2 discard simulating to 1 hand ahead; +0.727 +/- 0.002 game points favoring 9-9 (or even 2-2) discard with end of player hand simulation expected game points estimates factored into discard decision.)
@@ -170,7 +177,7 @@ for different possible discards or plays.
 
 ## Fixed past project bugs
 
-- `python simulateCribbageGames.py --initial-dealer-score 7 --initial-pone-score 12 --first-dealer-dealt-cards 3c,5c,6h,6s,8s,jc --first-dealer-select-each-possible-kept-hand --infinite-game-count --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --games-per-update 1000 --process-count 4 --estimate-first-dealer-incomplete-game-wins-and-game-points` is not using the position result estimate database in its discard calculations, but _is_ using it if `--estimate-first-pone-incomplete-game-wins-and-game-points` was added.  I've confirmed this is not an issue for simulation-based players, is not an issue for `--first-pone-select-each-possible-kept-hand`, is not an issue for `--select-each-post-initial-play` (play analysis iteration over possibilities is implemented differently) but is an issue for `--first-dealer-select-each-possible-kept-hand`.
+- `python simulateCribbageGames.py --initial-dealer-score 7 --initial-pone-score 12 --first-dealer-dealt-cards 3c,5c,6h,6s,8s,jc --first-dealer-select-each-possible-kept-hand --infinite-game-count --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --games-per-update 1000 --process-count 4 --estimate-first-dealer-incomplete-game-wins-and-game-points` is not using the position result estimate database in its discard calculations, but _is_ using it if `--estimate-first-pone-incomplete-game-wins-and-game-points` was added. I've confirmed this is not an issue for simulation-based players, is not an issue for `--first-pone-select-each-possible-kept-hand`, is not an issue for `--select-each-post-initial-play` (play analysis iteration over possibilities is implemented differently) but is an issue for `--first-dealer-select-each-possible-kept-hand`.
 - First pone and first dealer win percentages do not always exactly add up to 1 and standard deviations do not equal in 10,000+ game simulations. (They do add up to 1 and have equal standard deviations in <= 5,000 game simulations.) Perhaps just a rounding error in runstats/Statistics, but perhaps a bug? (Turned out to be caused by not clearing the child Statistics object when adding to the parent overall tally Statistics object, resulting in multiple-counting of results when more than one add to the global tally in a single run was done.)
 - All cards in crib having same suit but starter not having same suit was scoring 4 points in crib when it should have been scoring 0.
 - All cards in hand having same suit and starter having same suit was scoring 0 points in hand when it should have been scoring 5.
