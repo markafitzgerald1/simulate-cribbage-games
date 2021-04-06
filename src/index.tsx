@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import React from "react";
 import ReactDOM from "react-dom";
-import CribbageGame from "./src/components/CribbageGame";
+import CribbageGame from "./components/CribbageGame";
 
 console.log("Hello from simulate-cribbage-games!");
 

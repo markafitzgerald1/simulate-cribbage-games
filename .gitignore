@@ -16,5 +16,8 @@
 /start_of_hand_position_results_tallies_shelf\.dat
 /start_of_hand_position_results_tallies_shelf\.dir
 /start_of_hand_position_results_tallies_shelf_backups/
-/\.cache/
+/\.parcel-cache/
 /dist/
+/index\.html
+/index\.*\.js
+/index\.*\.js\.map
