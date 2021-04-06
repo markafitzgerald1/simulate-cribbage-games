@@ -67,7 +67,6 @@ All of the following should exit with status code 0 and no raised exception:
 
 - UI/UX improvements:
   - Improve user interface via which human players can play against implemented computer discard and play strategies:
-    - add starter cut support;
     - add play first card (as pone) support;
     - add play first computer (as dealer) card support;
     - add play second card (as pone) support;
