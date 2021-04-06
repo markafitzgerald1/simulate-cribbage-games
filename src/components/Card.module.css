@@ -1,0 +1,11 @@
+.card {
+  border-style: solid;
+  border-width: thin;
+  display: inline-block;
+  padding: 0.18em;
+  margin: 0.18em;
+  border-radius: 0.22em;
+  border-color: grey;
+  width: 1.35em;
+  text-align: center;
+}

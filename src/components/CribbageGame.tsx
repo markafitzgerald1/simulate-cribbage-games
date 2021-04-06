@@ -4,9 +4,9 @@ import { MersenneTwister19937 } from "random-js";
 import TitleAndH1 from "./TitleAndH1";
 import DealCardsButton from "./DealCardsButton";
 import HandComponent from "./Hand";
-import Hand from "../Hand";
-import DECK from "../DECK";
-import dealHand from "../dealHand";
+import Hand from "../cribbage/Hand";
+import DECK from "../cribbage/DECK";
+import dealHand from "../cribbage/dealHand";
 
 export default class extends React.Component<
   {},

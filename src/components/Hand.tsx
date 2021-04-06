@@ -1,5 +1,5 @@
 import React from "react";
-import Hand from "../Hand";
+import Hand from "../cribbage/Hand";
 import CardComponent from "./Card";
 
 const HandComponent: React.FunctionComponent<{ hand: Hand }> = (

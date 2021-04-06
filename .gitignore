@@ -21,3 +21,7 @@
 /index\.html
 /index\.*\.js
 /index\.*\.js\.map
+/index\.*\.css
+/index\.*\.css\.map
+/src/**/*\.js
+/src/**/*\.module\.css\.d\.ts
