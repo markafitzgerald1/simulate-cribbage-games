@@ -10,3 +10,11 @@
   text-align: center;
   cursor: pointer;
 }
+
+.redSuit {
+  color: red;
+}
+
+.blackSuit {
+  color: black;
+}

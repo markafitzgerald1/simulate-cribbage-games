@@ -1,8 +1,15 @@
+import Color from "./Color";
+
 export default class Suit {
   static readonly TOTAL_COUNT: number = 4;
   static readonly STRINGS: Array<string> = "♣♦♥♠".split("");
+  static readonly CLUBS: Suit = new Suit(0);
+  static readonly DIAMONDS: Suit = new Suit(1);
+  static readonly HEARTS: Suit = new Suit(2);
+  static readonly SPADES: Suit = new Suit(3);
 
   readonly value: number;
+  readonly color: Color;
 
   constructor(value: number) {
     if (value < 0 || value >= Suit.TOTAL_COUNT) {
@@ -10,6 +17,9 @@ export default class Suit {
     }
 
     this.value = value;
+    this.color = [0, Suit.TOTAL_COUNT - 1].includes(value)
+      ? Color.BLACK
+      : Color.RED;
   }
 
   public toString = (): string => {
