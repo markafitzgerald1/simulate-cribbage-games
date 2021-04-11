@@ -1,16 +1,19 @@
 import React from "react";
+import { List } from "immutable";
 import { Engine } from "random-js/dist/types";
 import { MersenneTwister19937 } from "random-js";
 import TitleAndH1 from "./TitleAndH1";
 import DealCardsButton from "./DealCardsButton";
-import HandComponent from "./Hand";
+import PlayedCards from "./PlayedCards";
+import HandComponent from "./HandComponent";
 import Hand from "../cribbage/Hand";
+import Card from "../cribbage/Card";
 import DECK from "../cribbage/DECK";
 import dealHand from "../cribbage/dealHand";
 
 export default class extends React.Component<
   {},
-  { hand: Hand; randomJsEngine: Engine }
+  { hand: Hand; playedCards: List<Card>; randomJsEngine: Engine }
 > {
   constructor(props: {}) {
     super(props);
@@ -18,9 +21,11 @@ export default class extends React.Component<
     const hand: Hand = dealHand(randomJsEngine, DECK);
     this.state = {
       hand,
+      playedCards: List<Card>(),
       randomJsEngine,
     };
     this.dealCards = this.dealCards.bind(this);
+    this.playHandCard = this.playHandCard.bind(this);
   }
 
   render(): JSX.Element {
@@ -28,7 +33,11 @@ export default class extends React.Component<
       <div>
         <TitleAndH1 title="Play Cribbage" />
         <DealCardsButton dealCards={this.dealCards} />
-        <HandComponent hand={this.state.hand} />
+        <PlayedCards cards={this.state.playedCards} />
+        <HandComponent
+          hand={this.state.hand}
+          playHandCard={this.playHandCard}
+        />
       </div>
     );
   }
@@ -38,6 +47,13 @@ export default class extends React.Component<
   }
 
   dealCards(): void {
-    this.setState({ hand: this.dealHand() });
+    this.setState({ hand: this.dealHand(), playedCards: List<Card>() });
+  }
+
+  playHandCard(card: Card): void {
+    this.setState((state) => ({
+      hand: new Hand(state.hand.cards.filter((handCard) => handCard !== card)),
+      playedCards: state.playedCards.push(card),
+    }));
   }
 }
