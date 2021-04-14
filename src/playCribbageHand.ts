@@ -20,7 +20,7 @@ if (workerCount === 1) {
   let nWorkersDone = 0;
   const workers = Array.from(Array(workerCount).keys()).map(
     (_) =>
-      new Worker("./playCribbageHandWorker.js", {
+      new Worker("./src/playCribbageHandWorker.js", {
         argv: [Math.floor(evenHandCount / workerCount)],
       })
   );
