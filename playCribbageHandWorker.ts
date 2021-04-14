@@ -8,9 +8,10 @@ const workerThreads = require("worker_threads");
 const mersenneTwisterEngine = randomJs.MersenneTwister19937.autoSeed();
 
 class Card {
-  constructor(index, suit) {
-    this.index = index;
-    this.suit = suit;
+  count: number;
+  str: string;
+
+  constructor(public readonly index: number, public readonly suit: number) {
     this.count = Math.min(index + 1, 10);
     this.str = `${"A23456789TJQK".split("")[index]}${"♣♦♥♠".split("")[suit]}`;
   }
@@ -46,12 +47,12 @@ const startTimeNs = process.hrtime.bigint();
   let currentPlayPlays = [];
   while (hands[0].length + hands[1].length > 0) {
     const playableCards = hands[playerToPlay].filter(
-      (card) => playCount + card.count <= 31
+      (card: Card) => playCount + card.count <= 31
     );
     if (playableCards.length > 0) {
       const playerToPlayPlay = playableCards[0];
       hands[playerToPlay] = hands[playerToPlay].filter(
-        (card) => card !== playerToPlayPlay
+        (card: Card) => card !== playerToPlayPlay
       );
       currentPlayPlays.push(playerToPlayPlay);
       playCount += playerToPlayPlay.count;
@@ -99,14 +100,10 @@ const startTimeNs = process.hrtime.bigint();
           runLength >= 3;
           runLength--
         ) {
-          // console.log(`Checking for run of length ${runLength}...`);
           const sortedRecentPlayIndices = currentPlayPlays
             .slice(-runLength)
             .map((play) => play.index);
           sortedRecentPlayIndices.sort((a, b) => a - b);
-          // console.log(
-          //   `run length ${runLength} sorted indices: ${sortedRecentPlayIndices}`
-          // );
           let adjacentIndexCount = 0;
           for (let playIndex = 0; playIndex < runLength - 1; playIndex++) {
             if (
@@ -148,7 +145,7 @@ const startTimeNs = process.hrtime.bigint();
   }
 
   // Last Card points
-  lastPlayerToPlay = (playerToPlay + 1) % 2;
+  const lastPlayerToPlay = (playerToPlay + 1) % 2;
   // console.log(`!Last card for 1 point for player ${lastPlayerToPlay + 1}.`);
   score[lastPlayerToPlay] += 1;
 

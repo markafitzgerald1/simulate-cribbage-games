@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-const { Worker } = require("worker_threads");
+import { Worker } from "worker_threads";
 const os = require("os");
 
 const handCount = process.argv.length > 2 ? parseInt(process.argv[2]) : 730000;
@@ -24,7 +24,7 @@ if (workerCount === 1) {
         argv: [Math.floor(evenHandCount / workerCount)],
       })
   );
-  grandTotalScore = [0, 0];
+  const grandTotalScore = [0, 0];
   workers.forEach((worker) => {
     worker.once("message", (totalScore) => {
       grandTotalScore[0] += totalScore[0];

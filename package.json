@@ -34,7 +34,9 @@
     "tsc-build": "tsc --jsx react",
     "tsc-watch": "tsc --jsx react --watch",
     "tsc-clean": "rm -f src/index.js src/cribbage/*.js src/components/*.js",
-    "clean": "rm -rf .parcel-cache/ dist/ index.html index.*.js index.*.js.map index.*.css index.*.css.map src/index.js src/cribbage/*.js src/components/*.js"
+    "clean": "rm -rf .parcel-cache/ dist/ index.html index.*.js index.*.js.map index.*.css index.*.css.map src/index.js src/cribbage/*.js src/components/*.js",
+    "simulate-1": "node playCribbageHand.js 1 1",
+    "simulate": "node playCribbageHand.js"
   },
   "author": "Mark Fitzgerald <mark.a.fitzgerald1@gmail.com> (https://github.com/markafitzgerald1)",
   "license": "MPL-2.0"

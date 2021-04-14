@@ -25,3 +25,4 @@
 /index\.*\.css\.map
 /src/**/*\.js
 /src/**/*\.module\.css\.d\.ts
+/playCribbageHand*\.js
