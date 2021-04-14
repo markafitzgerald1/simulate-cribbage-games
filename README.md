@@ -67,7 +67,6 @@ All of the following should exit with status code 0 and no raised exception:
 
 - UI/UX improvements:
   - Improve user interface via which human players can play against implemented computer discard and play strategies:
-    - add play first card (as pone) support;
     - add play first computer (as dealer) card support;
     - add play second card (as pone) support;
     - add first complete play to 31 support;
@@ -125,11 +124,12 @@ All of the following should exit with status code 0 and no raised exception:
 
 - UI/UX improvements:
   - Improve user interface via which human players can play against implemented computer discard and play strategies:
-    - Determine whether execution of existing Python as-is or transpiled to JavaScript is feasible in-browser. (Status: not feasible.)
-    - Create web UI;
+    - Determine whether execution of existing Python as-is or transpiled to JavaScript is feasible in-browser (status: not feasible);
+    - create web UI;
     - add fixed cards;
     - add Deal button to change fixed cards; and
-    - update Deal button to deal random cards.
+    - update Deal button to deal random cards; and
+    - add play first card (as pone) support.
 - Formally tag, version and release a specific commit of this source code repository, perhaps adding release notes and/or moving the below informal change log to a separate file. (Resolution: current Python implementation versioned via `setup.py`. Move of completed items into release notes, possibly in a separate file will likely get done on split of the current all-in-one program into separate play against, simulate and analyze programs.)
 - Consider giving project a name reflecting that you can simulate cribbage games with it, analyze cribbage decisions (not games yet) with it and play games against it. (Resolution: not going to do right now - will likely and naturally get done on split of the current all-in-one program into separate play against, simulate and analyze programs.)
 - Review license usage - is MPL 2.0 most suitable for project goals going forward from here now that a likely good computer player has been created? (Answer: MPL 2.0 is still the most suitable project license as of 2021-03-22. Rationale: MPL 2.0 is [LGPL 2.1+, GPL 2.0+ and AGPL 3+ compatible](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#copyleft-scope). [MPL 2.0's per-file scope copyleft](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#copyleft-scope) allows for non-MPL 2.0 or even proprietary separate file extensions as per project intent which LGPL (library-scope copyleft) and GPL (software-scope copyleft) do not. Conclusion: MPL 2.0 most suitable server-side. Client-side [MPL 2.0 is BSD and Apache compatible](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#mpl-bsd-and-apache) which should make most presently forseeable browser-based projects buildable without blocking licensing issues.)
