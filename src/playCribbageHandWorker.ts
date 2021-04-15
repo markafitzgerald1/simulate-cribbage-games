@@ -2,14 +2,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
+import { Engine } from "random-js/dist/types";
+import { MersenneTwister19937 } from "random-js";
 import Index from "./cribbage/Index";
-
-const randomJs = require("random-js");
-import { sample } from "random-js";
 import Suit from "./cribbage/Suit";
-const workerThreads = require("worker_threads");
+import { sample } from "random-js";
+import { parentPort, isMainThread } from "worker_threads";
 
-const mersenneTwisterEngine = randomJs.MersenneTwister19937.autoSeed();
+const mersenneTwisterEngine: Engine = MersenneTwister19937.autoSeed();
 
 class Card {
   constructor(public readonly index: Index, public readonly suit: Suit) {}
@@ -158,9 +158,9 @@ console.log(
   } ns per hand`
 );
 
-if (workerThreads.parentPort) {
-  workerThreads.parentPort.postMessage(totalScore);
-} else if (workerThreads.isMainThread) {
+if (parentPort) {
+  parentPort.postMessage(totalScore);
+} else if (isMainThread) {
   console.log(
     `Average score: [${totalScore.map(
       (totalPlayerScore) => totalPlayerScore / handCount
