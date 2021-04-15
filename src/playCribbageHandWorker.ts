@@ -6,24 +6,22 @@ import Index from "./cribbage/Index";
 
 const randomJs = require("random-js");
 import { sample } from "random-js";
+import Suit from "./cribbage/Suit";
 const workerThreads = require("worker_threads");
 
 const mersenneTwisterEngine = randomJs.MersenneTwister19937.autoSeed();
 
 class Card {
-  str: string;
-
-  constructor(public readonly index: Index, public readonly suit: number) {
-    this.str = `${index.toString()}${"♣♦♥♠".split("")[suit]}`;
-  }
+  constructor(public readonly index: Index, public readonly suit: Suit) {}
 
   toString() {
-    return this.str;
+    return `${this.index.toString()}${this.suit.toString()}`;
   }
 }
 
 const deck = Array.from(Array(52).keys()).map(
-  (number) => new Card(new Index(number % 13), Math.floor(number / 13))
+  (number) =>
+    new Card(new Index(number % 13), new Suit(Math.floor(number / 13)))
 );
 
 const handCount = process.argv.length > 2 ? parseInt(process.argv[2]) : 390000;
