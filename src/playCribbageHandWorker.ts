@@ -6,18 +6,11 @@ import { Engine } from "random-js/dist/types";
 import { MersenneTwister19937 } from "random-js";
 import Index from "./cribbage/Index";
 import Suit from "./cribbage/Suit";
+import Card from "./cribbage/Card";
 import { sample } from "random-js";
 import { parentPort, isMainThread } from "worker_threads";
 
 const mersenneTwisterEngine: Engine = MersenneTwister19937.autoSeed();
-
-class Card {
-  constructor(public readonly index: Index, public readonly suit: Suit) {}
-
-  toString() {
-    return `${this.index.toString()}${this.suit.toString()}`;
-  }
-}
 
 const deck = Array.from(Array(52).keys()).map(
   (number) =>
