@@ -2,18 +2,19 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
+import Index from "./cribbage/Index";
+
 const randomJs = require("random-js");
+import { sample } from "random-js";
 const workerThreads = require("worker_threads");
 
 const mersenneTwisterEngine = randomJs.MersenneTwister19937.autoSeed();
 
 class Card {
-  count: number;
   str: string;
 
-  constructor(public readonly index: number, public readonly suit: number) {
-    this.count = Math.min(index + 1, 10);
-    this.str = `${"A23456789TJQK".split("")[index]}${"♣♦♥♠".split("")[suit]}`;
+  constructor(public readonly index: Index, public readonly suit: number) {
+    this.str = `${index.toString()}${"♣♦♥♠".split("")[suit]}`;
   }
 
   toString() {
@@ -22,7 +23,7 @@ class Card {
 }
 
 const deck = Array.from(Array(52).keys()).map(
-  (number) => new Card(number % 13, Math.floor(number / 13))
+  (number) => new Card(new Index(number % 13), Math.floor(number / 13))
 );
 
 const handCount = process.argv.length > 2 ? parseInt(process.argv[2]) : 390000;
@@ -30,7 +31,7 @@ const handCount = process.argv.length > 2 ? parseInt(process.argv[2]) : 390000;
 let totalScore = [0, 0];
 const startTimeNs = process.hrtime.bigint();
 [...Array(handCount)].forEach((_) => {
-  const deal = randomJs.sample(mersenneTwisterEngine, deck, 8);
+  const deal = sample(mersenneTwisterEngine, deck, 8);
   // console.log(`Deal is ${deal}.`);
   const hands = [deal.slice(0, 4), deal.slice(4)];
   // console.log(
@@ -47,7 +48,7 @@ const startTimeNs = process.hrtime.bigint();
   let currentPlayPlays = [];
   while (hands[0].length + hands[1].length > 0) {
     const playableCards = hands[playerToPlay].filter(
-      (card: Card) => playCount + card.count <= 31
+      (card: Card) => playCount + card.index.count <= 31
     );
     if (playableCards.length > 0) {
       const playerToPlayPlay = playableCards[0];
@@ -55,7 +56,7 @@ const startTimeNs = process.hrtime.bigint();
         (card: Card) => card !== playerToPlayPlay
       );
       currentPlayPlays.push(playerToPlayPlay);
-      playCount += playerToPlayPlay.count;
+      playCount += playerToPlayPlay.index.count;
       // console.log(
       //   `Player ${
       //     playerToPlay + 1
@@ -63,7 +64,7 @@ const startTimeNs = process.hrtime.bigint();
       // );
 
       // Pairs points
-      if (playerToPlayPlay.index === mostRecentlyPlayedIndex) {
+      if (playerToPlayPlay.index.value === mostRecentlyPlayedIndex?.value) {
         mostRecentlyPlayedIndexCount++;
         if (mostRecentlyPlayedIndexCount === 4) {
           // console.log(
@@ -103,12 +104,12 @@ const startTimeNs = process.hrtime.bigint();
           const sortedRecentPlayIndices = currentPlayPlays
             .slice(-runLength)
             .map((play) => play.index);
-          sortedRecentPlayIndices.sort((a, b) => a - b);
+          sortedRecentPlayIndices.sort((a, b) => a.value - b.value);
           let adjacentIndexCount = 0;
           for (let playIndex = 0; playIndex < runLength - 1; playIndex++) {
             if (
-              sortedRecentPlayIndices[playIndex + 1] -
-                sortedRecentPlayIndices[playIndex] ===
+              sortedRecentPlayIndices[playIndex + 1].value -
+                sortedRecentPlayIndices[playIndex].value ===
               1
             ) {
               adjacentIndexCount++;
