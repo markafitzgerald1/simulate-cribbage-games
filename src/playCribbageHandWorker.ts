@@ -8,11 +8,12 @@ import Index from "./cribbage/Index";
 import Suit from "./cribbage/Suit";
 import Card from "./cribbage/Card";
 import { sample } from "random-js";
+import Hand from "./cribbage/Hand";
 import { parentPort, isMainThread } from "worker_threads";
 
 const mersenneTwisterEngine: Engine = MersenneTwister19937.autoSeed();
 
-const deck = Array.from(Array(52).keys()).map(
+const deck: readonly Card[] = Array.from(Array(52).keys()).map(
   (number) =>
     new Card(new Index(number % 13), new Suit(Math.floor(number / 13)))
 );
@@ -22,9 +23,12 @@ const handCount = process.argv.length > 2 ? parseInt(process.argv[2]) : 390000;
 let totalScore = [0, 0];
 const startTimeNs = process.hrtime.bigint();
 [...Array(handCount)].forEach((_) => {
-  const deal = sample(mersenneTwisterEngine, deck, 8);
+  const deal: readonly Card[] = sample(mersenneTwisterEngine, deck, 8);
   // console.log(`Deal is ${deal}.`);
-  const hands = [deal.slice(0, 4), deal.slice(4)];
+  let hands: readonly Hand[] = [
+    new Hand(deal.slice(0, 4)),
+    new Hand(deal.slice(4)),
+  ];
   // console.log(
   //   `Hands are ${hands
   //     .map((hand) => hand.map((card) => card.toString()))
@@ -37,15 +41,23 @@ const startTimeNs = process.hrtime.bigint();
   let mostRecentlyPlayedIndexCount = 0;
   let score = [0, 0];
   let currentPlayPlays = [];
-  while (hands[0].length + hands[1].length > 0) {
-    const playableCards = hands[playerToPlay].filter(
+  while (hands[0].cards.length + hands[1].cards.length > 0) {
+    const playableCards: readonly Card[] = hands[playerToPlay].cards.filter(
       (card: Card) => playCount + card.index.count <= 31
     );
     if (playableCards.length > 0) {
       const playerToPlayPlay = playableCards[0];
-      hands[playerToPlay] = hands[playerToPlay].filter(
-        (card: Card) => card !== playerToPlayPlay
+      const updatedHand = new Hand(
+        hands[playerToPlay].cards.filter(
+          (card: Card) => card !== playerToPlayPlay
+        )
       );
+      if (playerToPlay === 0) {
+        hands = [updatedHand, hands[1]];
+      } else {
+        hands = [hands[0], updatedHand];
+      }
+
       currentPlayPlays.push(playerToPlayPlay);
       playCount += playerToPlayPlay.index.count;
       // console.log(
