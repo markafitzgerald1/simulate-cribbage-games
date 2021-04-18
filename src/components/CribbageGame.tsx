@@ -1,5 +1,4 @@
 import React from "react";
-import { List } from "immutable";
 import { Engine } from "random-js/dist/types";
 import { MersenneTwister19937 } from "random-js";
 import TitleAndH1 from "./TitleAndH1";
@@ -17,7 +16,7 @@ export default class extends React.Component<
   {
     poneHand: Hand;
     dealerHand: Hand;
-    playedCards: List<Card>;
+    playedCards: readonly Card[];
     randomJsEngine: Engine;
   }
 > {
@@ -58,12 +57,12 @@ export default class extends React.Component<
 
   createCardsJustDealtState(
     randomJsEngine: Engine
-  ): { poneHand: Hand; dealerHand: Hand; playedCards: List<Card> } {
+  ): { poneHand: Hand; dealerHand: Hand; playedCards: readonly Card[] } {
     const allHands: AllHands = dealAllHands(randomJsEngine, DECK);
     return {
       poneHand: allHands.poneHand,
       dealerHand: allHands.dealerHand,
-      playedCards: List<Card>(),
+      playedCards: [],
     };
   }
 
@@ -72,7 +71,7 @@ export default class extends React.Component<
       poneHand: new Hand(
         state.poneHand.cards.filter((handCard) => handCard !== card)
       ),
-      playedCards: state.playedCards.push(card),
+      playedCards: [...state.playedCards, card],
     }));
   }
 }
