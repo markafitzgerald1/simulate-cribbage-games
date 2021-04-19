@@ -2,14 +2,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { Engine } from "random-js/dist/types";
 import { MersenneTwister19937 } from "random-js";
+import { Engine } from "random-js/dist/types";
 import Index from "./cribbage/Index";
 import Suit from "./cribbage/Suit";
 import Card from "./cribbage/Card";
-import { sample } from "random-js";
-import Hand from "./cribbage/Hand";
+import dealAllHands from "./cribbage/dealAllHands";
 import AllHands from "./cribbage/AllHands";
+import Hand from "./cribbage/Hand";
 import { parentPort, isMainThread } from "worker_threads";
 
 const mersenneTwisterEngine: Engine = MersenneTwister19937.autoSeed();
@@ -24,12 +24,8 @@ const handCount = process.argv.length > 2 ? parseInt(process.argv[2]) : 390000;
 let totalScore = [0, 0];
 const startTimeNs = process.hrtime.bigint();
 [...Array(handCount)].forEach((_) => {
-  const deal: readonly Card[] = sample(mersenneTwisterEngine, deck, 8);
   // console.log(`Deal is ${deal}.`);
-  let allHands: AllHands = new AllHands(
-    new Hand(deal.slice(0, 4)),
-    new Hand(deal.slice(4))
-  );
+  let allHands: AllHands = dealAllHands(mersenneTwisterEngine, deck);
   // console.log(
   //   `Hands are ${hands
   //     .map((hand) => hand.map((card) => card.toString()))
