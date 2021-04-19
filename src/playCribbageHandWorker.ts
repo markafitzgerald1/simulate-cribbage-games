@@ -4,9 +4,8 @@
 
 import { MersenneTwister19937 } from "random-js";
 import { Engine } from "random-js/dist/types";
-import Index from "./cribbage/Index";
-import Suit from "./cribbage/Suit";
 import Card from "./cribbage/Card";
+import DECK from "./cribbage/DECK";
 import dealAllHands from "./cribbage/dealAllHands";
 import AllHands from "./cribbage/AllHands";
 import Hand from "./cribbage/Hand";
@@ -14,18 +13,13 @@ import { parentPort, isMainThread } from "worker_threads";
 
 const mersenneTwisterEngine: Engine = MersenneTwister19937.autoSeed();
 
-const deck: readonly Card[] = Array.from(Array(52).keys()).map(
-  (number) =>
-    new Card(new Index(number % 13), new Suit(Math.floor(number / 13)))
-);
-
 const handCount = process.argv.length > 2 ? parseInt(process.argv[2]) : 390000;
 // console.log(`Worker simulating ${handCount} hands`);
 let totalScore = [0, 0];
 const startTimeNs = process.hrtime.bigint();
 [...Array(handCount)].forEach((_) => {
   // console.log(`Deal is ${deal}.`);
-  let allHands: AllHands = dealAllHands(mersenneTwisterEngine, deck);
+  let allHands: AllHands = dealAllHands(mersenneTwisterEngine, DECK);
   // console.log(
   //   `Hands are ${hands
   //     .map((hand) => hand.map((card) => card.toString()))
