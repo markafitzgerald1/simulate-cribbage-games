@@ -9,6 +9,7 @@ import Suit from "./cribbage/Suit";
 import Card from "./cribbage/Card";
 import { sample } from "random-js";
 import Hand from "./cribbage/Hand";
+import AllHands from "./cribbage/AllHands";
 import { parentPort, isMainThread } from "worker_threads";
 
 const mersenneTwisterEngine: Engine = MersenneTwister19937.autoSeed();
@@ -25,10 +26,10 @@ const startTimeNs = process.hrtime.bigint();
 [...Array(handCount)].forEach((_) => {
   const deal: readonly Card[] = sample(mersenneTwisterEngine, deck, 8);
   // console.log(`Deal is ${deal}.`);
-  let hands: readonly Hand[] = [
+  let allHands: AllHands = new AllHands(
     new Hand(deal.slice(0, 4)),
-    new Hand(deal.slice(4)),
-  ];
+    new Hand(deal.slice(4))
+  );
   // console.log(
   //   `Hands are ${hands
   //     .map((hand) => hand.map((card) => card.toString()))
@@ -41,21 +42,24 @@ const startTimeNs = process.hrtime.bigint();
   let mostRecentlyPlayedIndexCount = 0;
   let score = [0, 0];
   let currentPlayPlays = [];
-  while (hands[0].cards.length + hands[1].cards.length > 0) {
-    const playableCards: readonly Card[] = hands[playerToPlay].cards.filter(
+  while (
+    allHands.poneHand.cards.length + allHands.dealerHand.cards.length >
+    0
+  ) {
+    const playerToPlayHand: Hand =
+      playerToPlay === 0 ? allHands.poneHand : allHands.dealerHand;
+    const playableCards: readonly Card[] = playerToPlayHand.cards.filter(
       (card: Card) => playCount + card.index.count <= 31
     );
     if (playableCards.length > 0) {
       const playerToPlayPlay = playableCards[0];
       const updatedHand = new Hand(
-        hands[playerToPlay].cards.filter(
-          (card: Card) => card !== playerToPlayPlay
-        )
+        playerToPlayHand.cards.filter((card: Card) => card !== playerToPlayPlay)
       );
       if (playerToPlay === 0) {
-        hands = [updatedHand, hands[1]];
+        allHands = new AllHands(updatedHand, allHands.dealerHand);
       } else {
-        hands = [hands[0], updatedHand];
+        allHands = new AllHands(allHands.poneHand, updatedHand);
       }
 
       currentPlayPlays.push(playerToPlayPlay);
