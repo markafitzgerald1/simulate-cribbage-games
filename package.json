@@ -4,6 +4,7 @@
   "description": "Play a cribbage hand between two opponents.",
   "main": "index.html",
   "dependencies": {
+    "md5": "^2.3.0",
     "parcel": "^2.0.0-nightly.634",
     "postcss": "^8.2.9",
     "random-js": "^2.1.0",
@@ -13,6 +14,7 @@
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.1",
+    "@types/md5": "^2.3.0",
     "@types/react": "^17.0.3",
     "@types/react-dom": "^17.0.3",
     "@types/react-helmet": "^6.1.0",

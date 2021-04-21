@@ -7,8 +7,9 @@ import { Engine } from "random-js/dist/types";
 import { MersenneTwister19937 } from "random-js";
 import TitleAndH1 from "./TitleAndH1";
 import DealCardsButton from "./DealCardsButton";
+import HiddenHand from "./HiddenHand";
 import PlayedCards from "./PlayedCards";
-import HandComponent from "./HandComponent";
+import VisibleHand from "./VisibleHand";
 import Hand from "../cribbage/Hand";
 import Card from "../cribbage/Card";
 import DECK from "../cribbage/DECK";
@@ -42,8 +43,9 @@ export default class extends React.Component<
       <div>
         <TitleAndH1 title="Play Cribbage" />
         <DealCardsButton dealCards={this.dealCards} />
+        <HiddenHand hand={this.state.dealerHand} />
         <PlayedCards cards={this.state.playedCards} />
-        <HandComponent
+        <VisibleHand
           hand={this.state.poneHand}
           playHandCard={this.playHandCard}
         />

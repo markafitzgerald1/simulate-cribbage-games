@@ -3,26 +3,21 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import React from "react";
-import Card from "../cribbage/Card";
+import md5 from "md5";
 import Hand from "../cribbage/Hand";
-import HandCard from "./HandCard";
+import HiddenHandCard from "./HiddenHandCard";
 
-const HandComponent: React.FunctionComponent<{
+const HiddenHand: React.FunctionComponent<{
   hand: Hand;
-  playHandCard: (card: Card) => void;
 }> = (props): JSX.Element => (
   <div>
     <h2>Hand</h2>
     <ul>
       {props.hand.cards.map((card) => (
-        <HandCard
-          card={card}
-          key={card.toString()}
-          playHandCard={props.playHandCard}
-        ></HandCard>
+        <HiddenHandCard card={card} key={md5(card.toString())}></HiddenHandCard>
       ))}
     </ul>
   </div>
 );
 
-export default HandComponent;
+export default HiddenHand;
