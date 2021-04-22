@@ -3,22 +3,22 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import React from "react";
-import PlayToInfiniteCount from "../cribbage/PlayToInfiniteCount";
+import PlayTo31 from "../cribbage/PlayTo31";
 import PlayedCard from "./PlayedCard";
 
 const PlayedCards: React.FunctionComponent<{
-  playToInfiniteCount: PlayToInfiniteCount;
+  playTo31: PlayTo31;
 }> = (props): JSX.Element => (
   <div>
     <h2>The Play</h2>
     <h3>
       Count ={" "}
-      {props.playToInfiniteCount.cards
+      {props.playTo31.cards
         .map((card) => card.index.count)
         .reduce((prevCount, currCount) => prevCount + currCount, 0)}
     </h3>
     <ul>
-      {props.playToInfiniteCount.cards.map((card) => (
+      {props.playTo31.cards.map((card) => (
         <PlayedCard card={card} key={card.toString()}></PlayedCard>
       ))}
     </ul>

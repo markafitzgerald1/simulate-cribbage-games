@@ -5,12 +5,12 @@
 import React from "react";
 import Card from "../cribbage/Card";
 import Hand from "../cribbage/Hand";
-import PlayToInfiniteCount from "../cribbage/PlayToInfiniteCount";
+import PlayTo31 from "../cribbage/PlayToInfiniteCount";
 import HiddenHand from "./HiddenHand";
 import ThoughtBubble from "./ThoughtBubble";
 
 interface OpponentProps {
-  playToInfiniteCount: PlayToInfiniteCount;
+  playTo31: PlayTo31;
   hand: Hand;
   playCard: (card: Card) => void;
 }
@@ -20,9 +20,7 @@ class Opponent extends React.Component<OpponentProps> {
     return (
       <div>
         <h2>Computer</h2>
-        <ThoughtBubble
-          thinking={this.props.playToInfiniteCount.cards.length % 2 === 1}
-        />
+        <ThoughtBubble thinking={this.props.playTo31.cards.length % 2 === 1} />
         <HiddenHand hand={this.props.hand} />
       </div>
     );
@@ -30,17 +28,15 @@ class Opponent extends React.Component<OpponentProps> {
 
   componentDidUpdate(prevProps: OpponentProps) {
     const isNowOpponentsTurn: Boolean = this.isOpponentsTurn(
-      this.props.playToInfiniteCount
+      this.props.playTo31
     );
-    const wasOpponentsTurn: Boolean = this.isOpponentsTurn(
-      prevProps.playToInfiniteCount
-    );
+    const wasOpponentsTurn: Boolean = this.isOpponentsTurn(prevProps.playTo31);
     if (isNowOpponentsTurn && wasOpponentsTurn !== isNowOpponentsTurn) {
       this.props.playCard(this.props.hand.cards[0]);
     }
   }
 
-  isOpponentsTurn(playToInfiniteCount: PlayToInfiniteCount): Boolean {
+  isOpponentsTurn(playToInfiniteCount: PlayTo31): Boolean {
     return playToInfiniteCount.cards.length % 2 === 1;
   }
 }
