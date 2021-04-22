@@ -10,7 +10,13 @@ const PlayedCards: React.FunctionComponent<{
   cards: readonly Card[];
 }> = (props): JSX.Element => (
   <div>
-    <h2>Play</h2>
+    <h2>The Play</h2>
+    <h3>
+      Count ={" "}
+      {props.cards
+        .map((card) => card.index.count)
+        .reduce((prevCount, currCount) => prevCount + currCount, 0)}
+    </h3>
     <ul>
       {props.cards.map((card) => (
         <PlayedCard card={card} key={card.toString()}></PlayedCard>

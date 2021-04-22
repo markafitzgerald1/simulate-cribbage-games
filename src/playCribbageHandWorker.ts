@@ -31,7 +31,7 @@ const startTimeNs = process.hrtime.bigint();
   let mostRecentlyPlayedIndex = undefined;
   let mostRecentlyPlayedIndexCount = 0;
   let score = [0, 0];
-  let currentPlayPlays = [];
+  let currentPlayPlays: Card[] = [];
   while (
     allHands.poneHand.cards.length + allHands.dealerHand.cards.length >
     0
@@ -43,9 +43,7 @@ const startTimeNs = process.hrtime.bigint();
     );
     if (playableCards.length > 0) {
       const playerToPlayPlay = playableCards[0];
-      const updatedHand = new Hand(
-        playerToPlayHand.cards.filter((card: Card) => card !== playerToPlayPlay)
-      );
+      const updatedHand = playerToPlayHand.play(playerToPlayPlay);
       if (playerToPlay === 0) {
         allHands = new AllHands(updatedHand, allHands.dealerHand);
       } else {

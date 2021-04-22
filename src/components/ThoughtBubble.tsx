@@ -3,20 +3,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import React from "react";
-import md5 from "md5";
+import Card from "../cribbage/Card";
 import Hand from "../cribbage/Hand";
-import HiddenHandCard from "./HiddenHandCard";
 
-const HiddenHand: React.FunctionComponent<{
-  hand: Hand;
+const ThoughtBubble: React.FunctionComponent<{
+  thinking: Boolean;
 }> = (props): JSX.Element => (
   <div>
-    <ul>
-      {props.hand.cards.map((card) => (
-        <HiddenHandCard card={card} key={md5(card.toString())}></HiddenHandCard>
-      ))}
-    </ul>
+    <h3>{props.thinking ? "thinking..." : "waiting..."}</h3>
   </div>
 );
 
-export default HiddenHand;
+export default ThoughtBubble;

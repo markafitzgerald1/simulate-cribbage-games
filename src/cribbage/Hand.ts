@@ -6,4 +6,8 @@ import Card from "./Card";
 
 export default class Hand {
   constructor(public readonly cards: readonly Card[]) {}
+
+  play(card: Card): Hand {
+    return new Hand(this.cards.filter((handCard) => handCard !== card));
+  }
 }

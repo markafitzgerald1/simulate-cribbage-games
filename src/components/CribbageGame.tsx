@@ -7,7 +7,6 @@ import { Engine } from "random-js/dist/types";
 import { MersenneTwister19937 } from "random-js";
 import TitleAndH1 from "./TitleAndH1";
 import DealCardsButton from "./DealCardsButton";
-import HiddenHand from "./HiddenHand";
 import PlayedCards from "./PlayedCards";
 import VisibleHand from "./VisibleHand";
 import Hand from "../cribbage/Hand";
@@ -15,6 +14,7 @@ import Card from "../cribbage/Card";
 import DECK from "../cribbage/DECK";
 import dealAllHands from "../cribbage/dealAllHands";
 import AllHands from "../cribbage/AllHands";
+import Opponent from "./Opponent";
 
 export default class extends React.Component<
   {},
@@ -35,7 +35,8 @@ export default class extends React.Component<
     };
 
     this.dealCards = this.dealCards.bind(this);
-    this.playHandCard = this.playHandCard.bind(this);
+    this.playPoneCard = this.playPoneCard.bind(this);
+    this.playDealerCard = this.playDealerCard.bind(this);
   }
 
   render(): JSX.Element {
@@ -43,11 +44,16 @@ export default class extends React.Component<
       <div>
         <TitleAndH1 title="Play Cribbage" />
         <DealCardsButton dealCards={this.dealCards} />
-        <HiddenHand hand={this.state.dealerHand} />
+        <Opponent
+          playedCards={this.state.playedCards}
+          hand={this.state.dealerHand}
+          playCard={this.playDealerCard}
+        />
         <PlayedCards cards={this.state.playedCards} />
         <VisibleHand
           hand={this.state.poneHand}
-          playHandCard={this.playHandCard}
+          canPlayNow={this.state.playedCards.length % 2 === 0}
+          playHandCard={this.playPoneCard}
         />
       </div>
     );
@@ -72,11 +78,16 @@ export default class extends React.Component<
     };
   }
 
-  playHandCard(card: Card): void {
+  playPoneCard(card: Card): void {
     this.setState((state) => ({
-      poneHand: new Hand(
-        state.poneHand.cards.filter((handCard) => handCard !== card)
-      ),
+      poneHand: state.poneHand.play(card),
+      playedCards: [...state.playedCards, card],
+    }));
+  }
+
+  playDealerCard(card: Card): void {
+    this.setState((state) => ({
+      dealerHand: state.dealerHand.play(card),
       playedCards: [...state.playedCards, card],
     }));
   }
