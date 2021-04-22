@@ -15,13 +15,14 @@ import DECK from "../cribbage/DECK";
 import dealAllHands from "../cribbage/dealAllHands";
 import AllHands from "../cribbage/AllHands";
 import Opponent from "./Opponent";
+import PlayToInfiniteCount from "../cribbage/PlayToInfiniteCount";
 
 export default class extends React.Component<
   {},
   {
     poneHand: Hand;
     dealerHand: Hand;
-    playedCards: readonly Card[];
+    playToInfiniteCount: PlayToInfiniteCount;
     randomJsEngine: Engine;
   }
 > {
@@ -45,14 +46,14 @@ export default class extends React.Component<
         <TitleAndH1 title="Play Cribbage" />
         <DealCardsButton dealCards={this.dealCards} />
         <Opponent
-          playedCards={this.state.playedCards}
+          playToInfiniteCount={this.state.playToInfiniteCount}
           hand={this.state.dealerHand}
           playCard={this.playDealerCard}
         />
-        <PlayedCards cards={this.state.playedCards} />
+        <PlayedCards playToInfiniteCount={this.state.playToInfiniteCount} />
         <VisibleHand
           hand={this.state.poneHand}
-          canPlayNow={this.state.playedCards.length % 2 === 0}
+          canPlayNow={this.state.playToInfiniteCount.cards.length % 2 === 0}
           playHandCard={this.playPoneCard}
         />
       </div>
@@ -69,26 +70,30 @@ export default class extends React.Component<
 
   createCardsJustDealtState(
     randomJsEngine: Engine
-  ): { poneHand: Hand; dealerHand: Hand; playedCards: readonly Card[] } {
+  ): {
+    poneHand: Hand;
+    dealerHand: Hand;
+    playToInfiniteCount: PlayToInfiniteCount;
+  } {
     const allHands: AllHands = dealAllHands(randomJsEngine, DECK);
     return {
       poneHand: allHands.poneHand,
       dealerHand: allHands.dealerHand,
-      playedCards: [],
+      playToInfiniteCount: new PlayToInfiniteCount([]),
     };
   }
 
   playPoneCard(card: Card): void {
     this.setState((state) => ({
       poneHand: state.poneHand.play(card),
-      playedCards: [...state.playedCards, card],
+      playToInfiniteCount: state.playToInfiniteCount.add(card),
     }));
   }
 
   playDealerCard(card: Card): void {
     this.setState((state) => ({
       dealerHand: state.dealerHand.play(card),
-      playedCards: [...state.playedCards, card],
+      playToInfiniteCount: state.playToInfiniteCount.add(card),
     }));
   }
 }
