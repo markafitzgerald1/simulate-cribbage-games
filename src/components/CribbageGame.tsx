@@ -15,7 +15,6 @@ import DECK from "../cribbage/DECK";
 import dealAllHands from "../cribbage/dealAllHands";
 import AllHands from "../cribbage/AllHands";
 import Opponent from "./Opponent";
-import PlayToInfiniteCount from "../cribbage/PlayToInfiniteCount";
 import PlayTo31 from "../cribbage/PlayTo31";
 
 export default class extends React.Component<

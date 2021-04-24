@@ -5,7 +5,7 @@
 import React from "react";
 import Card from "../cribbage/Card";
 import Hand from "../cribbage/Hand";
-import PlayTo31 from "../cribbage/PlayToInfiniteCount";
+import PlayTo31 from "../cribbage/PlayTo31";
 import HiddenHand from "./HiddenHand";
 import ThoughtBubble from "./ThoughtBubble";
 
@@ -36,8 +36,8 @@ class Opponent extends React.Component<OpponentProps> {
     }
   }
 
-  isOpponentsTurn(playToInfiniteCount: PlayTo31): boolean {
-    return playToInfiniteCount.cards.length % 2 === 1;
+  isOpponentsTurn(playTo31: PlayTo31): boolean {
+    return playTo31.cards.length % 2 === 1;
   }
 }
 
