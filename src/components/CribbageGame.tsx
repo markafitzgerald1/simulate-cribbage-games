@@ -16,6 +16,7 @@ import dealAllHands from "../cribbage/dealAllHands";
 import AllHands from "../cribbage/AllHands";
 import Opponent from "./Opponent";
 import PlayTo31 from "../cribbage/PlayTo31";
+import Player from "./Player";
 
 export default class extends React.Component<
   {},
@@ -51,10 +52,10 @@ export default class extends React.Component<
           playCard={this.playDealerCard}
         />
         <PlayedCards playTo31={this.state.playTo31} />
-        <VisibleHand
+        <Player
           hand={this.state.poneHand}
           playTo31={this.state.playTo31}
-          playHandCard={this.playPoneCard}
+          playCard={this.playPoneCard}
         />
       </div>
     );

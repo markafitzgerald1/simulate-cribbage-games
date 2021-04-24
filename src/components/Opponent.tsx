@@ -36,7 +36,6 @@ class Opponent extends React.Component<OpponentProps> {
         this.props.hand
       );
       if (playableCards.length > 0) {
-        console.log(`playableCards: ${playableCards}`);
         this.props.playCard(playableCards[0]);
       } else {
         console.log("Go!");

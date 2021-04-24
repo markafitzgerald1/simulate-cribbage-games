@@ -11,7 +11,7 @@ import VisibleHandCard from "./VisibleHandCard";
 const VisibleHand: React.FunctionComponent<{
   hand: Hand;
   playTo31: PlayTo31;
-  playHandCard: (card: Card) => void;
+  playCard: (card: Card) => void;
 }> = (props): JSX.Element => (
   <div>
     <h2>Your Hand</h2>
@@ -21,7 +21,7 @@ const VisibleHand: React.FunctionComponent<{
           card={card}
           key={card.toString()}
           playTo31={props.playTo31}
-          playHandCard={props.playHandCard}
+          playHandCard={props.playCard}
         ></VisibleHandCard>
       ))}
     </ul>
