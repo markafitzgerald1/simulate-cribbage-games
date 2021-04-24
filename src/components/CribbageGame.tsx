@@ -46,8 +46,8 @@ export default class extends React.Component<
         <TitleAndH1 title="Play Cribbage" />
         <DealCardsButton dealCards={this.dealCards} />
         <Opponent
-          playTo31={this.state.playTo31}
           hand={this.state.dealerHand}
+          playTo31={this.state.playTo31}
           playCard={this.playDealerCard}
         />
         <PlayedCards playTo31={this.state.playTo31} />

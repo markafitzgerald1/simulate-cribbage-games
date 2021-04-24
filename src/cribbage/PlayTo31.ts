@@ -21,6 +21,13 @@ export default class PlayTo31 {
     return this.count + card.index.count <= PlayTo31.MAXIMUM_PLAY_COUNT;
   }
 
+  getPlayables(possiblePlayables: readonly Card[]): readonly Card[] {
+    return possiblePlayables.filter(
+      (possiblePlayable: Card) =>
+        this.count + possiblePlayable.index.count <= PlayTo31.MAXIMUM_PLAY_COUNT
+    );
+  }
+
   add(card: Card): PlayTo31 {
     return new PlayTo31([...this.cards, card], this.count + card.index.count);
   }

@@ -10,8 +10,8 @@ import HiddenHand from "./HiddenHand";
 import ThoughtBubble from "./ThoughtBubble";
 
 interface OpponentProps {
-  playTo31: PlayTo31;
   hand: Hand;
+  playTo31: PlayTo31;
   playCard: (card: Card) => void;
 }
 
@@ -32,7 +32,15 @@ class Opponent extends React.Component<OpponentProps> {
     );
     const wasOpponentsTurn: boolean = this.isOpponentsTurn(prevProps.playTo31);
     if (isNowOpponentsTurn && wasOpponentsTurn !== isNowOpponentsTurn) {
-      this.props.playCard(this.props.hand.cards[0]);
+      const playableCards: readonly Card[] = this.props.playTo31.getPlayables(
+        this.props.hand.cards
+      );
+      if (playableCards.length > 0) {
+        console.log(`playableCards: ${playableCards}`);
+        this.props.playCard(playableCards[0]);
+      } else {
+        console.log("Go!");
+      }
     }
   }
 
