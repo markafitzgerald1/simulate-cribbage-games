@@ -20,7 +20,9 @@ class Opponent extends React.Component<OpponentProps> {
     return (
       <div>
         <h2>Computer</h2>
-        <ThoughtBubble thinking={this.props.playTo31.cards.length % 2 === 1} />
+        <ThoughtBubble
+          thinking={this.props.playTo31.playActions.length % 2 === 1}
+        />
         <HiddenHand hand={this.props.hand} />
       </div>
     );
@@ -44,7 +46,7 @@ class Opponent extends React.Component<OpponentProps> {
   }
 
   isOpponentsTurn(playTo31: PlayTo31): boolean {
-    return playTo31.cards.length % 2 === 1;
+    return playTo31.playActions.length % 2 === 1;
   }
 }
 

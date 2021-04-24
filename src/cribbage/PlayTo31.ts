@@ -3,14 +3,21 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import Card from "./Card";
+import Go from "./Go";
 import Hand from "./Hand";
+import { PlayAction } from "./PlayAction";
 
 export default class PlayTo31 {
   static readonly MAXIMUM_PLAY_COUNT: number = 31;
 
-  private constructor(readonly cards: readonly Card[], readonly count: number) {
+  private constructor(
+    readonly playActions: readonly PlayAction[],
+    readonly count: number
+  ) {
     if (this.count > PlayTo31.MAXIMUM_PLAY_COUNT) {
-      throw new Error(`Invalid play to 31: cards = ${cards}, count = ${count}`);
+      throw new Error(
+        `Invalid play to 31: playActions = ${playActions}, count = ${count}`
+      );
     }
   }
 
@@ -30,6 +37,13 @@ export default class PlayTo31 {
   }
 
   add(card: Card): PlayTo31 {
-    return new PlayTo31([...this.cards, card], this.count + card.index.count);
+    return new PlayTo31(
+      [...this.playActions, card],
+      this.count + card.index.count
+    );
+  }
+
+  addGo(): PlayTo31 {
+    return new PlayTo31([...this.playActions, Go.create()], this.count);
   }
 }

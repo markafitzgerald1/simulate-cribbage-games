@@ -5,18 +5,20 @@
 import React from "react";
 import Card from "../cribbage/Card";
 import Color from "../cribbage/Color";
+import { PlayAction } from "../cribbage/PlayAction";
 import { card, redSuit, blackSuit } from "./Card.module.css";
 import { playedCard } from "./PlayedCard.module.css";
 
 const PlayedCard: React.FunctionComponent<{
-  card: Card;
+  playAction: PlayAction;
 }> = (props): JSX.Element => (
   <li
     className={`${card} ${
-      props.card.suit.color === Color.RED ? redSuit : blackSuit
+      props.playAction instanceof Card &&
+      (props.playAction.suit.color === Color.RED ? redSuit : blackSuit)
     } ${playedCard}`}
   >
-    {props.card.toString()}
+    {props.playAction.toString()}
   </li>
 );
 

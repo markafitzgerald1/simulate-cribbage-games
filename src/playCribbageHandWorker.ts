@@ -89,13 +89,16 @@ const startTimeNs = process.hrtime.bigint();
       }
 
       // Runs points
-      if (currentPlayTo31.cards.length >= 3) {
+      if (currentPlayTo31.playActions.length >= 3) {
         for (
-          let runLength = currentPlayTo31.cards.length;
+          let runLength = currentPlayTo31.playActions.length;
           runLength >= 3;
           runLength--
         ) {
-          const sortedRecentPlayIndices = currentPlayTo31.cards
+          const sortedRecentPlayIndices = currentPlayTo31.playActions
+            .filter(
+              (playAction): playAction is Card => playAction instanceof Card
+            )
             .slice(-runLength)
             .map((play) => play.index);
           sortedRecentPlayIndices.sort((a, b) => a.value - b.value);

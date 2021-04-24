@@ -39,6 +39,7 @@ export default class extends React.Component<
     this.dealCards = this.dealCards.bind(this);
     this.playPoneCard = this.playPoneCard.bind(this);
     this.playDealerCard = this.playDealerCard.bind(this);
+    this.poneSayGo = this.poneSayGo.bind(this);
   }
 
   render(): JSX.Element {
@@ -56,6 +57,7 @@ export default class extends React.Component<
           hand={this.state.poneHand}
           playTo31={this.state.playTo31}
           playCard={this.playPoneCard}
+          sayGo={this.poneSayGo}
         />
       </div>
     );
@@ -95,6 +97,12 @@ export default class extends React.Component<
     this.setState((state) => ({
       dealerHand: state.dealerHand.play(card),
       playTo31: state.playTo31.add(card),
+    }));
+  }
+
+  poneSayGo(): void {
+    this.setState((state) => ({
+      playTo31: state.playTo31.addGo(),
     }));
   }
 }

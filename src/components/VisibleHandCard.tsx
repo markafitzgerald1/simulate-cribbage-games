@@ -10,7 +10,7 @@ import { card, redSuit, blackSuit } from "./Card.module.css";
 import { playable, notPlayable } from "./VisibleHandCard.module.css";
 
 const canPlayNow = (card: Card, playTo31: PlayTo31): boolean =>
-  playTo31.cards.length % 2 === 0 && playTo31.isPlayable(card);
+  playTo31.playActions.length % 2 === 0 && playTo31.isPlayable(card);
 
 const VisibleHandCard: React.FunctionComponent<{
   card: Card;

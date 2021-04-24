@@ -17,6 +17,7 @@ const Player: React.FunctionComponent<{
   hand: Hand;
   playTo31: PlayTo31;
   playCard: (card: Card) => void;
+  sayGo: () => void;
 }> = (props): JSX.Element => (
   <div>
     <VisibleHand
@@ -24,7 +25,11 @@ const Player: React.FunctionComponent<{
       playTo31={props.playTo31}
       playCard={props.playCard}
     />
-    <SayGoButton hand={props.hand} playTo31={props.playTo31} />
+    <SayGoButton
+      hand={props.hand}
+      playTo31={props.playTo31}
+      onClick={props.sayGo}
+    />
   </div>
 );
 

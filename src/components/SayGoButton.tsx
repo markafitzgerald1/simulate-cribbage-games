@@ -9,11 +9,12 @@ import PlayTo31 from "../cribbage/PlayTo31";
 const SayGoButton: React.FunctionComponent<{
   hand: Hand;
   playTo31: PlayTo31;
+  onClick: () => void;
 }> = (props): JSX.Element => (
   <button
     type="button"
     disabled={props.playTo31.getPlayableCards(props.hand).length > 0}
-    onClick={() => console.log("Go!")}
+    onClick={props.onClick}
   >
     Say 'Go'
   </button>
