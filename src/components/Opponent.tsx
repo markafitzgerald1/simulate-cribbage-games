@@ -27,16 +27,16 @@ class Opponent extends React.Component<OpponentProps> {
   }
 
   componentDidUpdate(prevProps: OpponentProps) {
-    const isNowOpponentsTurn: Boolean = this.isOpponentsTurn(
+    const isNowOpponentsTurn: boolean = this.isOpponentsTurn(
       this.props.playTo31
     );
-    const wasOpponentsTurn: Boolean = this.isOpponentsTurn(prevProps.playTo31);
+    const wasOpponentsTurn: boolean = this.isOpponentsTurn(prevProps.playTo31);
     if (isNowOpponentsTurn && wasOpponentsTurn !== isNowOpponentsTurn) {
       this.props.playCard(this.props.hand.cards[0]);
     }
   }
 
-  isOpponentsTurn(playToInfiniteCount: PlayTo31): Boolean {
+  isOpponentsTurn(playToInfiniteCount: PlayTo31): boolean {
     return playToInfiniteCount.cards.length % 2 === 1;
   }
 }

@@ -54,7 +54,7 @@ export default class extends React.Component<
         <PlayedCards playTo31={this.state.playTo31} />
         <VisibleHand
           hand={this.state.poneHand}
-          canPlayNow={this.state.playTo31.cards.length % 2 === 0}
+          playTo31={this.state.playTo31}
           playHandCard={this.playPoneCard}
         />
       </div>

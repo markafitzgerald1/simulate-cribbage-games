@@ -17,6 +17,10 @@ export default class PlayTo31 {
     return new PlayTo31([], 0);
   }
 
+  isPlayable(card: Card): boolean {
+    return this.count + card.index.count <= PlayTo31.MAXIMUM_PLAY_COUNT;
+  }
+
   add(card: Card): PlayTo31 {
     return new PlayTo31([...this.cards, card], this.count + card.index.count);
   }

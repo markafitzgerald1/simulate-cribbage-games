@@ -5,11 +5,12 @@
 import React from "react";
 import Card from "../cribbage/Card";
 import Hand from "../cribbage/Hand";
+import PlayTo31 from "../cribbage/PlayTo31";
 import VisibleHandCard from "./VisibleHandCard";
 
 const VisibleHand: React.FunctionComponent<{
   hand: Hand;
-  canPlayNow: Boolean;
+  playTo31: PlayTo31;
   playHandCard: (card: Card) => void;
 }> = (props): JSX.Element => (
   <div>
@@ -19,7 +20,7 @@ const VisibleHand: React.FunctionComponent<{
         <VisibleHandCard
           card={card}
           key={card.toString()}
-          canPlayNow={props.canPlayNow}
+          playTo31={props.playTo31}
           playHandCard={props.playHandCard}
         ></VisibleHandCard>
       ))}

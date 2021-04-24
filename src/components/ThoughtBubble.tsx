@@ -7,7 +7,7 @@ import Card from "../cribbage/Card";
 import Hand from "../cribbage/Hand";
 
 const ThoughtBubble: React.FunctionComponent<{
-  thinking: Boolean;
+  thinking: boolean;
 }> = (props): JSX.Element => (
   <div>
     <h3>{props.thinking ? "thinking..." : "waiting..."}</h3>
