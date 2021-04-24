@@ -10,6 +10,7 @@ import dealAllHands from "./cribbage/dealAllHands";
 import AllHands from "./cribbage/AllHands";
 import Hand from "./cribbage/Hand";
 import { parentPort, isMainThread } from "worker_threads";
+import PlayTo31 from "./cribbage/PlayTo31";
 
 const mersenneTwisterEngine: Engine = MersenneTwister19937.autoSeed();
 
@@ -26,20 +27,19 @@ const startTimeNs = process.hrtime.bigint();
   //     .join("; ")}.`
   // );
   let playerToPlay = 0;
-  let playCount = 0;
   let consecutiveGoCount = 0;
   let mostRecentlyPlayedIndex = undefined;
   let mostRecentlyPlayedIndexCount = 0;
   let score = [0, 0];
-  let currentPlayPlays: Card[] = [];
+  let currentPlayTo31: PlayTo31 = PlayTo31.create();
   while (
     allHands.poneHand.cards.length + allHands.dealerHand.cards.length >
     0
   ) {
     const playerToPlayHand: Hand =
       playerToPlay === 0 ? allHands.poneHand : allHands.dealerHand;
-    const playableCards: readonly Card[] = playerToPlayHand.cards.filter(
-      (card: Card) => playCount + card.index.count <= 31
+    const playableCards: readonly Card[] = currentPlayTo31.getPlayableCards(
+      playerToPlayHand
     );
     if (playableCards.length > 0) {
       const playerToPlayPlay = playableCards[0];
@@ -50,8 +50,7 @@ const startTimeNs = process.hrtime.bigint();
         allHands = new AllHands(allHands.poneHand, updatedHand);
       }
 
-      currentPlayPlays.push(playerToPlayPlay);
-      playCount += playerToPlayPlay.index.count;
+      currentPlayTo31 = currentPlayTo31.add(playerToPlayPlay);
       // console.log(
       //   `Player ${
       //     playerToPlay + 1
@@ -81,22 +80,22 @@ const startTimeNs = process.hrtime.bigint();
       }
 
       // 15 and 31 count points
-      if (playCount == 15) {
+      if (currentPlayTo31.count == 15) {
         // console.log(`!15 for 2 points for player ${playerToPlay + 1}.`);
         score[playerToPlay] += 2;
-      } else if (playCount == 31) {
+      } else if (currentPlayTo31.count == 31) {
         // console.log(`!31 for 1 point for player ${playerToPlay + 1}.`);
         score[playerToPlay] += 1;
       }
 
       // Runs points
-      if (currentPlayPlays.length >= 3) {
+      if (currentPlayTo31.cards.length >= 3) {
         for (
-          let runLength = currentPlayPlays.length;
+          let runLength = currentPlayTo31.cards.length;
           runLength >= 3;
           runLength--
         ) {
-          const sortedRecentPlayIndices = currentPlayPlays
+          const sortedRecentPlayIndices = currentPlayTo31.cards
             .slice(-runLength)
             .map((play) => play.index);
           sortedRecentPlayIndices.sort((a, b) => a.value - b.value);
@@ -130,8 +129,7 @@ const startTimeNs = process.hrtime.bigint();
 
         // console.log("---resetting play count to 0---");
         consecutiveGoCount = 0;
-        playCount = 0;
-        currentPlayPlays = [];
+        currentPlayTo31 = PlayTo31.create();
         mostRecentlyPlayedIndex = undefined;
         mostRecentlyPlayedIndexCount = 0;
       }

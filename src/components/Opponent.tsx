@@ -32,8 +32,8 @@ class Opponent extends React.Component<OpponentProps> {
     );
     const wasOpponentsTurn: boolean = this.isOpponentsTurn(prevProps.playTo31);
     if (isNowOpponentsTurn && wasOpponentsTurn !== isNowOpponentsTurn) {
-      const playableCards: readonly Card[] = this.props.playTo31.getPlayables(
-        this.props.hand.cards
+      const playableCards: readonly Card[] = this.props.playTo31.getPlayableCards(
+        this.props.hand
       );
       if (playableCards.length > 0) {
         console.log(`playableCards: ${playableCards}`);

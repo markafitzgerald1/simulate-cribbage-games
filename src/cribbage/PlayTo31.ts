@@ -3,6 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import Card from "./Card";
+import Hand from "./Hand";
 
 export default class PlayTo31 {
   static readonly MAXIMUM_PLAY_COUNT: number = 31;
@@ -21,8 +22,8 @@ export default class PlayTo31 {
     return this.count + card.index.count <= PlayTo31.MAXIMUM_PLAY_COUNT;
   }
 
-  getPlayables(possiblePlayables: readonly Card[]): readonly Card[] {
-    return possiblePlayables.filter(
+  getPlayableCards(possiblePlayables: Hand): readonly Card[] {
+    return possiblePlayables.cards.filter(
       (possiblePlayable: Card) =>
         this.count + possiblePlayable.index.count <= PlayTo31.MAXIMUM_PLAY_COUNT
     );
