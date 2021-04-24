@@ -95,10 +95,7 @@ const startTimeNs = process.hrtime.bigint();
           runLength >= 3;
           runLength--
         ) {
-          const sortedRecentPlayIndices = currentPlayTo31.playActions
-            .filter(
-              (playAction): playAction is Card => playAction instanceof Card
-            )
+          const sortedRecentPlayIndices = (currentPlayTo31.playActions as Card[])
             .slice(-runLength)
             .map((play) => play.index);
           sortedRecentPlayIndices.sort((a, b) => a.value - b.value);
