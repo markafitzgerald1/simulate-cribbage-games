@@ -13,6 +13,7 @@ interface OpponentProps {
   hand: Hand;
   playTo31: PlayTo31;
   playCard: (card: Card) => void;
+  sayGo: () => void;
 }
 
 class Opponent extends React.Component<OpponentProps> {
@@ -40,7 +41,7 @@ class Opponent extends React.Component<OpponentProps> {
       if (playableCards.length > 0) {
         this.props.playCard(playableCards[0]);
       } else {
-        console.log("Go!");
+        this.props.sayGo();
       }
     }
   }
