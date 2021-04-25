@@ -40,7 +40,7 @@ class Opponent extends React.Component<OpponentProps> {
       );
       if (playableCards.length > 0) {
         this.props.playCard(playableCards[0]);
-      } else {
+      } else if (this.props.playTo31.canAddGo(this.props.hand)) {
         this.props.sayGo();
       }
     }

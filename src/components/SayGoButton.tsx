@@ -13,7 +13,7 @@ const SayGoButton: React.FunctionComponent<{
 }> = (props): JSX.Element => (
   <button
     type="button"
-    disabled={props.playTo31.getPlayableCards(props.hand).length > 0}
+    disabled={!props.playTo31.canAddGo(props.hand)}
     onClick={props.onClick}
   >
     Say 'Go'

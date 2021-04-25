@@ -12,7 +12,8 @@ export default class PlayTo31 {
 
   private constructor(
     readonly playActions: readonly PlayAction[],
-    readonly count: number
+    readonly count: number,
+    readonly currentConsecutiveGoCount: number
   ) {
     if (this.count > PlayTo31.MAXIMUM_PLAY_COUNT) {
       throw new Error(
@@ -22,7 +23,7 @@ export default class PlayTo31 {
   }
 
   static create(): PlayTo31 {
-    return new PlayTo31([], 0);
+    return new PlayTo31([], 0, 0);
   }
 
   isPlayable(card: Card): boolean {
@@ -39,11 +40,23 @@ export default class PlayTo31 {
   add(card: Card): PlayTo31 {
     return new PlayTo31(
       [...this.playActions, card],
-      this.count + card.index.count
+      this.count + card.index.count,
+      0
+    );
+  }
+
+  canAddGo(possiblePlayables: Hand): boolean {
+    return (
+      this.getPlayableCards(possiblePlayables).length === 0 &&
+      this.currentConsecutiveGoCount < 2
     );
   }
 
   addGo(): PlayTo31 {
-    return new PlayTo31([...this.playActions, Go.create()], this.count);
+    return new PlayTo31(
+      [...this.playActions, Go.create()],
+      this.count,
+      this.currentConsecutiveGoCount + 1
+    );
   }
 }
