@@ -3,6 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import React from "react";
+import Go from "../cribbage/Go";
 import PlayTo31 from "../cribbage/PlayTo31";
 import PlayActionComponent from "./PlayActionComponent";
 
@@ -13,10 +14,13 @@ const PlayedCards: React.FunctionComponent<{
     <h2>The Play</h2>
     <h3>Count = {props.playTo31.count}</h3>
     <ul>
-      {props.playTo31.playActions.map((playAction) => (
+      {props.playTo31.playActions.map((playAction, index) => (
         <PlayActionComponent
           playAction={playAction}
-          key={playAction.toString()}
+          key={
+            playAction.toString() +
+            (playAction instanceof Go ? "-at-index-" + index : "")
+          }
         ></PlayActionComponent>
       ))}
     </ul>
