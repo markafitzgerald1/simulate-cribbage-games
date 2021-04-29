@@ -12,13 +12,16 @@ export default class PlayTo31 {
   static readonly THIRTY_ONE_PLAY_COUNT: number = 31;
   static readonly MAXIMUM_PLAY_COUNT: number = PlayTo31.THIRTY_ONE_PLAY_COUNT;
   static readonly PLAYER_COUNT: number = 2;
+  static readonly PAIRS_POINTS: number[] = [0, 0, 2, 6, 12];
   static readonly FIFTEENS_POINTS: number = 2;
   static readonly THIRTY_ONE_POINTS: number = 1;
   static readonly GO_POINTS: number = 1;
 
   private constructor(
     readonly playActions: readonly PlayAction[],
+    readonly playedCards: readonly Card[],
     readonly count: number,
+    readonly mostRecentlyPlayedIndexCount: number,
     readonly currentConsecutiveGoCount: number,
     readonly poneScore: number,
     readonly dealerScore: number
@@ -31,7 +34,7 @@ export default class PlayTo31 {
   }
 
   static create(): PlayTo31 {
-    return new PlayTo31([], 0, 0, 0, 0);
+    return new PlayTo31([], [], 0, 0, 0, 0, 0);
   }
 
   isPlayable(card: Card): boolean {
@@ -46,6 +49,15 @@ export default class PlayTo31 {
   }
 
   add(card: Card): PlayTo31 {
+    const newPlayedCards: readonly Card[] = [...this.playedCards, card];
+    const newMostRecentlyPlayedIndexCount: number =
+      newPlayedCards.length >= 2 &&
+      newPlayedCards[newPlayedCards.length - 1].index.value ===
+        newPlayedCards[newPlayedCards.length - 2].index.value
+        ? this.mostRecentlyPlayedIndexCount + 1
+        : 1;
+    const pairsPoints: number =
+      PlayTo31.PAIRS_POINTS[newMostRecentlyPlayedIndexCount];
     const newCount: number = this.count + card.index.count;
     const fifteensPoints: number =
       newCount === PlayTo31.FIFTEEN_PLAY_COUNT ? PlayTo31.FIFTEENS_POINTS : 0;
@@ -53,10 +65,13 @@ export default class PlayTo31 {
       newCount === PlayTo31.THIRTY_ONE_PLAY_COUNT
         ? PlayTo31.THIRTY_ONE_POINTS
         : 0;
-    const playPointsScored: number = fifteensPoints + thirtyOnePoints;
+    const playPointsScored: number =
+      pairsPoints + fifteensPoints + thirtyOnePoints;
     return new PlayTo31(
       [...this.playActions, card],
+      newPlayedCards,
       this.count + card.index.count,
+      newMostRecentlyPlayedIndexCount,
       0,
       this.poneScore + (this.poneToPlay() ? playPointsScored : 0),
       this.dealerScore + (this.dealerToPlay() ? playPointsScored : 0)
@@ -74,7 +89,9 @@ export default class PlayTo31 {
     const goScored: boolean = this.currentConsecutiveGoCount === 1;
     return new PlayTo31(
       [...this.playActions, Go.create()],
+      this.playedCards,
       this.count,
+      this.mostRecentlyPlayedIndexCount,
       this.currentConsecutiveGoCount + 1,
       this.poneScore + (goScored && this.poneToPlay() ? PlayTo31.GO_POINTS : 0),
       this.dealerScore +
