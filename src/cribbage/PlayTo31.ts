@@ -9,6 +9,8 @@ import { PlayAction } from "./PlayAction";
 
 export default class PlayTo31 {
   static readonly MAXIMUM_PLAY_COUNT: number = 31;
+  static readonly PLAYER_COUNT: number = 2;
+  static readonly THIRTY_ONE_POINTS: number = 1;
   static readonly GO_POINTS: number = 1;
 
   private constructor(
@@ -41,36 +43,41 @@ export default class PlayTo31 {
   }
 
   add(card: Card): PlayTo31 {
+    const newCount: number = this.count + card.index.count;
+    const thirtyOneScored: boolean = newCount === PlayTo31.MAXIMUM_PLAY_COUNT;
     return new PlayTo31(
       [...this.playActions, card],
       this.count + card.index.count,
       0,
-      0,
-      0
+      thirtyOneScored && this.poneToPlay() ? PlayTo31.THIRTY_ONE_POINTS : 0,
+      thirtyOneScored && this.dealerToPlay() ? PlayTo31.THIRTY_ONE_POINTS : 0
     );
   }
 
   canAddGo(possiblePlayables: Hand): boolean {
     return (
       this.getPlayableCards(possiblePlayables).length === 0 &&
-      this.currentConsecutiveGoCount < 2
+      this.currentConsecutiveGoCount < PlayTo31.PLAYER_COUNT
     );
   }
 
   addGo(): PlayTo31 {
-    const newPlayActions: PlayAction[] = [...this.playActions, Go.create()];
-    const newConsecutiveGoCount: number = this.currentConsecutiveGoCount + 1;
-    const goScored: boolean = newConsecutiveGoCount === 2;
-    const goScoredByPone: boolean = goScored && newPlayActions.length % 2 === 1;
-    const goScoredByDealer: boolean =
-      goScored && newPlayActions.length % 2 === 0;
-    goScored && newPlayActions.length % 2 === 1;
+    const goScored: boolean = this.currentConsecutiveGoCount === 1;
     return new PlayTo31(
-      newPlayActions,
+      [...this.playActions, Go.create()],
       this.count,
-      newConsecutiveGoCount,
-      goScoredByPone ? PlayTo31.GO_POINTS : 0,
-      goScoredByDealer ? PlayTo31.GO_POINTS : 0
+      this.currentConsecutiveGoCount + 1,
+      this.poneScore + (goScored && this.poneToPlay() ? PlayTo31.GO_POINTS : 0),
+      this.dealerScore +
+        (goScored && this.dealerToPlay() ? PlayTo31.GO_POINTS : 0)
     );
+  }
+
+  private poneToPlay(): boolean {
+    return this.playActions.length % PlayTo31.PLAYER_COUNT === 0;
+  }
+
+  private dealerToPlay(): boolean {
+    return this.playActions.length % PlayTo31.PLAYER_COUNT === 1;
   }
 }
