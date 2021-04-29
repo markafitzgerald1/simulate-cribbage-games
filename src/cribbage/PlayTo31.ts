@@ -8,8 +8,11 @@ import Hand from "./Hand";
 import { PlayAction } from "./PlayAction";
 
 export default class PlayTo31 {
-  static readonly MAXIMUM_PLAY_COUNT: number = 31;
+  static readonly FIFTEEN_PLAY_COUNT: number = 15;
+  static readonly THIRTY_ONE_PLAY_COUNT: number = 31;
+  static readonly MAXIMUM_PLAY_COUNT: number = PlayTo31.THIRTY_ONE_PLAY_COUNT;
   static readonly PLAYER_COUNT: number = 2;
+  static readonly FIFTEENS_POINTS: number = 2;
   static readonly THIRTY_ONE_POINTS: number = 1;
   static readonly GO_POINTS: number = 1;
 
@@ -44,13 +47,19 @@ export default class PlayTo31 {
 
   add(card: Card): PlayTo31 {
     const newCount: number = this.count + card.index.count;
-    const thirtyOneScored: boolean = newCount === PlayTo31.MAXIMUM_PLAY_COUNT;
+    const fifteensPoints: number =
+      newCount === PlayTo31.FIFTEEN_PLAY_COUNT ? PlayTo31.FIFTEENS_POINTS : 0;
+    const thirtyOnePoints: number =
+      newCount === PlayTo31.THIRTY_ONE_PLAY_COUNT
+        ? PlayTo31.THIRTY_ONE_POINTS
+        : 0;
+    const playPointsScored: number = fifteensPoints + thirtyOnePoints;
     return new PlayTo31(
       [...this.playActions, card],
       this.count + card.index.count,
       0,
-      thirtyOneScored && this.poneToPlay() ? PlayTo31.THIRTY_ONE_POINTS : 0,
-      thirtyOneScored && this.dealerToPlay() ? PlayTo31.THIRTY_ONE_POINTS : 0
+      this.poneScore + (this.poneToPlay() ? playPointsScored : 0),
+      this.dealerScore + (this.dealerToPlay() ? playPointsScored : 0)
     );
   }
 
