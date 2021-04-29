@@ -10,4 +10,7 @@ export default class Hand {
   play(card: Card): Hand {
     return new Hand(this.cards.filter((handCard) => handCard !== card));
   }
+
+  public toString = (): string =>
+    `[${this.cards.map((card) => card.toString())}]`;
 }

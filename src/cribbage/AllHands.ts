@@ -9,4 +9,7 @@ export default class AllHands {
     public readonly poneHand: Hand,
     public readonly dealerHand: Hand
   ) {}
+
+  public toString = (): string =>
+    `pone=${this.poneHand} dealer=${this.dealerHand}`;
 }

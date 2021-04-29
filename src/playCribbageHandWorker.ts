@@ -19,19 +19,12 @@ const handCount = process.argv.length > 2 ? parseInt(process.argv[2]) : 390000;
 let totalScore = [0, 0];
 const startTimeNs = process.hrtime.bigint();
 [...Array(handCount)].forEach((_) => {
-  // console.log(`Deal is ${deal}.`);
   let allHands: AllHands = dealAllHands(mersenneTwisterEngine, DECK);
-  // console.log(
-  //   `Hands are ${hands
-  //     .map((hand) => hand.map((card) => card.toString()))
-  //     .join("; ")}.`
-  // );
+  // console.log(`allHands: ${allHands}.`);
   let playerToPlay = 0;
-  let consecutiveGoCount = 0;
-  let mostRecentlyPlayedIndex = undefined;
-  let mostRecentlyPlayedIndexCount = 0;
   let score = [0, 0];
   let currentPlayTo31: PlayTo31 = PlayTo31.create();
+  let currentPlayTo31InitialPlayer: number = 0;
   while (
     allHands.poneHand.cards.length + allHands.dealerHand.cards.length >
     0
@@ -51,97 +44,50 @@ const startTimeNs = process.hrtime.bigint();
       }
 
       currentPlayTo31 = currentPlayTo31.add(playerToPlayPlay);
-      // console.log(
-      //   `Player ${
-      //     playerToPlay + 1
-      //   } plays ${playerToPlayPlay} for ${playCount}; current play plays = ${currentPlayPlays}.`
-      // );
-
-      // Pairs points
-      if (playerToPlayPlay.index.value === mostRecentlyPlayedIndex?.value) {
-        mostRecentlyPlayedIndexCount++;
-        if (mostRecentlyPlayedIndexCount === 4) {
-          // console.log(
-          //   `!Double pairs royale for 12 points for player ${playerToPlay + 1}`
-          // );
-          score[playerToPlay] += 12;
-        } else if (mostRecentlyPlayedIndexCount === 3) {
-          // console.log(
-          //   `!Pairs royale for 6 points for player ${playerToPlay + 1}`
-          // );
-          score[playerToPlay] += 6;
-        } else if (mostRecentlyPlayedIndexCount === 2) {
-          // console.log(`!Pair for 2 points for player ${playerToPlay + 1}`);
-          score[playerToPlay] += 2;
-        }
-      } else {
-        mostRecentlyPlayedIndex = playerToPlayPlay.index;
-        mostRecentlyPlayedIndexCount = 1;
-      }
-
-      // 15 and 31 count points
-      if (currentPlayTo31.count == 15) {
-        // console.log(`!15 for 2 points for player ${playerToPlay + 1}.`);
-        score[playerToPlay] += 2;
-      } else if (currentPlayTo31.count == 31) {
-        // console.log(`!31 for 1 point for player ${playerToPlay + 1}.`);
-        score[playerToPlay] += 1;
-      }
-
-      // Runs points
-      if (currentPlayTo31.playActions.length >= 3) {
-        for (
-          let runLength = currentPlayTo31.playActions.length;
-          runLength >= 3;
-          runLength--
-        ) {
-          const sortedRecentPlayIndices = (currentPlayTo31.playActions as Card[])
-            .slice(-runLength)
-            .map((play) => play.index);
-          sortedRecentPlayIndices.sort((a, b) => a.value - b.value);
-          let adjacentIndexCount = 0;
-          for (let playIndex = 0; playIndex < runLength - 1; playIndex++) {
-            if (
-              sortedRecentPlayIndices[playIndex + 1].value -
-                sortedRecentPlayIndices[playIndex].value ===
-              1
-            ) {
-              adjacentIndexCount++;
-            }
-          }
-          if (adjacentIndexCount === runLength - 1) {
-            // console.log(
-            //   `!Run for ${runLength} points for player ${playerToPlay + 1}.`
-            // );
-            score[playerToPlay] += runLength;
-            break;
-          }
-        }
-      }
-
-      consecutiveGoCount = 0;
+      // console.log(`currentPlayTo31: ${currentPlayTo31}`);
     } else {
-      // console.log(`Player ${playerToPlay + 1} says "Go!"`);
-      consecutiveGoCount++;
-      if (consecutiveGoCount == 2) {
-        // console.log(`!Go for 1 point for player ${playerToPlay + 1}.`);
-        score[playerToPlay] += 1;
+      currentPlayTo31 = currentPlayTo31.addGo();
+      // console.log(`currentPlayTo31: ${currentPlayTo31}`);
+      if (currentPlayTo31.currentConsecutiveGoCount == 2) {
+        score = [
+          score[0] +
+            (currentPlayTo31InitialPlayer === 0
+              ? currentPlayTo31.poneScore
+              : currentPlayTo31.dealerScore),
+          score[1] +
+            (currentPlayTo31InitialPlayer === 0
+              ? currentPlayTo31.dealerScore
+              : currentPlayTo31.poneScore),
+        ];
+        // console.log(`score: [${score}]`);
 
-        // console.log("---resetting play count to 0---");
-        consecutiveGoCount = 0;
+        // console.log("---starting new PlayTo31...");
         currentPlayTo31 = PlayTo31.create();
-        mostRecentlyPlayedIndex = undefined;
-        mostRecentlyPlayedIndexCount = 0;
+        currentPlayTo31InitialPlayer = (playerToPlay + 1) % 2;
       }
     }
 
     playerToPlay = (playerToPlay + 1) % 2;
   }
 
+  // Add points from the final PlayTo31.  TODO: factor out copy-paste
+  score = [
+    score[0] +
+      (currentPlayTo31InitialPlayer === 0
+        ? currentPlayTo31.poneScore
+        : currentPlayTo31.dealerScore),
+    score[1] +
+      (currentPlayTo31InitialPlayer === 0
+        ? currentPlayTo31.dealerScore
+        : currentPlayTo31.poneScore),
+  ];
+  // console.log(`score: [${score}]`);
+
   // Last Card points
   const lastPlayerToPlay = (playerToPlay + 1) % 2;
   // console.log(`!Last card for 1 point for player ${lastPlayerToPlay + 1}.`);
   score[lastPlayerToPlay] += 1;
+  // console.log(`score: [${score}]`);
 
   totalScore[0] += score[0];
   totalScore[1] += score[1];

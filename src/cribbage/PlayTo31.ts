@@ -135,4 +135,12 @@ export default class PlayTo31 {
   private dealerToPlay(): boolean {
     return this.playActions.length % PlayTo31.PLAYER_COUNT === 1;
   }
+
+  public toString(): string {
+    return `playActions=[${this.playActions.map((playAction) =>
+      playAction.toString()
+    )}] playedCards=[${this.playedCards.map((playedCard) =>
+      playedCard.toString()
+    )}] count=${this.count} score=[${this.poneScore},${this.dealerScore}]`;
+  }
 }
