@@ -13,6 +13,10 @@ const PlayedCards: React.FunctionComponent<{
   <div>
     <h2>The Play</h2>
     <h3>Count = {props.playTo31.count}</h3>
+    <h3>
+      Score = {props.playTo31.poneScore} (pone) - {props.playTo31.dealerScore}{" "}
+      (dealer)
+    </h3>
     <ul>
       {props.playTo31.playActions.map((playAction, index) => (
         <PlayActionComponent

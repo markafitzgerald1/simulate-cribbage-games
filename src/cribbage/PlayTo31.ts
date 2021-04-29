@@ -9,11 +9,14 @@ import { PlayAction } from "./PlayAction";
 
 export default class PlayTo31 {
   static readonly MAXIMUM_PLAY_COUNT: number = 31;
+  static readonly GO_POINTS: number = 1;
 
   private constructor(
     readonly playActions: readonly PlayAction[],
     readonly count: number,
-    readonly currentConsecutiveGoCount: number
+    readonly currentConsecutiveGoCount: number,
+    readonly poneScore: number,
+    readonly dealerScore: number
   ) {
     if (this.count > PlayTo31.MAXIMUM_PLAY_COUNT) {
       throw new Error(
@@ -23,7 +26,7 @@ export default class PlayTo31 {
   }
 
   static create(): PlayTo31 {
-    return new PlayTo31([], 0, 0);
+    return new PlayTo31([], 0, 0, 0, 0);
   }
 
   isPlayable(card: Card): boolean {
@@ -41,6 +44,8 @@ export default class PlayTo31 {
     return new PlayTo31(
       [...this.playActions, card],
       this.count + card.index.count,
+      0,
+      0,
       0
     );
   }
@@ -53,10 +58,19 @@ export default class PlayTo31 {
   }
 
   addGo(): PlayTo31 {
+    const newPlayActions: PlayAction[] = [...this.playActions, Go.create()];
+    const newConsecutiveGoCount: number = this.currentConsecutiveGoCount + 1;
+    const goScored: boolean = newConsecutiveGoCount === 2;
+    const goScoredByPone: boolean = goScored && newPlayActions.length % 2 === 1;
+    const goScoredByDealer: boolean =
+      goScored && newPlayActions.length % 2 === 0;
+    goScored && newPlayActions.length % 2 === 1;
     return new PlayTo31(
-      [...this.playActions, Go.create()],
+      newPlayActions,
       this.count,
-      this.currentConsecutiveGoCount + 1
+      newConsecutiveGoCount,
+      goScoredByPone ? PlayTo31.GO_POINTS : 0,
+      goScoredByDealer ? PlayTo31.GO_POINTS : 0
     );
   }
 }
