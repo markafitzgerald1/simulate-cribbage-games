@@ -58,6 +58,33 @@ export default class PlayTo31 {
         : 1;
     const pairsPoints: number =
       PlayTo31.PAIRS_POINTS[newMostRecentlyPlayedIndexCount];
+
+    let runsPoints: number = 0;
+    for (let runLength = newPlayedCards.length; runLength >= 3; runLength--) {
+      const sortedRecentPlayIndices = newPlayedCards
+        .slice(-runLength)
+        .map((play) => play.index);
+      sortedRecentPlayIndices.sort((a, b) => a.value - b.value);
+      let adjacentIndexCount = 0;
+      for (
+        let playedCardIndex = 0;
+        playedCardIndex < runLength - 1;
+        playedCardIndex++
+      ) {
+        if (
+          sortedRecentPlayIndices[playedCardIndex + 1].value -
+            sortedRecentPlayIndices[playedCardIndex].value ===
+          1
+        ) {
+          adjacentIndexCount++;
+        }
+      }
+      if (adjacentIndexCount === runLength - 1) {
+        runsPoints = runLength;
+        break;
+      }
+    }
+
     const newCount: number = this.count + card.index.count;
     const fifteensPoints: number =
       newCount === PlayTo31.FIFTEEN_PLAY_COUNT ? PlayTo31.FIFTEENS_POINTS : 0;
@@ -65,8 +92,10 @@ export default class PlayTo31 {
       newCount === PlayTo31.THIRTY_ONE_PLAY_COUNT
         ? PlayTo31.THIRTY_ONE_POINTS
         : 0;
+
     const playPointsScored: number =
-      pairsPoints + fifteensPoints + thirtyOnePoints;
+      pairsPoints + runsPoints + fifteensPoints + thirtyOnePoints;
+
     return new PlayTo31(
       [...this.playActions, card],
       newPlayedCards,
