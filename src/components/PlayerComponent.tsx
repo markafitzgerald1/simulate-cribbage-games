@@ -13,7 +13,7 @@ import PlayTo31 from "../cribbage/PlayTo31";
 import SayGoButton from "./SayGoButton";
 import VisibleHand from "./VisibleHand";
 
-const Player: React.FunctionComponent<{
+const PlayerComponent: React.FunctionComponent<{
   hand: Hand;
   playTo31: PlayTo31;
   playCard: (card: Card) => void;
@@ -33,4 +33,4 @@ const Player: React.FunctionComponent<{
   </div>
 );
 
-export default Player;
+export default PlayerComponent;

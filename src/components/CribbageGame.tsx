@@ -16,7 +16,7 @@ import dealAllHands from "../cribbage/dealAllHands";
 import AllHands from "../cribbage/AllHands";
 import Opponent from "./Opponent";
 import PlayTo31 from "../cribbage/PlayTo31";
-import PlayerComponent from "./Player";
+import PlayerComponent from "./PlayerComponent";
 import Player from "../cribbage/Player";
 
 export default class extends React.Component<
