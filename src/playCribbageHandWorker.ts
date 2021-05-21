@@ -11,6 +11,7 @@ import AllHands from "./cribbage/AllHands";
 import Hand from "./cribbage/Hand";
 import { parentPort, isMainThread } from "worker_threads";
 import PlayTo31 from "./cribbage/PlayTo31";
+import Player from "./cribbage/Player";
 
 const mersenneTwisterEngine: Engine = MersenneTwister19937.autoSeed();
 
@@ -23,17 +24,15 @@ const startTimeNs = process.hrtime.bigint();
   // console.log(`allHands: ${allHands}.`);
   let playerToPlay = 0;
   let score = [0, 0];
-  let currentPlayTo31: PlayTo31 = PlayTo31.create();
-  let currentPlayTo31InitialPlayer: number = 0;
+  let currentPlayTo31: PlayTo31 = PlayTo31.create(Player.PONE);
   while (
     allHands.poneHand.cards.length + allHands.dealerHand.cards.length >
     0
   ) {
     const playerToPlayHand: Hand =
       playerToPlay === 0 ? allHands.poneHand : allHands.dealerHand;
-    const playableCards: readonly Card[] = currentPlayTo31.getPlayableCards(
-      playerToPlayHand
-    );
+    const playableCards: readonly Card[] =
+      currentPlayTo31.getPlayableCards(playerToPlayHand);
     if (playableCards.length > 0) {
       const playerToPlayPlay = playableCards[0];
       const updatedHand = playerToPlayHand.play(playerToPlayPlay);
@@ -50,20 +49,13 @@ const startTimeNs = process.hrtime.bigint();
       // console.log(`currentPlayTo31: ${currentPlayTo31}`);
       if (currentPlayTo31.currentConsecutiveGoCount == 2) {
         score = [
-          score[0] +
-            (currentPlayTo31InitialPlayer === 0
-              ? currentPlayTo31.poneScore
-              : currentPlayTo31.dealerScore),
-          score[1] +
-            (currentPlayTo31InitialPlayer === 0
-              ? currentPlayTo31.dealerScore
-              : currentPlayTo31.poneScore),
+          score[0] + currentPlayTo31.poneScore,
+          score[1] + currentPlayTo31.dealerScore,
         ];
         // console.log(`score: [${score}]`);
 
         // console.log("---starting new PlayTo31...");
-        currentPlayTo31 = PlayTo31.create();
-        currentPlayTo31InitialPlayer = (playerToPlay + 1) % 2;
+        currentPlayTo31 = PlayTo31.create(currentPlayTo31.playerToPlay);
       }
     }
 
@@ -72,14 +64,8 @@ const startTimeNs = process.hrtime.bigint();
 
   // Add points from the final PlayTo31.  TODO: factor out copy-paste
   score = [
-    score[0] +
-      (currentPlayTo31InitialPlayer === 0
-        ? currentPlayTo31.poneScore
-        : currentPlayTo31.dealerScore),
-    score[1] +
-      (currentPlayTo31InitialPlayer === 0
-        ? currentPlayTo31.dealerScore
-        : currentPlayTo31.poneScore),
+    score[0] + currentPlayTo31.poneScore,
+    score[1] + currentPlayTo31.dealerScore,
   ];
   // console.log(`score: [${score}]`);
 

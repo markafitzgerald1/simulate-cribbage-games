@@ -16,7 +16,8 @@ import dealAllHands from "../cribbage/dealAllHands";
 import AllHands from "../cribbage/AllHands";
 import Opponent from "./Opponent";
 import PlayTo31 from "../cribbage/PlayTo31";
-import Player from "./Player";
+import PlayerComponent from "./Player";
+import Player from "../cribbage/Player";
 
 export default class extends React.Component<
   {},
@@ -54,7 +55,7 @@ export default class extends React.Component<
           sayGo={this.sayGo}
         />
         <PlayedCards playTo31={this.state.playTo31} />
-        <Player
+        <PlayerComponent
           hand={this.state.poneHand}
           playTo31={this.state.playTo31}
           playCard={this.playPoneCard}
@@ -72,9 +73,7 @@ export default class extends React.Component<
     this.setState(this.createCardsJustDealtState(this.state.randomJsEngine));
   }
 
-  createCardsJustDealtState(
-    randomJsEngine: Engine
-  ): {
+  createCardsJustDealtState(randomJsEngine: Engine): {
     poneHand: Hand;
     dealerHand: Hand;
     playTo31: PlayTo31;
@@ -83,7 +82,7 @@ export default class extends React.Component<
     return {
       poneHand: allHands.poneHand,
       dealerHand: allHands.dealerHand,
-      playTo31: PlayTo31.create(),
+      playTo31: PlayTo31.create(Player.PONE),
     };
   }
 
