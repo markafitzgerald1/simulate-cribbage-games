@@ -26,7 +26,7 @@ export default class Suit {
       : Color.RED;
   }
 
-  public toString = (): string => {
+  public toString(): string {
     return Suit.STRINGS[this.value];
-  };
+  }
 }

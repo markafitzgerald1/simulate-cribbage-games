@@ -11,6 +11,7 @@ export default class Hand {
     return new Hand(this.cards.filter((handCard) => handCard !== card));
   }
 
-  public toString = (): string =>
-    `[${this.cards.map((card) => card.toString())}]`;
+  public toString(): string {
+    return `[${this.cards.map((card) => card.toString())}]`;
+  }
 }

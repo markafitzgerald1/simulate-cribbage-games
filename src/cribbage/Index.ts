@@ -19,7 +19,7 @@ export default class Index {
     this.count = Math.min(value + 1, Index.MAXIMUM_COUNTING_VALUE);
   }
 
-  public toString = (): string => {
+  public toString(): string {
     return Index.STRINGS[this.value];
-  };
+  }
 }

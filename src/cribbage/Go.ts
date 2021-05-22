@@ -11,7 +11,7 @@ export default class Go {
     return this.SINGLETON;
   }
 
-  public toString = (): string => {
+  public toString(): string {
     return "Go";
-  };
+  }
 }

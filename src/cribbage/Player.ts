@@ -28,7 +28,7 @@ export default class Player {
     return this.nextValue === Player.PONE_VALUE ? Player.PONE : Player.DEALER;
   }
 
-  public toString = (): string => {
+  public toString(): string {
     return this.value === 0 ? "Pone" : "Dealer";
-  };
+  }
 }
