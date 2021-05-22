@@ -5,9 +5,12 @@
 import Card from "./Card";
 import Go from "./Go";
 import Hand from "./Hand";
+import Index from "./Index";
 import { PlayAction } from "./PlayAction";
 import Player from "./Player";
 
+const getCardIndex = (card: Card) => card.index;
+const compareIndexes = (a: Index, b: Index) => a.value - b.value;
 export default class PlayTo31 {
   static readonly FIFTEEN_PLAY_COUNT: number = 15;
   static readonly THIRTY_ONE_PLAY_COUNT: number = 31;
@@ -65,8 +68,8 @@ export default class PlayTo31 {
     for (let runLength = newPlayedCards.length; runLength >= 3; runLength--) {
       const sortedRecentPlayIndices = newPlayedCards
         .slice(-runLength)
-        .map((play) => play.index);
-      sortedRecentPlayIndices.sort((a, b) => a.value - b.value);
+        .map(getCardIndex);
+      sortedRecentPlayIndices.sort(compareIndexes);
       let adjacentIndexCount = 0;
       for (
         let playedCardIndex = 0;
