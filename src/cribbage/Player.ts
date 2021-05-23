@@ -24,6 +24,14 @@ export default class Player {
       value === Player.PONE_VALUE ? Player.DEALER_VALUE : Player.PONE_VALUE;
   }
 
+  public get isPone(): boolean {
+    return this.value === Player.PONE_VALUE;
+  }
+
+  public get isDealer(): boolean {
+    return this.value === Player.DEALER_VALUE;
+  }
+
   public get next(): Player {
     return this.nextValue === Player.PONE_VALUE ? Player.PONE : Player.DEALER;
   }
