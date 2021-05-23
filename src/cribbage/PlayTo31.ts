@@ -137,6 +137,10 @@ export default class PlayTo31 {
     );
   }
 
+  get isComplete(): boolean {
+    return this.currentConsecutiveGoCount == Player.TOTAL_COUNT;
+  }
+
   private poneToPlay(): boolean {
     return this.playerToPlay === Player.PONE;
   }

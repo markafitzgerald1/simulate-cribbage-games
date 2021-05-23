@@ -51,7 +51,7 @@ const startTimeNs: bigint = process.hrtime.bigint();
     } else {
       currentPlayTo31 = currentPlayTo31.addGo();
       // console.log(`currentPlayTo31: ${currentPlayTo31}`);
-      if (currentPlayTo31.currentConsecutiveGoCount == 2) {
+      if (currentPlayTo31.isComplete) {
         score = [
           score[0] + currentPlayTo31.poneScore,
           score[1] + currentPlayTo31.dealerScore,
