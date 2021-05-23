@@ -12,20 +12,21 @@ import Hand from "./cribbage/Hand";
 import { parentPort, isMainThread } from "worker_threads";
 import PlayTo31 from "./cribbage/PlayTo31";
 import Player from "./cribbage/Player";
+import Points from "./cribbage/Points";
 
 const mersenneTwisterEngine: Engine = MersenneTwister19937.autoSeed();
-const LAST_CARD_POINTS: number = 1; // TODO: use Points type
+const LAST_CARD_POINTS: Points = 1;
 
 const handCount: number =
   process.argv.length > 2 ? parseInt(process.argv[2]) : 390000;
 // console.log(`Worker simulating ${handCount} hands`);
-let totalScore: number[] = [0, 0]; // TODO: readonly Points[]? [Points, Points]?
+let totalScore: [Points, Points] = [0, 0];
 const startTimeNs: bigint = process.hrtime.bigint();
 [...Array(handCount)].forEach((_) => {
   let allHands: AllHands = dealAllHands(mersenneTwisterEngine, DECK);
   // console.log(`allHands: ${allHands}.`);
   let playerToPlay: Player = Player.PONE;
-  let score: number[] = [0, 0]; // TODO: use Points type, readonly Points[] or [Points, Points]
+  let score: [Points, Points] = [0, 0];
   let currentPlayTo31: PlayTo31 = PlayTo31.create(Player.PONE);
   while (
     allHands.poneHand.cards.length + allHands.dealerHand.cards.length >

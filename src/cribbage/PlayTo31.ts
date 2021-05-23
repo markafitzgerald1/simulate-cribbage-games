@@ -8,18 +8,20 @@ import Hand from "./Hand";
 import Index from "./Index";
 import { PlayAction } from "./PlayAction";
 import Player from "./Player";
+import Points from "./Points";
 
 const getCardIndex = (card: Card) => card.index;
-const compareIndexes = (a: Index, b: Index) => a.value - b.value;
+const compareIndexes = (index1: Index, index2: Index) =>
+  index1.value - index2.value;
 export default class PlayTo31 {
   static readonly FIFTEEN_PLAY_COUNT: number = 15;
   static readonly THIRTY_ONE_PLAY_COUNT: number = 31;
   static readonly MAXIMUM_PLAY_COUNT: number = PlayTo31.THIRTY_ONE_PLAY_COUNT;
   static readonly PLAYER_COUNT: number = 2;
-  static readonly PAIRS_POINTS: number[] = [0, 0, 2, 6, 12];
-  static readonly FIFTEENS_POINTS: number = 2;
-  static readonly THIRTY_ONE_POINTS: number = 1;
-  static readonly GO_POINTS: number = 1;
+  static readonly PAIRS_POINTS: Points[] = [0, 0, 2, 6, 12];
+  static readonly FIFTEENS_POINTS: Points = 2;
+  static readonly THIRTY_ONE_POINTS: Points = 1;
+  static readonly GO_POINTS: Points = 1;
 
   private constructor(
     readonly playerToPlay: Player,
@@ -28,8 +30,8 @@ export default class PlayTo31 {
     readonly count: number,
     readonly mostRecentlyPlayedIndexCount: number,
     readonly currentConsecutiveGoCount: number,
-    readonly poneScore: number,
-    readonly dealerScore: number
+    readonly poneScore: Points,
+    readonly dealerScore: Points
   ) {
     if (this.count > PlayTo31.MAXIMUM_PLAY_COUNT) {
       throw new Error(
@@ -61,10 +63,10 @@ export default class PlayTo31 {
         newPlayedCards[newPlayedCards.length - 2].index.value
         ? this.mostRecentlyPlayedIndexCount + 1
         : 1;
-    const pairsPoints: number =
+    const pairsPoints: Points =
       PlayTo31.PAIRS_POINTS[newMostRecentlyPlayedIndexCount];
 
-    let runsPoints: number = 0;
+    let runsPoints: Points = 0;
     for (let runLength = newPlayedCards.length; runLength >= 3; runLength--) {
       const sortedRecentPlayIndices = newPlayedCards
         .slice(-runLength)
@@ -91,14 +93,14 @@ export default class PlayTo31 {
     }
 
     const newCount: number = this.count + card.index.count;
-    const fifteensPoints: number =
+    const fifteensPoints: Points =
       newCount === PlayTo31.FIFTEEN_PLAY_COUNT ? PlayTo31.FIFTEENS_POINTS : 0;
-    const thirtyOnePoints: number =
+    const thirtyOnePoints: Points =
       newCount === PlayTo31.THIRTY_ONE_PLAY_COUNT
         ? PlayTo31.THIRTY_ONE_POINTS
         : 0;
 
-    const playPointsScored: number =
+    const playPointsScored: Points =
       pairsPoints + runsPoints + fifteensPoints + thirtyOnePoints;
 
     return new PlayTo31(
