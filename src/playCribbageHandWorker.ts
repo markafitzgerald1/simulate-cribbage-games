@@ -15,15 +15,16 @@ import Player from "./cribbage/Player";
 
 const mersenneTwisterEngine: Engine = MersenneTwister19937.autoSeed();
 
-const handCount = process.argv.length > 2 ? parseInt(process.argv[2]) : 390000;
+const handCount: number =
+  process.argv.length > 2 ? parseInt(process.argv[2]) : 390000;
 // console.log(`Worker simulating ${handCount} hands`);
-let totalScore = [0, 0];
-const startTimeNs = process.hrtime.bigint();
+let totalScore: number[] = [0, 0]; // TODO: readonly Points[]? [Points, Points]?
+const startTimeNs: bigint = process.hrtime.bigint();
 [...Array(handCount)].forEach((_) => {
   let allHands: AllHands = dealAllHands(mersenneTwisterEngine, DECK);
   // console.log(`allHands: ${allHands}.`);
-  let playerToPlay = 0;
-  let score = [0, 0];
+  let playerToPlay: number = 0; // TODO: use Player type
+  let score: number[] = [0, 0]; // TODO: use Points type, readonly Points[] or [Points, Points]
   let currentPlayTo31: PlayTo31 = PlayTo31.create(Player.PONE);
   while (
     allHands.poneHand.cards.length + allHands.dealerHand.cards.length >
@@ -34,8 +35,8 @@ const startTimeNs = process.hrtime.bigint();
     const playableCards: readonly Card[] =
       currentPlayTo31.getPlayableCards(playerToPlayHand);
     if (playableCards.length > 0) {
-      const playerToPlayPlay = playableCards[0];
-      const updatedHand = playerToPlayHand.play(playerToPlayPlay);
+      const playerToPlayPlay: Card = playableCards[0];
+      const updatedHand: Hand = playerToPlayHand.play(playerToPlayPlay);
       if (playerToPlay === 0) {
         allHands = new AllHands(updatedHand, allHands.dealerHand);
       } else {
@@ -70,7 +71,7 @@ const startTimeNs = process.hrtime.bigint();
   // console.log(`score: [${score}]`);
 
   // Last Card points
-  const lastPlayerToPlay = (playerToPlay + 1) % 2;
+  const lastPlayerToPlay: number = (playerToPlay + 1) % 2; // TODO: use Player type, Player.next
   // console.log(`!Last card for 1 point for player ${lastPlayerToPlay + 1}.`);
   score[lastPlayerToPlay] += 1;
   // console.log(`score: [${score}]`);
@@ -78,7 +79,7 @@ const startTimeNs = process.hrtime.bigint();
   totalScore[0] += score[0];
   totalScore[1] += score[1];
 });
-const elapsedTimeNs = process.hrtime.bigint() - startTimeNs;
+const elapsedTimeNs: bigint = process.hrtime.bigint() - startTimeNs;
 console.log(
   `Worker simulated ${handCount} hands in ${elapsedTimeNs} ns for ${
     elapsedTimeNs / BigInt(handCount)
