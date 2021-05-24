@@ -10,7 +10,6 @@ import dealAllHands from "./cribbage/dealAllHands";
 import AllHands from "./cribbage/AllHands";
 import Hand from "./cribbage/Hand";
 import { parentPort, isMainThread } from "worker_threads";
-import Player from "./cribbage/Player";
 import Points from "./cribbage/Points";
 import ThePlay from "./cribbage/ThePlay";
 
@@ -51,14 +50,8 @@ const startTimeNs: bigint = process.hrtime.bigint();
     // console.log(`thePlay: ${thePlay}`);
   }
 
-  // TODO: move last card points inside ThePlay
-  const lastPlayerToPlay: Player = thePlay.playerToPlay.next;
-  totalScore[0] +=
-    thePlay.poneScore +
-    (lastPlayerToPlay === Player.PONE ? LAST_CARD_POINTS : 0);
-  totalScore[1] +=
-    thePlay.dealerScore +
-    (lastPlayerToPlay === Player.DEALER ? LAST_CARD_POINTS : 0);
+  totalScore[0] += thePlay.poneScore;
+  totalScore[1] += thePlay.dealerScore;
 });
 const elapsedTimeNs: bigint = process.hrtime.bigint() - startTimeNs;
 console.log(

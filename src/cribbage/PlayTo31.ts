@@ -24,7 +24,7 @@ export default class PlayTo31 {
   static readonly GO_POINTS: Points = 1;
 
   private constructor(
-    readonly playerToPlay: Player,
+    readonly nextPlayerToPlay: Player,
     readonly playActions: readonly PlayAction[],
     readonly playedCards: readonly Card[],
     readonly count: number,
@@ -104,7 +104,7 @@ export default class PlayTo31 {
       pairsPoints + runsPoints + fifteensPoints + thirtyOnePoints;
 
     return new PlayTo31(
-      this.playerToPlay.next,
+      this.nextPlayerToPlay.next,
       [...this.playActions, card],
       newPlayedCards,
       this.count + card.index.count,
@@ -125,7 +125,7 @@ export default class PlayTo31 {
   addGo(): PlayTo31 {
     const goScored: boolean = this.currentConsecutiveGoCount === 1;
     return new PlayTo31(
-      this.playerToPlay.next,
+      this.nextPlayerToPlay.next,
       [...this.playActions, Go.create()],
       this.playedCards,
       this.count,
@@ -141,12 +141,16 @@ export default class PlayTo31 {
     return this.currentConsecutiveGoCount == Player.TOTAL_COUNT;
   }
 
+  get lastPlayerToPlay(): Player {
+    return this.nextPlayerToPlay.next;
+  }
+
   private poneToPlay(): boolean {
-    return this.playerToPlay === Player.PONE;
+    return this.nextPlayerToPlay === Player.PONE;
   }
 
   private dealerToPlay(): boolean {
-    return this.playerToPlay === Player.DEALER;
+    return this.nextPlayerToPlay === Player.DEALER;
   }
 
   public toString(): string {

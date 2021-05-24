@@ -6,18 +6,18 @@ import Card from "./Card";
 import { Engine, sample } from "random-js";
 import Hand from "./Hand";
 import AllHands from "./AllHands";
+import Game from "./Game";
 
-const DEALT_HAND_SIZE = 4;
 const PLAYER_COUNT = 2;
 
 export default (randomJsEngine: Engine, deck: readonly Card[]): AllHands => {
   const cards: readonly Card[] = sample(
     randomJsEngine,
     deck,
-    DEALT_HAND_SIZE * PLAYER_COUNT
+    Game.DEALT_HAND_SIZE * PLAYER_COUNT
   );
   return new AllHands(
-    new Hand(cards.slice(0, DEALT_HAND_SIZE)),
-    new Hand(cards.slice(DEALT_HAND_SIZE))
+    new Hand(cards.slice(0, Game.DEALT_HAND_SIZE)),
+    new Hand(cards.slice(Game.DEALT_HAND_SIZE))
   );
 };
