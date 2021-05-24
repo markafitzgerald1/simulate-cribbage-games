@@ -29,7 +29,7 @@ const startTimeNs: bigint = process.hrtime.bigint();
     allHands.poneHand.cards.length + allHands.dealerHand.cards.length >
     0
   ) {
-    const playerToPlayHand: Hand = thePlay.playerToPlay.isPone
+    const playerToPlayHand: Hand = thePlay.nextPlayerToPlay.isPone
       ? allHands.poneHand
       : allHands.dealerHand;
     const playableCards: readonly Card[] =
@@ -37,7 +37,7 @@ const startTimeNs: bigint = process.hrtime.bigint();
     if (playableCards.length > 0) {
       const playerToPlayPlay: Card = playableCards[0];
       const updatedHand: Hand = playerToPlayHand.play(playerToPlayPlay);
-      if (thePlay.playerToPlay.isPone) {
+      if (thePlay.nextPlayerToPlay.isPone) {
         allHands = new AllHands(updatedHand, allHands.dealerHand);
       } else {
         allHands = new AllHands(allHands.poneHand, updatedHand);

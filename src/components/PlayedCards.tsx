@@ -5,27 +5,28 @@
 import React from "react";
 import Go from "../cribbage/Go";
 import PlayTo31 from "../cribbage/PlayTo31";
+import ThePlay from "../cribbage/ThePlay";
 import PlayActionComponent from "./PlayActionComponent";
+import PlayTo31Component from "./PlayTo31Component";
 
 const PlayedCards: React.FunctionComponent<{
-  playTo31: PlayTo31;
+  thePlay: ThePlay;
 }> = (props): JSX.Element => (
   <div>
     <h2>The Play</h2>
-    <h3>Count = {props.playTo31.count}</h3>
+    <h3>Count = {props.thePlay.count}</h3>
     <h3>
-      Score = {props.playTo31.poneScore} (pone) - {props.playTo31.dealerScore}{" "}
+      Score = {props.thePlay.poneScore} (pone) - {props.thePlay.dealerScore}{" "}
       (dealer)
     </h3>
     <ul>
-      {props.playTo31.playActions.map((playAction, index) => (
-        <PlayActionComponent
-          playAction={playAction}
-          key={
-            playAction.toString() +
-            (playAction instanceof Go ? "-at-index-" + index : "")
-          }
-        ></PlayActionComponent>
+      {props.thePlay.playsTo31.map((playTo31, index) => (
+        <PlayTo31Component
+          playTo31={playTo31}
+          key={playTo31.playActions
+            .map((playAction) => playAction.toString())
+            .join(",")}
+        ></PlayTo31Component>
       ))}
     </ul>
   </div>

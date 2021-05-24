@@ -6,12 +6,13 @@ import React from "react";
 import Card from "../cribbage/Card";
 import Hand from "../cribbage/Hand";
 import PlayTo31 from "../cribbage/PlayTo31";
+import ThePlay from "../cribbage/ThePlay";
 import HiddenHand from "./HiddenHand";
 import ThoughtBubble from "./ThoughtBubble";
 
 interface OpponentProps {
   hand: Hand;
-  playTo31: PlayTo31;
+  thePlay: ThePlay;
   playCard: (card: Card) => void;
   sayGo: () => void;
 }
@@ -21,33 +22,26 @@ class Opponent extends React.Component<OpponentProps> {
     return (
       <div>
         <h2>Computer</h2>
-        <ThoughtBubble
-          thinking={this.props.playTo31.playActions.length % 2 === 1}
-        />
+        <ThoughtBubble thinking={this.props.thePlay.dealerIsNextToPlay} />
         <HiddenHand hand={this.props.hand} />
       </div>
     );
   }
 
   componentDidUpdate(prevProps: OpponentProps) {
-    const isNowOpponentsTurn: boolean = this.isOpponentsTurn(
-      this.props.playTo31
-    );
-    const wasOpponentsTurn: boolean = this.isOpponentsTurn(prevProps.playTo31);
+    const isNowOpponentsTurn: boolean =
+      this.props.thePlay.currentPlayTo31.dealerIsNextToPlay;
+    const wasOpponentsTurn: boolean =
+      prevProps.thePlay.currentPlayTo31.dealerIsNextToPlay;
     if (isNowOpponentsTurn && wasOpponentsTurn !== isNowOpponentsTurn) {
-      const playableCards: readonly Card[] = this.props.playTo31.getPlayableCards(
-        this.props.hand
-      );
+      const playableCards: readonly Card[] =
+        this.props.thePlay.getPlayableCards(this.props.hand);
       if (playableCards.length > 0) {
         this.props.playCard(playableCards[0]);
-      } else if (this.props.playTo31.canAddGo(this.props.hand)) {
+      } else if (this.props.thePlay.canAddGo(this.props.hand)) {
         this.props.sayGo();
       }
     }
-  }
-
-  isOpponentsTurn(playTo31: PlayTo31): boolean {
-    return playTo31.playActions.length % 2 === 1;
   }
 }
 

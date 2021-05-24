@@ -6,23 +6,24 @@ import React from "react";
 import Card from "../cribbage/Card";
 import Color from "../cribbage/Color";
 import PlayTo31 from "../cribbage/PlayTo31";
+import ThePlay from "../cribbage/ThePlay";
 import { card, redSuit, blackSuit } from "./Card.module.css";
 import { playable, notPlayable } from "./VisibleHandCard.module.css";
 
-const canPlayNow = (card: Card, playTo31: PlayTo31): boolean =>
-  playTo31.playActions.length % 2 === 0 && playTo31.isPlayable(card);
+const canPlayNow = (card: Card, thePlay: ThePlay): boolean =>
+  thePlay.poneIsNextToPlay && thePlay.isPlayable(card);
 
 const VisibleHandCard: React.FunctionComponent<{
   card: Card;
-  playTo31: PlayTo31;
+  thePlay: ThePlay;
   playHandCard: (card: Card) => void;
 }> = (props): JSX.Element => (
   <li
     className={`${card} ${
       props.card.suit.color === Color.RED ? redSuit : blackSuit
-    } ${canPlayNow(props.card, props.playTo31) ? playable : notPlayable}`}
+    } ${canPlayNow(props.card, props.thePlay) ? playable : notPlayable}`}
     onClick={() =>
-      canPlayNow(props.card, props.playTo31) && props.playHandCard(props.card)
+      canPlayNow(props.card, props.thePlay) && props.playHandCard(props.card)
     }
   >
     {props.card.toString()}

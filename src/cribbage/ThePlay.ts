@@ -3,6 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import Card from "./Card";
+import Count from "./Count";
 import Game from "./Game";
 import Hand from "./Hand";
 import Player from "./Player";
@@ -78,8 +79,32 @@ export default class ThePlay {
     return this.getScore(Player.DEALER, (playTo31) => playTo31.dealerScore);
   }
 
-  get playerToPlay(): Player {
+  get nextPlayerToPlay(): Player {
     return this.currentPlayTo31.nextPlayerToPlay;
+  }
+
+  get poneIsNextToPlay(): boolean {
+    return this.currentPlayTo31.poneIsNextToPlay;
+  }
+
+  get dealerIsNextToPlay(): boolean {
+    return this.currentPlayTo31.dealerIsNextToPlay;
+  }
+
+  canAddGo(possiblePlayables: Hand): boolean {
+    const thePlayIsComplete: boolean =
+      this.playedCardCount === ThePlay.MAXIMUM_PLAYED_CARD_COUNT;
+    return (
+      !thePlayIsComplete && this.currentPlayTo31.canAddGo(possiblePlayables)
+    );
+  }
+
+  get count(): Count {
+    return this.currentPlayTo31.count;
+  }
+
+  isPlayable(card: Card): boolean {
+    return this.currentPlayTo31.isPlayable(card);
   }
 
   private getScore(

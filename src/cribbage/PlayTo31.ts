@@ -110,8 +110,8 @@ export default class PlayTo31 {
       this.count + card.index.count,
       newMostRecentlyPlayedIndexCount,
       0,
-      this.poneScore + (this.poneToPlay() ? playPointsScored : 0),
-      this.dealerScore + (this.dealerToPlay() ? playPointsScored : 0)
+      this.poneScore + (this.poneIsNextToPlay ? playPointsScored : 0),
+      this.dealerScore + (this.dealerIsNextToPlay ? playPointsScored : 0)
     );
   }
 
@@ -131,9 +131,10 @@ export default class PlayTo31 {
       this.count,
       this.mostRecentlyPlayedIndexCount,
       this.currentConsecutiveGoCount + 1,
-      this.poneScore + (goScored && this.poneToPlay() ? PlayTo31.GO_POINTS : 0),
+      this.poneScore +
+        (goScored && this.poneIsNextToPlay ? PlayTo31.GO_POINTS : 0),
       this.dealerScore +
-        (goScored && this.dealerToPlay() ? PlayTo31.GO_POINTS : 0)
+        (goScored && this.dealerIsNextToPlay ? PlayTo31.GO_POINTS : 0)
     );
   }
 
@@ -145,11 +146,11 @@ export default class PlayTo31 {
     return this.nextPlayerToPlay.next;
   }
 
-  private poneToPlay(): boolean {
+  get poneIsNextToPlay(): boolean {
     return this.nextPlayerToPlay === Player.PONE;
   }
 
-  private dealerToPlay(): boolean {
+  get dealerIsNextToPlay(): boolean {
     return this.nextPlayerToPlay === Player.DEALER;
   }
 

@@ -5,15 +5,16 @@
 import React from "react";
 import Hand from "../cribbage/Hand";
 import PlayTo31 from "../cribbage/PlayTo31";
+import ThePlay from "../cribbage/ThePlay";
 
 const SayGoButton: React.FunctionComponent<{
   hand: Hand;
-  playTo31: PlayTo31;
+  thePlay: ThePlay;
   onClick: () => void;
 }> = (props): JSX.Element => (
   <button
     type="button"
-    disabled={!props.playTo31.canAddGo(props.hand)}
+    disabled={!props.thePlay.canAddGo(props.hand)}
     onClick={props.onClick}
   >
     Say 'Go'

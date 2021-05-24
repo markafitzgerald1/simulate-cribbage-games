@@ -8,23 +8,21 @@ import { MersenneTwister19937 } from "random-js";
 import TitleAndH1 from "./TitleAndH1";
 import DealCardsButton from "./DealCardsButton";
 import PlayedCards from "./PlayedCards";
-import VisibleHand from "./VisibleHand";
 import Hand from "../cribbage/Hand";
 import Card from "../cribbage/Card";
 import DECK from "../cribbage/DECK";
 import dealAllHands from "../cribbage/dealAllHands";
 import AllHands from "../cribbage/AllHands";
 import Opponent from "./Opponent";
-import PlayTo31 from "../cribbage/PlayTo31";
 import PlayerComponent from "./PlayerComponent";
-import Player from "../cribbage/Player";
+import ThePlay from "../cribbage/ThePlay";
 
 export default class extends React.Component<
   {},
   {
     poneHand: Hand;
     dealerHand: Hand;
-    playTo31: PlayTo31;
+    thePlay: ThePlay;
     randomJsEngine: Engine;
   }
 > {
@@ -50,14 +48,14 @@ export default class extends React.Component<
         <DealCardsButton dealCards={this.dealCards} />
         <Opponent
           hand={this.state.dealerHand}
-          playTo31={this.state.playTo31}
+          thePlay={this.state.thePlay}
           playCard={this.playDealerCard}
           sayGo={this.sayGo}
         />
-        <PlayedCards playTo31={this.state.playTo31} />
+        <PlayedCards thePlay={this.state.thePlay} />
         <PlayerComponent
           hand={this.state.poneHand}
-          playTo31={this.state.playTo31}
+          thePlay={this.state.thePlay}
           playCard={this.playPoneCard}
           sayGo={this.sayGo}
         />
@@ -76,33 +74,33 @@ export default class extends React.Component<
   createCardsJustDealtState(randomJsEngine: Engine): {
     poneHand: Hand;
     dealerHand: Hand;
-    playTo31: PlayTo31;
+    thePlay: ThePlay;
   } {
     const allHands: AllHands = dealAllHands(randomJsEngine, DECK);
     return {
       poneHand: allHands.poneHand,
       dealerHand: allHands.dealerHand,
-      playTo31: PlayTo31.create(Player.PONE),
+      thePlay: ThePlay.create(),
     };
   }
 
   playPoneCard(card: Card): void {
     this.setState((state) => ({
       poneHand: state.poneHand.play(card),
-      playTo31: state.playTo31.add(card),
+      thePlay: state.thePlay.add(card),
     }));
   }
 
   playDealerCard(card: Card): void {
     this.setState((state) => ({
       dealerHand: state.dealerHand.play(card),
-      playTo31: state.playTo31.add(card),
+      thePlay: state.thePlay.add(card),
     }));
   }
 
   sayGo(): void {
     this.setState((state) => ({
-      playTo31: state.playTo31.addGo(),
+      thePlay: state.thePlay.addGo(),
     }));
   }
 }

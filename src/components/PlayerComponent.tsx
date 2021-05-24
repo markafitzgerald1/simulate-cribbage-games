@@ -10,24 +10,25 @@ import React from "react";
 import Card from "../cribbage/Card";
 import Hand from "../cribbage/Hand";
 import PlayTo31 from "../cribbage/PlayTo31";
+import ThePlay from "../cribbage/ThePlay";
 import SayGoButton from "./SayGoButton";
 import VisibleHand from "./VisibleHand";
 
 const PlayerComponent: React.FunctionComponent<{
   hand: Hand;
-  playTo31: PlayTo31;
+  thePlay: ThePlay;
   playCard: (card: Card) => void;
   sayGo: () => void;
 }> = (props): JSX.Element => (
   <div>
     <VisibleHand
       hand={props.hand}
-      playTo31={props.playTo31}
+      thePlay={props.thePlay}
       playCard={props.playCard}
     />
     <SayGoButton
       hand={props.hand}
-      playTo31={props.playTo31}
+      thePlay={props.thePlay}
       onClick={props.sayGo}
     />
   </div>
