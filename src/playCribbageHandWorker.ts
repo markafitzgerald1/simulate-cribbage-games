@@ -10,9 +10,9 @@ import dealAllHands from "./cribbage/dealAllHands";
 import AllHands from "./cribbage/AllHands";
 import Hand from "./cribbage/Hand";
 import { parentPort, isMainThread } from "worker_threads";
-import PlayTo31 from "./cribbage/PlayTo31";
 import Player from "./cribbage/Player";
 import Points from "./cribbage/Points";
+import ThePlay from "./cribbage/ThePlay";
 
 const mersenneTwisterEngine: Engine = MersenneTwister19937.autoSeed();
 const LAST_CARD_POINTS: Points = 1;
@@ -27,7 +27,7 @@ const startTimeNs: bigint = process.hrtime.bigint();
   // console.log(`allHands: ${allHands}.`);
   let playerToPlay: Player = Player.PONE;
   let score: [Points, Points] = [0, 0];
-  let currentPlayTo31: PlayTo31 = PlayTo31.create(Player.PONE);
+  let thePlay: ThePlay = ThePlay.create();
   while (
     allHands.poneHand.cards.length + allHands.dealerHand.cards.length >
     0
@@ -36,7 +36,7 @@ const startTimeNs: bigint = process.hrtime.bigint();
       ? allHands.poneHand
       : allHands.dealerHand;
     const playableCards: readonly Card[] =
-      currentPlayTo31.getPlayableCards(playerToPlayHand);
+      thePlay.getPlayableCards(playerToPlayHand);
     if (playableCards.length > 0) {
       const playerToPlayPlay: Card = playableCards[0];
       const updatedHand: Hand = playerToPlayHand.play(playerToPlayPlay);
@@ -46,36 +46,23 @@ const startTimeNs: bigint = process.hrtime.bigint();
         allHands = new AllHands(allHands.poneHand, updatedHand);
       }
 
-      currentPlayTo31 = currentPlayTo31.add(playerToPlayPlay);
-      // console.log(`currentPlayTo31: ${currentPlayTo31}`);
+      thePlay = thePlay.add(playerToPlayPlay);
     } else {
-      currentPlayTo31 = currentPlayTo31.addGo();
-      // console.log(`currentPlayTo31: ${currentPlayTo31}`);
-      if (currentPlayTo31.isComplete) {
-        score = [
-          score[0] + currentPlayTo31.poneScore,
-          score[1] + currentPlayTo31.dealerScore,
-        ];
-        // console.log(`score: [${score}]`);
-
-        // console.log("---starting new PlayTo31...");
-        currentPlayTo31 = PlayTo31.create(currentPlayTo31.playerToPlay);
-      }
+      thePlay = thePlay.addGo();
     }
+    // console.log(`thePlay: ${thePlay}`);
 
     playerToPlay = playerToPlay.next;
   }
 
-  // Add points from the final PlayTo31.  TODO: factor out copy-paste
-  score = [
-    score[0] + currentPlayTo31.poneScore,
-    score[1] + currentPlayTo31.dealerScore,
-  ];
+  // Add points from the final PlayTo31.
+  score = [score[0] + thePlay.poneScore, score[1] + thePlay.dealerScore];
   // console.log(`score: [${score}]`);
 
+  // TODO: move inside ThePlay
   // Last Card points
   const lastPlayerToPlay: Player = playerToPlay.next;
-  // console.log(`!Last card for 1 point for player ${lastPlayerToPlay + 1}.`);
+  // console.log(`!Last card for 1 point for ${lastPlayerToPlay}.`);
   score[lastPlayerToPlay.value] += LAST_CARD_POINTS;
   // console.log(`score: [${score}]`);
 
