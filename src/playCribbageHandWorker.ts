@@ -25,7 +25,6 @@ const startTimeNs: bigint = process.hrtime.bigint();
 [...Array(handCount)].forEach((_) => {
   let allHands: AllHands = dealAllHands(mersenneTwisterEngine, DECK);
   // console.log(`allHands: ${allHands}.`);
-  let score: [Points, Points] = [0, 0];
   let thePlay: ThePlay = ThePlay.create();
   while (
     allHands.poneHand.cards.length + allHands.dealerHand.cards.length >
@@ -52,19 +51,14 @@ const startTimeNs: bigint = process.hrtime.bigint();
     // console.log(`thePlay: ${thePlay}`);
   }
 
-  // Add points from the final PlayTo31.
-  score = [score[0] + thePlay.poneScore, score[1] + thePlay.dealerScore];
-  // console.log(`score: [${score}]`);
-
-  // TODO: move inside ThePlay
-  // Last Card points
+  // TODO: move last card points inside ThePlay
   const lastPlayerToPlay: Player = thePlay.playerToPlay.next;
-  // console.log(`!Last card for 1 point for ${lastPlayerToPlay}.`);
-  score[lastPlayerToPlay.value] += LAST_CARD_POINTS;
-  // console.log(`score: [${score}]`);
-
-  totalScore[0] += score[0];
-  totalScore[1] += score[1];
+  totalScore[0] +=
+    thePlay.poneScore +
+    (lastPlayerToPlay === Player.PONE ? LAST_CARD_POINTS : 0);
+  totalScore[1] +=
+    thePlay.dealerScore +
+    (lastPlayerToPlay === Player.DEALER ? LAST_CARD_POINTS : 0);
 });
 const elapsedTimeNs: bigint = process.hrtime.bigint() - startTimeNs;
 console.log(
