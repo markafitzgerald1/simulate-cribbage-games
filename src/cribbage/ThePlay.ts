@@ -51,6 +51,10 @@ export default class ThePlay {
     return this.playerScore((playTo31) => playTo31.dealerScore);
   }
 
+  get playerToPlay(): Player {
+    return this.currentPlayTo31.playerToPlay;
+  }
+
   private playerScore(getPlayerScore: (playTo31: PlayTo31) => Points): Points {
     return this.playsTo31
       .map(getPlayerScore)
