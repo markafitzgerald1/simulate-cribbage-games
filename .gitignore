@@ -12,6 +12,7 @@
 /__pycache__/
 /\.idea/
 /expected_random_opponent_discard_crib_points_cache/
+/start_of_hand_position_results_tallies_shelf
 /start_of_hand_position_results_tallies_shelf\.bak
 /start_of_hand_position_results_tallies_shelf\.dat
 /start_of_hand_position_results_tallies_shelf\.dir
