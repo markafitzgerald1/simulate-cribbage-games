@@ -67,6 +67,7 @@ All of the following should exit with status code 0 and no raised exception:
 
 - UI/UX improvements:
   - Improve user interface via which human players can play against implemented computer discard and play strategies:
+    - show unplayable cards in a disabled state even when mouse not hovering over them;
     - show human and computer played cards vertically offset from one another; and
     - show play points scored on card which scored the points.
 - Eliminate (via new `--first-(pone|dealer)-discarded-cards` flag) or reduce (via replace of `--first(pone|dealer)-kept-cards` with `--first-(pone|dealer)-discarded-cards`) double data entry between dealt and kept cards on `--select-each-post-initial-play` analysis.
