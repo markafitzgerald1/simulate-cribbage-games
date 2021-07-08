@@ -14,7 +14,6 @@ import Points from "./cribbage/Points";
 import ThePlay from "./cribbage/ThePlay";
 
 const mersenneTwisterEngine: Engine = MersenneTwister19937.autoSeed();
-const LAST_CARD_POINTS: Points = 1;
 
 const handCount: number =
   process.argv.length > 2 ? parseInt(process.argv[2]) : 390000;
