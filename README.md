@@ -114,6 +114,8 @@ All of the following should exit with status code 0 and no raised exception:
 
 ## Current known bugs
 
+- 2021-07-08T13:55-04: 'Go' `PlayActionComponents`s render with a `false` class where no class should be in the HTML Element.
+- 2021-07-08T13:53-04: 'Go' `VisibleHandCard`s render lower than non-'Go' `VisibleHandCard`s in Firefox 89.0.1 but not in Safari 14.1.1.
 - 2021-07-08T00:08-04: Runs with `--process-count` greater than 1 crash with `TypeError: cannot pickle '_gdbm.gdbm' object`:
   - Recreate of database did not fix this.
   - Only reported on Apple Silicon (M1) to present.
