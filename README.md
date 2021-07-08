@@ -113,7 +113,9 @@ All of the following should exit with status code 0 and no raised exception:
 
 ## Current known bugs
 
-- 2021-07-08T00:08-04: Runs with `--process-count` greater than 1 crash with `TypeError: cannot pickle '_gdbm.gdbm' object`.
+- 2021-07-08T00:08-04: Runs with `--process-count` greater than 1 crash with `TypeError: cannot pickle '_gdbm.gdbm' object`:
+  - Recreate of database did not fix this.
+  - Only reported on Apple Silicon (M1) to present.
 - Long program executions using the current position and dealer to end of game results database tend to hang after 1-4 hours of execution. This occurs even then winpty is not used to run python. This also occurs when the tally database is openend in read-only mode by multiple processes ([which is safe](https://docs.python.org/3/library/shelve.html#restrictions)). This does _not_ happen if the current position and dealer to end of game results database is _not_ in use. Perhaps it does _not_ happen when only _one_ process is accessing the dealer-position-results shelf?
 
 ## Current possible bugs
