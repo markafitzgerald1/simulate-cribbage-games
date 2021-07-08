@@ -56,11 +56,13 @@ All of the following should exit with status code 0 and no raised exception:
 - Play one game as first pone against a first dealer using dynamic discard and play strategies: `python simulateCribbageGames.py --first-pone-keep-user-selected --first-pone-play-user-entered --first-dealer-discard-based-on-simulations 320 --first-dealer-play-based-on-simulations 1800 --hide-first-dealer-hands --unlimited-hands-per-game`; and
 - Play one game as first dealer against a first pone using dynamic discard and play strategies: `python simulateCribbageGames.py --first-pone-discard-based-on-simulations 320 --first-pone-play-based-on-simulations 1800 --hide-first-pone-hands --first-dealer-keep-user-selected --first-dealer-play-user-entered --unlimited-hands-per-game`.
 
-## Long-term project goals
+## Current longer term product goal
 
-- Provide efficient, user-friendly discard and play analysis factoring
-  in the expected game points differential (and play points differential if no game points differential) to end of hand(s) or game above opponent
-  for different possible discards or plays.
+- Provide no install, web graphical interface, cheap to host analytical and play access to the implemented automated discard and play discard strategies so that more users can benefit from the implemented Cribbage analysis and play tools.
+
+## Previous, achieved long term project goal
+
+- Provide efficient, user-friendly discard and play analysis factoring in the expected game points differential (and play points differential if no game points differential) to end of hand(s) or game above opponent for different possible discards or plays.
   - Provide an automated opponent against which to play and practice if the above analyses are good enough to provide an opponent from which the user may directly or indirectly (via throught-provoking plays) learn.
 
 ## Short to medium term and lower level project goals
