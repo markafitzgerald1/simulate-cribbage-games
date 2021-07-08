@@ -5,7 +5,6 @@
 import React from "react";
 import Card from "../cribbage/Card";
 import Hand from "../cribbage/Hand";
-import PlayTo31 from "../cribbage/PlayTo31";
 import ThePlay from "../cribbage/ThePlay";
 import VisibleHandCard from "./VisibleHandCard";
 

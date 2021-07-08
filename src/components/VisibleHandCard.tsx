@@ -5,7 +5,6 @@
 import React from "react";
 import Card from "../cribbage/Card";
 import Color from "../cribbage/Color";
-import PlayTo31 from "../cribbage/PlayTo31";
 import ThePlay from "../cribbage/ThePlay";
 import { card, redSuit, blackSuit } from "./Card.module.css";
 import { playable, notPlayable } from "./VisibleHandCard.module.css";
