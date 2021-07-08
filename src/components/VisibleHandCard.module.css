@@ -8,4 +8,6 @@
 
 .notPlayable {
   cursor: not-allowed;
+  opacity: 0.28;
+  background-color: lightgrey;
 }
