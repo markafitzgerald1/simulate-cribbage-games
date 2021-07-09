@@ -7,19 +7,19 @@ import Card from "../cribbage/Card";
 import Color from "../cribbage/Color";
 import { PlayAction } from "../cribbage/PlayAction";
 import { card, redSuit, blackSuit } from "./Card.module.css";
-import { playedCard } from "./PlayedCard.module.css";
+import { playActionComponent } from "./PlayActionComponent.module.css";
 
-const PlayedCard: React.FunctionComponent<{
+const PlayActionComponent: React.FunctionComponent<{
   playAction: PlayAction;
 }> = (props): JSX.Element => (
   <li
     className={`${card} ${
       props.playAction instanceof Card &&
       (props.playAction.suit.color === Color.RED ? redSuit : blackSuit)
-    } ${playedCard}`}
+    } ${playActionComponent}`}
   >
     {props.playAction.toString()}
   </li>
 );
 
-export default PlayedCard;
+export default PlayActionComponent;
