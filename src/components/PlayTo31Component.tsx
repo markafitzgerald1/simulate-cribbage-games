@@ -11,21 +11,19 @@ import { playTo31Component } from "./PlayTo31Component.module.css";
 const PlayTo31Component: React.FunctionComponent<{
   playTo31: PlayTo31;
 }> = (props): JSX.Element => (
-  <div>
-    <ul className={playTo31Component}>
-      {props.playTo31.playActions.map((playAction, index) => (
-        <PlayActionComponent
-          playAction={playAction}
-          key={
-            playAction.toString() +
-            (playAction instanceof Go
-              ? `-${PlayTo31.name}-action-` + (index + 1)
-              : "")
-          }
-        ></PlayActionComponent>
-      ))}
-    </ul>
-  </div>
+  <ul className={playTo31Component}>
+    {props.playTo31.playActions.map((playAction, index) => (
+      <PlayActionComponent
+        playAction={playAction}
+        key={
+          playAction.toString() +
+          (playAction instanceof Go
+            ? `-${PlayTo31.name}-action-` + (index + 1)
+            : "")
+        }
+      ></PlayActionComponent>
+    ))}
+  </ul>
 );
 
 export default PlayTo31Component;
