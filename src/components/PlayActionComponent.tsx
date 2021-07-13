@@ -13,10 +13,12 @@ const PlayActionComponent: React.FunctionComponent<{
   playAction: PlayAction;
 }> = (props): JSX.Element => (
   <li
-    className={`${card} ${
-      props.playAction instanceof Card &&
-      (props.playAction.suit.color === Color.RED ? redSuit : blackSuit)
-    } ${playActionComponent}`}
+    className={`${card} ${playActionComponent}${
+      props.playAction instanceof Card
+        ? " " +
+          (props.playAction.suit.color === Color.RED ? redSuit : blackSuit)
+        : ""
+    }`}
   >
     {props.playAction.toString()}
   </li>

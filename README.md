@@ -114,7 +114,6 @@ All of the following should exit with status code 0 and no raised exception:
 
 ## Current known bugs
 
-- 2021-07-08T13:55-04: 'Go' `PlayActionComponents`s render with a `false` class where no class should be in the HTML Element.
 - 2021-07-08T00:08-04: Runs with `--process-count` greater than 1 crash with `TypeError: cannot pickle '_gdbm.gdbm' object`:
   - Recreate of database did not fix this.
   - Only reported on Apple Silicon (M1) to present.
@@ -192,6 +191,7 @@ All of the following should exit with status code 0 and no raised exception:
 
 ## Fixed past project bugs
 
+- 'Go' `PlayActionComponents`s render with a `false` class where no class should be in the HTML Element.
 - 'Go' `VisibleHandCard`s render lower than non-'Go' `VisibleHandCard`s in Firefox 89.0.2 but not in Safari 14.1.1 or Chrome 91.0.4472.114 (arm).
 - `python simulateCribbageGames.py --initial-dealer-score 7 --initial-pone-score 12 --first-dealer-dealt-cards 3c,5c,6h,6s,8s,jc --first-dealer-select-each-possible-kept-hand --infinite-game-count --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --games-per-update 1000 --process-count 4 --estimate-first-dealer-incomplete-game-wins-and-game-points` is not using the position result estimate database in its discard calculations, but _is_ using it if `--estimate-first-pone-incomplete-game-wins-and-game-points` was added. I've confirmed this is not an issue for simulation-based players, is not an issue for `--first-pone-select-each-possible-kept-hand`, is not an issue for `--select-each-post-initial-play` (play analysis iteration over possibilities is implemented differently) but is an issue for `--first-dealer-select-each-possible-kept-hand`.
 - First pone and first dealer win percentages do not always exactly add up to 1 and standard deviations do not equal in 10,000+ game simulations. (They do add up to 1 and have equal standard deviations in <= 5,000 game simulations.) Perhaps just a rounding error in runstats/Statistics, but perhaps a bug? (Turned out to be caused by not clearing the child Statistics object when adding to the parent overall tally Statistics object, resulting in multiple-counting of results when more than one add to the global tally in a single run was done.)
