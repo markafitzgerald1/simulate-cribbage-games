@@ -6,12 +6,13 @@ import React from "react";
 import Go from "../cribbage/Go";
 import PlayTo31 from "../cribbage/PlayTo31";
 import PlayActionComponent from "./PlayActionComponent";
+import { playTo31Component } from "./PlayTo31Component.module.css";
 
 const PlayTo31Component: React.FunctionComponent<{
   playTo31: PlayTo31;
 }> = (props): JSX.Element => (
   <div>
-    <ul>
+    <ul className={playTo31Component}>
       {props.playTo31.playActions.map((playAction, index) => (
         <PlayActionComponent
           playAction={playAction}
