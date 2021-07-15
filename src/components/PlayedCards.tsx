@@ -3,10 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import React from "react";
-import Go from "../cribbage/Go";
-import PlayTo31 from "../cribbage/PlayTo31";
 import ThePlay from "../cribbage/ThePlay";
-import PlayActionComponent from "./PlayActionComponent";
 import PlayTo31Component from "./PlayTo31Component";
 
 const PlayedCards: React.FunctionComponent<{
