@@ -5,6 +5,7 @@
 import React from "react";
 import ThePlay from "../cribbage/ThePlay";
 import PlayTo31Component from "./PlayTo31Component";
+import { playedCards } from "./PlayedCards.module.css";
 
 const PlayedCards: React.FunctionComponent<{
   thePlay: ThePlay;
@@ -16,7 +17,7 @@ const PlayedCards: React.FunctionComponent<{
       Score = {props.thePlay.poneScore} (pone) - {props.thePlay.dealerScore}{" "}
       (dealer)
     </h3>
-    <ul>
+    <ul className={playedCards}>
       {props.thePlay.playsTo31.map((playTo31, index) => (
         <PlayTo31Component
           playTo31={playTo31}
