@@ -5,3 +5,11 @@
 .playActionComponent {
   cursor: default;
 }
+
+.playedByPone {
+  margin-top: 1.5em;
+}
+
+.playedByDealer {
+  margin-bottom: 1.5em;
+}

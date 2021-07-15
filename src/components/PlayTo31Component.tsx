@@ -4,6 +4,7 @@
 
 import React from "react";
 import Go from "../cribbage/Go";
+import Player from "../cribbage/Player";
 import PlayTo31 from "../cribbage/PlayTo31";
 import PlayActionComponent from "./PlayActionComponent";
 import { playTo31Component } from "./PlayTo31Component.module.css";
@@ -15,6 +16,11 @@ const PlayTo31Component: React.FunctionComponent<{
     {props.playTo31.playActions.map((playAction, index) => (
       <PlayActionComponent
         playAction={playAction}
+        player={
+          index % 2 == props.playTo31.playActions.length % 2
+            ? props.playTo31.nextPlayerToPlay
+            : props.playTo31.lastPlayerToPlay
+        }
         key={
           playAction.toString() +
           (playAction instanceof Go
