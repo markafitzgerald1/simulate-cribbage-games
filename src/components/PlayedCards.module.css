@@ -2,10 +2,27 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-.playedCards {
+.playedCards,
+.playedCardList {
   display: inline-flex;
 }
 
-.playedCards > :last-child {
+.playedCards {
+  align-items: center;
+}
+
+.playedCardList {
+  padding-left: 1em;
+}
+
+.count {
+  border-style: solid;
+  border-width: thin;
+  padding: 0.25em;
+  border-color: grey; /* TODO: factor out common border-color */
+  border-radius: 0.22em; /* TODO: factor out common border-radius */
+}
+
+.playedCardList > :last-child {
   border: none;
 }

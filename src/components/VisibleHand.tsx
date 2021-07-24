@@ -14,7 +14,7 @@ const VisibleHand: React.FunctionComponent<{
   playCard: (card: Card) => void;
 }> = (props): JSX.Element => (
   <div>
-    <h2>Your Hand</h2>
+    <h2>Player: {props.thePlay.poneScore} points</h2>
     <ul>
       {props.hand.cards.map((card) => (
         <VisibleHandCard

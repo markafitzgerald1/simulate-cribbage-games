@@ -8,8 +8,8 @@
   display: inline-block;
   padding: 0.18em;
   margin: 0.18em;
-  border-radius: 0.22em;
-  border-color: grey;
+  border-color: grey; /* TODO: factor out common border-color */
+  border-radius: 0.22em; /* TODO: factor out common border-radius */
   width: 1.35em;
   text-align: center;
   height: 18.4px;

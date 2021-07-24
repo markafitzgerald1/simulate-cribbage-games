@@ -5,19 +5,14 @@
 import React from "react";
 import ThePlay from "../cribbage/ThePlay";
 import PlayTo31Component from "./PlayTo31Component";
-import { playedCards } from "./PlayedCards.module.css";
+import { count, playedCards, playedCardList } from "./PlayedCards.module.css";
 
 const PlayedCards: React.FunctionComponent<{
   thePlay: ThePlay;
 }> = (props): JSX.Element => (
-  <div>
-    <h2>The Play</h2>
-    <h3>Count = {props.thePlay.count}</h3>
-    <h3>
-      Score = {props.thePlay.poneScore} (pone) - {props.thePlay.dealerScore}{" "}
-      (dealer)
-    </h3>
-    <ul className={playedCards}>
+  <div className={playedCards}>
+    <h3 className={count}>Count: {props.thePlay.count}</h3>
+    <ul className={playedCardList}>
       {props.thePlay.playsTo31.map((playTo31, index) => (
         <PlayTo31Component
           playTo31={playTo31}

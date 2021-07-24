@@ -8,7 +8,6 @@ import Hand from "../cribbage/Hand";
 import PlayTo31 from "../cribbage/PlayTo31";
 import ThePlay from "../cribbage/ThePlay";
 import HiddenHand from "./HiddenHand";
-import ThoughtBubble from "./ThoughtBubble";
 
 interface OpponentProps {
   hand: Hand;
@@ -21,9 +20,8 @@ class Opponent extends React.Component<OpponentProps> {
   render() {
     return (
       <div>
-        <h2>Computer</h2>
-        <ThoughtBubble thinking={this.props.thePlay.dealerIsNextToPlay} />
         <HiddenHand hand={this.props.hand} />
+        <h2>Computer: {this.props.thePlay.dealerScore} points</h2>
       </div>
     );
   }
