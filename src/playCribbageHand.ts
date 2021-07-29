@@ -3,11 +3,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { Worker } from "worker_threads";
-const os = require("os");
+import { cpus } from "os";
 
 const handCount = process.argv.length > 2 ? parseInt(process.argv[2]) : 730000;
 const workerCount =
-  process.argv.length > 3 ? parseInt(process.argv[3]) : os.cpus().length;
+  process.argv.length > 3 ? parseInt(process.argv[3]) : cpus().length;
 
 if (workerCount === 1) {
   require("./playCribbageHandWorker");
