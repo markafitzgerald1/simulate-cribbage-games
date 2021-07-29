@@ -71,6 +71,7 @@ All of the following should exit with status code 0 and no raised exception:
   - Add option to show first pone and first dealer dealt hands to Node.js simulator.
 - UI/UX improvements:
   - Improve user interface via which human players can play against implemented computer discard and play strategies:
+    - display 'Go' play actions in grey or otherwise less attention grabbing style,
     - add discard phase to web UI and Node.js simulation,
     - add cut phase to web UI and Node.js simulation, and
     - show play points scored on card which scored the points.
