@@ -10,9 +10,14 @@ if (!parentPort) {
   throw new Error("Module must be run as a Worker.");
 }
 
-const handCount: number =
-  process.argv.length > 2 ? parseInt(process.argv[2]) : 390000;
+const handCount: number = parseInt(process.argv[2]);
 // console.log(`Worker simulating ${handCount} hands`);
 parentPort.postMessage(
-  playCribbageHands(MersenneTwister19937.autoSeed(), handCount)
+  playCribbageHands(
+    MersenneTwister19937.autoSeed(),
+    parseInt(process.argv[2]),
+    process.argv[3] == "true",
+    process.argv[4] == "true",
+    parseInt(process.argv[5])
+  )
 );

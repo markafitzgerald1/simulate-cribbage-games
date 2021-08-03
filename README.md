@@ -67,8 +67,6 @@ All of the following should exit with status code 0 and no raised exception:
 
 ## Short to medium term and lower level project goals
 
-- Simulation improvements:
-  - Add option to show first pone and first dealer dealt hands to Node.js simulator.
 - UI/UX improvements:
   - Improve user interface via which human players can play against implemented computer discard and play strategies:
     - display 'Go' play actions in grey or otherwise less attention grabbing style,
@@ -129,6 +127,8 @@ All of the following should exit with status code 0 and no raised exception:
 
 ## Past project goals
 
+- Simulation improvements:
+  - Add option to show first pone and first dealer dealt hands to Node.js simulator.
 - Python UI/UX improvements:
   - Made coach mode executed discard and play simulation counts command-line configurable.
 - UI/UX improvements:

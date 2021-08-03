@@ -13,14 +13,25 @@ import Card from "./cribbage/Card";
 
 export default (
   mersenneTwisterEngine: Engine,
-  handCount: number
+  handCount: number,
+  hidePoneHand: boolean,
+  hideDealerHand: boolean,
+  workerNumber: number = 1
 ): [Points, Points] => {
   // console.log(`Worker simulating ${handCount} hands`);
   let totalScore: [Points, Points] = [0, 0];
   const startTimeNs: bigint = process.hrtime.bigint();
   [...Array(handCount)].forEach((_) => {
     let allHands: AllHands = dealAllHands(mersenneTwisterEngine, DECK);
-    // console.log(`allHands: ${allHands}.`);
+    if (!hidePoneHand) {
+      console.log(`[worker ${workerNumber}] Pone   dealt ${allHands.poneHand}`);
+    }
+    if (!hideDealerHand) {
+      console.log(
+        `[worker ${workerNumber}] Dealer dealt ${allHands.dealerHand}`
+      );
+    }
+
     let thePlay: ThePlay = ThePlay.create();
     while (
       allHands.poneHand.cards.length + allHands.dealerHand.cards.length >
@@ -52,7 +63,7 @@ export default (
   });
   const elapsedTimeNs: bigint = process.hrtime.bigint() - startTimeNs;
   console.log(
-    `Worker simulated ${handCount} hands in ${elapsedTimeNs} ns for ${
+    `[worker ${workerNumber}] simulated ${handCount} hands in ${elapsedTimeNs} ns for ${
       elapsedTimeNs / BigInt(handCount)
     } ns per hand`
   );

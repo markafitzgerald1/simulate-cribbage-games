@@ -11,6 +11,8 @@ import { Worker } from "worker_threads";
 
 const HAND_COUNT = "hand-count";
 const WORKER_COUNT = "worker-count";
+const HIDE_PONE_HAND = "hide-pone-hand";
+const HIDE_DEALER_HAND = "hide-dealer-hand";
 const argv = yargs(hideBin(process.argv))
   .option(HAND_COUNT, {
     alias: "h",
@@ -22,13 +24,25 @@ const argv = yargs(hideBin(process.argv))
     type: "number",
     default: 1,
   })
+  .option(HIDE_PONE_HAND, {
+    alias: "hp",
+    type: "boolean",
+    default: false,
+  })
+  .option(HIDE_DEALER_HAND, {
+    alias: "hd",
+    type: "boolean",
+    default: false,
+  })
   .strict()
   .parseSync();
 
 if (argv[WORKER_COUNT] === 1) {
   const totalScore: [Points, Points] = playCribbageHands(
     MersenneTwister19937.autoSeed(),
-    argv[HAND_COUNT]
+    argv[HAND_COUNT],
+    argv[HIDE_PONE_HAND],
+    argv[HIDE_DEALER_HAND]
   );
   console.log(
     `Average score: [${totalScore.map(
@@ -44,9 +58,14 @@ if (argv[WORKER_COUNT] === 1) {
   const startTimeNs = process.hrtime.bigint();
   let nWorkersDone = 0;
   const workers = Array.from(Array(argv[WORKER_COUNT]).keys()).map(
-    (_) =>
+    (workerNumber) =>
       new Worker("./src/playCribbageHandsWorker.js", {
-        argv: [Math.floor(evenHandCount / argv[WORKER_COUNT])],
+        argv: [
+          Math.floor(evenHandCount / argv[WORKER_COUNT]),
+          argv[HIDE_PONE_HAND],
+          argv[HIDE_DEALER_HAND],
+          workerNumber + 1,
+        ],
       })
   );
   const grandTotalScore: [Points, Points] = [0, 0];
