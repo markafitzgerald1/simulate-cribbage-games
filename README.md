@@ -69,9 +69,9 @@ All of the following should exit with status code 0 and no raised exception:
 
 - UI/UX improvements:
   - Improve user interface via which human players can play against implemented computer discard and play strategies:
-    - display 'Go' play actions in grey or otherwise less attention grabbing style,
     - add discard phase to web UI and Node.js simulation,
-    - add cut phase to web UI and Node.js simulation, and
+    - add cut phase to web UI and Node.js simulation,
+    - display 'Go' play actions in grey or otherwise less attention grabbing style, and
     - show play points scored on card which scored the points.
 - Eliminate (via new `--first-(pone|dealer)-discarded-cards` flag) or reduce (via replace of `--first(pone|dealer)-kept-cards` with `--first-(pone|dealer)-discarded-cards`) double data entry between dealt and kept cards on `--select-each-post-initial-play` analysis.
 - Identify whether current pone or current dealer is discarding in discard coach and simulation-based discard output.
