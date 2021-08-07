@@ -16,20 +16,19 @@ export default (
   handCount: number,
   hidePoneHand: boolean,
   hideDealerHand: boolean,
-  workerNumber: number = 1
+  workerNumber?: number
 ): [Points, Points] => {
   // console.log(`Worker simulating ${handCount} hands`);
   let totalScore: [Points, Points] = [0, 0];
   const startTimeNs: bigint = process.hrtime.bigint();
+  const workerNumberPrefix = workerNumber ? `[worker ${workerNumber}] ` : "";
   [...Array(handCount)].forEach((_) => {
     let allHands: AllHands = dealAllHands(mersenneTwisterEngine, DECK);
     if (!hidePoneHand) {
-      console.log(`[worker ${workerNumber}] Pone   dealt ${allHands.poneHand}`);
+      console.log(`${workerNumberPrefix}Pone   dealt ${allHands.poneHand}`);
     }
     if (!hideDealerHand) {
-      console.log(
-        `[worker ${workerNumber}] Dealer dealt ${allHands.dealerHand}`
-      );
+      console.log(`${workerNumberPrefix}Dealer dealt ${allHands.dealerHand}`);
     }
 
     let thePlay: ThePlay = ThePlay.create();
@@ -63,7 +62,7 @@ export default (
   });
   const elapsedTimeNs: bigint = process.hrtime.bigint() - startTimeNs;
   console.log(
-    `[worker ${workerNumber}] simulated ${handCount} hands in ${elapsedTimeNs} ns for ${
+    `${workerNumberPrefix}Simulated ${handCount} hands in ${elapsedTimeNs} ns for ${
       elapsedTimeNs / BigInt(handCount)
     } ns per hand`
   );

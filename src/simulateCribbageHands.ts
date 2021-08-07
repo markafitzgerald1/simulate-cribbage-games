@@ -75,7 +75,9 @@ if (argv[WORKER_COUNT] === 1) {
       if (nWorkersDone === workers.length) {
         const elapsedTimeNs = process.hrtime.bigint() - startTimeNs;
         console.log(
-          `Simulated ${evenHandCount} total hands in ${elapsedTimeNs} ns for ${
+          `Simulated ${evenHandCount} total hands with ${
+            argv[WORKER_COUNT]
+          } workers in ${elapsedTimeNs} ns for ${
             elapsedTimeNs / BigInt(evenHandCount)
           } ns per hand`
         );
