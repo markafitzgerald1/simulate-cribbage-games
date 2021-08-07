@@ -17,8 +17,6 @@ describe("ThePlay", function () {
   const MAXIMUM_PLAYED_CARD_COUNT = Player.TOTAL_COUNT * Game.KEPT_HAND_SIZE;
 
   it(`cannot contain more than ${MAXIMUM_PLAYED_CARD_COUNT} played cards`, () => {
-    const card = new Card(new Index(3), new Suit(2));
-    console.log(`${card}`);
     should.throw(() => {
       let thePlay = ThePlay.create();
       [...Array(MAXIMUM_PLAYED_CARD_COUNT + 1).keys()].forEach((value) => {
@@ -29,7 +27,6 @@ describe("ThePlay", function () {
           )
         );
       });
-      console.log("thePlay: ", thePlay.currentPlayTo31);
     });
   });
 });
