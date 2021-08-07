@@ -17,13 +17,13 @@ describe("dealAllHands", function () {
       },
       DECK
     );
-  const DEALT_CARDS_LEN = 6;
+  const EXPECTED_DEALT_HAND_SIZE = 6;
 
-  it.skip(`should deal ${DEALT_CARDS_LEN} cards to Pone`, () => {
-    deal().poneHand.cards.should.have.length(DEALT_CARDS_LEN);
+  it(`should deal ${EXPECTED_DEALT_HAND_SIZE} cards to Pone`, () => {
+    deal().poneHand.cards.should.have.length(EXPECTED_DEALT_HAND_SIZE);
   });
 
-  it.skip(`should deal ${DEALT_CARDS_LEN} cards to Dealer`, () => {
-    deal().dealerHand.cards.should.have.length(DEALT_CARDS_LEN);
+  it(`should deal ${EXPECTED_DEALT_HAND_SIZE} cards to Dealer`, () => {
+    deal().dealerHand.cards.should.have.length(EXPECTED_DEALT_HAND_SIZE);
   });
 });
