@@ -34,6 +34,7 @@ export default class ThePlay {
 
   add(playerToPlayPlay: Card): ThePlay {
     const updatedPlayedCardCount: number = this.playedCardCount + 1;
+    // TODO: assess performance impact of this check on simulation speed
     if (updatedPlayedCardCount > ThePlay.MAXIMUM_PLAYED_CARD_COUNT) {
       throw new Error(
         `Adding ${playerToPlayPlay} to ThePlay ${this.toString()} would cause it to contain more than the maximum allowed number (${
