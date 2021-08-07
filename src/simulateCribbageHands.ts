@@ -15,22 +15,18 @@ const HIDE_PONE_HAND = "hide-pone-hand";
 const HIDE_DEALER_HAND = "hide-dealer-hand";
 const argv = yargs(hideBin(process.argv))
   .option(HAND_COUNT, {
-    alias: "h",
     type: "number",
     default: 1,
   })
   .option(WORKER_COUNT, {
-    alias: "w",
     type: "number",
     default: 1,
   })
   .option(HIDE_PONE_HAND, {
-    alias: "hp",
     type: "boolean",
     default: false,
   })
   .option(HIDE_DEALER_HAND, {
-    alias: "hd",
     type: "boolean",
     default: false,
   })
