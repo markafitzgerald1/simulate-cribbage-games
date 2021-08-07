@@ -12,7 +12,7 @@ import Points from "./Points";
 
 export default class ThePlay {
   static readonly MAXIMUM_PLAYED_CARD_COUNT: number =
-    Player.TOTAL_COUNT * Game.DEALT_HAND_SIZE;
+    Player.TOTAL_COUNT * Game.KEPT_HAND_SIZE;
 
   readonly currentPlayTo31: PlayTo31;
 
@@ -34,6 +34,14 @@ export default class ThePlay {
 
   add(playerToPlayPlay: Card): ThePlay {
     const updatedPlayedCardCount: number = this.playedCardCount + 1;
+    if (updatedPlayedCardCount > ThePlay.MAXIMUM_PLAYED_CARD_COUNT) {
+      throw new Error(
+        `Adding ${playerToPlayPlay} to ThePlay ${this.toString()} would cause it to contain more than the maximum allowed number (${
+          ThePlay.MAXIMUM_PLAYED_CARD_COUNT
+        }) of played cards.`
+      );
+    }
+
     const newCurrentPlayTo31: PlayTo31 =
       this.currentPlayTo31.add(playerToPlayPlay);
     const newPlaysTo31: readonly PlayTo31[] = [
