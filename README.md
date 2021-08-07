@@ -67,19 +67,33 @@ All of the following should exit with status code 0 and no raised exception:
 
 ## Short to medium term and lower level project goals
 
-- UI/UX improvements:
-  - Improve user interface via which human players can play against implemented computer discard and play strategies:
+- Web UI/UX improvements:
+  - Improve human player play against implemented computer discard and play strategies:
     - add discard phase to web UI and Node.js simulation,
     - add cut phase to web UI and Node.js simulation,
     - display 'Go' play actions in grey or otherwise less attention grabbing style, and
     - show play points scored on card which scored the points.
+  - Allow discard and play algorithm designers to analyze their algorithms and allow players to analyze and practice parts of or their entire games by improving game, play or discard algorithm and human play analysis and training tooling in web UI:
+    - Show completed hand (and eventually game) statistics.
+    - Add options to automatically:
+      - play cards using a selectable play algorithm,
+      - discard cards using a selectable discard algorithm,
+      - play the one legally playable card when only one legal play exists,
+      - say "Go" when legally required to do so,
+      - cut the deck (if and when a web UI option to manually cut exists),
+      - start another hand (and eventually game) when the current hand (game) ends, and
+      - use browser worker threads in UI when all discard, cut and play actions are automated, only updating stats in the web UI.
+    - Add options to:
+      - set the maximum number of hands (and eventually games) to play;
+      - set the initial game score to something other than 0-0; or
+      - set the initial game state to:
+        - post-deal,
+        - post-discard,
+        - post-cut or
+        - somewhere after the beginning and before the end of the play.
 - Eliminate (via new `--first-(pone|dealer)-discarded-cards` flag) or reduce (via replace of `--first(pone|dealer)-kept-cards` with `--first-(pone|dealer)-discarded-cards`) double data entry between dealt and kept cards on `--select-each-post-initial-play` analysis.
 - Identify whether current pone or current dealer is discarding in discard coach and simulation-based discard output.
-- Add best pre-cut, post-cut discard coaches so that human players can learn where expected cut and crib values may affect discard decisions.
-- Make coach usage and output optional - may want to play blind sometimes to train differently. (Also constant coaching of what the computer thinks is optimal against a static player may or may not be useful depending on whether the human player's goal is to play better than they currently play or whether it is to play better than the dynamic computer player.)
-- Automatically compare dynamic player actions against best static player actions and output when significantly different in order to highlight weaknesses in the best static player that could possibly be improved without simulation.
 - Replace non-ASCII plus or minus symbol with +/- so that it renders correctly by default in Windows Git (MSYS) bash.
-- Add support for specification of current pone and dealer as something other than first pone and first dealer, respectively at start of simulations starting at not 0-0 scores for ease of usage when manually interfacing with non-simulate-cribbage-hands opponents.
 - Measure point of diminshing returns on build of expected wins, losses and game points per start of hand position and current dealer database. (Currently difficult to measure due to slow execution times and the open issue with long runs using the position and current score end game result database hanging.)
 - Improve current best non-simulation-based play strategy:
   - consider improving default play algorithm to lead from high (> 5) pair (e.g. 9 from T-9-9-6) when low lead not possible (1.2 points better than T lead based on simulations); and
@@ -148,6 +162,10 @@ All of the following should exit with status code 0 and no raised exception:
     - add one point for Last Card support;
     - show unplayable cards in a disabled state even when mouse not hovering over them; and
     - show human and computer played cards vertically offset from one another.
+- Add best pre-cut, post-cut discard coaches so that human players can learn where expected cut and crib values may affect discard decisions.
+- Make coach usage and output optional - may want to play blind sometimes to train differently. (Also constant coaching of what the computer thinks is optimal against a static player may or may not be useful depending on whether the human player's goal is to play better than they currently play or whether it is to play better than the dynamic computer player.)
+- Automatically compare dynamic player actions against best static player actions and output when significantly different in order to highlight weaknesses in the best static player that could possibly be improved without simulation.
+- Add support for specification of current pone and dealer as something other than first pone and first dealer, respectively at start of simulations starting at not 0-0 scores for ease of usage when manually interfacing with non-simulate-cribbage-hands opponents.
 - Formally tag, version and release a specific commit of this source code repository, perhaps adding release notes and/or moving the below informal change log to a separate file. (Resolution: current Python implementation versioned via `setup.py`. Move of completed items into release notes, possibly in a separate file will likely get done on split of the current all-in-one program into separate play against, simulate and analyze programs.)
 - Consider giving project a name reflecting that you can simulate cribbage games with it, analyze cribbage decisions (not games yet) with it and play games against it. (Resolution: not going to do right now - will likely and naturally get done on split of the current all-in-one program into separate play against, simulate and analyze programs.)
 - Review license usage - is MPL 2.0 most suitable for project goals going forward from here now that a likely good computer player has been created? (Answer: MPL 2.0 is still the most suitable project license as of 2021-03-22. Rationale: MPL 2.0 is [LGPL 2.1+, GPL 2.0+ and AGPL 3+ compatible](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#copyleft-scope). [MPL 2.0's per-file scope copyleft](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#copyleft-scope) allows for non-MPL 2.0 or even proprietary separate file extensions as per project intent which LGPL (library-scope copyleft) and GPL (software-scope copyleft) do not. Conclusion: MPL 2.0 most suitable server-side. Client-side [MPL 2.0 is BSD and Apache compatible](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#mpl-bsd-and-apache) which should make most presently forseeable browser-based projects buildable without blocking licensing issues.)
