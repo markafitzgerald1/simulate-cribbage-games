@@ -3,6 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import Card from "./Card";
+import Game from "./Game";
 import Go from "./Go";
 import Hand from "./Hand";
 import Index from "./Index";
@@ -49,6 +50,13 @@ export default class PlayTo31 {
   }
 
   getPlayableCards(possiblePlayables: Hand): readonly Card[] {
+    // TODO: assess performance impact of this check on simulation speed
+    if (possiblePlayables.cards.length > Game.KEPT_HAND_SIZE) {
+      throw new Error(
+        `Cannot select a playable from hand ${possiblePlayables} from which discarding is not yet complete.`
+      );
+    }
+
     return possiblePlayables.cards.filter(
       (possiblePlayable: Card) =>
         this.count + possiblePlayable.index.count <= PlayTo31.MAXIMUM_PLAY_COUNT
