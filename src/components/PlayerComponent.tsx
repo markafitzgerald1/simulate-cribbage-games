@@ -8,6 +8,7 @@
 
 import React from "react";
 import Card from "../cribbage/Card";
+import Game from "../cribbage/Game";
 import Hand from "../cribbage/Hand";
 import ThePlay from "../cribbage/ThePlay";
 import SayGoButton from "./SayGoButton";
@@ -25,11 +26,13 @@ const PlayerComponent: React.FunctionComponent<{
       thePlay={props.thePlay}
       playCard={props.playCard}
     />
-    <SayGoButton
-      hand={props.hand}
-      thePlay={props.thePlay}
-      onClick={props.sayGo}
-    />
+    {props.hand.cards.length <= Game.KEPT_HAND_SIZE && (
+      <SayGoButton
+        hand={props.hand}
+        thePlay={props.thePlay}
+        onClick={props.sayGo}
+      />
+    )}
   </div>
 );
 
