@@ -10,6 +10,7 @@ import dealAllHands from "./cribbage/dealAllHands";
 import ThePlay from "./cribbage/ThePlay";
 import Hand from "./cribbage/Hand";
 import Card from "./cribbage/Card";
+import discard from "./cribbage/discard";
 
 export default (
   mersenneTwisterEngine: Engine,
@@ -23,39 +24,51 @@ export default (
   const startTimeNs: bigint = process.hrtime.bigint();
   const workerNumberPrefix = workerNumber ? `[worker ${workerNumber}] ` : "";
   [...Array(handCount)].forEach((_) => {
-    let allHands: AllHands = dealAllHands(mersenneTwisterEngine, DECK);
+    let dealtHands: AllHands = dealAllHands(mersenneTwisterEngine, DECK);
     if (!hidePoneHand) {
-      console.log(`${workerNumberPrefix}Pone   dealt ${allHands.poneHand}`);
+      console.log(`${workerNumberPrefix}Pone   dealt ${dealtHands.poneHand}`);
     }
     if (!hideDealerHand) {
-      console.log(`${workerNumberPrefix}Dealer dealt ${allHands.dealerHand}`);
+      console.log(`${workerNumberPrefix}Dealer dealt ${dealtHands.dealerHand}`);
     }
 
+    const keptHands: AllHands = new AllHands(
+      discard(dealtHands.poneHand),
+      discard(dealtHands.dealerHand)
+    );
+    if (!hidePoneHand) {
+      console.log(`${workerNumberPrefix}Pone   kept  ${keptHands.poneHand}`);
+    }
+    if (!hideDealerHand) {
+      console.log(`${workerNumberPrefix}Dealer kept  ${keptHands.dealerHand}`);
+    }
+
+    let playHands: AllHands = keptHands;
     let thePlay: ThePlay = ThePlay.create();
     while (
-      allHands.poneHand.cards.length + allHands.dealerHand.cards.length >
+      playHands.poneHand.cards.length + playHands.dealerHand.cards.length >
       0
     ) {
       const playerToPlayHand: Hand = thePlay.nextPlayerToPlay.isPone
-        ? allHands.poneHand
-        : allHands.dealerHand;
+        ? playHands.poneHand
+        : playHands.dealerHand;
       const playableCards: readonly Card[] =
         thePlay.getPlayableCards(playerToPlayHand);
       if (playableCards.length > 0) {
         const playerToPlayPlay: Card = playableCards[0];
         const updatedHand: Hand = playerToPlayHand.play(playerToPlayPlay);
         if (thePlay.nextPlayerToPlay.isPone) {
-          allHands = new AllHands(updatedHand, allHands.dealerHand);
+          playHands = new AllHands(updatedHand, playHands.dealerHand);
         } else {
-          allHands = new AllHands(allHands.poneHand, updatedHand);
+          playHands = new AllHands(playHands.poneHand, updatedHand);
         }
 
         thePlay = thePlay.add(playerToPlayPlay);
       } else {
         thePlay = thePlay.addGo();
       }
-      // console.log(`thePlay: ${thePlay}`);
     }
+    console.log(`thePlay: ${thePlay}`);
 
     totalScore[0] += thePlay.poneScore;
     totalScore[1] += thePlay.dealerScore;

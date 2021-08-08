@@ -5,20 +5,15 @@
 import chai from "chai";
 import { describe } from "mocha";
 import Game from "./Game";
-import PlayTo31 from "./PlayTo31";
-import Player from "./Player";
 import createHandOfUniqueCards from "../../test/createHandOfUniqueCards";
+import discard from "./discard";
 
 const should = chai.should();
 
-describe("PlayTo31", () => {
-  describe("getPlayableCards", () => {
-    it(`should throw for a hand containing more than ${Game.KEPT_HAND_SIZE} cards`, () => {
-      should.throw(() => {
-        PlayTo31.create(Player.PONE).getPlayableCards(
-          createHandOfUniqueCards(Game.KEPT_HAND_SIZE + 1)
-        );
-      });
+describe("discard", function () {
+  it(`should throw for a hand containing less than ${Game.DEALT_HAND_SIZE} cards`, () => {
+    should.throw(() => {
+      discard(createHandOfUniqueCards(Game.KEPT_HAND_SIZE - 1));
     });
   });
 });

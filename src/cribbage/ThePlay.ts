@@ -132,6 +132,6 @@ export default class ThePlay {
   public toString(): string {
     return `playsTo31=[${this.playsTo31
       .map((playsTo31) => playsTo31.toString())
-      .join("; ")}]`;
+      .join("; ")}] lastCardPlayedBy=${this.lastCardPlayedBy}`;
   }
 }

@@ -789,14 +789,14 @@ def simulate_game(
         ) or (hand_pone_is_this_simulation_first_dealer and not hide_first_dealer_hands)
         if show_pone_hand:
             print(
-                f"{get_player_name(0):6} dealt {Hand(dealt_hands[0])} (sorted: {Hand(sorted(dealt_hands[0], reverse=True))})"
+                f"{get_player_name(0):6} dealt     {Hand(dealt_hands[0])} (sorted: {Hand(sorted(dealt_hands[0], reverse=True))})"
             )
         show_dealer_hand: bool = (
             hand_dealer_is_this_simulation_first_dealer and not hide_first_dealer_hands
         ) or (hand_dealer_is_this_simulation_first_pone and not hide_first_pone_hands)
         if show_dealer_hand:
             print(
-                f"{get_player_name(1):6} dealt {Hand(dealt_hands[1])} (sorted: {Hand(sorted(dealt_hands[1], reverse=True))})"
+                f"{get_player_name(1):6} dealt     {Hand(dealt_hands[1])} (sorted: {Hand(sorted(dealt_hands[1], reverse=True))})"
             )
         deck_less_dealt_cards = list(
             set(deck_less_fixed_cards).difference(set(random_hand_cards))
@@ -1136,11 +1136,11 @@ def simulate_game(
 
         if show_pone_hand:
             print(
-                f"{get_player_name(0):6} kept {Hand(hands[0])} (sorted: {Hand(sorted(hands[0], reverse=True))})"
+                f"{get_player_name(0):6} kept      {Hand(hands[0])} (sorted: {Hand(sorted(hands[0], reverse=True))})"
             )
         if show_dealer_hand:
             print(
-                f"{get_player_name(1):6} kept {Hand(hands[1])} (sorted: {Hand(sorted(hands[1], reverse=True))})"
+                f"{get_player_name(1):6} kept      {Hand(hands[1])} (sorted: {Hand(sorted(hands[1], reverse=True))})"
             )
 
         starter = (

@@ -141,6 +141,9 @@ All of the following should exit with status code 0 and no raised exception:
 
 ## Past project goals
 
+- Node.js simulation and web UI/UX improvements:
+  - Improve human player play against implemented computer discard and play strategies:
+    - add discard phase to Node.js simulation.
 - Simulation improvements:
   - Add option to show first pone and first dealer dealt hands to Node.js simulator.
 - Python UI/UX improvements:
