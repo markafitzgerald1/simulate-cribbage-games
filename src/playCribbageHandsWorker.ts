@@ -18,6 +18,7 @@ parentPort.postMessage(
     parseInt(process.argv[2]),
     process.argv[3] == "true",
     process.argv[4] == "true",
+    process.argv[5] == "true",
     parseInt(process.argv[5])
   )
 );

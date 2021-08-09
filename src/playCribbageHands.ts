@@ -17,6 +17,7 @@ export default (
   handCount: number,
   hidePoneHand: boolean,
   hideDealerHand: boolean,
+  hidePlayActions: boolean,
   workerNumber?: number
 ): [Points, Points] => {
   // console.log(`Worker simulating ${handCount} hands`);
@@ -68,7 +69,9 @@ export default (
         thePlay = thePlay.addGo();
       }
     }
-    console.log(`thePlay: ${thePlay}`);
+    if (!hidePoneHand) {
+      console.log(`thePlay: ${thePlay}`);
+    }
 
     totalScore[0] += thePlay.poneScore;
     totalScore[1] += thePlay.dealerScore;

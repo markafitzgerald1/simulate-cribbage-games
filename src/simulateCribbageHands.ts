@@ -13,6 +13,7 @@ const HAND_COUNT = "hand-count";
 const WORKER_COUNT = "worker-count";
 const HIDE_PONE_HAND = "hide-pone-hand";
 const HIDE_DEALER_HAND = "hide-dealer-hand";
+const HIDE_PLAY_ACTIONS = "hide-play-actions";
 const argv = yargs(hideBin(process.argv))
   .option(HAND_COUNT, {
     type: "number",
@@ -30,6 +31,10 @@ const argv = yargs(hideBin(process.argv))
     type: "boolean",
     default: false,
   })
+  .option(HIDE_PLAY_ACTIONS, {
+    type: "boolean",
+    default: false,
+  })
   .strict()
   .parseSync();
 
@@ -38,7 +43,8 @@ if (argv[WORKER_COUNT] === 1) {
     MersenneTwister19937.autoSeed(),
     argv[HAND_COUNT],
     argv[HIDE_PONE_HAND],
-    argv[HIDE_DEALER_HAND]
+    argv[HIDE_DEALER_HAND],
+    argv[HIDE_PLAY_ACTIONS]
   );
   console.log(
     `Average score: [${totalScore.map(
@@ -60,6 +66,7 @@ if (argv[WORKER_COUNT] === 1) {
           Math.floor(evenHandCount / argv[WORKER_COUNT]),
           argv[HIDE_PONE_HAND],
           argv[HIDE_DEALER_HAND],
+          argv[HIDE_PLAY_ACTIONS],
           workerNumber + 1,
         ],
       })
