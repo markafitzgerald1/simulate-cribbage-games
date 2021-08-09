@@ -50,7 +50,6 @@ export default class PlayTo31 {
   }
 
   getPlayableCards(possiblePlayables: Hand): readonly Card[] {
-    // TODO: assess performance impact of this check on simulation speed
     if (possiblePlayables.cards.length > Game.KEPT_HAND_SIZE) {
       throw new Error(
         `Cannot select a playable from hand ${possiblePlayables} from which discarding is not yet complete.`
