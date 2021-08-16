@@ -67,11 +67,17 @@ All of the following should exit with status code 0 and no raised exception:
 
 ## Short to medium term and lower level project goals
 
+- Web UI/UX _and_ Node.js command-line simulation improvements:
+  - add a discard strategy which keeps the maximum possible pre-cut hand points, and
+  - add a play strategy which plays to score the maximum possible play points in the immediately upcoming play action, disregarding future play actions of opponent or self.
 - Web UI/UX improvements:
   - Improve human player play against implemented computer discard and play strategies:
-    - add cut phase to web UI and Node.js simulation,
-    - display 'Go' play actions in grey or otherwise less attention grabbing style, and
-    - show play points scored on card which scored the points.
+    - add cut phase (including 2 nibs points for dealer on Jack starter) to web UI and Node.js simulation;
+    - add pone hand, dealer hand and crib counting phases;
+    - allow human player to discard and play as first pone, first dealer, both or neither;
+    - display 'Go' play actions in grey or otherwise less attention grabbing style;
+    - show play points scored on card which scored the points; and
+    - add play of mutiple hands of play to end of game with deal alternating between the two players.
   - Allow discard and play algorithm designers to analyze their algorithms and allow players to analyze and practice parts of or their entire games by improving game, play or discard algorithm and human play analysis and training tooling in web UI:
     - Show completed hand (and eventually game) statistics.
     - Add options to automatically:
