@@ -72,8 +72,8 @@ All of the following should exit with status code 0 and no raised exception:
   - add a play strategy which plays to score the maximum possible play points in the immediately upcoming play action, disregarding future play actions of opponent or self.
 - Web UI/UX improvements:
   - Improve human player play against implemented computer discard and play strategies:
-    - add cut phase (including 2 nibs points for dealer on Jack starter) to web UI and Node.js simulation;
-    - add pone hand, dealer hand and crib counting phases;
+    - add cut phase (including 2 nibs points for dealer on Jack starter) to web UI and Node.js simulation (reify GameState across web UI and Node simulation here? Presence factors deal then discard then cut then play then pone count then dealer count order out of web UI and Node simulation);
+    - add pone hand, dealer hand and crib counting phases (reify GameState across web UI and Node simulation here? Presence factors deal then discard then cut then play then pone count then dealer count order out of web UI and Node simulation);
     - allow human player to discard and play as first pone, first dealer, both or neither;
     - display 'Go' play actions in grey or otherwise less attention grabbing style;
     - show play points scored on card which scored the points; and
