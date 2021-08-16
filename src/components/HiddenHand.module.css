@@ -1,0 +1,19 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
+/* TODO: factor out duplicate CSS in this and VisibleHand.module.css */
+
+.hiddenHand {
+  display: flex;
+  align-items: center;
+}
+
+.hiddenHand span {
+  width: 2.4em;
+  font-weight: bold;
+}
+
+.hiddenHand ul {
+  padding-left: 0.5em;
+}

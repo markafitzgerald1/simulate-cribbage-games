@@ -8,12 +8,14 @@ import PlayTo31Component from "./PlayTo31Component";
 import { count, playedCards, playedCardList } from "./PlayedCards.module.css";
 
 const PlayedCards: React.FunctionComponent<{
-  thePlay: ThePlay;
+  thePlay?: ThePlay;
 }> = (props): JSX.Element => (
   <div className={playedCards}>
-    <h3 className={count}>Count: {props.thePlay.count}</h3>
+    <h3 className={count}>
+      Play{props.thePlay ? ` count is ${props.thePlay.count}` : ":"}
+    </h3>
     <ul className={playedCardList}>
-      {props.thePlay.playsTo31.map((playTo31, index) => (
+      {props.thePlay?.playsTo31.map((playTo31, index) => (
         <PlayTo31Component
           playTo31={playTo31}
           key={playTo31.playActions

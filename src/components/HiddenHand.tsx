@@ -6,11 +6,14 @@ import React from "react";
 import md5 from "md5";
 import Hand from "../cribbage/Hand";
 import HiddenHandCard from "./HiddenHandCard";
+import { hiddenHand } from "./HiddenHand.module.css";
 
 const HiddenHand: React.FunctionComponent<{
   hand: Hand;
+  name: string;
 }> = (props): JSX.Element => (
-  <div>
+  <div className={hiddenHand}>
+    <span>{props.name}</span>
     <ul>
       {props.hand.cards.map((card) => (
         <HiddenHandCard card={card} key={md5(card.toString())}></HiddenHandCard>

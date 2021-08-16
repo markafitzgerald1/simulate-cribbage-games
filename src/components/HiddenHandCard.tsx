@@ -9,6 +9,6 @@ import { hiddenHandCard } from "./HiddenHandCard.module.css";
 
 const HiddenHandCard: React.FunctionComponent<{
   card: Card;
-}> = (props): JSX.Element => <li className={`${card}  ${hiddenHandCard}`}></li>;
+}> = (props): JSX.Element => <li className={`${card} ${hiddenHandCard}`}></li>;
 
 export default HiddenHandCard;

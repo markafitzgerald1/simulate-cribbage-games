@@ -16,17 +16,20 @@ import VisibleHand from "./VisibleHand";
 
 const PlayerComponent: React.FunctionComponent<{
   hand: Hand;
-  thePlay: ThePlay;
+  thePlay?: ThePlay;
   playCard: (card: Card) => void;
+  discardCard: (card: Card) => void;
   sayGo: () => void;
 }> = (props): JSX.Element => (
   <div>
     <VisibleHand
       hand={props.hand}
+      name="Hand"
       thePlay={props.thePlay}
       playCard={props.playCard}
+      discardCard={props.discardCard}
     />
-    {props.hand.cards.length <= Game.KEPT_HAND_SIZE && (
+    {props.thePlay && (
       <SayGoButton
         hand={props.hand}
         thePlay={props.thePlay}

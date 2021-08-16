@@ -4,15 +4,18 @@
 
 import React from "react";
 import Card from "../cribbage/Card";
+import discard from "../cribbage/discard";
+import Game from "../cribbage/Game";
 import Hand from "../cribbage/Hand";
-import PlayTo31 from "../cribbage/PlayTo31";
 import ThePlay from "../cribbage/ThePlay";
 import HiddenHand from "./HiddenHand";
 
 interface OpponentProps {
   hand: Hand;
-  thePlay: ThePlay;
+  crib: Hand;
+  thePlay?: ThePlay;
   playCard: (card: Card) => void;
+  discard: (cards: [Card, Card]) => void;
   sayGo: () => void;
 }
 
@@ -20,17 +23,33 @@ class Opponent extends React.Component<OpponentProps> {
   render() {
     return (
       <div>
-        <HiddenHand hand={this.props.hand} />
-        <h2>Computer: {this.props.thePlay.dealerScore} points</h2>
+        <HiddenHand hand={this.props.crib} name="Crib" />
+        <HiddenHand hand={this.props.hand} name="Hand" />
+        <h2>Computer: {this.props.thePlay?.dealerScore || 0} points</h2>
       </div>
     );
   }
 
+  private discard = () => {
+    if (this.props.hand.cards.length > Game.KEPT_HAND_SIZE) {
+      this.props.discard(discard(this.props.hand).discards);
+    }
+  };
+
+  componentDidMount() {
+    this.discard();
+  }
+
   componentDidUpdate(prevProps: OpponentProps) {
-    const isNowOpponentsTurn: boolean =
+    if (!this.props.thePlay) {
+      this.discard();
+      return;
+    }
+
+    const isNowOpponentsTurn: boolean | undefined =
       this.props.thePlay.currentPlayTo31.dealerIsNextToPlay;
-    const wasOpponentsTurn: boolean =
-      prevProps.thePlay.currentPlayTo31.dealerIsNextToPlay;
+    const wasOpponentsTurn: boolean | undefined =
+      prevProps.thePlay?.currentPlayTo31.dealerIsNextToPlay;
     if (isNowOpponentsTurn && wasOpponentsTurn !== isNowOpponentsTurn) {
       const playableCards: readonly Card[] =
         this.props.thePlay.getPlayableCards(this.props.hand);

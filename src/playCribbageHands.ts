@@ -34,8 +34,8 @@ export default (
     }
 
     const keptHands: AllHands = new AllHands(
-      discard(dealtHands.poneHand),
-      discard(dealtHands.dealerHand)
+      discard(dealtHands.poneHand).hand,
+      discard(dealtHands.dealerHand).hand
     );
     if (!hidePoneHand) {
       console.log(`${workerNumberPrefix}Pone   kept  ${keptHands.poneHand}`);
@@ -57,7 +57,7 @@ export default (
         thePlay.getPlayableCards(playerToPlayHand);
       if (playableCards.length > 0) {
         const playerToPlayPlay: Card = playableCards[0];
-        const updatedHand: Hand = playerToPlayHand.play(playerToPlayPlay);
+        const updatedHand: Hand = playerToPlayHand.remove(playerToPlayPlay);
         if (thePlay.nextPlayerToPlay.isPone) {
           playHands = new AllHands(updatedHand, playHands.dealerHand);
         } else {

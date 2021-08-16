@@ -69,7 +69,6 @@ All of the following should exit with status code 0 and no raised exception:
 
 - Web UI/UX improvements:
   - Improve human player play against implemented computer discard and play strategies:
-    - add discard phase to web UI and Node.js simulation (IN PROGRESS - Node.js web UI currently broken),
     - add cut phase to web UI and Node.js simulation,
     - display 'Go' play actions in grey or otherwise less attention grabbing style, and
     - show play points scored on card which scored the points.
@@ -143,7 +142,7 @@ All of the following should exit with status code 0 and no raised exception:
 
 - Node.js simulation and web UI/UX improvements:
   - Improve human player play against implemented computer discard and play strategies:
-    - add discard phase to Node.js simulation.
+    - add discard phase to web UI and Node.js simulation.
 - Simulation improvements:
   - Add option to show first pone and first dealer dealt hands to Node.js simulator.
 - Python UI/UX improvements:
