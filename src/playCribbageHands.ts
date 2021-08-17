@@ -12,6 +12,7 @@ import Hand from "./cribbage/Hand";
 import Card from "./cribbage/Card";
 import discard from "./cribbage/discard";
 import DiscardResult from "./cribbage/DiscardResult";
+import Suit from "./cribbage/Suit";
 
 export default (
   mersenneTwisterEngine: Engine,
@@ -29,12 +30,20 @@ export default (
     let dealtHands: AllHands = dealAllHands(mersenneTwisterEngine, DECK);
     if (!hidePoneHand) {
       console.log(
-        `${workerNumberPrefix}Pone   dealt     ${dealtHands.poneHand}`
+        `${workerNumberPrefix}Pone   dealt     ${
+          dealtHands.poneHand
+        } (sorted: [${[...dealtHands.poneHand.cards]
+          .sort(Card.compare)
+          .reverse()}])`
       );
     }
     if (!hideDealerHand) {
       console.log(
-        `${workerNumberPrefix}Dealer dealt     ${dealtHands.dealerHand}`
+        `${workerNumberPrefix}Dealer dealt     ${
+          dealtHands.dealerHand
+        } (sorted: [${[...dealtHands.dealerHand.cards]
+          .sort(Card.compare)
+          .reverse()}])`
       );
     }
 
@@ -42,12 +51,20 @@ export default (
     const dealerDiscardResult: DiscardResult = discard(dealtHands.dealerHand);
     if (!hidePoneHand) {
       console.log(
-        `${workerNumberPrefix}Pone   discarded [${poneDiscardResult.discards}]`
+        `${workerNumberPrefix}Pone   discarded [${
+          poneDiscardResult.discards
+        }] (sorted: [${[...poneDiscardResult.discards]
+          .sort(Card.compare)
+          .reverse()}])`
       );
     }
     if (!hideDealerHand) {
       console.log(
-        `${workerNumberPrefix}Dealer discarded [${dealerDiscardResult.discards}]`
+        `${workerNumberPrefix}Dealer discarded [${
+          dealerDiscardResult.discards
+        }] (sorted: [${[...dealerDiscardResult.discards]
+          .sort(Card.compare)
+          .reverse()}])`
       );
     }
     const keptHands: AllHands = new AllHands(
@@ -56,12 +73,20 @@ export default (
     );
     if (!hidePoneHand) {
       console.log(
-        `${workerNumberPrefix}Pone   kept      ${keptHands.poneHand}`
+        `${workerNumberPrefix}Pone   kept      ${
+          keptHands.poneHand
+        } (sorted: [${[...keptHands.poneHand.cards]
+          .sort(Card.compare)
+          .reverse()}])`
       );
     }
     if (!hideDealerHand) {
       console.log(
-        `${workerNumberPrefix}Dealer kept      ${keptHands.dealerHand}`
+        `${workerNumberPrefix}Dealer kept      ${
+          keptHands.dealerHand
+        } (sorted: [${[...keptHands.dealerHand.cards]
+          .sort(Card.compare)
+          .reverse()}])`
       );
     }
 

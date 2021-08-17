@@ -11,4 +11,9 @@ export default class Card {
   public toString(): string {
     return `${this.index}${this.suit}`;
   }
+
+  public static compare = (a: Card, b: Card) =>
+    (a.index.value - b.index.value) * Suit.TOTAL_COUNT +
+    a.suit.value -
+    b.suit.value;
 }
