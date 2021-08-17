@@ -36,15 +36,16 @@
     "tcm-clean": "rm -f src/*.module.css.d.ts src/*/*.module.css.d.ts",
     "start": "parcel serve src/index.html",
     "start-clean": "rm -f .parcel-cache/ dist/",
-    "build": "parcel build src/index.html",
-    "build-clean": "rm -f index.html index.*.js index.*.js.map index.*.css index.*.css.map",
+    "build-simulation": "npm run tcm-build && npm run tsc-build",
+    "build-webapp": "parcel build src/index.html",
+    "build-webapp-clean": "rm -f index.html index.*.js index.*.js.map index.*.css index.*.css.map",
     "serve": "http-server",
     "tsc-build": "tsc --jsx react",
     "tsc-watch": "tsc --jsx react --watch",
     "tsc-clean": "rm -f src/*.js src/cribbage/*.js src/components/*.js",
     "clean": "rm -rf src/*.module.css.d.ts src/*/*.module.css.d.ts .parcel-cache/ dist/ index.html index.*.js index.*.js.map index.*.css index.*.css.map src/*.js src/cribbage/*.js src/components/*.js",
-    "simulate-1": "node src/playCribbageHand.js 1 1",
-    "simulate": "node src/playCribbageHand.js"
+    "simulate": "node dist/src/simulateCribbageHands.js --hide-pone-hand --hide-dealer-hand --hide-play-actions",
+    "simulate-100000": "node dist/src/simulateCribbageHands.js --hand-count 100000 --hide-pone-hand --hide-dealer-hand --hide-play-actions"
   },
   "author": "Mark Fitzgerald <mark.a.fitzgerald1@gmail.com> (https://github.com/markafitzgerald1)",
   "license": "MPL-2.0"
