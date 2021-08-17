@@ -69,7 +69,7 @@ export default (
         thePlay = thePlay.addGo();
       }
     }
-    if (!hidePoneHand) {
+    if (!hidePlayActions) {
       console.log(`thePlay: ${thePlay}`);
     }
 
