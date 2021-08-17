@@ -11,6 +11,7 @@ import ThePlay from "./cribbage/ThePlay";
 import Hand from "./cribbage/Hand";
 import Card from "./cribbage/Card";
 import discard from "./cribbage/discard";
+import DiscardResult from "./cribbage/DiscardResult";
 
 export default (
   mersenneTwisterEngine: Engine,
@@ -27,21 +28,41 @@ export default (
   [...Array(handCount)].forEach((_) => {
     let dealtHands: AllHands = dealAllHands(mersenneTwisterEngine, DECK);
     if (!hidePoneHand) {
-      console.log(`${workerNumberPrefix}Pone   dealt ${dealtHands.poneHand}`);
+      console.log(
+        `${workerNumberPrefix}Pone   dealt     ${dealtHands.poneHand}`
+      );
     }
     if (!hideDealerHand) {
-      console.log(`${workerNumberPrefix}Dealer dealt ${dealtHands.dealerHand}`);
+      console.log(
+        `${workerNumberPrefix}Dealer dealt     ${dealtHands.dealerHand}`
+      );
     }
 
-    const keptHands: AllHands = new AllHands(
-      discard(dealtHands.poneHand).hand,
-      discard(dealtHands.dealerHand).hand
-    );
+    const poneDiscardResult: DiscardResult = discard(dealtHands.poneHand);
+    const dealerDiscardResult: DiscardResult = discard(dealtHands.dealerHand);
     if (!hidePoneHand) {
-      console.log(`${workerNumberPrefix}Pone   kept  ${keptHands.poneHand}`);
+      console.log(
+        `${workerNumberPrefix}Pone   discarded [${poneDiscardResult.discards}]`
+      );
     }
     if (!hideDealerHand) {
-      console.log(`${workerNumberPrefix}Dealer kept  ${keptHands.dealerHand}`);
+      console.log(
+        `${workerNumberPrefix}Dealer discarded [${dealerDiscardResult.discards}]`
+      );
+    }
+    const keptHands: AllHands = new AllHands(
+      poneDiscardResult.hand,
+      dealerDiscardResult.hand
+    );
+    if (!hidePoneHand) {
+      console.log(
+        `${workerNumberPrefix}Pone   kept      ${keptHands.poneHand}`
+      );
+    }
+    if (!hideDealerHand) {
+      console.log(
+        `${workerNumberPrefix}Dealer kept      ${keptHands.dealerHand}`
+      );
     }
 
     let playHands: AllHands = keptHands;
