@@ -28,3 +28,4 @@
 /src/**/*\.module\.css\.d\.ts
 /playCribbageHand*\.js
 /test/**/*\.js
+/coverage/
