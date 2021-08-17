@@ -6,4 +6,12 @@
 module.exports = {
   preset: "ts-jest",
   testEnvironment: "node",
+  coverageThreshold: {
+    global: {
+      branches: 8.82,
+      functions: 8.77,
+      lines: 20.86,
+      statements: 20.37,
+    },
+  },
 };
