@@ -2,17 +2,35 @@
 
 Simulate and analyze the play of hands and games of cribbage between two opponents.
 
+
 ## Setup
 
+### Python simulator
+
 - Install Python 3.9.6
-- `pip install -r requirements.txt` _(may require local admin to install black globally... or use a [virtualenv](https://virtualenv.pypa.io/en/latest/) instead!)_
+- Install dependencies: `pip install -r requirements.txt` _(may require local admin to install black globally... or use a [virtualenv](https://virtualenv.pypa.io/en/latest/) instead!)_
+- Check for type errors - should not find any errors: `mypy simulateCribbageGames.py`
 - _Optional:_ Build the start of hand position + current dealer wins, losses and game points database to improve positional play of simulation-based play and discard strategies' (takes about 30 minutes on my laptop): `python simulateCribbageGames.py --unlimited-hands-per-game --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions --games-per-update 2000 --tally-start-of-hand-position-results --game-count 1000000 --show-calc-cache-usage-stats`. Can be run longer (`--infinite-game-count` then Control+C to stop) for likely better results - exact point of diminshing returns currently hard to measure for performance and open bug reasons and not yet established.
 
-## Test
+### Node.js
 
-- Check for type errors - should not find any errors: `mypy simulateCribbageGames.py`
+- Install Node.js 16.7.0
+
+#### Simulator
+
+- Install dependencies: `npm install`
+- Build: `npm run tcm-build && npm run tsc-build && npm run coverage`
+- Simulate 1 hand from deal to end of play: `npm run simulate`
+- Simulate 100,000 hands, each from deal to end of play: `npm run simulate -- --hand-count 100000`
+
+#### Web Application
+
+- `npm start`
+  - If encountering the error `🚨 Build failed. @parcel/transformer-postcss: PostCSS config must have plugins` rerun `npm start` to resolve. _(TODO: find better fix for this. :))_
 
 ## Use
+
+### Python simulator
 
 - Simulate one hand from deal to end of hand counting: `python simulateCribbageGames.py`
 - Play against static (not simulation-based) discard and play strategies as first pone: `python simulateCribbageGames.py --first-pone-keep-user-selected --first-pone-play-user-entered --hide-first-dealer-hand --unlimited-hands-per-game`
@@ -22,6 +40,8 @@ Simulate and analyze the play of hands and games of cribbage between two opponen
 - Help on additional simulation options: `python simulateCribbageGames.py --help`
 
 ## Smoke Tests and Usage Examples
+
+### Python simulator
 
 All of the following should exit with status code 0 and no raised exception:
 
@@ -232,17 +252,17 @@ All of the following should exit with status code 0 and no raised exception:
 - `--initial-play-actions` 4-8 with A,T,Q in pone hand considers T and Q to be equal plays as the current best non-simulation-based play algorithm would have played 9 on its first play as dealer if it held it thus the simulation does not consider a run off of 4-8-T to be possible for dealer.
 - simulation of all possible plays over just one game fails to complete on a ZeroDivisionError during variance calculation.
 
-## Technology stack
+## Technology stacks
 
 ### Currently tested project toolchain versions
 
 #### Main implementation
 
-- Python 3.9.1
+- Python 3.9.6
 
 #### Backup, partial implementation
 
-- Node.js 14.5.0
+- Node.js 14.7.0
 
 #### Prototype benchmarking implementations
 
