@@ -45,7 +45,6 @@
     "tsc-clean": "rm -f src/*.js src/cribbage/*.js src/components/*.js",
     "clean": "rm -rf src/*.module.css.d.ts src/*/*.module.css.d.ts .parcel-cache/ dist/ index.html index.*.js index.*.js.map index.*.css index.*.css.map src/*.js src/cribbage/*.js src/components/*.js",
     "simulate": "node dist/src/simulateCribbageHands.js --hide-pone-hand --hide-dealer-hand --hide-play-actions",
-    "simulate-100000": "node dist/src/simulateCribbageHands.js --hand-count 100000 --hide-pone-hand --hide-dealer-hand --hide-play-actions"
   },
   "author": "Mark Fitzgerald <mark.a.fitzgerald1@gmail.com> (https://github.com/markafitzgerald1)",
   "license": "MPL-2.0"
