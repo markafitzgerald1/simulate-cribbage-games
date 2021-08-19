@@ -2,14 +2,19 @@
 
 Simulate and analyze the play of hands and games of cribbage between two opponents.
 
-
 ## Setup
+
+### Common
+
+- Install [PMD](https://pmd.github.io/).
+- Check for excessive code duplication: `npm run pmd`.
 
 ### Python simulator
 
 - Install Python 3.9.6
 - Install dependencies: `pip install -r requirements.txt` _(may require local admin to install black globally... or use a [virtualenv](https://virtualenv.pypa.io/en/latest/) instead!)_
 - Check for type errors - should not find any errors: `mypy simulateCribbageGames.py`
+- Check for excessive code duplication: `npm run pmd-python`.
 - _Optional:_ Build the start of hand position + current dealer wins, losses and game points database to improve positional play of simulation-based play and discard strategies' (takes about 30 minutes on my laptop): `python simulateCribbageGames.py --unlimited-hands-per-game --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions --games-per-update 2000 --tally-start-of-hand-position-results --game-count 1000000 --show-calc-cache-usage-stats`. Can be run longer (`--infinite-game-count` then Control+C to stop) for likely better results - exact point of diminshing returns currently hard to measure for performance and open bug reasons and not yet established.
 
 ### Node.js
@@ -20,6 +25,8 @@ Simulate and analyze the play of hands and games of cribbage between two opponen
 
 - Install dependencies: `npm install`
 - Build: `npm run tcm-build && npm run tsc-build && npm run coverage`
+- Test and ensure no test coverage regressions: `npm run coverage`
+- Check for excessive code duplication: `npm run pmd-typescript`
 - Simulate 1 hand from deal to end of play: `npm run simulate`
 - Simulate 100,000 hands, each from deal to end of play: `npm run simulate -- --hand-count 100000`
 
