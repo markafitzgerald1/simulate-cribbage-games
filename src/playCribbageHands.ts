@@ -12,7 +12,6 @@ import Hand from "./cribbage/Hand";
 import Card from "./cribbage/Card";
 import discard from "./cribbage/discard";
 import DiscardResult from "./cribbage/DiscardResult";
-import Suit from "./cribbage/Suit";
 
 export default (
   mersenneTwisterEngine: Engine,
@@ -23,11 +22,11 @@ export default (
   workerNumber?: number
 ): [Points, Points] => {
   // console.log(`Worker simulating ${handCount} hands`);
-  let totalScore: [Points, Points] = [0, 0];
+  const totalScore: [Points, Points] = [0, 0];
   const startTimeNs: bigint = process.hrtime.bigint();
   const workerNumberPrefix = workerNumber ? `[worker ${workerNumber}] ` : "";
-  [...Array(handCount)].forEach((_) => {
-    let dealtHands: AllHands = dealAllHands(mersenneTwisterEngine, DECK);
+  [...Array(handCount)].forEach(() => {
+    const dealtHands: AllHands = dealAllHands(mersenneTwisterEngine, DECK);
     if (!hidePoneHand) {
       console.log(
         `${workerNumberPrefix}Pone   dealt     ${

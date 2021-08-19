@@ -8,7 +8,6 @@
 
 import React from "react";
 import Card from "../cribbage/Card";
-import Game from "../cribbage/Game";
 import Hand from "../cribbage/Hand";
 import ThePlay from "../cribbage/ThePlay";
 import SayGoButton from "./SayGoButton";

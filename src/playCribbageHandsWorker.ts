@@ -15,7 +15,7 @@ const handCount: number = parseInt(process.argv[2]);
 parentPort.postMessage(
   playCribbageHands(
     MersenneTwister19937.autoSeed(),
-    parseInt(process.argv[2]),
+    handCount,
     process.argv[3] == "true",
     process.argv[4] == "true",
     process.argv[5] == "true",

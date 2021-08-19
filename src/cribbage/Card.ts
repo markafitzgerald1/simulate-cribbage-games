@@ -12,7 +12,7 @@ export default class Card {
     return `${this.index}${this.suit}`;
   }
 
-  public static compare = (a: Card, b: Card) =>
+  public static compare = (a: Card, b: Card): number =>
     (a.index.value - b.index.value) * Suit.TOTAL_COUNT +
     a.suit.value -
     b.suit.value;

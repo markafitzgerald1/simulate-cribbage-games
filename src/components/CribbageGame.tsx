@@ -20,7 +20,7 @@ import Game from "../cribbage/Game";
 import Player from "../cribbage/Player";
 
 export default class extends React.Component<
-  {},
+  Record<string, never>,
   {
     poneHand: Hand;
     dealerHand: Hand;
@@ -29,7 +29,7 @@ export default class extends React.Component<
     randomJsEngine: Engine;
   }
 > {
-  constructor(props: {}) {
+  constructor(props: Record<string, never>) {
     super(props);
 
     const randomJsEngine: Engine = MersenneTwister19937.autoSeed();

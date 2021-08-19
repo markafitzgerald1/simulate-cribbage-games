@@ -77,7 +77,7 @@ if (argv[WORKER_COUNT] === 1) {
       grandTotalScore[0] += totalScore[0];
       grandTotalScore[1] += totalScore[1];
     });
-    worker.on("exit", (code) => {
+    worker.on("exit", () => {
       nWorkersDone++;
       if (nWorkersDone === workers.length) {
         const elapsedTimeNs = process.hrtime.bigint() - startTimeNs;

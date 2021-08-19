@@ -21,12 +21,15 @@
     "@types/react-dom": "^17.0.3",
     "@types/react-helmet": "^6.1.0",
     "@types/yargs": "^17.0.2",
+    "@typescript-eslint/eslint-plugin": "^4.29.2",
+    "@typescript-eslint/parser": "^4.29.2",
+    "eslint": "^7.32.0",
     "http-server": "^0.12.3",
     "jest": "^27.0.6",
     "react-helmet": "^6.1.0",
     "ts-jest": "^27.0.4",
     "ts-node": "^10.1.0",
-    "typescript": "^4.2.3"
+    "typescript": "^4.3.5"
   },
   "scripts": {
     "test": "jest --testPathPattern='.*\\.spec\\.ts$'",
@@ -42,12 +45,13 @@
     "serve": "http-server",
     "tsc-build": "tsc --jsx react",
     "tsc-watch": "tsc --jsx react --watch",
-    "tsc-clean": "rm -f src/*.js src/cribbage/*.js src/components/*.js",
+    "tsc-clean": "rm -f src/*.js src/cribbage/*.js src/components/*.js test/*.js",
     "clean": "rm -rf src/*.module.css.d.ts src/*/*.module.css.d.ts .parcel-cache/ dist/ index.html index.*.js index.*.js.map index.*.css index.*.css.map src/*.js src/cribbage/*.js src/components/*.js",
     "simulate": "node dist/src/simulateCribbageHands.js --hide-pone-hand --hide-dealer-hand --hide-play-actions",
     "pmd-typescript": "pmd cpd --language ecmascript --minimum-tokens 22 --files $(find src test -type f -name *.ts)",
     "pmd-python": "pmd cpd --language python --minimum-tokens 59 --files *.py",
-    "pmd": "npm run pmd-python && npm run pmd-typescript"
+    "pmd": "npm run pmd-python && npm run pmd-typescript",
+    "eslint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "author": "Mark Fitzgerald <mark.a.fitzgerald1@gmail.com> (https://github.com/markafitzgerald1)",
   "license": "MPL-2.0"

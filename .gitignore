@@ -29,3 +29,4 @@
 /playCribbageHand*\.js
 /test/**/*\.js
 /coverage/
+*\.icloud

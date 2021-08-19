@@ -15,7 +15,7 @@ const PlayedCards: React.FunctionComponent<{
       Play{props.thePlay ? ` count is ${props.thePlay.count}` : ":"}
     </h3>
     <ul className={playedCardList}>
-      {props.thePlay?.playsTo31.map((playTo31, index) => (
+      {props.thePlay?.playsTo31.map((playTo31) => (
         <PlayTo31Component
           playTo31={playTo31}
           key={playTo31.playActions

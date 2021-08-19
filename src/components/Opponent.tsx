@@ -20,7 +20,7 @@ interface OpponentProps {
 }
 
 class Opponent extends React.Component<OpponentProps> {
-  render() {
+  render(): React.ReactNode {
     return (
       <div>
         <HiddenHand hand={this.props.crib} name="Crib" />
@@ -36,11 +36,11 @@ class Opponent extends React.Component<OpponentProps> {
     }
   };
 
-  componentDidMount() {
+  componentDidMount(): void {
     this.discard();
   }
 
-  componentDidUpdate(prevProps: OpponentProps) {
+  componentDidUpdate(prevProps: OpponentProps): void {
     if (!this.props.thePlay) {
       this.discard();
       return;
