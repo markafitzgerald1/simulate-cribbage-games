@@ -123,7 +123,7 @@ class Go:
         return Go.STR
 
     def __repr__(self):
-        return f"Go()"
+        return "Go()"
 
 
 PlayAction = Union[Card, Go]
@@ -1258,7 +1258,7 @@ def simulate_game(
                     and select_play == play_user_selected
                     and str(legal_play_actions[0]) == Go.STR
                 ):
-                    input(f"Press enter to say Go: ")
+                    input("Press enter to say Go: ")
                     player_to_play_play = legal_play_actions[0]
                 else:
                     player_to_play_play = legal_play_actions[
@@ -1933,9 +1933,6 @@ def simulate_games(
             is_first_dealer_next_to_play: bool = (
                 post_initial_play is not None and len(initial_play_actions) % 2 == 1
             )
-            next_dealer_is_first_dealer: bool = (
-                len(game_simulation_result.start_of_hand_scores) % 2 == 0
-            )
             next_dealer_is_first_pone: bool = (
                 len(game_simulation_result.start_of_hand_scores) % 2 == 1
             )
@@ -2255,7 +2252,7 @@ def simulate_games(
                             f"Mean play statistics {confidence_level}% confidence intervals ({formatted_game_count(players_statistics_length, overall_game_count)}):"
                         )
                     else:
-                        print(f"Mean play statistics:")
+                        print("Mean play statistics:")
 
                 sorted_players_statistics = sorted(
                     players_statistics.items(),

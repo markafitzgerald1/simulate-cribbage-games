@@ -7,14 +7,15 @@ Simulate and analyze the play of hands and games of cribbage between two opponen
 ### Common
 
 - Install [PMD](https://pmd.github.io/).
-- Check for excessive code duplication: `npm run pmd`.
+- Check for excessive code duplication: `npm run cpd`.
 
 ### Python simulator
 
 - Install Python 3.9.6
 - Install dependencies: `pip install -r requirements.txt` _(may require local admin to install black globally... or use a [virtualenv](https://virtualenv.pypa.io/en/latest/) instead!)_
-- Check for type errors - should not find any errors: `mypy simulateCribbageGames.py`
-- Check for excessive code duplication: `npm run pmd-python`.
+- Check for type errors - should not find any: `mypy simulateCribbageGames.py`
+- Check for pyflakes and pylint flagged code issues - should not find any pyflakes issues, but (TODO!) some many pylint issues remain: `pyflakes simulateCribbageGames.py && pylint simulateCribbageGames.py`
+- Check for excessive code duplication - should not find any: `npm run cpd-python`.
 - _Optional:_ Build the start of hand position + current dealer wins, losses and game points database to improve positional play of simulation-based play and discard strategies' (takes about 30 minutes on my laptop): `python simulateCribbageGames.py --unlimited-hands-per-game --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions --games-per-update 2000 --tally-start-of-hand-position-results --game-count 1000000 --show-calc-cache-usage-stats`. Can be run longer (`--infinite-game-count` then Control+C to stop) for likely better results - exact point of diminshing returns currently hard to measure for performance and open bug reasons and not yet established.
 
 ### Node.js
@@ -24,7 +25,7 @@ Simulate and analyze the play of hands and games of cribbage between two opponen
 #### Simulator
 
 - Install dependencies: `npm install`
-- Generate CSS module type declarations, lint, build, test, ensure no test coverage regressions and ensure no excessive code duplication: `npm run tcm-build && npm run eslint && npm run tsc-build && npm run coverage && npm run pmd-typescript`
+- Generate CSS module type declarations, lint, build, test, ensure no test coverage regressions and ensure no excessive code duplication: `npm run tcm-build && npm run eslint && npm run tsc-build && npm run coverage && npm run cpd-typescript`
 - Simulate 1 hand from deal to end of play: `npm run simulate`
 - Simulate 100,000 hands, each from deal to end of play: `npm run simulate -- --hand-count 100000`
 
