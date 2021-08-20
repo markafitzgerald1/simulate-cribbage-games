@@ -25,7 +25,7 @@ Simulate and analyze the play of hands and games of cribbage between two opponen
 #### Simulator
 
 - Install dependencies: `npm install`
-- Generate CSS module type declarations, lint, build, test, ensure no test coverage regressions and ensure no excessive code duplication: `npm run tcm-build && npm run eslint && npm run tsc-build && npm run coverage && npm run cpd-typescript`
+- Generate CSS module type declarations, lint, build, test, ensure no test coverage regressions and ensure no excessive code duplication: `npm run tcm-build && npm run lint-typescript && npm run tsc-build && npm run coverage && npm run cpd-typescript`
 - Simulate 1 hand from deal to end of play: `npm run simulate`
 - Simulate 100,000 hands, each from deal to end of play: `npm run simulate -- --hand-count 100000`
 
