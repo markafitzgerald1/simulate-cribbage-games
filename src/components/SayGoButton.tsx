@@ -16,7 +16,7 @@ const SayGoButton: React.FunctionComponent<{
     disabled={!props.thePlay.canAddGo(props.hand)}
     onClick={props.onClick}
   >
-    Say &apos;Go&apos;
+    Say &apos;Go{"'"}
   </button>
 );
 

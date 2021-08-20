@@ -19,7 +19,7 @@ import ThePlay from "../cribbage/ThePlay";
 import Game from "../cribbage/Game";
 import Player from "../cribbage/Player";
 
-export default class extends React.Component<
+export default class CribbageGame extends React.Component<
   Record<string, never>,
   {
     poneHand: Hand;
@@ -29,8 +29,6 @@ export default class extends React.Component<
     randomJsEngine: Engine;
   }
 > {
-  readonly displayName = "CribbageGame";
-
   constructor(props: Record<string, never>) {
     super(props);
 
