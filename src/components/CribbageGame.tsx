@@ -29,6 +29,8 @@ export default class extends React.Component<
     randomJsEngine: Engine;
   }
 > {
+  readonly displayName = "CribbageGame";
+
   constructor(props: Record<string, never>) {
     super(props);
 
