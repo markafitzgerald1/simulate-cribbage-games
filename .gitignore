@@ -30,3 +30,5 @@
 /test/**/*\.js
 /coverage/
 *\.icloud
+/\.coverage
+/htmlcov/
