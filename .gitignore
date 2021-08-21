@@ -32,3 +32,4 @@
 *\.icloud
 /\.coverage
 /htmlcov/
+/coverage\.xml
