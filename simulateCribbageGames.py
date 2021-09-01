@@ -684,10 +684,18 @@ def simulate_game(
 ) -> GameSimulationResult:
     assert (
         len(set(first_pone_dealt_cards + first_pone_kept_cards)) <= DEALT_CARDS_LEN
-    ), f"No more than {DEALT_CARDS_LEN} specified first pone dealt or kept cards expected but {len(set(first_pone_dealt_cards + first_pone_kept_cards))} ({Hand(set(first_pone_dealt_cards + first_pone_kept_cards))}) specified"
+    ), (
+        f"No more than {DEALT_CARDS_LEN} specified first pone dealt or kept cards"
+        f" expected but {len(set(first_pone_dealt_cards + first_pone_kept_cards))}"
+        f" ({Hand(set(first_pone_dealt_cards + first_pone_kept_cards))}) specified"
+    )
     assert (
         len(set(first_dealer_dealt_cards + first_dealer_kept_cards)) <= DEALT_CARDS_LEN
-    ), f"No more than {DEALT_CARDS_LEN} specified first dealer dealt or kept cards expected but {len(set(first_dealer_dealt_cards + first_dealer_kept_cards))} ({Hand(set(first_dealer_dealt_cards + first_dealer_kept_cards))}) specified"
+    ), (
+        f"No more than {DEALT_CARDS_LEN} specified first dealer dealt or kept cards"
+        f" expected but {len(set(first_dealer_dealt_cards + first_dealer_kept_cards))}"
+        f" ({Hand(set(first_dealer_dealt_cards + first_dealer_kept_cards))}) specified"
+    )
 
     first_kept_pone_hand: List[Card] = []
     first_kept_dealer_hand: List[Card] = []
@@ -744,9 +752,10 @@ def simulate_game(
                     else first_dealer_kept_cards
                 )
             )
-            assert (
-                len(pone_dealt_or_kept_cards) <= DEALT_CARDS_LEN
-            ), f"No more than {DEALT_CARDS_LEN} specified dealt or kept pone cards expected but {len(pone_dealt_or_kept_cards)} specified"
+            assert len(pone_dealt_or_kept_cards) <= DEALT_CARDS_LEN, (
+                f"No more than {DEALT_CARDS_LEN} specified dealt or kept pone cards "
+                f"expected but {len(pone_dealt_or_kept_cards)} specified"
+            )
 
             dealer_dealt_or_kept_cards = set(
                 (
@@ -760,9 +769,10 @@ def simulate_game(
                     else first_pone_kept_cards
                 )
             )
-            assert (
-                len(dealer_dealt_or_kept_cards) <= DEALT_CARDS_LEN
-            ), f"No more than {DEALT_CARDS_LEN} specified dealt or kept dealer cards expected but {len(dealer_dealt_or_kept_cards)} specified"
+            assert len(dealer_dealt_or_kept_cards) <= DEALT_CARDS_LEN, (
+                f"No more than {DEALT_CARDS_LEN} specified dealt or kept dealer cards "
+                f"expected but {len(dealer_dealt_or_kept_cards)} specified"
+            )
 
             random_hand_cards = random.sample(
                 deck_less_fixed_cards,
@@ -795,21 +805,26 @@ def simulate_game(
         assert (
             len(dealt_hands[0]) == DEALT_CARDS_LEN
             and len(dealt_hands[1]) == DEALT_CARDS_LEN
-        ), f"{DEALT_CARDS_LEN} dealt cards expected in each hand but {len(dealt_hands[0])} and {len(dealt_hands[1])} actually dealt"
+        ), (
+            f"{DEALT_CARDS_LEN} dealt cards expected in each hand but"
+            f" {len(dealt_hands[0])} and {len(dealt_hands[1])} actually dealt"
+        )
 
         show_pone_hand: bool = (
             hand_pone_is_this_simulation_first_pone and not hide_first_pone_hands
         ) or (hand_pone_is_this_simulation_first_dealer and not hide_first_dealer_hands)
         if show_pone_hand:
             print(
-                f"{get_player_name(0):6} dealt     {Hand(dealt_hands[0])} (sorted: {Hand(sorted(dealt_hands[0], reverse=True))})"
+                f"{get_player_name(0):6} dealt     {Hand(dealt_hands[0])}"
+                f" (sorted: {Hand(sorted(dealt_hands[0], reverse=True))})"
             )
         show_dealer_hand: bool = (
             hand_dealer_is_this_simulation_first_dealer and not hide_first_dealer_hands
         ) or (hand_dealer_is_this_simulation_first_pone and not hide_first_pone_hands)
         if show_dealer_hand:
             print(
-                f"{get_player_name(1):6} dealt     {Hand(dealt_hands[1])} (sorted: {Hand(sorted(dealt_hands[1], reverse=True))})"
+                f"{get_player_name(1):6} dealt     {Hand(dealt_hands[1])}"
+                f" (sorted: {Hand(sorted(dealt_hands[1], reverse=True))})"
             )
         deck_less_dealt_cards = list(
             set(deck_less_fixed_cards).difference(set(random_hand_cards))
@@ -833,7 +848,8 @@ def simulate_game(
                 kept_pone_hand = first_pone_select_kept_cards(dealt_hands[0])
                 if not hide_first_pone_hands:
                     print(
-                        f"{get_player_name(0):6} keeps {Hand(kept_pone_hand)} (sorted: {Hand(sorted(kept_pone_hand, reverse=True))})"
+                        f"{get_player_name(0):6} keeps {Hand(kept_pone_hand)}"
+                        f" (sorted: {Hand(sorted(kept_pone_hand, reverse=True))})"
                     )
                 if not all(
                     pone_kept_card in kept_pone_hand
@@ -841,7 +857,9 @@ def simulate_game(
                 ):
                     if not hide_first_pone_hands:
                         print(
-                            f"...but then {Hand(set(pone_kept_cards).difference(kept_pone_hand))} would not be kept by pone"
+                            "...but then"
+                            f" {Hand(set(pone_kept_cards).difference(kept_pone_hand))}"
+                            " would not be kept by pone"
                         )
                     not_all_kept_cards_in_kept_hand = True
                     break
@@ -906,7 +924,8 @@ def simulate_game(
                     )
                     if set(kept_pone_hand) != set(static_strategy_pone_kept_cards):
                         print(
-                            f"(Static discard coach would have kept: {Hand(sorted(static_strategy_pone_kept_cards, reverse=True))})"
+                            f"(Static discard coach would have kept:"
+                            f" {Hand(sorted(static_strategy_pone_kept_cards, reverse=True))})"
                         )
                     else:
                         print(
@@ -953,7 +972,12 @@ def simulate_game(
                     ) == set(dynamic_strategy_pone_kept_cards)
                     if set(kept_pone_hand) != set(dynamic_strategy_pone_kept_cards):
                         print(
-                            f"(Dynamic discard coach {'agrees' if dynamic_and_static_pone_discard_coaches_agree else 'disagrees'} with static discard coach and {'also ' if dynamic_and_static_pone_discard_coaches_agree else ''}would have instead kept: {Hand(sorted(dynamic_strategy_pone_kept_cards, reverse=True))})"
+                            "(Dynamic discard coach "
+                            f"{'agrees' if dynamic_and_static_pone_discard_coaches_agree else 'disagrees'}"
+                            " with static discard coach and "
+                            f"{'also ' if dynamic_and_static_pone_discard_coaches_agree else ''}"
+                            "would have instead kept: "
+                            f"{Hand(sorted(dynamic_strategy_pone_kept_cards, reverse=True))})"
                         )
                     else:
                         print(
@@ -989,7 +1013,8 @@ def simulate_game(
                 kept_dealer_hand = first_dealer_select_kept_cards(dealt_hands[1])
                 if not hide_first_dealer_hands:
                     print(
-                        f"{get_player_name(1):6} would keep {Hand(kept_dealer_hand)} (sorted: {Hand(sorted(kept_dealer_hand, reverse=True))})"
+                        f"{get_player_name(1):6} would keep {Hand(kept_dealer_hand)}"
+                        f" (sorted: {Hand(sorted(kept_dealer_hand, reverse=True))})"
                     )
                 if not all(
                     dealer_kept_card in kept_dealer_hand
@@ -997,7 +1022,9 @@ def simulate_game(
                 ):
                     if not hide_first_dealer_hands:
                         print(
-                            f"...but then {Hand(set(dealer_kept_cards).difference(kept_dealer_hand))} would not be kept by dealer"
+                            "...but then"
+                            f" {Hand(set(dealer_kept_cards).difference(kept_dealer_hand))} "
+                            "would not be kept by dealer"
                         )
                     not_all_kept_cards_in_kept_hand = True
                     break
@@ -1062,7 +1089,8 @@ def simulate_game(
                     )
                     if set(kept_dealer_hand) != set(static_strategy_dealer_kept_cards):
                         print(
-                            f"(Static discard coach would have instead kept: {Hand(sorted(static_strategy_dealer_kept_cards, reverse=True))}.)"
+                            "(Static discard coach would have instead kept: "
+                            f"{Hand(sorted(static_strategy_dealer_kept_cards, reverse=True))}.)"
                         )
                     else:
                         print(
@@ -1105,7 +1133,12 @@ def simulate_game(
                     ) == set(dynamic_strategy_dealer_kept_cards)
                     if set(kept_dealer_hand) != set(dynamic_strategy_dealer_kept_cards):
                         print(
-                            f"(Dynamic discard coach {'agrees' if dynamic_and_static_discard_coaches_agree else 'disagrees'} with static discard coach and {'also ' if dynamic_and_static_discard_coaches_agree else ''}would have instead kept: {Hand(sorted(dynamic_strategy_dealer_kept_cards, reverse=True))}.)"
+                            "(Dynamic discard coach "
+                            f"{'agrees' if dynamic_and_static_discard_coaches_agree else 'disagrees'}"
+                            " with static discard coach and "
+                            f"{'also ' if dynamic_and_static_discard_coaches_agree else ''}"
+                            "would have instead kept: "
+                            f"{Hand(sorted(dynamic_strategy_dealer_kept_cards, reverse=True))}.)"
                         )
                     else:
                         print(
@@ -1135,7 +1168,8 @@ def simulate_game(
         ]
         if show_pone_hand:
             print(
-                f"{get_player_name(0):6} discarded {Hand(pone_discarded_cards)} (sorted: {Hand(sorted(pone_discarded_cards, reverse=True))})"
+                f"{get_player_name(0):6} discarded {Hand(pone_discarded_cards)}"
+                f" (sorted: {Hand(sorted(pone_discarded_cards, reverse=True))})"
             )
 
         dealer_discarded_cards = [
@@ -1143,7 +1177,8 @@ def simulate_game(
         ]
         if show_dealer_hand:
             print(
-                f"{get_player_name(1):6} discarded {Hand(dealer_discarded_cards)} (sorted: {Hand(sorted(dealer_discarded_cards, reverse=True))})"
+                f"{get_player_name(1):6} discarded {Hand(dealer_discarded_cards)}"
+                f" (sorted: {Hand(sorted(dealer_discarded_cards, reverse=True))})"
             )
 
         if len(hands[0]) > KEPT_CARDS_LEN or len(hands[1]) > KEPT_CARDS_LEN:
@@ -1153,11 +1188,13 @@ def simulate_game(
 
         if show_pone_hand:
             print(
-                f"{get_player_name(0):6} kept      {Hand(hands[0])} (sorted: {Hand(sorted(hands[0], reverse=True))})"
+                f"{get_player_name(0):6} kept      {Hand(hands[0])}"
+                f" (sorted: {Hand(sorted(hands[0], reverse=True))})"
             )
         if show_dealer_hand:
             print(
-                f"{get_player_name(1):6} kept      {Hand(hands[1])} (sorted: {Hand(sorted(hands[1], reverse=True))})"
+                f"{get_player_name(1):6} kept      {Hand(hands[1])}"
+                f" (sorted: {Hand(sorted(hands[1], reverse=True))})"
             )
 
         starter = (
@@ -4070,5 +4107,7 @@ if __name__ == "__main__":
             sys.exit(0)
 
     print(
-        f"Simulated {get_length_across_all_keys(main_players_statistics)} games with {args.process_count} worker processes at {simulation_performance_statistics(main_start_time_ns, game_count)}"
+        f"Simulated {get_length_across_all_keys(main_players_statistics)} games with"
+        f" {args.process_count} worker processes at"
+        f" {simulation_performance_statistics(main_start_time_ns, game_count)}"
     )
