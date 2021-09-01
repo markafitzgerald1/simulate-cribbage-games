@@ -10,7 +10,6 @@ from multiprocessing import Process, Manager, Lock
 import math
 import argparse
 import os
-from runstats import Statistics  # type: ignore
 from statistics import NormalDist
 import itertools
 from functools import cache
@@ -29,8 +28,9 @@ from typing import (
     Set,
 )
 from enum import Enum
-from diskcache import Cache  # type: ignore
 import shelve
+from runstats import Statistics  # type: ignore
+from diskcache import Cache  # type: ignore
 
 
 MAX_CARD_COUNTING_VALUE = 10
