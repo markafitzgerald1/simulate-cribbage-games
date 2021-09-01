@@ -322,7 +322,10 @@ def get_confidence_interval(statistics, confidence_level, precision=5):
     if len(statistics) == 1:
         return f"{statistics.mean():+{precision + 5}.{precision}f}"
 
-    return f"{statistics.mean():+{precision + 5}.{precision}f} ± {get_z_statistic(confidence_level) * get_stddev_of_mean(statistics):{precision + 3}.{precision}f}"
+    return (
+        f"{statistics.mean():+{precision + 5}.{precision}f} ± "
+        f"{get_z_statistic(confidence_level) * get_stddev_of_mean(statistics):{precision + 3}.{precision}f}"
+    )
 
 
 GamePoints = NewType("GamePoints", int)
@@ -474,7 +477,12 @@ class GameScore(NamedTuple):
         return f"{self.pone_total}-{self.dealer_total}"
 
     def __repr__(self) -> str:
-        return f"GameScore({self.first_pone_initial}, {self.first_pone_play}, {self.first_pone_hand}, {self.first_pone_crib}, {self.first_dealer_initial}, {self.first_dealer_play}, {self.first_dealer_hand}, {self.first_dealer_crib})"
+        return (
+            f"GameScore({self.first_pone_initial}, {self.first_pone_play},"
+            f" {self.first_pone_hand}, {self.first_pone_crib},"
+            f" {self.first_dealer_initial}, {self.first_dealer_play},"
+            f" {self.first_dealer_hand}, {self.first_dealer_crib})"
+        )
 
 
 class GamePlayer(Enum):
@@ -627,10 +635,16 @@ class StartOfHandScore(NamedTuple):
     dealer_is_first_pone: bool
 
     def __repr__(self) -> str:
-        return f"StartOfHandScore({self.first_pone_points}, {self.first_dealer_points}, {self.dealer_is_first_pone})"
+        return (
+            f"StartOfHandScore({self.first_pone_points}, {self.first_dealer_points},"
+            f" {self.dealer_is_first_pone})"
+        )
 
     def __str__(self) -> str:
-        return f"{self.first_pone_points}{'[D]' if self.dealer_is_first_pone else ''}-{self.first_dealer_points}{'' if self.dealer_is_first_pone else '[D]'}"
+        return (
+            f"{self.first_pone_points}{'[D]' if self.dealer_is_first_pone else ''}"
+            f"-{self.first_dealer_points}{'' if self.dealer_is_first_pone else '[D]'}"
+        )
 
 
 def simulate_game(
