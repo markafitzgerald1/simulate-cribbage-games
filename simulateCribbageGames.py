@@ -29,7 +29,6 @@ from typing import (
     Set,
 )
 from enum import Enum
-from math import comb, hypot
 from diskcache import Cache  # type: ignore
 import shelve
 
@@ -1601,7 +1600,7 @@ def get_mean_difference_in_stddevs(statistics1, statistics2):
         return math.inf
 
     mean_difference = abs(statistics1.mean() - statistics2.mean())
-    mean_difference_stddev = hypot(
+    mean_difference_stddev = math.hypot(
         get_stddev_of_mean(statistics1),
         get_stddev_of_mean(statistics2),
     )
@@ -3327,7 +3326,9 @@ def simulation_performance_statistics(start_time_ns, games_simulated):
     return f"{games_simulated / (elapsed_time_ns / ns_per_s):.3f} games/s ({elapsed_time_ns / games_simulated:.0f} ns/game) in {elapsed_time_ns / ns_per_s} s"
 
 
-POSSIBLE_DISCARD_COUNT: int = comb(DEALT_CARDS_LEN, DEALT_CARDS_LEN - KEPT_CARDS_LEN)
+POSSIBLE_DISCARD_COUNT: int = math.comb(
+    DEALT_CARDS_LEN, DEALT_CARDS_LEN - KEPT_CARDS_LEN
+)
 
 
 def player_select_kept_cards_based_on_simulation(
