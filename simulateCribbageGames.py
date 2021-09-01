@@ -3794,10 +3794,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     [
-        first_pone_dealt_cards,
-        first_dealer_dealt_cards,
-        first_pone_kept_cards,
-        first_dealer_kept_cards,
+        args_first_pone_dealt_cards,
+        args_first_dealer_dealt_cards,
+        args_first_pone_kept_cards,
+        args_first_dealer_kept_cards,
     ] = [
         parse_cards(specifier)
         for specifier in [
@@ -3807,27 +3807,27 @@ if __name__ == "__main__":
             args.first_dealer_kept_cards,
         ]
     ]
-    initial_starter: Optional[Card] = (
+    args_initial_starter: Optional[Card] = (
         Card.from_string(args.initial_starter) if args.initial_starter else None
     )
-    initial_play_actions: List[PlayAction] = parse_play_actions(
+    args_initial_play_actions: List[PlayAction] = parse_play_actions(
         args.initial_play_actions
     )
 
-    manager = Manager()
-    players_statistics: Dict[NextAction, Statistics] = manager.dict()
-    players_statistics_lock = Lock()
+    main_manager = Manager()
+    main_players_statistics: Dict[NextAction, Statistics] = main_manager.dict()
+    main_players_statistics_lock = Lock()
     game_count = (
         sys.maxsize
         if args.infinite_game_count
         else (math.ceil(args.game_count / args.process_count) * args.process_count)
     )
-    maximum_hands_per_game = (
+    args_maximum_hands_per_game = (
         sys.maxsize if args.unlimited_hands_per_game else args.maximum_hands_per_game
     )
     if not args.hide_workers_start_message:
         print(
-            f"Simulating {game_count if game_count != sys.maxsize else 'infinite'} games of up to {maximum_hands_per_game if maximum_hands_per_game != sys.maxsize else 'unlimited'} hands each",
+            f"Simulating {game_count if game_count != sys.maxsize else 'infinite'} games of up to {args_maximum_hands_per_game if args_maximum_hands_per_game != sys.maxsize else 'unlimited'} hands each",
             end="" if args.process_count > 1 else os.linesep,
             flush=args.process_count == 1,
         )
@@ -3840,118 +3840,124 @@ if __name__ == "__main__":
 
     # TODO: eliminate snake case to kebab case args names duplication from code
     if args.first_pone_keep_user_selected:
-        first_pone_select_kept_cards = keep_user_selected
+        args_first_pone_select_kept_cards = keep_user_selected
     elif args.first_pone_keep_random:
-        first_pone_select_kept_cards = keep_random
+        args_first_pone_select_kept_cards = keep_random
     elif args.first_pone_keep_first_four:
-        first_pone_select_kept_cards = keep_first_four
+        args_first_pone_select_kept_cards = keep_first_four
     elif args.first_pone_maximize_pre_cut_hand_points_ignoring_suit:
-        first_pone_select_kept_cards = keep_max_pre_cut_hand_points_ignoring_suit
+        args_first_pone_select_kept_cards = keep_max_pre_cut_hand_points_ignoring_suit
     elif args.first_pone_maximize_pre_cut_hand_points:
-        first_pone_select_kept_cards = keep_max_pre_cut_hand_points
+        args_first_pone_select_kept_cards = keep_max_pre_cut_hand_points
     elif args.first_pone_maximize_post_cut_hand_points_ignoring_suit:
-        first_pone_select_kept_cards = keep_max_post_cut_hand_points_ignoring_suit
+        args_first_pone_select_kept_cards = keep_max_post_cut_hand_points_ignoring_suit
     elif args.first_pone_maximize_post_cut_hand_points:
-        first_pone_select_kept_cards = keep_max_post_cut_hand_points
+        args_first_pone_select_kept_cards = keep_max_post_cut_hand_points
     elif args.first_pone_maximize_post_cut_hand_minus_crib_points_ignoring_suit:
-        first_pone_select_kept_cards = (
+        args_first_pone_select_kept_cards = (
             keep_max_post_cut_hand_minus_crib_points_ignoring_suit
         )
     elif args.first_pone_maximize_post_cut_hand_minus_crib_points:
-        first_pone_select_kept_cards = keep_max_post_cut_hand_minus_crib_points
+        args_first_pone_select_kept_cards = keep_max_post_cut_hand_minus_crib_points
     else:
-        first_pone_select_kept_cards = DEFAULT_SELECT_PONE_KEPT_CARDS
+        args_first_pone_select_kept_cards = DEFAULT_SELECT_PONE_KEPT_CARDS
 
     if args.first_dealer_keep_user_selected:
-        first_dealer_select_kept_cards = keep_user_selected
+        args_first_dealer_select_kept_cards = keep_user_selected
     elif args.first_dealer_keep_random:
-        first_dealer_select_kept_cards = keep_random
+        args_first_dealer_select_kept_cards = keep_random
     elif args.first_dealer_keep_first_four:
-        first_dealer_select_kept_cards = keep_first_four
+        args_first_dealer_select_kept_cards = keep_first_four
     elif args.first_dealer_maximize_pre_cut_hand_points_ignoring_suit:
-        first_dealer_select_kept_cards = keep_max_pre_cut_hand_points_ignoring_suit
+        args_first_dealer_select_kept_cards = keep_max_pre_cut_hand_points_ignoring_suit
     elif args.first_dealer_maximize_pre_cut_hand_points:
-        first_dealer_select_kept_cards = keep_max_pre_cut_hand_points
+        args_first_dealer_select_kept_cards = keep_max_pre_cut_hand_points
     elif args.first_dealer_maximize_post_cut_hand_points_ignoring_suit:
-        first_dealer_select_kept_cards = keep_max_post_cut_hand_points_ignoring_suit
+        args_first_dealer_select_kept_cards = (
+            keep_max_post_cut_hand_points_ignoring_suit
+        )
     elif args.first_dealer_maximize_post_cut_hand_points:
-        first_dealer_select_kept_cards = keep_max_post_cut_hand_points
+        args_first_dealer_select_kept_cards = keep_max_post_cut_hand_points
     elif args.first_dealer_maximize_post_cut_hand_plus_crib_points_ignoring_suit:
-        first_dealer_select_kept_cards = (
+        args_first_dealer_select_kept_cards = (
             keep_max_post_cut_hand_plus_crib_points_ignoring_suit
         )
     elif args.first_dealer_maximize_post_cut_hand_plus_crib_points:
-        first_dealer_select_kept_cards = keep_max_post_cut_hand_plus_crib_points
+        args_first_dealer_select_kept_cards = keep_max_post_cut_hand_plus_crib_points
     else:
-        first_dealer_select_kept_cards = DEFAULT_SELECT_DEALER_KEPT_CARDS
+        args_first_dealer_select_kept_cards = DEFAULT_SELECT_DEALER_KEPT_CARDS
 
-    first_pone_select_play: PlaySelector
+    args_first_pone_select_play: PlaySelector
     if args.first_pone_play_user_entered:
-        first_pone_select_play = play_user_selected
+        args_first_pone_select_play = play_user_selected
     elif args.first_pone_play_first:
-        first_pone_select_play = play_first
+        args_first_pone_select_play = play_first
     elif args.first_pone_play_random:
-        first_pone_select_play = play_random
+        args_first_pone_select_play = play_random
     elif args.first_pone_play_highest_count:
-        first_pone_select_play = play_highest_count
+        args_first_pone_select_play = play_highest_count
     elif args.first_pone_play_15_or_31_else_highest_count:
-        first_pone_select_play = play_15_or_31_else_highest_count
+        args_first_pone_select_play = play_15_or_31_else_highest_count
     elif args.first_pone_play_pair_else_15_or_31_else_highest_count:
-        first_pone_select_play = play_pair_else_15_or_31_else_highest_count
+        args_first_pone_select_play = play_pair_else_15_or_31_else_highest_count
     elif args.first_pone_play_15_else_pair_else_31_else_highest_count:
-        first_pone_select_play = play_15_else_pair_else_31_else_highest_count
+        args_first_pone_select_play = play_15_else_pair_else_31_else_highest_count
     elif args.first_pone_play_run_else_15_else_pair_else_31_else_highest_count:
-        first_pone_select_play = play_run_else_15_else_pair_else_31_else_highest_count
+        args_first_pone_select_play = (
+            play_run_else_15_else_pair_else_31_else_highest_count
+        )
     elif (
         args.first_pone_play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count
     ):
-        first_pone_select_play = (
+        args_first_pone_select_play = (
             play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count
         )
     elif (
         args.first_pone_play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     ):
-        first_pone_select_play = play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+        args_first_pone_select_play = play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     elif (
         args.first_pone_play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     ):
-        first_pone_select_play = play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+        args_first_pone_select_play = play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     else:
-        first_pone_select_play = DEFAULT_SELECT_PLAY
+        args_first_pone_select_play = DEFAULT_SELECT_PLAY
 
     dealer_play_selector: PlaySelector
     if args.first_dealer_play_user_entered:
-        first_dealer_select_play = play_user_selected
+        args_first_dealer_select_play = play_user_selected
     elif args.first_dealer_play_first:
-        first_dealer_select_play = play_first
+        args_first_dealer_select_play = play_first
     elif args.first_dealer_play_random:
-        first_dealer_select_play = play_random
+        args_first_dealer_select_play = play_random
     elif args.first_dealer_play_highest_count:
-        first_dealer_select_play = play_highest_count
+        args_first_dealer_select_play = play_highest_count
     elif args.first_dealer_play_15_or_31_else_highest_count:
-        first_dealer_select_play = play_15_or_31_else_highest_count
+        args_first_dealer_select_play = play_15_or_31_else_highest_count
     elif args.first_dealer_play_pair_else_15_or_31_else_highest_count:
-        first_dealer_select_play = play_pair_else_15_or_31_else_highest_count
+        args_first_dealer_select_play = play_pair_else_15_or_31_else_highest_count
     elif args.first_dealer_play_15_else_pair_else_31_else_highest_count:
-        first_dealer_select_play = play_15_else_pair_else_31_else_highest_count
+        args_first_dealer_select_play = play_15_else_pair_else_31_else_highest_count
     elif args.first_dealer_play_run_else_15_else_pair_else_31_else_highest_count:
-        first_dealer_select_play = play_run_else_15_else_pair_else_31_else_highest_count
+        args_first_dealer_select_play = (
+            play_run_else_15_else_pair_else_31_else_highest_count
+        )
     elif (
         args.first_dealer_play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count
     ):
-        first_dealer_select_play = (
+        args_first_dealer_select_play = (
             play_low_lead_else_run_else_15_else_pair_else_31_else_highest_count
         )
     elif (
         args.first_dealer_play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     ):
-        first_dealer_select_play = play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+        args_first_dealer_select_play = play_low_lead_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     elif (
         args.first_dealer_play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     ):
-        first_dealer_select_play = play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
+        args_first_dealer_select_play = play_low_lead_else_pairs_royale_else_run_else_15_else_pair_else_31_else_16_to_20_count_else_highest_count
     else:
-        first_dealer_select_play = DEFAULT_SELECT_PLAY
+        args_first_dealer_select_play = DEFAULT_SELECT_PLAY
 
     initial_pone_score = Points(
         int(args.initial_pone_score) if args.initial_pone_score else 0
@@ -3960,71 +3966,71 @@ if __name__ == "__main__":
         int(args.initial_dealer_score) if args.initial_dealer_score else 0
     )
 
-    tally_start_of_hand_position_results: bool = (
+    args_tally_start_of_hand_position_results: bool = (
         args.tally_start_of_hand_position_results
         and args.process_count == 1
-        and not first_pone_dealt_cards
-        and not first_dealer_dealt_cards
-        and not first_pone_kept_cards
-        and not first_dealer_kept_cards
-        and not initial_starter
-        and not initial_play_actions
-        and first_pone_select_kept_cards == DEFAULT_SELECT_PONE_KEPT_CARDS
-        and first_dealer_select_kept_cards == DEFAULT_SELECT_DEALER_KEPT_CARDS
-        and first_pone_select_play == DEFAULT_SELECT_PLAY
-        and first_dealer_select_play == DEFAULT_SELECT_PLAY
+        and not args_first_pone_dealt_cards
+        and not args_first_dealer_dealt_cards
+        and not args_first_pone_kept_cards
+        and not args_first_dealer_kept_cards
+        and not args_initial_starter
+        and not args_initial_play_actions
+        and args_first_pone_select_kept_cards == DEFAULT_SELECT_PONE_KEPT_CARDS
+        and args_first_dealer_select_kept_cards == DEFAULT_SELECT_DEALER_KEPT_CARDS
+        and args_first_pone_select_play == DEFAULT_SELECT_PLAY
+        and args_first_dealer_select_play == DEFAULT_SELECT_PLAY
         and initial_pone_score == 0
         and initial_dealer_score == 0
         and not args.first_pone_select_each_possible_kept_hand
         and not args.first_dealer_select_each_possible_kept_hand
         and not args.select_each_post_initial_play
     )
-    start_of_hand_position_results_tallies: shelve.DbfilenameShelf
+    args_start_of_hand_position_results_tallies: shelve.DbfilenameShelf
     start_of_hand_position_results_tallies_shelf_name: str = (
         "start_of_hand_position_results_tallies_shelf"
     )
     try:
-        start_of_hand_position_results_tallies = shelve.open(
+        args_start_of_hand_position_results_tallies = shelve.open(
             start_of_hand_position_results_tallies_shelf_name,
-            flag=("c" if tally_start_of_hand_position_results else "r"),
+            flag=("c" if args_tally_start_of_hand_position_results else "r"),
         )
     except Exception:
-        start_of_hand_position_results_tallies = shelve.open(
+        args_start_of_hand_position_results_tallies = shelve.open(
             start_of_hand_position_results_tallies_shelf_name
         )
 
-    start_time_ns = time.time_ns()
+    main_start_time_ns = time.time_ns()
     simulate_games_args = (
         game_count // args.process_count,
         game_count,
-        maximum_hands_per_game,
+        args_maximum_hands_per_game,
         initial_pone_score,
         initial_dealer_score,
-        first_pone_dealt_cards,
-        first_dealer_dealt_cards,
-        first_pone_kept_cards,
-        first_dealer_kept_cards,
-        initial_starter,
-        initial_play_actions,
-        players_statistics,
-        players_statistics_lock,
-        first_pone_select_kept_cards,
+        args_first_pone_dealt_cards,
+        args_first_dealer_dealt_cards,
+        args_first_pone_kept_cards,
+        args_first_dealer_kept_cards,
+        args_initial_starter,
+        args_initial_play_actions,
+        main_players_statistics,
+        main_players_statistics_lock,
+        args_first_pone_select_kept_cards,
         args.first_pone_discard_based_on_simulations,
         args.first_pone_select_each_possible_kept_hand,
-        first_dealer_select_kept_cards,
+        args_first_dealer_select_kept_cards,
         args.first_dealer_discard_based_on_simulations,
         args.first_dealer_select_each_possible_kept_hand,
-        first_pone_select_play,
+        args_first_pone_select_play,
         args.first_pone_play_based_on_simulations,
-        first_dealer_select_play,
+        args_first_dealer_select_play,
         args.first_dealer_play_based_on_simulations,
         args.coach_discard_simulated_hand_count,
         args.coach_play_simulated_hand_count,
-        tally_start_of_hand_position_results,
+        args_tally_start_of_hand_position_results,
         args.estimate_first_pone_incomplete_game_wins_and_game_points,
         args.estimate_first_dealer_incomplete_game_wins_and_game_points,
         True,
-        start_of_hand_position_results_tallies,
+        args_start_of_hand_position_results_tallies,
         args.select_each_post_initial_play,
         args.hide_first_pone_hands,
         args.hide_first_dealer_hands,
@@ -4032,7 +4038,7 @@ if __name__ == "__main__":
         args.games_per_update,
         True,
         args.confidence_level,
-        start_time_ns,
+        main_start_time_ns,
         args.show_calc_cache_usage_stats,
     )
     if args.process_count == 1:
@@ -4051,5 +4057,5 @@ if __name__ == "__main__":
             sys.exit(0)
 
     print(
-        f"Simulated {get_length_across_all_keys(players_statistics)} games with {args.process_count} worker processes at {simulation_performance_statistics(start_time_ns, game_count)}"
+        f"Simulated {get_length_across_all_keys(main_players_statistics)} games with {args.process_count} worker processes at {simulation_performance_statistics(main_start_time_ns, game_count)}"
     )
