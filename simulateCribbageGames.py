@@ -2926,6 +2926,7 @@ def play_first(
     current_play_count: PlayCount,
     current_play_to_31_cards: Sequence[Card],
 ) -> PlayableCardIndex:
+    del playable_cards, current_play_count, current_play_to_31_cards  # unused
     return PlayableCardIndex(0)
 
 
@@ -2934,6 +2935,7 @@ def play_random(
     current_play_count: PlayCount,
     current_play_to_31_cards: Sequence[Card],
 ) -> PlayableCardIndex:
+    del current_play_count, current_play_to_31_cards  # unused
     return PlayableCardIndex(random.randrange(0, len(playable_cards)))
 
 
@@ -2942,6 +2944,7 @@ def play_highest_count(
     current_play_count: PlayCount,
     current_play_to_31_cards: Sequence[Card],
 ) -> PlayableCardIndex:
+    del current_play_count, current_play_to_31_cards  # unused
     play_card = None
     play_index = None
     for index, card in enumerate(playable_cards):
@@ -3302,6 +3305,7 @@ def play_based_on_simulation(
             keep,
             post_initial,
         ), post_initial_stats in sorted_simulated_players_statistics:
+            del keep  # unused
             print(
                 f"{post_initial} first play: {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_game_points'], CONFIDENCE_LEVEL, precision = 3)} game points; {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_play'], CONFIDENCE_LEVEL, precision = 3)} Δ-peg + {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_hand'], CONFIDENCE_LEVEL, precision = 3)} Δ-hand + {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_crib'], CONFIDENCE_LEVEL, precision = 3)} crib = {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_total_points'], CONFIDENCE_LEVEL, precision = 3)} overall"
             )
@@ -3314,6 +3318,7 @@ def play_user_selected(
     current_play_count: PlayCount,
     current_play_to_31_cards: Sequence[Card],
 ) -> PlayableCardIndex:
+    del current_play_count, current_play_to_31_cards  # unused
     selected_card: Optional[Card] = None
     while not selected_card or selected_card not in playable_cards:
         selected_card_input: str = input(
@@ -3431,6 +3436,7 @@ def player_select_kept_cards_based_on_simulation(
             keep,
             post_initial,
         ), keep_stats in sorted_simulated_players_statistics:
+            del post_initial  # unused
             print(
                 f"{Hand(sorted(keep, reverse=True))} - {Hand(sorted(set(dealt_hand) - set(keep), reverse=True))}: {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_game_points'], CONFIDENCE_LEVEL, precision = 3)} game points; {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_play'], CONFIDENCE_LEVEL, precision = 3)} Δ-peg + {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_hand'], CONFIDENCE_LEVEL, precision = 3)} Δ-hand + {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_crib'], CONFIDENCE_LEVEL, precision = 3)} crib = {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_total_points'], CONFIDENCE_LEVEL, precision = 3)} overall"
             )
