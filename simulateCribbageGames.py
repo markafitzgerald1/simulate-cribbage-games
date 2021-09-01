@@ -1344,7 +1344,8 @@ def simulate_game(
                         ]
                         if player_to_play_play != static_strategy_player_to_play_play:
                             print(
-                                f"(Static play coach would have instead played: {static_strategy_player_to_play_play}.)"
+                                "(Static play coach would have instead played:"
+                                f" {static_strategy_player_to_play_play}.)"
                             )
                         else:
                             print(
@@ -1397,7 +1398,12 @@ def simulate_game(
                         )
                         if player_to_play_play != dynamic_strategy_player_to_play_play:
                             print(
-                                f"(Dynamic play coach {'agrees' if dynamic_and_static_play_coaches_agree else 'disagrees'} with static play coach and {'also ' if dynamic_and_static_play_coaches_agree else ''}would have instead played: {dynamic_strategy_player_to_play_play}.)"
+                                "(Dynamic play coach"
+                                f" {'agrees' if dynamic_and_static_play_coaches_agree else 'disagrees'}"
+                                " with static play coach and"
+                                f" {'also ' if dynamic_and_static_play_coaches_agree else ''}"
+                                "would have instead played:"
+                                f" {dynamic_strategy_player_to_play_play}.)"
                             )
                         else:
                             print(
@@ -1410,7 +1416,8 @@ def simulate_game(
                 play_count += player_to_play_play.count
                 if not hide_play_actions:
                     print(
-                        f"{get_player_name(player_to_play):6} plays {player_to_play_play} for {play_count} ({';'.join([str(Hand(p)) for p in plays_to_31])})"
+                        f"{get_player_name(player_to_play):6} plays {player_to_play_play} for"
+                        f" {play_count} ({';'.join([str(Hand(p)) for p in plays_to_31])})"
                     )
                 hands[player_to_play].remove(player_to_play_play)
 
@@ -1426,7 +1433,8 @@ def simulate_game(
                         )
                         if not hide_play_actions:
                             print(
-                                f"!Double pairs royale for {DOUBLE_PAIRS_ROYALE_POINTS} points for {get_player_name(player_to_play)}. [{game_score}]"
+                                f"!Double pairs royale for {DOUBLE_PAIRS_ROYALE_POINTS} points"
+                                f" for {get_player_name(player_to_play)}. [{game_score}]"
                             )
                         if game_over(game_score):
                             break
@@ -1439,7 +1447,8 @@ def simulate_game(
                         )
                         if not hide_play_actions:
                             print(
-                                f"!Pairs royale for {PAIRS_ROYALE_POINTS} points for {get_player_name(player_to_play)}. [{game_score}]"
+                                f"!Pairs royale for {PAIRS_ROYALE_POINTS} points for"
+                                f" {get_player_name(player_to_play)}. [{game_score}]"
                             )
                         if game_over(game_score):
                             break
@@ -1452,7 +1461,8 @@ def simulate_game(
                         )
                         if not hide_play_actions:
                             print(
-                                f"!Pair for {PAIR_POINTS} points for {get_player_name(player_to_play)}. [{game_score}]"
+                                f"!Pair for {PAIR_POINTS} points for"
+                                f" {get_player_name(player_to_play)}. [{game_score}]"
                             )
                         if game_over(game_score):
                             break
@@ -1470,7 +1480,8 @@ def simulate_game(
                     )
                     if not hide_play_actions:
                         print(
-                            f"!{FIFTEEN_COUNT} for {FIFTEENS_POINTS} points for {get_player_name(player_to_play)}. [{game_score}]"
+                            f"!{FIFTEEN_COUNT} for {FIFTEENS_POINTS} points for"
+                            f" {get_player_name(player_to_play)}. [{game_score}]"
                         )
                     if game_over(game_score):
                         break
@@ -1483,7 +1494,8 @@ def simulate_game(
                     )
                     if not hide_play_actions:
                         print(
-                            f"!{THIRTY_ONE_COUNT} for {THIRTY_ONE_COUNT_POINTS} point for {get_player_name(player_to_play)}. [{game_score}]"
+                            f"!{THIRTY_ONE_COUNT} for {THIRTY_ONE_COUNT_POINTS} point for"
+                            f" {get_player_name(player_to_play)}. [{game_score}]"
                         )
                     if game_over(game_score):
                         break
