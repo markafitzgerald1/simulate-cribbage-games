@@ -684,15 +684,15 @@ def simulate_game(
     assert (
         len(set(first_pone_dealt_cards + first_pone_kept_cards)) <= DEALT_CARDS_LEN
     ), (
-        f"No more than {DEALT_CARDS_LEN} specified first pone dealt or kept cards"
-        f" expected but {len(set(first_pone_dealt_cards + first_pone_kept_cards))}"
+        f"No more than {DEALT_CARDS_LEN} specified first pone dealt or kept cards expected but"
+        f" {len(set(first_pone_dealt_cards + first_pone_kept_cards))}"
         f" ({Hand(set(first_pone_dealt_cards + first_pone_kept_cards))}) specified"
     )
     assert (
         len(set(first_dealer_dealt_cards + first_dealer_kept_cards)) <= DEALT_CARDS_LEN
     ), (
-        f"No more than {DEALT_CARDS_LEN} specified first dealer dealt or kept cards"
-        f" expected but {len(set(first_dealer_dealt_cards + first_dealer_kept_cards))}"
+        f"No more than {DEALT_CARDS_LEN} specified first dealer dealt or kept cards expected but"
+        f" {len(set(first_dealer_dealt_cards + first_dealer_kept_cards))}"
         f" ({Hand(set(first_dealer_dealt_cards + first_dealer_kept_cards))}) specified"
     )
 
@@ -752,8 +752,8 @@ def simulate_game(
                 )
             )
             assert len(pone_dealt_or_kept_cards) <= DEALT_CARDS_LEN, (
-                f"No more than {DEALT_CARDS_LEN} specified dealt or kept pone cards "
-                f"expected but {len(pone_dealt_or_kept_cards)} specified"
+                f"No more than {DEALT_CARDS_LEN} specified dealt or kept pone cards expected but"
+                f" {len(pone_dealt_or_kept_cards)} specified"
             )
 
             dealer_dealt_or_kept_cards = set(
@@ -769,8 +769,8 @@ def simulate_game(
                 )
             )
             assert len(dealer_dealt_or_kept_cards) <= DEALT_CARDS_LEN, (
-                f"No more than {DEALT_CARDS_LEN} specified dealt or kept dealer cards "
-                f"expected but {len(dealer_dealt_or_kept_cards)} specified"
+                f"No more than {DEALT_CARDS_LEN} specified dealt or kept dealer cards expected but"
+                f" {len(dealer_dealt_or_kept_cards)} specified"
             )
 
             random_hand_cards = random.sample(
