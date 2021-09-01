@@ -1210,7 +1210,7 @@ def simulate_game(
                     [
                         play_action
                         for play_to_31 in plays_to_31
-                        for play_action in play_to_31
+                        for play_action in play_to_31  # pylint: disable=not-an-iterable
                     ],
                     player_to_play,
                     hand_pone_is_this_simulation_first_pone,
@@ -1306,7 +1306,7 @@ def simulate_game(
                             [
                                 play_action
                                 for play_to_31 in plays_to_31
-                                for play_action in play_to_31
+                                for play_action in play_to_31  # pylint: disable=not-an-iterable
                             ],
                             player_to_play,
                             hand_pone_is_this_simulation_first_pone,
@@ -1344,7 +1344,7 @@ def simulate_game(
                                 "(Dynamic play coach would have played the same card as user did.)"
                             )
 
-            plays_to_31[-1].append(player_to_play_play)
+            plays_to_31[-1].append(player_to_play_play)  # pylint: disable=no-member
 
             if isinstance(player_to_play_play, Card):
                 play_count += player_to_play_play.count
