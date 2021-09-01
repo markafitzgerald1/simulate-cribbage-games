@@ -479,9 +479,8 @@ class GameScore(NamedTuple):
     def __repr__(self) -> str:
         return (
             f"GameScore({self.first_pone_initial}, {self.first_pone_play},"
-            f" {self.first_pone_hand}, {self.first_pone_crib},"
-            f" {self.first_dealer_initial}, {self.first_dealer_play},"
-            f" {self.first_dealer_hand}, {self.first_dealer_crib})"
+            f" {self.first_pone_hand}, {self.first_pone_crib}, {self.first_dealer_initial},"
+            f" {self.first_dealer_play}, {self.first_dealer_hand}, {self.first_dealer_crib})"
         )
 
 
