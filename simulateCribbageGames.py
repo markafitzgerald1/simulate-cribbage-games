@@ -3993,19 +3993,10 @@ if __name__ == "__main__":
         and not args.first_dealer_select_each_possible_kept_hand
         and not args.select_each_post_initial_play
     )
-    args_start_of_hand_position_results_tallies: shelve.DbfilenameShelf
-    start_of_hand_position_results_tallies_shelf_name: str = (
-        "start_of_hand_position_results_tallies_shelf"
+    args_start_of_hand_position_results_tallies: shelve.DbfilenameShelf = shelve.open(
+        "start_of_hand_position_results_tallies_shelf",
+        flag=("c" if args_tally_start_of_hand_position_results else "r"),
     )
-    try:
-        args_start_of_hand_position_results_tallies = shelve.open(
-            start_of_hand_position_results_tallies_shelf_name,
-            flag=("c" if args_tally_start_of_hand_position_results else "r"),
-        )
-    except Exception:
-        args_start_of_hand_position_results_tallies = shelve.open(
-            start_of_hand_position_results_tallies_shelf_name
-        )
 
     main_start_time_ns = time.time_ns()
     simulate_games_args = (
