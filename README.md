@@ -7,7 +7,6 @@ Simulate and analyze the play of hands and games of cribbage between two opponen
 ### Common
 
 - Install [PMD](https://pmd.github.io/) 6.38.0.
-- Check for excessive code duplication: `npm run cpd`.
 
 ### Python simulator
 
@@ -24,7 +23,7 @@ Simulate and analyze the play of hands and games of cribbage between two opponen
 
 #### Simulator
 
-- Generate CSS module type declarations, lint, build, test, ensure no test coverage regressions and ensure no excessive code duplication: `npm run clean && npm run tcm-build && npm run lint-typescript && npm run tsc-build && npm run coverage && npm run cpd`
+- Generate CSS module type declarations, lint, build, test, ensure no test coverage regressions and ensure no excessive code duplication: `npm run clean && npm run tcm-build && npm run eslint && npm run tsc-build && npm run coverage && npm run cpd`
 - Simulate 1 hand from deal to end of play: `npm run simulate`
 - Simulate 100,000 hands, each from deal to end of play: `npm run simulate -- --hand-count 100000`
 

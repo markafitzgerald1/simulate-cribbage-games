@@ -48,12 +48,8 @@
     "tsc-clean": "rm -f src/*.js src/cribbage/*.js src/components/*.js test/*.js",
     "clean": "rm -rf src/*.module.css.d.ts src/*/*.module.css.d.ts .parcel-cache/ dist/ index.html index.*.js index.*.js.map index.*.css index.*.css.map src/*.js src/cribbage/*.js src/components/*.js",
     "simulate": "node dist/src/simulateCribbageHands.js --hide-pone-hand --hide-dealer-hand --hide-play-actions",
-    "cpd-typescript": "pmd cpd --language ecmascript --minimum-tokens 22 --files $(find src test -type f -name *.ts)",
-    "cpd-python": "pmd cpd --language python --minimum-tokens 59 --files *.py",
-    "cpd": "npm run cpd-python && npm run cpd-typescript",
-    "lint-typescript": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "lint-python": "pyflakes simulateCribbageGames.py && pylint simulateCribbageGames.py",
-    "lint": "npm run lint-typescript && npm run lint-python"
+    "cpd": "pmd cpd --language ecmascript --minimum-tokens 22 --files $(find src test -type f -name *.ts)",
+    "eslint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "author": "Mark Fitzgerald <mark.a.fitzgerald1@gmail.com> (https://github.com/markafitzgerald1)",
   "license": "MPL-2.0"
