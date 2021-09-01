@@ -1277,7 +1277,8 @@ def simulate_game(
                         )
                     ]
                     if (
-                        select_play == play_user_selected
+                        select_play  # pylint: disable=comparison-with-callable
+                        == play_user_selected
                         and len(legal_play_actions) > 1
                     ):
                         static_strategy_player_to_play_play = legal_play_actions[
@@ -3977,7 +3978,8 @@ if __name__ == "__main__":
         and not args_initial_play_actions
         and args_first_pone_select_kept_cards == DEFAULT_SELECT_PONE_KEPT_CARDS
         and args_first_dealer_select_kept_cards == DEFAULT_SELECT_DEALER_KEPT_CARDS
-        and args_first_pone_select_play == DEFAULT_SELECT_PLAY
+        and args_first_pone_select_play  # pylint: disable=comparison-with-callable
+        == DEFAULT_SELECT_PLAY
         and args_first_dealer_select_play == DEFAULT_SELECT_PLAY
         and initial_pone_score == 0
         and initial_dealer_score == 0
