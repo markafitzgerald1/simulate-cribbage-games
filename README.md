@@ -83,18 +83,27 @@ All of the following should exit with status code 0 and no raised exception:
 ## Current longer term product goal
 
 - Provide no install, web graphical interface, cheap to host analytical and play access to the implemented automated discard and play discard strategies so that more users can benefit from the implemented Cribbage analysis and play tools.
+- Extend the above product to 3+ player cribbage in both teamed and all individual players play configurations.
 
-## Previous, achieved long term project goal
+## Current overall engineering goal
+
+- Keeping Python linting and unit testing at least as good as those of the Node.js simulation and web UI implementations as the latter improve from a product perspective.
+
+## Previous, achieved long term product goal
 
 - Provide efficient, user-friendly discard and play analysis factoring in the expected game points differential (and play points differential if no game points differential) to end of hand(s) or game above opponent for different possible discards or plays.
   - Provide an automated opponent against which to play and practice if the above analyses are good enough to provide an opponent from which the user may directly or indirectly (via throught-provoking plays) learn.
 
-## Short to medium term and lower level project goals
+## Short to medium term and lower level product goals
 
 - Web UI/UX _and_ Node.js command-line simulation improvements:
+  - add parameterized test (e.g. `parameterized` decorator library with `unittest`?) and invalid argument tests to existing Python tests,
   - add a discard strategy which keeps the maximum possible pre-cut hand points, and
   - add a play strategy which plays to score the maximum possible play points in the immediately upcoming play action, disregarding future play actions of opponent or self.
 - Web UI/UX improvements:
+  - Use global CSS properly in CSS modules - e.g. `:global(.myclass)`?
+  - Establish a TSX UI component Jest testing pattern.
+  - Introduce Jest Snapshot tests to ensure no unexpected UI regressions.
   - Improve human player play against implemented computer discard and play strategies:
     - add cut phase (including 2 nibs points for dealer on Jack starter) to web UI and Node.js simulation (reify GameState across web UI and Node simulation here? Presence factors deal then discard then cut then play then pone count then dealer count order out of web UI and Node simulation);
     - add pone hand, dealer hand and crib counting phases (reify GameState across web UI and Node simulation here? Presence factors deal then discard then cut then play then pone count then dealer count order out of web UI and Node simulation);
@@ -135,6 +144,7 @@ All of the following should exit with status code 0 and no raised exception:
   - evaluate lead from low pair before lead from highest low card; and
   - consider dealer respond with higher card of pair adding to 11 in response to pone 10 count lead to set up more 31-2's for self - e.g. dealer play 7 from 7-4 or 8 from 8-3 in response to pone 10 count lead.
 - Improve development speed and quality:
+  - Resolve existing pylint issues; and
   - Automate execution and verification of above smoke tests.
 - Improve simulation-based discard and play strategies:
   - Implement simulation-based discard and play where immediate opponent reponse is also simulation-based but based on fewer simluated games; then
@@ -168,7 +178,7 @@ All of the following should exit with status code 0 and no raised exception:
 
 - Coach reported expected game points can be misleading - sign seemed to reflect current pone minus current pone expected end of game points during discard coaching but first pone minus first dealer expected game points during play coaching.
 
-## Past project goals
+## Past product goals
 
 - Node.js simulation and web UI/UX improvements:
   - Improve human player play against implemented computer discard and play strategies:
@@ -244,7 +254,7 @@ All of the following should exit with status code 0 and no raised exception:
   in the expected play points differential - to end of hand - above opponent
   for different possible discards or plays. (_Result:_ decided to go with Python to start then reimplement in Node.js when and/or if reimplementation cost is less than the time spent waiting for Python-based simulations to complete.)
 
-## Fixed past project bugs
+## Fixed past product bugs
 
 - 'Go' `PlayActionComponents`s render with a `false` class where no class should be in the HTML Element.
 - 'Go' `VisibleHandCard`s render lower than non-'Go' `VisibleHandCard`s in Firefox 89.0.2 but not in Safari 14.1.1 or Chrome 91.0.4472.114 (arm).
@@ -258,7 +268,7 @@ All of the following should exit with status code 0 and no raised exception:
 
 ## Technology stacks
 
-### Currently tested project toolchain versions
+### Currently tested product toolchain versions
 
 #### Main implementation
 
