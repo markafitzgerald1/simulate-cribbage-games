@@ -880,9 +880,11 @@ def simulate_game(
                     else first_dealer_select_kept_cards(dealt_hands[0])
                 )
                 if (
-                    first_pone_select_kept_cards == keep_user_selected
+                    first_pone_select_kept_cards  # pylint: disable=comparison-with-callable
+                    == keep_user_selected
                     and hand_pone_is_this_simulation_first_pone
-                    or first_dealer_select_kept_cards == keep_user_selected
+                    or first_dealer_select_kept_cards  # pylint: disable=comparison-with-callable
+                    == keep_user_selected
                     and hand_pone_is_this_simulation_first_dealer
                 ):
                     static_strategy_pone_kept_cards = (
@@ -1034,9 +1036,11 @@ def simulate_game(
                     else first_pone_select_kept_cards(dealt_hands[1])
                 )
                 if (
-                    first_dealer_select_kept_cards == keep_user_selected
+                    first_dealer_select_kept_cards  # pylint: disable=comparison-with-callable
+                    == keep_user_selected
                     and hand_dealer_is_this_simulation_first_dealer
-                    or first_pone_select_kept_cards == keep_user_selected
+                    or first_pone_select_kept_cards  # pylint: disable=comparison-with-callable
+                    == keep_user_selected
                     and hand_dealer_is_this_simulation_first_pone
                 ):
                     static_strategy_dealer_kept_cards = (
@@ -1250,11 +1254,16 @@ def simulate_game(
                     remaining_post_initial_play = None
                 elif is_first_simulation_hand and remaining_initial_play_actions:
                     player_to_play_play = remaining_initial_play_actions.pop(0)
-                elif len(legal_play_actions) == 1 and select_play != play_user_selected:
+                elif (
+                    len(legal_play_actions) == 1
+                    and select_play  # pylint: disable=comparison-with-callable
+                    != play_user_selected
+                ):
                     player_to_play_play = legal_play_actions[0]
                 elif (
                     len(legal_play_actions) == 1
-                    and select_play == play_user_selected
+                    and select_play  # pylint: disable=comparison-with-callable
+                    == play_user_selected
                     and str(legal_play_actions[0]) == Go.STR
                 ):
                     input("Press enter to say Go: ")
