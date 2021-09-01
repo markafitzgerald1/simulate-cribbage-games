@@ -1512,7 +1512,8 @@ def simulate_game(
                     )
                     if not hide_play_actions:
                         print(
-                            f"!Run for {current_play_run_length} points for {get_player_name(player_to_play)}. [{game_score}]"
+                            f"!Run for {current_play_run_length} points for"
+                            f" {get_player_name(player_to_play)}. [{game_score}]"
                         )
                     if game_over(game_score):
                         break
@@ -1532,7 +1533,8 @@ def simulate_game(
                     )
                     if not hide_play_actions:
                         print(
-                            f"!Go for {GO_POINTS} point for {get_player_name(player_to_play)}. [{game_score}]"
+                            f"!Go for {GO_POINTS} point for {get_player_name(player_to_play)}."
+                            f" [{game_score}]"
                         )
                     if game_over(game_score):
                         break
@@ -1565,7 +1567,8 @@ def simulate_game(
         )
         if not hide_play_actions:
             print(
-                f"!Last card for {LAST_CARD_POINTS} point for {get_player_name(last_player_to_play)} [{game_score}]."
+                f"!Last card for {LAST_CARD_POINTS} point for"
+                f" {get_player_name(last_player_to_play)} [{game_score}]."
             )
         if game_over(game_score):
             break
@@ -1576,7 +1579,8 @@ def simulate_game(
         )
         if not hide_play_actions:
             print(
-                f"!{Hand(reversed(sorted(kept_hands[0])))} hand + starter {starter} scores {pone_hand_points:2} points for Pone.   [{game_score}]"
+                f"!{Hand(reversed(sorted(kept_hands[0])))} hand + starter {starter} scores"
+                f" {pone_hand_points:2} points for Pone.   [{game_score}]"
             )
         if game_over(game_score):
             break
@@ -1590,7 +1594,8 @@ def simulate_game(
         )
         if not hide_play_actions:
             print(
-                f"!{Hand(reversed(sorted(kept_hands[1])))} hand + starter {starter} scores {dealer_hand_points:2} points for Dealer. [{game_score}]"
+                f"!{Hand(reversed(sorted(kept_hands[1])))} hand + starter {starter} scores"
+                f" {dealer_hand_points:2} points for Dealer. [{game_score}]"
             )
         if game_over(game_score):
             break
@@ -1602,10 +1607,12 @@ def simulate_game(
         )
         if not hide_play_actions:
             print(
-                f"!{Hand(reversed(sorted(crib_cards)))} crib + starter {starter} scores {crib_points:2} points for Dealer. [{game_score}]"
+                f"!{Hand(reversed(sorted(crib_cards)))} crib + starter {starter} scores"
+                f" {crib_points:2} points for Dealer. [{game_score}]"
             )
             print(
-                f"+++ Game score is [{game_score}] for first pone and first dealer after {hand+1} hands played."
+                f"+++ Game score is [{game_score}] for first pone and first dealer after"
+                f" {hand+1} hands played."
             )
             print()
         if game_over(game_score):
