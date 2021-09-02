@@ -3356,7 +3356,9 @@ def play_based_on_simulation(
     total_play_simulation_count: int = possible_play_count * simulated_hand_count
     if not hide_hand:
         print(
-            f"Simulating each of the {possible_play_count} possible {'pone' if player == PONE else 'dealer'} plays {simulated_hand_count} times in order to select the play:"
+            f"Simulating each of the {possible_play_count} possible"
+            f" {'pone' if player == PONE else 'dealer'} plays {simulated_hand_count} times in"
+            " order to select the play:"
         )
 
     manager = Manager()
