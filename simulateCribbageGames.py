@@ -36,7 +36,9 @@ from diskcache import Cache  # type: ignore
 MAX_CARD_COUNTING_VALUE = 10
 
 
-def index_count(index):
+def index_count(index: int) -> int:
+    """Get the counting value of the given base-0 index value"""
+
     return min(index + 1, MAX_CARD_COUNTING_VALUE)
 
 
