@@ -10,7 +10,7 @@ Simulate and analyze the play of hands and games of cribbage between two opponen
 
 ### Python simulator
 
-- Install [Python](https://www.python.org/downloads/) 3.9.6
+- Install [Python](https://www.python.org/downloads/) 3.10.6
 - Install dependencies: `pip install -r requirements.txt` _(may require local admin to install black globally... or use a [virtualenv](https://virtualenv.pypa.io/en/latest/) instead!)_
 - Check for type errors, run unit tests, generate machine parseable test coverage info (can be used in the Visual Studio Code Coverage Gutters extension, for example), ensure no test coverage regressions and ensure no excessive code duplication: `mypy simulateCribbageGames.py && coverage xml && coverage run --source=. --omit='test_*.py' --branch -m unittest && coverage report --fail-under 12 && pmd cpd --language python --minimum-tokens 59 --files *.py`
 - Check for pylint flagged code issues (TODO! - many pylint issues remain): `pylint simulateCribbageGames.py`
