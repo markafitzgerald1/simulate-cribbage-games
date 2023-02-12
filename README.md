@@ -169,6 +169,7 @@ All of the following should exit with status code 0 and no raised exception:
 
 ## Current known bugs
 
+- 2023-02-12T17:37-05: `python simulateCribbageGames.py --first-dealer-dealt-cards 9♦,T♠,7♦,5♥,J♥,A♥ --first-dealer-kept-cards T♠,5♥,J♥,A♥ --initial-play-actions K♥ --select-each-post-initial-play --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions --game-count 20000 --games-per-update 2000 --initial-pone-score 118 --initial-dealer-score 119` indicates that J♥ is the best play with expected game points of -0.33725 ± 0.08178 and 5♥ is the worst play with expected game points of -1.00000 ± 0.00000 when 5♥ would in fact immediately win for first dealer and should be _preferred_!
 - 2021-07-08T00:08-04: Runs with `--process-count` greater than 1 crash with `TypeError: cannot pickle '_gdbm.gdbm' object`:
   - Recreate of database did not fix this.
   - Only reported on Apple Silicon (M1) to present.
