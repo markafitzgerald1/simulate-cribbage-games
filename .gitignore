@@ -33,3 +33,4 @@
 /\.coverage
 /htmlcov/
 /coverage\.xml
+/env*/
