@@ -6,13 +6,13 @@ Simulate and analyze the play of hands and games of cribbage between two opponen
 
 ### Common
 
-- Install [PMD](https://pmd.github.io/) 6.38.0.
+- Install [PMD](https://pmd.github.io/) ^6.54.0
 
 ### Python simulator
 
-- Install [Python](https://www.python.org/downloads/) 3.10.6
+- Install [Python](https://www.python.org/downloads/) ^3.11.1
 - Install dependencies: `pip install -r requirements.txt` _(may require local admin to install black globally... or use a [virtualenv](https://virtualenv.pypa.io/en/latest/) instead!)_
-- Check for type errors, run unit tests, generate machine parseable test coverage info (can be used in the Visual Studio Code Coverage Gutters extension, for example), ensure no test coverage regressions and ensure no excessive code duplication: `mypy simulateCribbageGames.py && coverage xml && coverage run --source=. --omit='test_*.py' --branch -m unittest && coverage report --fail-under 12 && pmd cpd --language python --minimum-tokens 59 --files *.py`
+- Check for type errors, run unit tests, generate machine parseable test coverage info (can be used in the Visual Studio Code Coverage Gutters extension, for example), ensure no test coverage regressions and ensure no excessive code duplication: `mypy simulateCribbageGames.py && coverage xml && coverage run --source=. --omit='test_*.py' --branch -m unittest && coverage report --fail-under 12 && pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive`
 - Check for pylint flagged code issues (TODO! - many pylint issues remain): `pylint simulateCribbageGames.py`
 - Check for flake8 flagged code issues (TODO! - many flake8 issues remain): `flake8 --max-line-length 88 simulateCribbageGames.py`
 - _Optional:_ Build the start of hand position + current dealer wins, losses and game points database to improve positional play of simulation-based play and discard strategies' (takes about 30 minutes on my laptop): `python simulateCribbageGames.py --unlimited-hands-per-game --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions --games-per-update 2000 --tally-start-of-hand-position-results --game-count 1000000 --show-calc-cache-usage-stats`. Can be run longer (`--infinite-game-count` then Control+C to stop) for likely better results - exact point of diminshing returns currently hard to measure for performance and open bug reasons and not yet established.
