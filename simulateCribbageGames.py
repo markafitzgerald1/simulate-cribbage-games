@@ -2785,24 +2785,18 @@ def expected_random_opponent_discard_crib_points_ignoring_suit(
             starter_index
         )
         for possible_opponent_discard_1 in range(DECK_INDEX_COUNT):
-            available_opponent_discard_1_count = (
-                DECK_SUIT_COUNT
-                - [
+            available_opponent_discard_1_count = DECK_SUIT_COUNT - [
+                discard1,
+                discard2,
+                starter_index,
+            ].count(possible_opponent_discard_1)
+            for possible_opponent_discard_2 in range(DECK_INDEX_COUNT):
+                available_opponent_discard_2_count = DECK_SUIT_COUNT - [
                     discard1,
                     discard2,
                     starter_index,
-                ].count(possible_opponent_discard_1)
-            )
-            for possible_opponent_discard_2 in range(DECK_INDEX_COUNT):
-                available_opponent_discard_2_count = (
-                    DECK_SUIT_COUNT
-                    - [
-                        discard1,
-                        discard2,
-                        starter_index,
-                        possible_opponent_discard_1,
-                    ].count(possible_opponent_discard_2)
-                )
+                    possible_opponent_discard_1,
+                ].count(possible_opponent_discard_2)
                 possible_hand_plus_starter_count = (
                     available_starter_index_count
                     * available_opponent_discard_1_count
