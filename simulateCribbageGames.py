@@ -671,7 +671,7 @@ def simulate_game(
     tally_start_of_hand_position_results: bool,
     estimate_first_pone_incomplete_game_wins_and_game_points: bool,
     estimate_first_dealer_incomplete_game_wins_and_game_points: bool,
-    start_of_hand_position_results_tallies: shelve.DbfilenameShelf,
+    start_of_hand_position_results_tallies: shelve.Shelf,
     hide_first_pone_hands: bool,
     hide_first_dealer_hands: bool,
     first_pone_dealt_cards_possible_keeps_cycle,  # type: itertools.cycle[Tuple[Card, ...]]
@@ -1770,7 +1770,7 @@ def simulate_games(
     estimate_first_pone_incomplete_game_wins_and_game_points: bool,
     estimate_first_dealer_incomplete_game_wins_and_game_points: bool,
     hide_missing_incomplete_game_wins_and_game_points_estimates: bool,
-    start_of_hand_position_results_tallies: shelve.DbfilenameShelf,
+    start_of_hand_position_results_tallies: shelve.Shelf,
     select_each_post_initial_play: bool,
     hide_first_pone_hands: bool,
     hide_first_dealer_hands: bool,
@@ -3341,7 +3341,7 @@ def play_based_on_simulation(
     estimate_first_pone_incomplete_game_wins_and_game_points: bool,
     estimate_first_dealer_incomplete_game_wins_and_game_points: bool,
     hide_missing_incomplete_game_wins_and_game_points_estimates: bool,
-    start_of_hand_position_results_tallies: shelve.DbfilenameShelf,
+    start_of_hand_position_results_tallies: shelve.Shelf,
 ):
     played_cards: List[Card] = [
         initial_play_action
@@ -3503,7 +3503,7 @@ def player_select_kept_cards_based_on_simulation(
     estimate_first_pone_incomplete_game_wins_and_game_points: bool,
     estimate_first_dealer_incomplete_game_wins_and_game_points: bool,
     hide_missing_incomplete_game_wins_and_game_points_estimates: bool,
-    start_of_hand_position_results_tallies: shelve.DbfilenameShelf,
+    start_of_hand_position_results_tallies: shelve.Shelf,
 ):
     TOTAL_DISCARD_SIMULATION_COUNT: int = POSSIBLE_DISCARD_COUNT * simulated_hand_count
     if not hide_hand:
@@ -4167,7 +4167,7 @@ if __name__ == "__main__":
         and not args.first_dealer_select_each_possible_kept_hand
         and not args.select_each_post_initial_play
     )
-    args_start_of_hand_position_results_tallies: shelve.DbfilenameShelf = shelve.open(
+    args_start_of_hand_position_results_tallies: shelve.Shelf[object] = shelve.open(
         "start_of_hand_position_results_tallies_shelf",
         flag=("c" if args_tally_start_of_hand_position_results else "r"),
     )
