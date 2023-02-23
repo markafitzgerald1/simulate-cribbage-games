@@ -21,7 +21,7 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Test with unittest and ensure >= 12% coverage
         run: |
-          coverage run --source=. --omit='test_*.py' --branch -m unittest && coverage report --fail-under 12
+          coverage run && coverage report
       - name: Check for type errors
         run: |
           mypy simulateCribbageGames.py

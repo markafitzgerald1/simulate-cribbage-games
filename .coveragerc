@@ -1,0 +1,10 @@
+[run]
+source = .
+omit =
+    test_*.py
+    env.nosync/*
+branch = True
+command_line = -m unittest
+
+[report]
+fail_under = 12

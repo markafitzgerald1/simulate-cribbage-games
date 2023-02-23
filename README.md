@@ -12,10 +12,14 @@ Simulate and analyze the play of hands and games of cribbage between two opponen
 
 - Install [Python](https://www.python.org/downloads/) ~= 3.9.16
 - Install dependencies: `pip install -r requirements.txt` _(may require local admin to install black globally... or use a [virtualenv](https://virtualenv.pypa.io/en/latest/) instead!)_
-- Check for type errors, run unit tests, generate machine parseable test coverage info (can be used in the Visual Studio Code Coverage Gutters extension, for example), ensure no test coverage regressions and ensure no excessive code duplication: `mypy simulateCribbageGames.py && coverage xml && coverage run --source=. --omit='test_*.py' --branch -m unittest && coverage report --fail-under 12 && pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive`
-- Check for pylint flagged code issues (TODO! - many pylint issues remain): `pylint simulateCribbageGames.py`
-- Check for flake8 flagged code issues (TODO! - many flake8 issues remain): `flake8 --max-line-length 88 simulateCribbageGames.py`
-- _Optional:_ Build the start of hand position + current dealer wins, losses and game points database to improve positional play of simulation-based play and discard strategies' (takes about 30 minutes on my laptop): `python simulateCribbageGames.py --unlimited-hands-per-game --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions --games-per-update 2000 --tally-start-of-hand-position-results --game-count 1000000 --show-calc-cache-usage-stats`. Can be run longer (`--infinite-game-count` then Control+C to stop) for likely better results - exact point of diminshing returns currently hard to measure for performance and open bug reasons and not yet established.
+- Install pre-commit hooks: `pre-commit install`
+- Run pre-commit hooks: `pre-commit run --all-files`
+- Check for type errors: `mypy simulateCribbageGames.py`
+- Run unit tests, generate machine parseable test coverage info (can be used in the Visual Studio Code Coverage Gutters extension, for example) and ensure that the unit test code coverage percentage has not decreased: `coverage run && coverage xml && coverage report`
+- Ensure no code duplications of size 59 tokens or larger: `pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive`
+- Check for pylint flagged code issues: `pylint simulateCribbageGames.py`
+- Check for flake8 flagged code issues: `flake8 --max-line-length 88 simulateCribbageGames.py`
+- _Optional:_ Build the start of hand position + current dealer wins, losses and game points database to improve positional play of simulation-based play and discard strategies' (takes about 30 minutes on my laptop): `python simulateCribbageGames.py --unlimited-hands-per-game --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions --games-per-update 2000 --tally-start-of-hand-position-results --game-count 1000000 --show-calc-cache-usage-stats`. Can be run longer (`--infinite-game-count` then Control+C to stop) for likely better results - exact point of diminishing returns currently hard to measure for performance and open bug reasons and not yet established.
 
 ### Node.js
 
@@ -92,10 +96,26 @@ All of the following should exit with status code 0 and no raised exception:
 ## Previous, achieved long term product goal
 
 - Provide efficient, user-friendly discard and play analysis factoring in the expected game points differential (and play points differential if no game points differential) to end of hand(s) or game above opponent for different possible discards or plays.
-  - Provide an automated opponent against which to play and practice if the above analyses are good enough to provide an opponent from which the user may directly or indirectly (via throught-provoking plays) learn.
+  - Provide an automated opponent against which to play and practice if the above analyses are good enough to provide an opponent from which the user may directly or indirectly (via thought-provoking plays) learn.
 
 ## Short to medium term and lower level product goals
 
+- Testing and code quality automation:
+  - resolve existing code quality shortcomings:
+    - increase unit test coverage to 100%,
+    - resolve all remaining `pylint` issues,
+    - resolve all remaining `flake8` issues,
+    - resolve all remaining Markdown lint issues,
+    - reduce the maximum code duplication size allowed by `pmd cpd` to the lowest amount that that maximizes overall code quality,
+    - add code type annotations everywhere they can be added and update the corresponding pre-commit hook;
+  - add missing pre-commit hooks:
+    - `pylint`,
+    - `flake8`,
+    - Markdown lint;
+  - factor out the `pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive` duplication between `README.md` and `.pre-commit-config.yaml`; and
+  - update all third party dependencies:
+    - `python` -> ~= 3.11
+    - everything in `requirements.txt` (e.g. `mypy`).
 - Web UI/UX _and_ Node.js command-line simulation improvements:
   - add parameterized test (e.g. `parameterized` decorator library with `unittest`?) and invalid argument tests to existing Python tests,
   - add a discard strategy which keeps the maximum possible pre-cut hand points, and
@@ -110,7 +130,7 @@ All of the following should exit with status code 0 and no raised exception:
     - allow human player to discard and play as first pone, first dealer, both or neither;
     - display 'Go' play actions in grey or otherwise less attention grabbing style;
     - show play points scored on card which scored the points; and
-    - add play of mutiple hands of play to end of game with deal alternating between the two players.
+    - add play of multiple hands of play to end of game with deal alternating between the two players.
   - Allow discard and play algorithm designers to analyze their algorithms and allow players to analyze and practice parts of or their entire games by improving game, play or discard algorithm and human play analysis and training tooling in web UI:
     - Show completed hand (and eventually game) statistics.
     - Add options to automatically:
@@ -132,7 +152,7 @@ All of the following should exit with status code 0 and no raised exception:
 - Eliminate (via new `--first-(pone|dealer)-discarded-cards` flag) or reduce (via replace of `--first(pone|dealer)-kept-cards` with `--first-(pone|dealer)-discarded-cards`) double data entry between dealt and kept cards on `--select-each-post-initial-play` analysis.
 - Identify whether current pone or current dealer is discarding in discard coach and simulation-based discard output.
 - Replace non-ASCII plus or minus symbol with +/- so that it renders correctly by default in Windows Git (MSYS) bash.
-- Measure point of diminshing returns on build of expected wins, losses and game points per start of hand position and current dealer database. (Currently difficult to measure due to slow execution times and the open issue with long runs using the position and current score end game result database hanging.)
+- Measure point of diminishing returns on build of expected wins, losses and game points per start of hand position and current dealer database. (Currently difficult to measure due to slow execution times and the open issue with long runs using the position and current score end game result database hanging.)
 - Improve current best non-simulation-based play strategy:
   - consider improving default play algorithm to lead from high (> 5) pair (e.g. 9 from T-9-9-6) when low lead not possible (1.2 points better than T lead based on simulations); and
   - consider preferring responding to low (< 5) lead with non-ten-count cards over ten-count cards.
@@ -147,8 +167,8 @@ All of the following should exit with status code 0 and no raised exception:
   - Resolve existing pylint issues; and
   - Automate execution and verification of above smoke tests.
 - Improve simulation-based discard and play strategies:
-  - Implement simulation-based discard and play where immediate opponent reponse is also simulation-based but based on fewer simluated games; then
-  - Implement simulation-based discard and play where multiple subsequent opponent or self play or discard actions are also simulation-based but based on fewer simluated games. (Keys to success: tuning of decay factor; determining whether the positional evaluation benefits of low (< 32 for discard, for example) simulation counts outweigh their higher error rate costs.)
+  - Implement simulation-based discard and play where immediate opponent response is also simulation-based but based on fewer simulated games; then
+  - Implement simulation-based discard and play where multiple subsequent opponent or self play or discard actions are also simulation-based but based on fewer simulated games. (Keys to success: tuning of decay factor; determining whether the positional evaluation benefits of low (< 32 for discard, for example) simulation counts outweigh their higher error rate costs.)
 - Further improve current best discard strategy:
   - reconsider not ignoring suit by default and not ignoring suit in simulation-based discard strategy; and
   - tally and optionally use a suitless pre-cut kept hand expected play points database during discard.
@@ -173,7 +193,7 @@ All of the following should exit with status code 0 and no raised exception:
 - 2021-07-08T00:08-04: Runs with `--process-count` greater than 1 crash with `TypeError: cannot pickle '_gdbm.gdbm' object`:
   - Recreate of database did not fix this.
   - Only reported on Apple Silicon (M1) to present.
-- Long program executions using the current position and dealer to end of game results database tend to hang after 1-4 hours of execution. This occurs even then winpty is not used to run python. This also occurs when the tally database is openend in read-only mode by multiple processes ([which is safe](https://docs.python.org/3/library/shelve.html#restrictions)). This does _not_ happen if the current position and dealer to end of game results database is _not_ in use. Perhaps it does _not_ happen when only _one_ process is accessing the dealer-position-results shelf?
+- Long program executions using the current position and dealer to end of game results database tend to hang after 1-4 hours of execution. This occurs even then winpty is not used to run python. This also occurs when the tally database is opened in read-only mode by multiple processes ([which is safe](https://docs.python.org/3/library/shelve.html#restrictions)). This does _not_ happen if the current position and dealer to end of game results database is _not_ in use. Perhaps it does _not_ happen when only _one_ process is accessing the dealer-position-results shelf?
 
 ## Current possible bugs
 
@@ -211,7 +231,7 @@ All of the following should exit with status code 0 and no raised exception:
 - Add support for specification of current pone and dealer as something other than first pone and first dealer, respectively at start of simulations starting at not 0-0 scores for ease of usage when manually interfacing with non-simulate-cribbage-hands opponents.
 - Formally tag, version and release a specific commit of this source code repository, perhaps adding release notes and/or moving the below informal change log to a separate file. (Resolution: current Python implementation versioned via `setup.py`. Move of completed items into release notes, possibly in a separate file will likely get done on split of the current all-in-one program into separate play against, simulate and analyze programs.)
 - Consider giving project a name reflecting that you can simulate cribbage games with it, analyze cribbage decisions (not games yet) with it and play games against it. (Resolution: not going to do right now - will likely and naturally get done on split of the current all-in-one program into separate play against, simulate and analyze programs.)
-- Review license usage - is MPL 2.0 most suitable for project goals going forward from here now that a likely good computer player has been created? (Answer: MPL 2.0 is still the most suitable project license as of 2021-03-22. Rationale: MPL 2.0 is [LGPL 2.1+, GPL 2.0+ and AGPL 3+ compatible](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#copyleft-scope). [MPL 2.0's per-file scope copyleft](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#copyleft-scope) allows for non-MPL 2.0 or even proprietary separate file extensions as per project intent which LGPL (library-scope copyleft) and GPL (software-scope copyleft) do not. Conclusion: MPL 2.0 most suitable server-side. Client-side [MPL 2.0 is BSD and Apache compatible](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#mpl-bsd-and-apache) which should make most presently forseeable browser-based projects buildable without blocking licensing issues.)
+- Review license usage - is MPL 2.0 most suitable for project goals going forward from here now that a likely good computer player has been created? (Answer: MPL 2.0 is still the most suitable project license as of 2021-03-22. Rationale: MPL 2.0 is [LGPL 2.1+, GPL 2.0+ and AGPL 3+ compatible](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#copyleft-scope). [MPL 2.0's per-file scope copyleft](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#copyleft-scope) allows for non-MPL 2.0 or even proprietary separate file extensions as per project intent which LGPL (library-scope copyleft) and GPL (software-scope copyleft) do not. Conclusion: MPL 2.0 most suitable server-side. Client-side [MPL 2.0 is BSD and Apache compatible](https://www.mozilla.org/en-US/MPL/2.0/FAQ/#mpl-bsd-and-apache) which should make most presently foreseeable browser-based projects buildable without blocking licensing issues.)
 - Improve simulation-based discard and play strategies:
   - Simulate to end of game not end of hand to avoid making positional errors near or in the fourth leg (91-120 points) of play... or horizon effect errors prioritizing moves ending the game in player's favour over possibly superior plays which do not end the play in this hand. (Too slow in 2021-02-20 Python implementation - requires one or more of more cacheing (cache win %, E(gamePoints) stats at all end of hand firstPone-firstDealer scores), better algorithms and a faster programming language.) (Status: Implemented via cache.)
   - Add positional awareness / mitigate or eliminate search horizon effect: Discard or play based on simulation at a score where the game _may_ end in the current hand prioritizes discards or plays that _may_ end the game in the simulation in favour of the player to play over discards or plays that do not end the game this hand regardless of quality of move - e.g. pone discard from T♣,9♥,9♣,5♠,2♦,2♣ at 94(pone)-79(dealer), dealer response to 3h lead holding kh,qh,td,5c with 9d,4h discarded and kc starter. (Status: FIXED! Former scenario: +0.708 +/- 0.005 game points favoring 9-2 discard simulating to 1 hand ahead; +0.727 +/- 0.002 game points favoring 9-9 (or even 2-2) discard with end of player hand simulation expected game points estimates factored into discard decision.)
@@ -239,7 +259,7 @@ All of the following should exit with status code 0 and no raised exception:
 - Stop discard/play simulation and simulation-based discard when only one non-dropped option remains.
 - In single all possible discards simulations and simulation-based discard strategy drop possible discards 2 standard deviations worse beyond the current selected confidence level than the current best discard as simulation proceeds save time and get better answers faster.
 - Discard based on expected hand value ignoring suit when neither flush nor nobs is possible in both maximize hand points and maximize hand +/- crib points discard strategies. This allows suit to be factored into discard decisions more often as discard maximizing hand value was sped up 75% while discard maximizing hand +/- crib points was sped up about 33%.
-- Evaluate faster way of factoring expected crib points into discard factoring in suit post-cut discard strategies. (Approach using disk cache increased discard strategy speed from unusuable on my laptop 6 seconds per hand discard pair to 60 discard pairs per second, an approximately 375x speed improvement. Play strength gains are small - about 0.10 +/- 0.07 points per hand (95% confidence interval) for pone and 0.043 +/- 0.041 points per hand for dealer - thus not using this as the default discard strategy at present.
+- Evaluate faster way of factoring expected crib points into discard factoring in suit post-cut discard strategies. (Approach using disk cache increased discard strategy speed from unusable on my laptop 6 seconds per hand discard pair to 60 discard pairs per second, an approximately 375x speed improvement. Play strength gains are small - about 0.10 +/- 0.07 points per hand (95% confidence interval) for pone and 0.043 +/- 0.041 points per hand for dealer - thus not using this as the default discard strategy at present.
 - Evaluate faster way of factoring expected crib points into discard ignoring suit post-cut discard strategies. (Approach was included as default discard strategy - about as effective as factoring in held cards but only about 20% slower than not factoring in crib value at all.)
 - Incorporate expected post-cut value of held Jack into discard algorithms otherwise ignoring suit - should be a cheap to compute discard improvement. (Abandoned as benefit to pone did not show with statistical significance over more hands than anyone would play in a lifetime (about 5 million) and was if anything a slight loss for dealer.)
 - Add simulation-based pone discard strategy.

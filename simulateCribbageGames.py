@@ -3928,7 +3928,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--games-per-update",
-        help="number of games to similate per statistics update",
+        help="number of games to simulate per statistics update",
         type=int,
         default=5000,
     )
