@@ -482,8 +482,9 @@ class GameScore(NamedTuple):
     def __repr__(self) -> str:
         return (
             f"GameScore({self.first_pone_initial}, {self.first_pone_play},"
-            f" {self.first_pone_hand}, {self.first_pone_crib}, {self.first_dealer_initial},"
-            f" {self.first_dealer_play}, {self.first_dealer_hand}, {self.first_dealer_crib})"
+            f" {self.first_pone_hand}, {self.first_pone_crib},"
+            f" {self.first_dealer_initial}, {self.first_dealer_play},"
+            f" {self.first_dealer_hand}, {self.first_dealer_crib})"
         )
 
 
@@ -675,8 +676,8 @@ def simulate_game(
     start_of_hand_position_results_tallies: shelve.Shelf,
     hide_first_pone_hands: bool,
     hide_first_dealer_hands: bool,
-    first_pone_dealt_cards_possible_keeps_cycle,  # type: itertools.cycle[Tuple[Card, ...]]
-    first_dealer_dealt_cards_possible_keeps_cycle,  # type: itertools.cycle[Tuple[Card, ...]]
+    first_pone_dealt_cards_possible_keeps_cycle: itertools.cycle[Tuple[Card, ...]],
+    first_dealer_dealt_cards_possible_keeps_cycle: itertools.cycle[Tuple[Card, ...]],
     dropped_keeps,
     initial_first_pone_score: Points,
     initial_first_dealer_score: Points,
@@ -687,15 +688,15 @@ def simulate_game(
     assert (
         len(set(first_pone_dealt_cards + first_pone_kept_cards)) <= DEALT_CARDS_LEN
     ), (
-        f"No more than {DEALT_CARDS_LEN} specified first pone dealt or kept cards expected but"
-        f" {len(set(first_pone_dealt_cards + first_pone_kept_cards))}"
+        f"No more than {DEALT_CARDS_LEN} specified first pone dealt or kept cards"
+        f" expected but {len(set(first_pone_dealt_cards + first_pone_kept_cards))}"
         f" ({Hand(set(first_pone_dealt_cards + first_pone_kept_cards))}) specified"
     )
     assert (
         len(set(first_dealer_dealt_cards + first_dealer_kept_cards)) <= DEALT_CARDS_LEN
     ), (
-        f"No more than {DEALT_CARDS_LEN} specified first dealer dealt or kept cards expected but"
-        f" {len(set(first_dealer_dealt_cards + first_dealer_kept_cards))}"
+        f"No more than {DEALT_CARDS_LEN} specified first dealer dealt or kept cards"
+        f" expected but {len(set(first_dealer_dealt_cards + first_dealer_kept_cards))}"
         f" ({Hand(set(first_dealer_dealt_cards + first_dealer_kept_cards))}) specified"
     )
 
@@ -755,8 +756,8 @@ def simulate_game(
                 )
             )
             assert len(pone_dealt_or_kept_cards) <= DEALT_CARDS_LEN, (
-                f"No more than {DEALT_CARDS_LEN} specified dealt or kept pone cards expected but"
-                f" {len(pone_dealt_or_kept_cards)} specified"
+                f"No more than {DEALT_CARDS_LEN} specified dealt or kept pone cards"
+                f" expected but {len(pone_dealt_or_kept_cards)} specified"
             )
 
             dealer_dealt_or_kept_cards = set(
@@ -772,8 +773,8 @@ def simulate_game(
                 )
             )
             assert len(dealer_dealt_or_kept_cards) <= DEALT_CARDS_LEN, (
-                f"No more than {DEALT_CARDS_LEN} specified dealt or kept dealer cards expected but"
-                f" {len(dealer_dealt_or_kept_cards)} specified"
+                f"No more than {DEALT_CARDS_LEN} specified dealt or kept dealer cards"
+                f" expected but {len(dealer_dealt_or_kept_cards)} specified"
             )
 
             random_hand_cards = random.sample(
@@ -983,7 +984,8 @@ def simulate_game(
                         )
                     else:
                         print(
-                            "(Dynamic discard coach would have kept the same cards as user did.)"
+                            "(Dynamic discard coach would have kept the same cards as"
+                            " user did.)"
                         )
 
         elif is_first_simulation_hand and first_pone_dealt_cards:
@@ -998,7 +1000,8 @@ def simulate_game(
             kept_pone_hand = first_kept_pone_hand = optional_kept_pone_hand
         else:
             raise ValueError(
-                "Iterating through all possible kept hands not supported with non-fixed deals."
+                "Iterating through all possible kept hands not supported with"
+                " non-fixed deals."
             )
 
         dealer_kept_cards: List[Card] = (
@@ -1096,7 +1099,8 @@ def simulate_game(
                         )
                     else:
                         print(
-                            "(Static discard coach would have kept the same cards as user did.)"
+                            "(Static discard coach would have kept the same cards as"
+                            " user did.)"
                         )
 
                     dynamic_strategy_dealer_kept_cards = player_select_kept_cards_based_on_simulation(
@@ -1144,7 +1148,8 @@ def simulate_game(
                         )
                     else:
                         print(
-                            "(Dynamic discard coach would have kept the same cards as user did.)"
+                            "(Dynamic discard coach would have kept the same cards as"
+                            " user did.)"
                         )
 
         elif is_first_simulation_hand and first_dealer_dealt_cards:
@@ -1159,7 +1164,8 @@ def simulate_game(
             kept_dealer_hand = first_kept_dealer_hand = optional_kept_dealer_hand
         else:
             raise ValueError(
-                "Iterating through all possible kept hands not supported with non-fixed deals."
+                "Iterating through all possible kept hands not supported with"
+                " non-fixed deals."
             )
 
         kept_hands: List[Sequence[Card]] = [kept_pone_hand, kept_dealer_hand]
@@ -1352,7 +1358,8 @@ def simulate_game(
                             )
                         else:
                             print(
-                                "(Static play coach would have played the same card as user did.)"
+                                "(Static play coach would have played the same card"
+                                " as user did.)"
                             )
 
                         dynamic_strategy_player_to_play_play = play_based_on_simulation(
@@ -1410,7 +1417,8 @@ def simulate_game(
                             )
                         else:
                             print(
-                                "(Dynamic play coach would have played the same card as user did.)"
+                                "(Dynamic play coach would have played the same card"
+                                " as user did.)"
                             )
 
             plays_to_31[-1].append(player_to_play_play)  # pylint: disable=no-member
@@ -1419,8 +1427,9 @@ def simulate_game(
                 play_count += player_to_play_play.count
                 if not hide_play_actions:
                     print(
-                        f"{get_player_name(player_to_play):6} plays {player_to_play_play} for"
-                        f" {play_count} ({';'.join([str(Hand(p)) for p in plays_to_31])})"
+                        f"{get_player_name(player_to_play):6} plays"
+                        f" {player_to_play_play} for {play_count}"
+                        f" ({';'.join([str(Hand(p)) for p in plays_to_31])})"
                     )
                 hands[player_to_play].remove(player_to_play_play)
 
@@ -1436,8 +1445,9 @@ def simulate_game(
                         )
                         if not hide_play_actions:
                             print(
-                                f"!Double pairs royale for {DOUBLE_PAIRS_ROYALE_POINTS} points"
-                                f" for {get_player_name(player_to_play)}. [{game_score}]"
+                                f"!Double pairs royale for"
+                                f" {DOUBLE_PAIRS_ROYALE_POINTS} points for"
+                                f" {get_player_name(player_to_play)}. [{game_score}]"
                             )
                         if game_over(game_score):
                             break
@@ -1497,8 +1507,8 @@ def simulate_game(
                     )
                     if not hide_play_actions:
                         print(
-                            f"!{THIRTY_ONE_COUNT} for {THIRTY_ONE_COUNT_POINTS} point for"
-                            f" {get_player_name(player_to_play)}. [{game_score}]"
+                            f"!{THIRTY_ONE_COUNT} for {THIRTY_ONE_COUNT_POINTS} point"
+                            f" for {get_player_name(player_to_play)}. [{game_score}]"
                         )
                     if game_over(game_score):
                         break
@@ -1536,8 +1546,8 @@ def simulate_game(
                     )
                     if not hide_play_actions:
                         print(
-                            f"!Go for {GO_POINTS} point for {get_player_name(player_to_play)}."
-                            f" [{game_score}]"
+                            f"!Go for {GO_POINTS} point for"
+                            f" {get_player_name(player_to_play)}. [{game_score}]"
                         )
                     if game_over(game_score):
                         break
@@ -1582,8 +1592,8 @@ def simulate_game(
         )
         if not hide_play_actions:
             print(
-                f"!{Hand(reversed(sorted(kept_hands[0])))} hand + starter {starter} scores"
-                f" {pone_hand_points:2} points for Pone.   [{game_score}]"
+                f"!{Hand(reversed(sorted(kept_hands[0])))} hand + starter {starter}"
+                f" scores {pone_hand_points:2} points for Pone.   [{game_score}]"
             )
         if game_over(game_score):
             break
@@ -1597,8 +1607,8 @@ def simulate_game(
         )
         if not hide_play_actions:
             print(
-                f"!{Hand(reversed(sorted(kept_hands[1])))} hand + starter {starter} scores"
-                f" {dealer_hand_points:2} points for Dealer. [{game_score}]"
+                f"!{Hand(reversed(sorted(kept_hands[1])))} hand + starter {starter}"
+                f" scores {dealer_hand_points:2} points for Dealer. [{game_score}]"
             )
         if game_over(game_score):
             break
@@ -1614,8 +1624,8 @@ def simulate_game(
                 f" {crib_points:2} points for Dealer. [{game_score}]"
             )
             print(
-                f"+++ Game score is [{game_score}] for first pone and first dealer after"
-                f" {hand+1} hands played."
+                f"+++ Game score is [{game_score}] for first pone and first dealer"
+                f" after {hand+1} hands played."
             )
             print()
         if game_over(game_score):
@@ -1732,7 +1742,8 @@ class GameScoreResultsTallies(NamedTuple):
     def __str__(self) -> str:
         return (
             f"{self.first_pone_wins}-{self.first_dealer_wins} wins,"
-            f" {self.first_pone_game_points}-{self.first_dealer_game_points} game points"
+            f" {self.first_pone_game_points}-{self.first_dealer_game_points}"
+            " game points"
         )
 
 
@@ -1786,15 +1797,18 @@ def simulate_games(
         len(set(first_pone_dealt_cards + list(first_pone_kept_cards)))
         <= DEALT_CARDS_LEN
     ), (
-        f"No more than {DEALT_CARDS_LEN} specified first pone dealt or kept cards expected but"
+        f"No more than {DEALT_CARDS_LEN} specified first pone dealt or kept cards"
+        " expected but"
         f" {len(set(first_pone_dealt_cards + list(first_pone_kept_cards)))} specified"
     )
     assert (
         len(set(first_dealer_dealt_cards + list(first_dealer_kept_cards)))
         <= DEALT_CARDS_LEN
     ), (
-        f"No more than {DEALT_CARDS_LEN} specified first dealer dealt or kept cards expected but"
-        f" {len(set(first_dealer_dealt_cards + list(first_dealer_kept_cards)))} specified"
+        f"No more than {DEALT_CARDS_LEN} specified first dealer dealt or kept cards"
+        " expected but"
+        f" {len(set(first_dealer_dealt_cards + list(first_dealer_kept_cards)))}"
+        " specified"
     )
 
     try:
@@ -1812,8 +1826,8 @@ def simulate_games(
             )
         )
         assert len(first_pone_kept_including_played_cards) <= KEPT_CARDS_LEN, (
-            f"No more than {KEPT_CARDS_LEN} directly or play specified first pone kept cards"
-            f" expected but {len(first_pone_kept_including_played_cards)}"
+            f"No more than {KEPT_CARDS_LEN} directly or play specified first pone"
+            f" kept cards expected but {len(first_pone_kept_including_played_cards)}"
             f" ({Hand(first_pone_kept_including_played_cards)}) specified"
         )
 
@@ -1828,8 +1842,8 @@ def simulate_games(
             )
         )
         assert len(first_dealer_kept_including_played_cards) <= KEPT_CARDS_LEN, (
-            f"No more than {KEPT_CARDS_LEN} directly or play specified first dealer kept cards"
-            f" expected but {len(first_dealer_kept_including_played_cards)}"
+            f"No more than {KEPT_CARDS_LEN} directly or play specified first dealer"
+            f" kept cards expected but {len(first_dealer_kept_including_played_cards)}"
             f" ({Hand(first_dealer_kept_including_played_cards)}) specified"
         )
 
@@ -2092,9 +2106,11 @@ def simulate_games(
                 except KeyError:
                     if not hide_missing_incomplete_game_wins_and_game_points_estimates:
                         print(
-                            f"No incomplete game wins and game points estimate available at"
+                            f"No incomplete game wins and game points estimate"
+                            " available at"
                             f" {start_of_next_hand_score=} after initial action"
-                            f" {Hand(sorted(next_action[0], reverse=True))}, {next_action[1]}."
+                            f" {Hand(sorted(next_action[0], reverse=True))},"
+                            f" {next_action[1]}."
                         )
 
             possibly_estimated_first_pone_game_points: Union[
@@ -2115,13 +2131,14 @@ def simulate_games(
                 print(
                     "+++ Score at end of game simulation: ["
                     f"{initial_first_pone_score + first_pone_total_points}"
-                    f"-{initial_first_dealer_score + first_dealer_total_points}] for first pone"
-                    " and first dealer."
+                    f"-{initial_first_dealer_score + first_dealer_total_points}]"
+                    " for first pone and first dealer."
                 )
                 print(
                     "### Game points at end of game simulation: [["
                     f"{possibly_estimated_first_pone_game_points:7.5f}"
-                    f"-{possibly_estimated_first_dealer_game_points:7.5f}]] for pone and dealer."
+                    f"-{possibly_estimated_first_dealer_game_points:7.5f}]]"
+                    " for pone and dealer."
                 )
                 print()
 
@@ -2355,7 +2372,8 @@ def simulate_games(
                 if show_statistics_updates:
                     if players_statistics_length > 1:
                         print(
-                            f"Mean play statistics {confidence_level}% confidence intervals ("
+                            f"Mean play statistics {confidence_level}% confidence"
+                            " intervals ("
                             f"{formatted_game_count(players_statistics_length, overall_game_count)}"
                             "):"
                         )
@@ -2391,7 +2409,8 @@ def simulate_games(
                             )
                         if post_initial:
                             print(
-                                f"post-initial play {post_initial} (n={keep_stats_len})",
+                                f"post-initial play {post_initial}"
+                                f" (n={keep_stats_len})",
                                 end="",
                             )
                         if keep or post_initial:
@@ -2580,7 +2599,8 @@ def simulate_games(
                         ]
                     )
                     print(
-                        "start_of_hand_position_results_tallies all positions occurrence count",
+                        "start_of_hand_position_results_tallies all positions"
+                        " occurrence count",
                         f"{start_of_hand_position_results_tallies_all_positions_occurrence_count}",
                     )
 
@@ -2607,8 +2627,8 @@ def simulate_games(
                 ):
                     if show_statistics_updates:
                         print(
-                            "Ending simulation as only one pone play option remains under"
-                            " consideration."
+                            "Ending simulation as only one pone play option remains"
+                            " under consideration."
                         )
                     break
                 elif (
@@ -2625,8 +2645,8 @@ def simulate_games(
                 ):
                     if show_statistics_updates:
                         print(
-                            "Ending simulation as only one dealer play option remains under"
-                            " consideration."
+                            "Ending simulation as only one dealer play option remains"
+                            " under consideration."
                         )
                     break
 
@@ -2634,8 +2654,8 @@ def simulate_games(
         sys.exit(0)
 
 
-# TODO: change return type from Sequence[Card] to Tuple[Card, Card] for increased type checking
-#       precision
+# TODO: change return type from Sequence[Card] to Tuple[Card, Card] for increased type
+#       checking precision
 def keep_user_selected(dealt_cards: Sequence[Card]) -> Sequence[Card]:
     selected_discards: Sequence[Card] = []
     while (
@@ -2645,7 +2665,8 @@ def keep_user_selected(dealt_cards: Sequence[Card]) -> Sequence[Card]:
         or selected_discards[0] == selected_discards[1]
     ):
         selected_discards_input: str = input(
-            f"Enter the cards to discard from {Hand(sorted(dealt_cards, reverse=True))}: "
+            "Enter the cards to discard from"
+            f" {Hand(sorted(dealt_cards, reverse=True))}: "
         )
         try:
             selected_discards = parse_cards(selected_discards_input)
@@ -2827,7 +2848,8 @@ def expected_random_opponent_discard_crib_points_ignoring_suit(
     )
 
 
-# TODO: factor out code in common with keep_max_post_cut_hand_plus_or_minus_crib_points()
+# TODO: factor out code in common with
+#       keep_max_post_cut_hand_plus_or_minus_crib_points()
 @cache
 def cached_keep_max_post_cut_hand_plus_or_minus_crib_points_ignoring_suit(
     sorted_dealt_indices: Sequence[int], plus_crib: bool
@@ -3354,8 +3376,8 @@ def play_based_on_simulation(
     if not hide_hand:
         print(
             f"Simulating each of the {possible_play_count} possible"
-            f" {'pone' if player == PONE else 'dealer'} plays {simulated_hand_count} times in"
-            " order to select the play:"
+            f" {'pone' if player == PONE else 'dealer'} plays {simulated_hand_count}"
+            " times in order to select the play:"
         )
 
     manager = Manager()
@@ -3485,7 +3507,8 @@ def simulation_performance_statistics(start_time_ns, games_simulated):
     ns_per_s = 1000000000
     return (
         f"{games_simulated / (elapsed_time_ns / ns_per_s):.3f} games/s"
-        f" ({elapsed_time_ns / games_simulated:.0f} ns/game) in {elapsed_time_ns / ns_per_s} s"
+        f" ({elapsed_time_ns / games_simulated:.0f} ns/game) in"
+        f" {elapsed_time_ns / ns_per_s} s"
     )
 
 
@@ -3630,42 +3653,44 @@ if __name__ == "__main__":
     first_pone_discard_algorithm_group.add_argument(
         "--first-pone-maximize-pre-cut-hand-points-ignoring-suit",
         action="store_true",
-        help="have first pone keep the cards which maximize points in hand before the cut"
-        " ignoring suit",
+        help="have first pone keep the cards which maximize points in hand before the"
+        " cut ignoring suit",
     )
     first_pone_discard_algorithm_group.add_argument(
         "--first-pone-maximize-pre-cut-hand-points",
         action="store_true",
-        help="have first pone keep the cards which maximize points in hand before the cut",
+        help="have first pone keep the cards which maximize points in hand before the"
+        " cut",
     )
     first_pone_discard_algorithm_group.add_argument(
         "--first-pone-maximize-post-cut-hand-points-ignoring-suit",
         action="store_true",
-        help="have first pone keep the cards which maximize points in hand after the cut"
-        " ignoring suit",
+        help="have first pone keep the cards which maximize points in hand after the"
+        " cut ignoring suit",
     )
     first_pone_discard_algorithm_group.add_argument(
         "--first-pone-maximize-post-cut-hand-points",
         action="store_true",
-        help="have first pone keep the cards which maximize points in hand after the cut",
+        help="have first pone keep the cards which maximize points in hand after the"
+        " cut",
     )
     first_pone_discard_algorithm_group.add_argument(
         "--first-pone-maximize-post-cut-hand-minus-crib-points-ignoring-suit",
         action="store_true",
-        help="have first pone keep the cards which maximize points in hand minus crib ignoring"
-        " suit after the cut",
+        help="have first pone keep the cards which maximize points in hand minus crib"
+        " ignoring suit after the cut",
     )
     first_pone_discard_algorithm_group.add_argument(
         "--first-pone-maximize-post-cut-hand-minus-crib-points",
         action="store_true",
-        help="have first pone keep the cards which maximize points in hand minus crib after the"
-        " cut",
+        help="have first pone keep the cards which maximize points in hand minus crib"
+        " after the cut",
     )
 
     parser.add_argument(
         "--first-pone-discard-based-on-simulations",
-        help="have first pone keep the cards which on average maximize pone minus dealer game"
-        " otherwise scored points in simulated single hands",
+        help="have first pone keep the cards which on average maximize pone minus"
+        " dealer game otherwise scored points in simulated single hands",
         type=int,
     )
 
@@ -3694,42 +3719,44 @@ if __name__ == "__main__":
     first_dealer_discard_algorithm_group.add_argument(
         "--first-dealer-maximize-pre-cut-hand-points-ignoring-suit",
         action="store_true",
-        help="have first dealer keep the cards which maximize points in hand before the cut"
-        " ignoring suit",
+        help="have first dealer keep the cards which maximize points in hand before the"
+        " cut ignoring suit",
     )
     first_dealer_discard_algorithm_group.add_argument(
         "--first-dealer-maximize-pre-cut-hand-points",
         action="store_true",
-        help="have first dealer keep the cards which maximize points in hand before the cut",
+        help="have first dealer keep the cards which maximize points in hand before the"
+        " cut",
     )
     first_dealer_discard_algorithm_group.add_argument(
         "--first-dealer-maximize-post-cut-hand-points-ignoring-suit",
         action="store_true",
-        help="have first dealer keep the cards which maximize points in hand after the cut"
-        " ignoring suit",
+        help="have first dealer keep the cards which maximize points in hand after the"
+        " cut ignoring suit",
     )
     first_dealer_discard_algorithm_group.add_argument(
         "--first-dealer-maximize-post-cut-hand-points",
         action="store_true",
-        help="have first dealer keep the cards which maximize points in hand after the cut",
+        help="have first dealer keep the cards which maximize points in hand after the"
+        " cut",
     )
     first_dealer_discard_algorithm_group.add_argument(
         "--first-dealer-maximize-post-cut-hand-plus-crib-points-ignoring-suit",
         action="store_true",
-        help="have first dealer keep the cards which maximize points in hand plus crib after the"
-        " cut ignoring suit",
+        help="have first dealer keep the cards which maximize points in hand plus crib"
+        " after the cut ignoring suit",
     )
     first_dealer_discard_algorithm_group.add_argument(
         "--first-dealer-maximize-post-cut-hand-plus-crib-points",
         action="store_true",
-        help="have first dealer keep the cards which maximize points in hand plus crib after the"
-        " cut",
+        help="have first dealer keep the cards which maximize points in hand plus crib"
+        " after the cut",
     )
 
     parser.add_argument(
         "--first-dealer-discard-based-on-simulations",
-        help="have first dealer keep the cards which on average maximize dealer minus pone game"
-        " otherwise scored points in simulated single hands",
+        help="have first dealer keep the cards which on average maximize dealer minus"
+        " pone game otherwise scored points in simulated single hands",
         type=int,
     )
 
@@ -3763,8 +3790,8 @@ if __name__ == "__main__":
     first_pone_play_algorithm_group.add_argument(
         "--first-pone-play-15-or-31-else-highest-count",
         action="store_true",
-        help="have first pone play 15-2 or 31 for 2 otherwise the highest count legal card from"
-        " hand",
+        help="have first pone play 15-2 or 31 for 2 otherwise the highest count legal"
+        " card from hand",
     )
     first_pone_play_algorithm_group.add_argument(
         "--first-pone-play-pair-else-15-or-31-else-highest-count",
@@ -3793,8 +3820,8 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--first-pone-play-based-on-simulations",
-        help="have first pone play the cards which on average maximize pone minus dealer game"
-        " otherwise scored points in simulated single hands",
+        help="have first pone play the cards which on average maximize pone minus"
+        " dealer game otherwise scored points in simulated single hands",
         type=int,
     )
 
@@ -3822,8 +3849,8 @@ if __name__ == "__main__":
     first_dealer_play_algorithm_group.add_argument(
         "--first-dealer-play-15-or-31-else-highest-count",
         action="store_true",
-        help="have first dealer play 15-2 or 31 for 2 otherwise the highest count legal card from"
-        " hand",
+        help="have first dealer play 15-2 or 31 for 2 otherwise the highest count legal"
+        " card from hand",
     )
     first_dealer_play_algorithm_group.add_argument(
         "--first-dealer-play-pair-else-15-or-31-else-highest-count",
@@ -3852,16 +3879,16 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--first-dealer-play-based-on-simulations",
-        help="have first dealer play the cards which on average minimize pone minus dealer game"
-        " otherwise scored points in simulated single hands",
+        help="have first dealer play the cards which on average minimize pone minus"
+        " dealer game otherwise scored points in simulated single hands",
         type=int,
     )
 
     parser.add_argument(
         "--select-each-post-initial-play",
         action="store_true",
-        help="have the next play to play post initial played card rotate through each possible"
-        " play per simulated hand",
+        help="have the next play to play post initial played card rotate through each"
+        " possible play per simulated hand",
     )
 
     game_count_group = parser.add_mutually_exclusive_group()
@@ -3908,7 +3935,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--hide-play-actions",
         action="store_true",
-        help="suppress output of play actions (cards played, Go, points scored, count reset)",
+        help="suppress output of play actions (cards played, Go, points scored, count"
+        " reset)",
     )
     parser.add_argument(
         "--tally-start-of-hand-position-results",
@@ -3935,7 +3963,8 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--confidence-level",
-        help="statistical confidence level percentage of outputted confidence intervals",
+        help="statistical confidence level percentage of outputted confidence"
+        " intervals",
         type=float,
         default=95,
     )
@@ -3964,7 +3993,8 @@ if __name__ == "__main__":
     parser.add_argument("--initial-dealer-score")
     parser.add_argument(
         "--initial-play-actions",
-        help="play actions (cards or 'go') already taken in the current hand in their taken order",
+        help="play actions (cards or 'go') already taken in the current hand in their"
+        " taken order",
     )
 
     parser.add_argument("--coach-discard-simulated-hand-count", type=int)
@@ -4006,7 +4036,8 @@ if __name__ == "__main__":
     )
     if not args.hide_workers_start_message:
         print(
-            f"Simulating {game_count if game_count != sys.maxsize else 'infinite'} games of up to"
+            f"Simulating {game_count if game_count != sys.maxsize else 'infinite'}"
+            " games of up to"
             f" {args_maximum_hands_per_game if args_maximum_hands_per_game != sys.maxsize else 'unlimited'}"
             " hands each",
             end="" if args.process_count > 1 else os.linesep,
