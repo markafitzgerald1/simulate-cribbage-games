@@ -25,3 +25,6 @@ jobs:
       - name: Check for type errors
         run: |
           mypy simulate_cribbage_games.py
+      - name: Check for PEP8 style violations
+        run: |
+          flake8

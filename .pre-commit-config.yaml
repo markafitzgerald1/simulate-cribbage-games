@@ -47,3 +47,7 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+  - repo: https://github.com/PyCQA/flake8
+    rev: "6.0.0"
+    hooks:
+      - id: flake8

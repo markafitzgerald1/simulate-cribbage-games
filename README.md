@@ -18,7 +18,7 @@ Simulate and analyze the play of hands and games of cribbage between two opponen
 - Run unit tests, generate machine parseable test coverage info (can be used in the Visual Studio Code Coverage Gutters extension, for example) and ensure that the unit test code coverage percentage has not decreased: `coverage run && coverage xml && coverage report`
 - Ensure no code duplications of size 59 tokens or larger: `pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive`
 - Check for pylint flagged code issues: `pylint simulate_cribbage_games.py`
-- Check for flake8 flagged code issues: `flake8 --max-line-length 88 simulate_cribbage_games.py`
+- Check for flake8 flagged code issues: `flake8`
 - _Optional:_ Build the start of hand position + current dealer wins, losses and game points database to improve positional play of simulation-based play and discard strategies' (takes about 30 minutes on my laptop): `python simulate_cribbage_games.py --unlimited-hands-per-game --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions --games-per-update 2000 --tally-start-of-hand-position-results --game-count 1000000 --show-calc-cache-usage-stats`. Can be run longer (`--infinite-game-count` then Control+C to stop) for likely better results - exact point of diminishing returns currently hard to measure for performance and open bug reasons and not yet established.
 
 ### Node.js
@@ -38,8 +38,6 @@ Simulate and analyze the play of hands and games of cribbage between two opponen
 
 ## Use
 
-### Python simulator
-
 - Simulate one hand from deal to end of hand counting: `python simulate_cribbage_games.py`
 - Play against static (not simulation-based) discard and play strategies as first pone: `python simulate_cribbage_games.py --first-pone-keep-user-selected --first-pone-play-user-entered --hide-first-dealer-hand --unlimited-hands-per-game`
 - Play against static (not simulation-based) discard and play strategies as first dealer: `python simulate_cribbage_games.py --first-dealer-keep-user-selected --first-dealer-play-user-entered --hide-first-pone-hand --unlimited-hands-per-game`
@@ -48,8 +46,6 @@ Simulate and analyze the play of hands and games of cribbage between two opponen
 - Help on additional simulation options: `python simulate_cribbage_games.py --help`
 
 ## Smoke Tests and Usage Examples
-
-### Python simulator
 
 All of the following should exit with status code 0 and no raised exception:
 
@@ -103,8 +99,9 @@ All of the following should exit with status code 0 and no raised exception:
 - Testing and code quality automation:
   - resolve existing code quality shortcomings:
     - increase unit test coverage to 100%,
-    - resolve all remaining `pylint` issues,
-    - resolve all remaining `flake8` issues,
+    - reduce `flake8` and `pylint` maximum line lengths to 88,
+    - restore `C0302` (too-many-lines) `pylint` rule,
+    - restore `W0511` (fixme) `pylint` rule,
     - resolve all remaining Markdown lint issues,
     - reduce the maximum code duplication size allowed by `pmd cpd` to the lowest amount that that maximizes overall code quality,
     - add code type annotations everywhere they can be added and update the corresponding pre-commit hook;
