@@ -102,12 +102,12 @@ All of the following should exit with status code 0 and no raised exception:
     - reduce `flake8` and `pylint` maximum line lengths to 88,
     - restore `C0302` (too-many-lines) `pylint` rule,
     - restore `W0511` (fixme) `pylint` rule,
-    - resolve all remaining Markdown lint issues,
     - reduce the maximum code duplication size allowed by `pmd cpd` to the lowest amount that that maximizes overall code quality,
     - add code type annotations everywhere they can be added and update the corresponding pre-commit hook;
   - add missing pre-commit hooks:
     - `pylint`,
-    - `flake8`,
+    - Markdown lint;
+  - add missing GitHub WorkFlow checks:
     - Markdown lint;
   - factor out the `pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive` duplication between `README.md` and `.pre-commit-config.yaml`; and
   - update all third party dependencies:
