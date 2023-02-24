@@ -1718,18 +1718,20 @@ class GameScoreResultsTallies(NamedTuple):
     first_dealer_game_points: Tally
 
     def add(
-        self, game_score_results_talles: GameScoreResultsTallies
+        self, game_score_results_tallies: GameScoreResultsTallies
     ) -> GameScoreResultsTallies:
         return GameScoreResultsTallies(
-            Tally(self.first_pone_wins + game_score_results_talles.first_pone_wins),
-            Tally(self.first_dealer_wins + game_score_results_talles.first_dealer_wins),
+            Tally(self.first_pone_wins + game_score_results_tallies.first_pone_wins),
+            Tally(
+                self.first_dealer_wins + game_score_results_tallies.first_dealer_wins
+            ),
             Tally(
                 self.first_pone_game_points
-                + game_score_results_talles.first_pone_game_points
+                + game_score_results_tallies.first_pone_game_points
             ),
             Tally(
                 self.first_dealer_game_points
-                + game_score_results_talles.first_dealer_game_points
+                + game_score_results_tallies.first_dealer_game_points
             ),
         )
 
@@ -3383,7 +3385,7 @@ def play_based_on_simulation(
     manager = Manager()
     simulated_players_statistics: Dict[NextAction, Statistics] = manager.dict()
     simulated_players_statistics_lock = Lock()
-    CONFIDENCE_LEVEL: int = 95
+    confidence_level: int = 95
     player_to_play_is_first_pone: bool = (
         pone_is_parent_game_first_pone
         and root_simulation_first_pone_is_next_to_play
@@ -3443,7 +3445,7 @@ def play_based_on_simulation(
         True,
         sys.maxsize,
         False,
-        CONFIDENCE_LEVEL,
+        confidence_level,
         time.time_ns(),
         False,
     )
@@ -3464,15 +3466,15 @@ def play_based_on_simulation(
             del keep  # unused
             print(
                 f"{post_initial} first play:"
-                f" {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_game_points'], CONFIDENCE_LEVEL, precision = 3)}"
+                f" {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_game_points'], confidence_level, precision = 3)}"
                 " game points;"
-                f" {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_play'], CONFIDENCE_LEVEL, precision = 3)}"
+                f" {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_play'], confidence_level, precision = 3)}"
                 " Δ-peg +"
-                f" {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_hand'], CONFIDENCE_LEVEL, precision = 3)}"
+                f" {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_hand'], confidence_level, precision = 3)}"
                 " Δ-hand +"
-                f" {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_crib'], CONFIDENCE_LEVEL, precision = 3)}"
+                f" {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_crib'], confidence_level, precision = 3)}"
                 " crib ="
-                f" {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_total_points'], CONFIDENCE_LEVEL, precision = 3)}"
+                f" {get_confidence_interval(post_initial_stats['first_pone_minus_first_dealer_total_points'], confidence_level, precision = 3)}"
                 " overall"
             )
 
@@ -3512,7 +3514,7 @@ def simulation_performance_statistics(start_time_ns, games_simulated):
     )
 
 
-POSSIBLE_DISCARD_COUNT: int = math.comb(
+possible_discard_count: int = math.comb(
     DEALT_CARDS_LEN, DEALT_CARDS_LEN - KEPT_CARDS_LEN
 )
 
@@ -3529,20 +3531,20 @@ def player_select_kept_cards_based_on_simulation(
     hide_missing_incomplete_game_wins_and_game_points_estimates: bool,
     start_of_hand_position_results_tallies: shelve.Shelf,
 ):
-    TOTAL_DISCARD_SIMULATION_COUNT: int = POSSIBLE_DISCARD_COUNT * simulated_hand_count
+    total_discard_simulation_count: int = possible_discard_count * simulated_hand_count
     if not hide_hand:
         print(
-            f"Simulating each of the {POSSIBLE_DISCARD_COUNT} possible discards"
+            f"Simulating each of the {possible_discard_count} possible discards"
             f" {'with game result estimation enabled' if estimate_first_pone_incomplete_game_wins_and_game_points or estimate_first_dealer_incomplete_game_wins_and_game_points else ''}"
             f" {simulated_hand_count} times in order to select discard"
         )
     manager = Manager()
     simulated_players_statistics: Dict[NextAction, Statistics] = manager.dict()
     simulated_players_statistics_lock = Lock()
-    CONFIDENCE_LEVEL: int = 95
+    confidence_level: int = 95
     simulate_games(
-        TOTAL_DISCARD_SIMULATION_COUNT,
-        TOTAL_DISCARD_SIMULATION_COUNT,
+        total_discard_simulation_count,
+        total_discard_simulation_count,
         1,
         Points(
             current_game_score.first_pone_initial
@@ -3591,7 +3593,7 @@ def player_select_kept_cards_based_on_simulation(
         True,
         sys.maxsize,
         False,
-        CONFIDENCE_LEVEL,
+        confidence_level,
         time.time_ns(),
         False,
     )
@@ -3613,11 +3615,11 @@ def player_select_kept_cards_based_on_simulation(
             print(
                 f"{Hand(sorted(keep, reverse=True))} "
                 f"- {Hand(sorted(set(dealt_hand) - set(keep), reverse=True))}:"
-                f" {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_game_points'], CONFIDENCE_LEVEL, precision = 3)}"
-                f" game points; {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_play'], CONFIDENCE_LEVEL, precision = 3)}"
-                f" Δ-peg + {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_hand'], CONFIDENCE_LEVEL, precision = 3)}"
-                f" Δ-hand + {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_crib'], CONFIDENCE_LEVEL, precision = 3)}"
-                f" crib = {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_total_points'], CONFIDENCE_LEVEL, precision = 3)}"
+                f" {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_game_points'], confidence_level, precision = 3)}"
+                f" game points; {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_play'], confidence_level, precision = 3)}"
+                f" Δ-peg + {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_hand'], confidence_level, precision = 3)}"
+                f" Δ-hand + {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_crib'], confidence_level, precision = 3)}"
+                f" crib = {get_confidence_interval(keep_stats['first_pone_minus_first_dealer_total_points'], confidence_level, precision = 3)}"
                 " overall"
             )
 
