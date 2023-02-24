@@ -324,9 +324,10 @@ def get_confidence_interval(statistics, confidence_level, precision=5):
     if len(statistics) == 1:
         return f"{statistics.mean():+{precision + 5}.{precision}f}"
 
+    radius = get_z_statistic(confidence_level) * get_stddev_of_mean(statistics)
     return (
         f"{statistics.mean():+{precision + 5}.{precision}f} ± "
-        f"{get_z_statistic(confidence_level) * get_stddev_of_mean(statistics):{precision + 3}.{precision}f}"
+        f"{radius:{precision + 3}.{precision}f}"
     )
 
 
