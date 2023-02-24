@@ -24,4 +24,4 @@ jobs:
           coverage run && coverage report
       - name: Check for type errors
         run: |
-          mypy simulateCribbageGames.py
+          mypy simulate_cribbage_games.py

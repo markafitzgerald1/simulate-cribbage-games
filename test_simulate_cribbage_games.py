@@ -3,21 +3,21 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import unittest
-import simulateCribbageGames
+import simulate_cribbage_games
 
 
 class TestSimulateCribbageGames(unittest.TestCase):
     def test_index_count_ace(self):
-        self.assertEqual(simulateCribbageGames.index_count(0), 1)
+        self.assertEqual(simulate_cribbage_games.index_count(0), 1)
 
     def test_index_count_ten(self):
-        self.assertEqual(simulateCribbageGames.index_count(9), 10)
+        self.assertEqual(simulate_cribbage_games.index_count(9), 10)
 
     def test_index_count_jack(self):
-        self.assertEqual(simulateCribbageGames.index_count(10), 10)
+        self.assertEqual(simulate_cribbage_games.index_count(10), 10)
 
     def test_index_count_king(self):
-        self.assertEqual(simulateCribbageGames.index_count(12), 10)
+        self.assertEqual(simulate_cribbage_games.index_count(12), 10)
 
 
 if __name__ == "__main__":
