@@ -7,6 +7,7 @@ import sys
 import random
 import time
 from multiprocessing import Process, Manager, Lock
+from multiprocessing.managers import DictProxy
 import math
 import argparse
 import os
@@ -368,7 +369,7 @@ PlayersStatistic = Literal[
 
 
 def statistics_dict_add(
-    sum_stats_by_next_action_by_type: Dict[
+    sum_stats_by_next_action_by_type: DictProxy[
         NextAction, Dict[PlayersStatistic, Statistics]
     ],
     player_statistic_type: PlayersStatistic,
@@ -890,22 +891,30 @@ def simulate_game(
 
                 kept_pone_hand = player_select_kept_cards_based_on_simulation(
                     simulated_hand_count,
-                    hide_first_pone_hands
-                    if hand_pone_is_this_simulation_first_pone
-                    else hide_first_dealer_hands,
+                    (
+                        hide_first_pone_hands
+                        if hand_pone_is_this_simulation_first_pone
+                        else hide_first_dealer_hands
+                    ),
                     game_score,
                     dealt_hands[0],
                     PONE,
                     False,
-                    estimate_first_pone_incomplete_game_wins_and_game_points
-                    if hand_pone_is_this_simulation_first_pone
-                    else estimate_first_dealer_incomplete_game_wins_and_game_points,
-                    estimate_first_dealer_incomplete_game_wins_and_game_points
-                    if hand_pone_is_this_simulation_first_pone
-                    else estimate_first_pone_incomplete_game_wins_and_game_points,
-                    hide_first_pone_hands
-                    if hand_pone_is_this_simulation_first_pone
-                    else hide_first_dealer_hands,
+                    (
+                        estimate_first_pone_incomplete_game_wins_and_game_points
+                        if hand_pone_is_this_simulation_first_pone
+                        else estimate_first_dealer_incomplete_game_wins_and_game_points
+                    ),
+                    (
+                        estimate_first_dealer_incomplete_game_wins_and_game_points
+                        if hand_pone_is_this_simulation_first_pone
+                        else estimate_first_pone_incomplete_game_wins_and_game_points
+                    ),
+                    (
+                        hide_first_pone_hands
+                        if hand_pone_is_this_simulation_first_pone
+                        else hide_first_dealer_hands
+                    ),
                     start_of_hand_position_results_tallies,
                 )
             else:
@@ -936,12 +945,16 @@ def simulate_game(
                         )
 
                     dynamic_strategy_pone_kept_cards = player_select_kept_cards_based_on_simulation(
-                        coach_discard_simulated_hand_count
-                        if coach_discard_simulated_hand_count is not None
-                        else 160,
-                        hide_first_pone_hands
-                        if hand_pone_is_this_simulation_first_pone
-                        else hide_first_dealer_hands,
+                        (
+                            coach_discard_simulated_hand_count
+                            if coach_discard_simulated_hand_count is not None
+                            else 160
+                        ),
+                        (
+                            hide_first_pone_hands
+                            if hand_pone_is_this_simulation_first_pone
+                            else hide_first_dealer_hands
+                        ),
                         game_score,
                         dealt_hands[0],
                         PONE,
@@ -964,9 +977,11 @@ def simulate_game(
                             if estimate_any_player_incomplete_game_wins_and_game_points
                             else False
                         ),
-                        hide_first_pone_hands
-                        if hand_pone_is_this_simulation_first_pone
-                        else hide_first_dealer_hands,
+                        (
+                            hide_first_pone_hands
+                            if hand_pone_is_this_simulation_first_pone
+                            else hide_first_dealer_hands
+                        ),
                         start_of_hand_position_results_tallies,
                     )
 
@@ -1057,22 +1072,30 @@ def simulate_game(
 
                 kept_dealer_hand = player_select_kept_cards_based_on_simulation(
                     simulated_hand_count,
-                    hide_first_dealer_hands
-                    if hand_dealer_is_this_simulation_first_dealer
-                    else hide_first_pone_hands,
+                    (
+                        hide_first_dealer_hands
+                        if hand_dealer_is_this_simulation_first_dealer
+                        else hide_first_pone_hands
+                    ),
                     game_score,
                     dealt_hands[1],
                     DEALER,
                     tally_start_of_hand_position_results,
-                    estimate_first_pone_incomplete_game_wins_and_game_points
-                    if hand_dealer_is_this_simulation_first_pone
-                    else estimate_first_dealer_incomplete_game_wins_and_game_points,
-                    estimate_first_dealer_incomplete_game_wins_and_game_points
-                    if hand_dealer_is_this_simulation_first_pone
-                    else estimate_first_pone_incomplete_game_wins_and_game_points,
-                    hide_first_dealer_hands
-                    if hand_dealer_is_this_simulation_first_dealer
-                    else hide_first_pone_hands,
+                    (
+                        estimate_first_pone_incomplete_game_wins_and_game_points
+                        if hand_dealer_is_this_simulation_first_pone
+                        else estimate_first_dealer_incomplete_game_wins_and_game_points
+                    ),
+                    (
+                        estimate_first_dealer_incomplete_game_wins_and_game_points
+                        if hand_dealer_is_this_simulation_first_pone
+                        else estimate_first_pone_incomplete_game_wins_and_game_points
+                    ),
+                    (
+                        hide_first_dealer_hands
+                        if hand_dealer_is_this_simulation_first_dealer
+                        else hide_first_pone_hands
+                    ),
                     start_of_hand_position_results_tallies,
                 )
             else:
@@ -1104,33 +1127,43 @@ def simulate_game(
                         )
 
                     dynamic_strategy_dealer_kept_cards = player_select_kept_cards_based_on_simulation(
-                        coach_discard_simulated_hand_count
-                        if coach_discard_simulated_hand_count is not None
-                        else 160,
-                        hide_first_dealer_hands
-                        if hand_dealer_is_this_simulation_first_dealer
-                        else hide_first_pone_hands,
+                        (
+                            coach_discard_simulated_hand_count
+                            if coach_discard_simulated_hand_count is not None
+                            else 160
+                        ),
+                        (
+                            hide_first_dealer_hands
+                            if hand_dealer_is_this_simulation_first_dealer
+                            else hide_first_pone_hands
+                        ),
                         game_score,
                         dealt_hands[1],
                         DEALER,
                         False,
                         (
-                            estimate_first_pone_incomplete_game_wins_and_game_points
-                            if hand_dealer_is_this_simulation_first_pone
-                            else estimate_first_dealer_incomplete_game_wins_and_game_points
-                        )
-                        if estimate_any_player_incomplete_game_wins_and_game_points
-                        else False,
+                            (
+                                estimate_first_pone_incomplete_game_wins_and_game_points
+                                if hand_dealer_is_this_simulation_first_pone
+                                else estimate_first_dealer_incomplete_game_wins_and_game_points
+                            )
+                            if estimate_any_player_incomplete_game_wins_and_game_points
+                            else False
+                        ),
                         (
-                            estimate_first_dealer_incomplete_game_wins_and_game_points
-                            if hand_dealer_is_this_simulation_first_pone
-                            else estimate_first_pone_incomplete_game_wins_and_game_points
-                        )
-                        if estimate_any_player_incomplete_game_wins_and_game_points
-                        else False,
-                        hide_first_dealer_hands
-                        if hand_dealer_is_this_simulation_first_dealer
-                        else hide_first_pone_hands,
+                            (
+                                estimate_first_dealer_incomplete_game_wins_and_game_points
+                                if hand_dealer_is_this_simulation_first_pone
+                                else estimate_first_pone_incomplete_game_wins_and_game_points
+                            )
+                            if estimate_any_player_incomplete_game_wins_and_game_points
+                            else False
+                        ),
+                        (
+                            hide_first_dealer_hands
+                            if hand_dealer_is_this_simulation_first_dealer
+                            else hide_first_pone_hands
+                        ),
                         start_of_hand_position_results_tallies,
                     )
 
@@ -1262,9 +1295,11 @@ def simulate_game(
 
                 player_to_play_play = play_based_on_simulation(
                     simulated_play_count,
-                    hide_first_pone_hands
-                    if first_pone_to_play
-                    else hide_first_dealer_hands,
+                    (
+                        hide_first_pone_hands
+                        if first_pone_to_play
+                        else hide_first_dealer_hands
+                    ),
                     game_score,
                     first_pone_to_play,
                     dealt_hands[player_to_play],
@@ -1278,15 +1313,21 @@ def simulate_game(
                     player_to_play,
                     hand_pone_is_this_simulation_first_pone,
                     False,
-                    estimate_first_pone_incomplete_game_wins_and_game_points
-                    if hand_pone_is_this_simulation_first_pone
-                    else estimate_first_dealer_incomplete_game_wins_and_game_points,
-                    estimate_first_dealer_incomplete_game_wins_and_game_points
-                    if hand_dealer_is_this_simulation_first_dealer
-                    else estimate_first_pone_incomplete_game_wins_and_game_points,
-                    hide_first_pone_hands
-                    if first_pone_to_play
-                    else hide_first_dealer_hands,
+                    (
+                        estimate_first_pone_incomplete_game_wins_and_game_points
+                        if hand_pone_is_this_simulation_first_pone
+                        else estimate_first_dealer_incomplete_game_wins_and_game_points
+                    ),
+                    (
+                        estimate_first_dealer_incomplete_game_wins_and_game_points
+                        if hand_dealer_is_this_simulation_first_dealer
+                        else estimate_first_pone_incomplete_game_wins_and_game_points
+                    ),
+                    (
+                        hide_first_pone_hands
+                        if first_pone_to_play
+                        else hide_first_dealer_hands
+                    ),
                     start_of_hand_position_results_tallies,
                 )
             else:
@@ -1363,12 +1404,16 @@ def simulate_game(
                             )
 
                         dynamic_strategy_player_to_play_play = play_based_on_simulation(
-                            coach_play_simulated_hand_count
-                            if coach_play_simulated_hand_count is not None
-                            else 900,
-                            hide_first_pone_hands
-                            if first_pone_to_play
-                            else hide_first_dealer_hands,
+                            (
+                                coach_play_simulated_hand_count
+                                if coach_play_simulated_hand_count is not None
+                                else 900
+                            ),
+                            (
+                                hide_first_pone_hands
+                                if first_pone_to_play
+                                else hide_first_dealer_hands
+                            ),
                             game_score,
                             first_pone_to_play,
                             dealt_hands[player_to_play],
@@ -1383,22 +1428,28 @@ def simulate_game(
                             hand_pone_is_this_simulation_first_pone,
                             False,
                             (
-                                estimate_first_pone_incomplete_game_wins_and_game_points
-                                if hand_pone_is_this_simulation_first_pone
-                                else estimate_first_dealer_incomplete_game_wins_and_game_points
-                            )
-                            if estimate_any_player_incomplete_game_wins_and_game_points
-                            else False,
+                                (
+                                    estimate_first_pone_incomplete_game_wins_and_game_points
+                                    if hand_pone_is_this_simulation_first_pone
+                                    else estimate_first_dealer_incomplete_game_wins_and_game_points
+                                )
+                                if estimate_any_player_incomplete_game_wins_and_game_points
+                                else False
+                            ),
                             (
-                                estimate_first_dealer_incomplete_game_wins_and_game_points
-                                if hand_dealer_is_this_simulation_first_dealer
-                                else estimate_first_pone_incomplete_game_wins_and_game_points
-                            )
-                            if estimate_any_player_incomplete_game_wins_and_game_points
-                            else False,
-                            hide_first_pone_hands
-                            if first_pone_to_play
-                            else hide_first_dealer_hands,
+                                (
+                                    estimate_first_dealer_incomplete_game_wins_and_game_points
+                                    if hand_dealer_is_this_simulation_first_dealer
+                                    else estimate_first_pone_incomplete_game_wins_and_game_points
+                                )
+                                if estimate_any_player_incomplete_game_wins_and_game_points
+                                else False
+                            ),
+                            (
+                                hide_first_pone_hands
+                                if first_pone_to_play
+                                else hide_first_dealer_hands
+                            ),
                             start_of_hand_position_results_tallies,
                         )
 
@@ -1766,7 +1817,7 @@ def simulate_games(
     first_dealer_kept_cards: Sequence[Card],
     initial_starter: Optional[Card],
     initial_play_actions: List[PlayAction],
-    players_statistics: Dict[NextAction, Statistics],
+    players_statistics: DictProxy[NextAction, Statistics],
     players_statistics_lock,
     first_pone_select_kept_cards,
     first_pone_discard_based_on_simulations: Optional[int],
@@ -2073,7 +2124,9 @@ def simulate_games(
                     next_dealer_is_first_pone,
                 )
                 try:
-                    start_of_hand_position_results_tallies_entry: GameScoreResultsTallies = start_of_hand_position_results_tallies[
+                    start_of_hand_position_results_tallies_entry: (
+                        GameScoreResultsTallies
+                    ) = start_of_hand_position_results_tallies[
                         str(start_of_next_hand_score)
                     ]
                     tallied_game_count = (
@@ -2173,9 +2226,11 @@ def simulate_games(
             statistics_push(
                 first_pone_wins_statistics,
                 next_action,
-                first_pone_expected_wins
-                if first_pone_expected_wins is not None
-                else first_pone_wins,
+                (
+                    first_pone_expected_wins
+                    if first_pone_expected_wins is not None
+                    else first_pone_wins
+                ),
             )
 
             statistics_push(
@@ -2206,9 +2261,11 @@ def simulate_games(
             statistics_push(
                 first_dealer_wins_statistics,
                 next_action,
-                first_dealer_expected_wins
-                if first_dealer_expected_wins is not None
-                else first_dealer_wins,
+                (
+                    first_dealer_expected_wins
+                    if first_dealer_expected_wins is not None
+                    else first_dealer_wins
+                ),
             )
 
             statistics_push(
@@ -2593,7 +2650,9 @@ def simulate_games(
                         "start_of_hand_position_results_tallies unique position count",
                         len(start_of_hand_position_results_tallies),
                     )
-                    start_of_hand_position_results_tallies_all_positions_occurrence_count: int = sum(
+                    start_of_hand_position_results_tallies_all_positions_occurrence_count: (
+                        int
+                    ) = sum(
                         [
                             game_score_results_tally.first_pone_wins
                             + game_score_results_tally.first_dealer_wins
@@ -3383,7 +3442,7 @@ def play_based_on_simulation(
         )
 
     manager = Manager()
-    simulated_players_statistics: Dict[NextAction, Statistics] = manager.dict()
+    simulated_players_statistics: DictProxy[NextAction, Statistics] = manager.dict()
     simulated_players_statistics_lock = Lock()
     confidence_level: int = 95
     player_to_play_is_first_pone: bool = (
@@ -3539,7 +3598,7 @@ def player_select_kept_cards_based_on_simulation(
             f" {simulated_hand_count} times in order to select discard"
         )
     manager = Manager()
-    simulated_players_statistics: Dict[NextAction, Statistics] = manager.dict()
+    simulated_players_statistics: DictProxy[NextAction, Statistics] = manager.dict()
     simulated_players_statistics_lock = Lock()
     confidence_level: int = 95
     simulate_games(
@@ -3579,12 +3638,16 @@ def player_select_kept_cards_based_on_simulation(
         None,
         None,
         tally_start_of_hand_position_results,
-        estimate_first_pone_incomplete_game_wins_and_game_points
-        if player == PONE
-        else estimate_first_dealer_incomplete_game_wins_and_game_points,
-        estimate_first_dealer_incomplete_game_wins_and_game_points
-        if player == PONE
-        else estimate_first_pone_incomplete_game_wins_and_game_points,
+        (
+            estimate_first_pone_incomplete_game_wins_and_game_points
+            if player == PONE
+            else estimate_first_dealer_incomplete_game_wins_and_game_points
+        ),
+        (
+            estimate_first_dealer_incomplete_game_wins_and_game_points
+            if player == PONE
+            else estimate_first_pone_incomplete_game_wins_and_game_points
+        ),
         hide_missing_incomplete_game_wins_and_game_points_estimates,
         start_of_hand_position_results_tallies,
         False,
@@ -4026,7 +4089,7 @@ if __name__ == "__main__":
     )
 
     main_manager = Manager()
-    main_players_statistics: Dict[NextAction, Statistics] = main_manager.dict()
+    main_players_statistics: DictProxy[NextAction, Statistics] = main_manager.dict()
     main_players_statistics_lock = Lock()
     game_count = (
         sys.maxsize

@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v5.0.0
     hooks:
       - id: check-case-conflict
       - id: check-docstring-first
@@ -15,18 +15,18 @@ repos:
       - id: requirements-txt-fixer
       - id: trailing-whitespace
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v0.920"
+    rev: "v1.13.0"
     hooks:
       - id: mypy
   - repo: https://github.com/psf/black
-    rev: "23.1.0"
+    rev: "24.10.0"
     hooks:
       - id: black
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.2
+    rev: v2.3.0
     hooks:
       - id: codespell
-        args: [--exclude-file=package-lock.json, -L, cacheing]
+        args: [--exclude-file=package-lock.json, -L, "cacheing,astroid"]
   - repo: local
     hooks:
       - id: unittest-check
@@ -48,6 +48,6 @@ repos:
         pass_filenames: false
         always_run: true
   - repo: https://github.com/PyCQA/flake8
-    rev: "6.0.0"
+    rev: "7.1.1"
     hooks:
       - id: flake8
