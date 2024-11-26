@@ -10,7 +10,7 @@ Simulate and analyze the play of hands and games of cribbage between two opponen
 
 ### Python simulator
 
-- Install [Python](https://www.python.org/downloads/) ~= 3.9.16
+- Install [Python](https://www.python.org/downloads/) ~= 3.9.20
 - Install dependencies: `pip install -r requirements.txt` _(may require local admin to install black globally... or use a [virtualenv](https://virtualenv.pypa.io/en/latest/) instead!)_
 - Install pre-commit hooks: `pre-commit install`
 - Run pre-commit hooks: `pre-commit run --all-files`
