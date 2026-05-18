@@ -8,6 +8,8 @@ import sys
 if __package__ in (None, ""):  # pragma: no cover
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# The import below follows the script-mode path shim.
+# pylint: disable=wrong-import-position
 from artifact_pipeline.adapter import (  # noqa: E402
     Index,
     Card,
@@ -175,7 +177,7 @@ def load_accumulators(output_path):
     if not os.path.exists(output_path):
         return {}
 
-    with open(output_path, "r") as table_file:
+    with open(output_path, "r", encoding="utf-8") as table_file:
         table_data = json.load(table_file)
 
     accumulators = {}
@@ -203,8 +205,33 @@ def get_total_sample_count(accumulators, pair, player):
     )
 
 
+def select_opponent_kept_cards(player, opponent_dealt):
+    if player == "Dealer":
+        return BEST_STATIC_SELECT_PONE_KEPT_CARDS(opponent_dealt)
+    return BEST_STATIC_SELECT_DEALER_KEPT_CARDS(opponent_dealt)
+
+
+def sample_rng_for_index(rng, seed, canonical_pair, player, sample_index):
+    if seed is None:
+        return rng
+    return random.Random(f"{seed}:{canonical_pair}:{player}:{sample_index}")
+
+
+def score_crib_sample(discarded_cards, remaining_deck, player, sample_rng):
+    opponent_dealt = sample_rng.sample(remaining_deck, 6)
+    kept = select_opponent_kept_cards(player, opponent_dealt)
+    opponent_discards = [card for card in opponent_dealt if card not in kept]
+    remaining_after_deal = [
+        card for card in remaining_deck if card not in opponent_dealt
+    ]
+    cut_card = sample_rng.choice(remaining_after_deal)
+    crib_hand = discarded_cards + opponent_discards
+    score = score_hand_and_starter(crib_hand, cut_card, is_crib=True)
+    return cut_card, score
+
+
 def run_monte_carlo_into_accumulators(
-    accumulators, canonical_pair, player, num_samples, rng, first_sample_index, seed
+    accumulators, canonical_pair, player, num_samples, sampling
 ):
     """
     Run Monte Carlo samples and add raw score totals to cumulative accumulators.
@@ -216,26 +243,13 @@ def run_monte_carlo_into_accumulators(
     remaining_deck = [card for card in DECK_SET if card not in discarded_cards]
 
     for sample_offset in range(num_samples):
-        sample_rng = rng
-        if seed is not None:
-            sample_index = first_sample_index + sample_offset
-            sample_rng = random.Random(
-                f"{seed}:{canonical_pair}:{player}:{sample_index}"
-            )
-
-        opponent_dealt = sample_rng.sample(remaining_deck, 6)
-
-        if player == "Dealer":
-            kept = BEST_STATIC_SELECT_PONE_KEPT_CARDS(opponent_dealt)
-        else:
-            kept = BEST_STATIC_SELECT_DEALER_KEPT_CARDS(opponent_dealt)
-
-        opponent_discards = [c for c in opponent_dealt if c not in kept]
-        remaining_after_deal = [c for c in remaining_deck if c not in opponent_dealt]
-        cut_card = sample_rng.choice(remaining_after_deal)
-        crib_hand = discarded_cards + opponent_discards
-        score = score_hand_and_starter(crib_hand, cut_card, is_crib=True)
-
+        sample_index = sampling["first_sample_index"] + sample_offset
+        sample_rng = sample_rng_for_index(
+            sampling["rng"], sampling["seed"], canonical_pair, player, sample_index
+        )
+        cut_card, score = score_crib_sample(
+            discarded_cards, remaining_deck, player, sample_rng
+        )
         cut_card_rank_str = Index.indices[cut_card.index]
         update_accumulator(
             get_cut_accumulator(
@@ -282,7 +296,7 @@ def accumulators_to_output(accumulators):
 
 def write_output(accumulators, output_path):
     temporary_output_path = f"{output_path}.tmp"
-    with open(temporary_output_path, "w") as output_file:
+    with open(temporary_output_path, "w", encoding="utf-8") as output_file:
         json.dump(accumulators_to_output(accumulators), output_file, indent=2)
         output_file.write("\n")
     os.replace(temporary_output_path, output_path)
@@ -307,9 +321,11 @@ def run_generation(args, rng, pairs, accumulators):
                     pair,
                     player,
                     samples_to_run,
-                    rng,
-                    current_samples,
-                    args.seed,
+                    {
+                        "rng": rng,
+                        "first_sample_index": current_samples,
+                        "seed": args.seed,
+                    },
                 )
                 made_progress = True
     return made_progress
@@ -406,14 +422,14 @@ def main():
                     break
                 if reached_target_sample_count(accumulators, pairs, args.samples):
                     break
-    except KeyboardInterrupt:
+    except KeyboardInterrupt as exc:
         write_output(accumulators, args.output)
         completed_samples = minimum_completed_sample_count(accumulators, pairs)
         print(
             f"\nInterrupted. Checkpoint written: {args.output} "
             f"(n >= {completed_samples} samples per pair/player)"
         )
-        raise SystemExit(130)
+        raise SystemExit(130) from exc
 
     print(f"Table generated successfully: {args.output}")
 

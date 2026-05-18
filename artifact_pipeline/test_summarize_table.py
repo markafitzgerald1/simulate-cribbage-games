@@ -72,7 +72,7 @@ class TestSummarizeTable(unittest.TestCase):
             }
         }
 
-        self.assertEqual(get_pair_stat(data, "A", "A", "Dealer", "mu", "actual"), 6.0)
+        self.assertEqual(get_pair_stat(data, ("A", "A"), "Dealer", "mu", "actual"), 6.0)
 
     def test_get_pair_stat_same_rank_suited_only_is_impossible(self):
         data = {
@@ -81,7 +81,9 @@ class TestSummarizeTable(unittest.TestCase):
             }
         }
 
-        self.assertIsNone(get_pair_stat(data, "A", "A", "Dealer", "mu", "suited-only"))
+        self.assertIsNone(
+            get_pair_stat(data, ("A", "A"), "Dealer", "mu", "suited-only")
+        )
 
     def test_get_pair_stat_actual_suit_weighting(self):
         data = {
@@ -89,7 +91,7 @@ class TestSummarizeTable(unittest.TestCase):
             "A_2_Unsuited": {"Dealer": {"A": {"n": 1, "mu": 4.0}}},
         }
 
-        self.assertEqual(get_pair_stat(data, "A", "2", "Dealer", "mu", "actual"), 5.0)
+        self.assertEqual(get_pair_stat(data, ("A", "2"), "Dealer", "mu", "actual"), 5.0)
 
     def test_get_pair_stat_other_suit_weighting(self):
         data = {
@@ -98,13 +100,13 @@ class TestSummarizeTable(unittest.TestCase):
         }
 
         self.assertEqual(
-            get_pair_stat(data, "A", "2", "Dealer", "mu", "unweighted"), 6.0
+            get_pair_stat(data, ("A", "2"), "Dealer", "mu", "unweighted"), 6.0
         )
         self.assertEqual(
-            get_pair_stat(data, "A", "2", "Dealer", "mu", "suited-only"), 8.0
+            get_pair_stat(data, ("A", "2"), "Dealer", "mu", "suited-only"), 8.0
         )
         self.assertEqual(
-            get_pair_stat(data, "A", "2", "Dealer", "mu", "unsuited-only"), 4.0
+            get_pair_stat(data, ("A", "2"), "Dealer", "mu", "unsuited-only"), 4.0
         )
 
     def test_get_pair_estimate_includes_pooled_se(self):

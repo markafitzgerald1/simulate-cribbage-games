@@ -52,7 +52,10 @@ Mozilla Public License 2.0. See `LICENSE` for details.
   smoke test or usage example from this README and sanity-check the output.
   Automate that acceptance test when practical.
 - Ensure no code duplications of size 59 tokens or larger: `pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive`
-- Check for pylint flagged code issues: `pylint simulate_cribbage_games.py`
+- Check for pylint flagged code issues in the legacy simulator:
+  `pylint simulate_cribbage_games.py`
+- Check for pylint flagged code issues in the artifact pipeline:
+  `pylint --persistent=n artifact_pipeline`
 - Check for flake8 flagged code issues: `flake8`
 - _Optional:_ Build the start of hand position + current dealer wins, losses and game points database to improve positional play of simulation-based play and discard strategies' (takes about 30 minutes on my laptop): `python simulate_cribbage_games.py --unlimited-hands-per-game --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions --games-per-update 2000 --tally-start-of-hand-position-results --game-count 1000000 --show-calc-cache-usage-stats`. Can be run longer (`--infinite-game-count` then Control+C to stop) for likely better results - exact point of diminishing returns currently hard to measure for performance and open bug reasons and not yet established.
 
@@ -175,7 +178,6 @@ All of the following should exit with status code 0 and no raised exception:
     - reduce the maximum code duplication size allowed by `pmd cpd` to the lowest amount that that maximizes overall code quality,
     - add code type annotations everywhere they can be added and update the corresponding pre-commit hook;
   - add missing pre-commit hooks:
-    - `pylint`,
     - Markdown lint;
   - add missing GitHub WorkFlow checks:
     - Markdown lint;

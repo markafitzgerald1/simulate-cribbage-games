@@ -1,6 +1,6 @@
 name: Python package
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -29,6 +29,9 @@ jobs:
       - name: Check for PEP8 style violations in artifact pipeline
         run: |
           flake8 artifact_pipeline
+      - name: Check artifact pipeline pylint issues
+        run: |
+          pylint --persistent=n artifact_pipeline
       - name: Check for type errors
         run: |
           mypy simulate_cribbage_games.py

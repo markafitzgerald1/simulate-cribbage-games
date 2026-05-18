@@ -22,19 +22,19 @@ class TestAdapter(unittest.TestCase):
 
     def test_card_creation(self):
         """Test basic Card interaction via adapter."""
-        c = Card(0, 0)
-        self.assertEqual(c.index, 0)
-        self.assertEqual(c.suit, 0)
+        card = Card(0, 0)
+        self.assertEqual(card.index, 0)
+        self.assertEqual(card.suit, 0)
 
     def test_index_indices(self):
         """Test Index metadata is available."""
-        NUM_RANKS = 13
-        self.assertEqual(len(Index.indices), NUM_RANKS)
+        num_ranks = 13
+        self.assertEqual(len(Index.indices), num_ranks)
 
     def test_deck_set_valid(self):
         """Test DECK_SET is properly populated."""
-        DECK_SIZE = 52
-        self.assertEqual(len(DECK_SET), DECK_SIZE)
+        deck_size = 52
+        self.assertEqual(len(DECK_SET), deck_size)
 
     def test_score_hand_and_starter(self):
         """Test scoring function availability and basic execution."""

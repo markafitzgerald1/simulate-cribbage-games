@@ -2,6 +2,7 @@ import unittest
 import math
 import os
 import json
+import random
 import tempfile
 from unittest.mock import patch
 
@@ -22,65 +23,64 @@ class TestGenerateTable(unittest.TestCase):
     def test_get_canonical_pairs(self):
         """Test that exactly 169 pairs are generated and formatted correctly."""
         pairs = get_canonical_pairs()
-        NUM_CANONICAL_PAIRS = 169
-        NUM_SAME_RANK = 13
-        NUM_DIFF_RANK = 156
-        self.assertEqual(len(pairs), NUM_CANONICAL_PAIRS)
+        num_canonical_pairs = 169
+        num_same_rank = 13
+        num_diff_rank = 156
+        self.assertEqual(len(pairs), num_canonical_pairs)
 
         same_rank = [pair for pair in pairs if pair.split("_")[0] == pair.split("_")[1]]
         diff_rank = [pair for pair in pairs if pair.split("_")[0] != pair.split("_")[1]]
 
-        self.assertEqual(len(same_rank), NUM_SAME_RANK)
-        self.assertEqual(len(diff_rank), NUM_DIFF_RANK)
+        self.assertEqual(len(same_rank), num_same_rank)
+        self.assertEqual(len(diff_rank), num_diff_rank)
 
         for pair in same_rank:
             self.assertTrue(pair.endswith("_Unsuited"))
 
     def test_canonical_to_cards(self):
         """Test string to Card mapping."""
-        ACE_INDEX = 0
-        TWO_INDEX = 1
-        FIVE_INDEX = 4
-        TEN_INDEX = 9
-        SUIT_CLUBS = 0
-        SUIT_DIAMONDS = 1
+        ace_index = 0
+        two_index = 1
+        five_index = 4
+        ten_index = 9
+        suit_clubs = 0
+        suit_diamonds = 1
 
         # Suited
         card_1, card_2 = canonical_to_cards("A_2_Suited")
-        self.assertEqual(card_1.index, ACE_INDEX)
-        self.assertEqual(card_2.index, TWO_INDEX)
-        self.assertEqual(card_1.suit, SUIT_CLUBS)
-        self.assertEqual(card_2.suit, SUIT_CLUBS)
+        self.assertEqual(card_1.index, ace_index)
+        self.assertEqual(card_2.index, two_index)
+        self.assertEqual(card_1.suit, suit_clubs)
+        self.assertEqual(card_2.suit, suit_clubs)
 
         # Unsuited
         card_1, card_2 = canonical_to_cards("5_T_Unsuited")
-        self.assertEqual(card_1.index, FIVE_INDEX)
-        self.assertEqual(card_2.index, TEN_INDEX)
-        self.assertEqual(card_1.suit, SUIT_CLUBS)
-        self.assertEqual(card_2.suit, SUIT_DIAMONDS)
+        self.assertEqual(card_1.index, five_index)
+        self.assertEqual(card_2.index, ten_index)
+        self.assertEqual(card_1.suit, suit_clubs)
+        self.assertEqual(card_2.suit, suit_diamonds)
 
     def test_run_monte_carlo(self):
         """Test Monte Carlo simulation returns correct structure and types."""
-        NUM_CUT_CARDS = 13
-        TEST_SAMPLES = 1
-        import random
+        num_cut_cards = 13
+        test_samples = 1
 
         rng = random.Random(42)
 
-        raw_scores = run_monte_carlo("A_A_Unsuited", "Dealer", TEST_SAMPLES, rng)
-        self.assertEqual(len(raw_scores), NUM_CUT_CARDS)
+        raw_scores = run_monte_carlo("A_A_Unsuited", "Dealer", test_samples, rng)
+        self.assertEqual(len(raw_scores), num_cut_cards)
 
         total_scores = sum(len(scores) for scores in raw_scores.values())
-        self.assertEqual(total_scores, TEST_SAMPLES)
+        self.assertEqual(total_scores, test_samples)
 
     def test_compute_statistics(self):
         """Test variance tracking calculations."""
-        EXPECTED_MU_SINGLE = 5.0
-        EXPECTED_SE_ZERO = 0.0
-        EXPECTED_MU_MULTI = 5.0
-        VARIANCE_NUMERATOR = 32
-        DEGREES_OF_FREEDOM = 7
-        SAMPLE_SIZE = 8
+        expected_mu_single = 5.0
+        expected_se_zero = 0.0
+        expected_mu_multi = 5.0
+        variance_numerator = 32
+        degrees_of_freedom = 7
+        sample_size = 8
 
         # Empty
         res = compute_statistics([])
@@ -89,15 +89,15 @@ class TestGenerateTable(unittest.TestCase):
         # Single element
         res = compute_statistics([5])
         self.assertEqual(res["n"], 1)
-        self.assertEqual(res["mu"], EXPECTED_MU_SINGLE)
-        self.assertEqual(res["se"], EXPECTED_SE_ZERO)
+        self.assertEqual(res["mu"], expected_mu_single)
+        self.assertEqual(res["se"], expected_se_zero)
 
         # Multiple elements
         res = compute_statistics([2, 4, 4, 4, 5, 5, 7, 9])
-        self.assertEqual(res["n"], SAMPLE_SIZE)
-        self.assertEqual(res["mu"], EXPECTED_MU_MULTI)
-        expected_se = math.sqrt((VARIANCE_NUMERATOR / DEGREES_OF_FREEDOM)) / math.sqrt(
-            SAMPLE_SIZE
+        self.assertEqual(res["n"], sample_size)
+        self.assertEqual(res["mu"], expected_mu_multi)
+        expected_se = math.sqrt((variance_numerator / degrees_of_freedom)) / math.sqrt(
+            sample_size
         )
         self.assertAlmostEqual(res["se"], expected_se)
 
@@ -126,8 +126,6 @@ class TestGenerateTable(unittest.TestCase):
 
     def test_run_monte_carlo_errors(self):
         """Test error conditions in run_monte_carlo."""
-        import random
-
         rng = random.Random(42)
         with self.assertRaises(ValueError):
             run_monte_carlo("A_A_Unsuited", "InvalidPlayer", 1, rng)
@@ -150,11 +148,11 @@ class TestGenerateTable(unittest.TestCase):
 
         self.assertTrue(os.path.exists("expected_crib_points.json"))
 
-        with open("expected_crib_points.json", "r") as f:
+        with open("expected_crib_points.json", "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        NUM_CANONICAL_PAIRS = 169
-        self.assertEqual(len(data), NUM_CANONICAL_PAIRS)
+        num_canonical_pairs = 169
+        self.assertEqual(len(data), num_canonical_pairs)
         self.assertTrue("A_A_Unsuited" in data)
         self.assertTrue("Dealer" in data["A_A_Unsuited"])
         self.assertTrue("Pone" in data["A_A_Unsuited"])
@@ -213,7 +211,7 @@ class TestGenerateTable(unittest.TestCase):
             ):
                 main()
 
-            with open(output_path, "r") as output_file:
+            with open(output_path, "r", encoding="utf-8") as output_file:
                 data = json.load(output_file)
 
             total_samples = sum(
@@ -243,7 +241,7 @@ class TestGenerateTable(unittest.TestCase):
             ):
                 main()
 
-            with open(output_path, "r") as output_file:
+            with open(output_path, "r", encoding="utf-8") as output_file:
                 data = json.load(output_file)
 
             total_samples = sum(
@@ -301,9 +299,9 @@ class TestGenerateTable(unittest.TestCase):
             ):
                 main()
 
-            with open(resumed_output_path, "r") as resumed_file:
+            with open(resumed_output_path, "r", encoding="utf-8") as resumed_file:
                 resumed_data = json.load(resumed_file)
-            with open(fresh_output_path, "r") as fresh_file:
+            with open(fresh_output_path, "r", encoding="utf-8") as fresh_file:
                 fresh_data = json.load(fresh_file)
 
             self.assertEqual(resumed_data, fresh_data)

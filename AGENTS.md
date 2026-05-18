@@ -108,6 +108,7 @@ coverage report
 mypy simulate_cribbage_games.py
 pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive
 pylint simulate_cribbage_games.py
+pylint --persistent=n artifact_pipeline
 flake8
 ```
 
@@ -225,10 +226,10 @@ generation methodology differs.
 ## Lint Configuration Expectations
 
 Do not assume lint rules are enforced unless they are present in local
-configuration or pre-commit output. At the time of writing, pylint is documented
-as a manual check for `simulate_cribbage_games.py`; it is not installed as a
-pre-commit hook for all Python files. The current pylint configuration does not
-enforce magic-number checks or unusually strict short-variable-name checks.
+configuration or pre-commit output. The artifact pipeline is covered by local
+pre-commit and CI checks for both `pylint --persistent=n artifact_pipeline` and
+`flake8 artifact_pipeline`. The current pylint configuration does not enforce
+magic-number checks or unusually strict short-variable-name checks.
 
 ## Pull Request Readiness
 

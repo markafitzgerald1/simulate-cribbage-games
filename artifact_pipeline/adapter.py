@@ -7,7 +7,8 @@ project_root = os.path.abspath(os.path.join(current_dir, ".."))
 if project_root not in sys.path:  # pragma: no cover
     sys.path.insert(0, project_root)
 
-# Import legacy engine functions and data structures safely
+# Import legacy engine functions and data structures safely.
+# pylint: disable=wrong-import-position
 from simulate_cribbage_games import (  # noqa: E402
     Card,
     Index,

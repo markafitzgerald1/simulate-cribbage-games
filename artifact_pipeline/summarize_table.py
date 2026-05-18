@@ -84,6 +84,22 @@ def canonical_key(rank_1: str, rank_2: str, suit_status: str) -> str:
     return f"{rank_1}_{rank_2}_{suit_status}"
 
 
+def combine_suit_estimates(
+    suited: Optional[Estimate], unsuited: Optional[Estimate], suit_weighting: str
+) -> Optional[Estimate]:
+    if suit_weighting == "suited-only":
+        return suited
+    if suit_weighting == "unsuited-only":
+        return unsuited
+    if suited is None:
+        return unsuited
+    if unsuited is None:
+        return suited
+    if suit_weighting == "unweighted":
+        return combine_estimates(((0.5, suited), (0.5, unsuited)))
+    return combine_estimates(((SUITED_WEIGHT, suited), (UNSUITED_WEIGHT, unsuited)))
+
+
 def get_pair_estimate(
     data: TableData,
     rank_1: str,
@@ -105,27 +121,17 @@ def get_pair_estimate(
     suited = pool_cut_estimate(suited_data) if suited_data else None
     unsuited = pool_cut_estimate(unsuited_data) if unsuited_data else None
 
-    if suit_weighting == "suited-only":
-        return suited
-    if suit_weighting == "unsuited-only":
-        return unsuited
-    if suited is None:
-        return unsuited
-    if unsuited is None:
-        return suited
-    if suit_weighting == "unweighted":
-        return combine_estimates(((0.5, suited), (0.5, unsuited)))
-    return combine_estimates(((SUITED_WEIGHT, suited), (UNSUITED_WEIGHT, unsuited)))
+    return combine_suit_estimates(suited, unsuited, suit_weighting)
 
 
 def get_pair_stat(
     data: TableData,
-    rank_1: str,
-    rank_2: str,
+    ranks: Tuple[str, str],
     role: str,
     statistic: str,
     suit_weighting: str,
 ) -> Optional[float]:
+    rank_1, rank_2 = ranks
     estimate = get_pair_estimate(data, rank_1, rank_2, role, suit_weighting)
     if not estimate:
         return None
@@ -270,7 +276,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    with open(args.path, "r") as table_file:
+    with open(args.path, "r", encoding="utf-8") as table_file:
         data = json.load(table_file)
 
     table = build_table(data, args.role, args.suit_weighting)
