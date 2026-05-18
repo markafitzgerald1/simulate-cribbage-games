@@ -1,15 +1,20 @@
 import argparse
 import json
-import random
 import math
+import os
+import random
+import sys
 
-from src.artifact_pipeline.adapter import (
+if __package__ in (None, ""):  # pragma: no cover
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from artifact_pipeline.adapter import (  # noqa: E402
     Index,
     Card,
     DECK_SET,
     score_hand_and_starter,
     BEST_STATIC_SELECT_PONE_KEPT_CARDS,
-    BEST_STATIC_SELECT_DEALER_KEPT_CARDS
+    BEST_STATIC_SELECT_DEALER_KEPT_CARDS,
 )
 
 
@@ -45,7 +50,7 @@ def canonical_to_cards(canonical_pair):
     that match this pair. For 'Suited', they will both have suit 0.
     For 'Unsuited', they will have suit 0 and suit 1.
     """
-    parts = canonical_pair.split('_')
+    parts = canonical_pair.split("_")
     if len(parts) != 3:
         raise ValueError(f"Invalid canonical pair format: {canonical_pair}")
 
@@ -57,12 +62,16 @@ def canonical_to_cards(canonical_pair):
 
     suit_status = parts[2]
     if suit_status not in ("Suited", "Unsuited"):
-        raise ValueError(f"Invalid suit status: {suit_status}. Must be 'Suited' or 'Unsuited'.")
+        raise ValueError(
+            f"Invalid suit status: {suit_status}. Must be 'Suited' or 'Unsuited'."
+        )
 
     is_suited = suit_status == "Suited"
 
     if rank1_idx == rank2_idx and is_suited:
-        raise ValueError(f"Impossible canonical pair: {canonical_pair}. Same rank pairs cannot be Suited.")
+        raise ValueError(
+            f"Impossible canonical pair: {canonical_pair}. Same rank pairs cannot be Suited."
+        )
 
     card_1 = Card(rank1_idx, 0)
     card_2 = Card(rank2_idx, 0 if is_suited else 1)
@@ -140,9 +149,18 @@ def positive_int(value):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate crib points expected values table.")
-    parser.add_argument("--samples", type=positive_int, required=True, help="Number of Monte Carlo samples per pair (must be > 0).")
-    parser.add_argument("--seed", type=int, help="Optional RNG seed for reproducible generation.")
+    parser = argparse.ArgumentParser(
+        description="Generate crib points expected values table."
+    )
+    parser.add_argument(
+        "--samples",
+        type=positive_int,
+        required=True,
+        help="Number of Monte Carlo samples per pair (must be > 0).",
+    )
+    parser.add_argument(
+        "--seed", type=int, help="Optional RNG seed for reproducible generation."
+    )
     args = parser.parse_args()
 
     if args.seed is not None:

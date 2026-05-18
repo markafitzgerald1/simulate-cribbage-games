@@ -1,12 +1,12 @@
 import unittest
 
-from src.artifact_pipeline.adapter import (
+from artifact_pipeline.adapter import (
     Card,
     Index,
     DECK_SET,
     score_hand_and_starter,
     BEST_STATIC_SELECT_PONE_KEPT_CARDS,
-    BEST_STATIC_SELECT_DEALER_KEPT_CARDS
+    BEST_STATIC_SELECT_DEALER_KEPT_CARDS,
 )
 
 
@@ -44,5 +44,5 @@ class TestAdapter(unittest.TestCase):
         self.assertTrue(isinstance(score, int))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

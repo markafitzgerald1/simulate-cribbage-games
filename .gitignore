@@ -34,5 +34,6 @@
 /htmlcov/
 /coverage\.xml
 /env*/
+/expected_crib_points.json
 *.py[cod]
 __pycache__/

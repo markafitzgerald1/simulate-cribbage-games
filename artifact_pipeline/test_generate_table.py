@@ -5,13 +5,13 @@ import json
 from unittest.mock import patch
 
 import argparse
-from src.artifact_pipeline.generate_table import (
+from artifact_pipeline.generate_table import (
     get_canonical_pairs,
     canonical_to_cards,
     run_monte_carlo,
     compute_statistics,
     main,
-    positive_int
+    positive_int,
 )
 
 
@@ -24,8 +24,8 @@ class TestGenerateTable(unittest.TestCase):
         NUM_DIFF_RANK = 156
         self.assertEqual(len(pairs), NUM_CANONICAL_PAIRS)
 
-        same_rank = [pair for pair in pairs if pair.split('_')[0] == pair.split('_')[1]]
-        diff_rank = [pair for pair in pairs if pair.split('_')[0] != pair.split('_')[1]]
+        same_rank = [pair for pair in pairs if pair.split("_")[0] == pair.split("_")[1]]
+        diff_rank = [pair for pair in pairs if pair.split("_")[0] != pair.split("_")[1]]
 
         self.assertEqual(len(same_rank), NUM_SAME_RANK)
         self.assertEqual(len(diff_rank), NUM_DIFF_RANK)
@@ -61,6 +61,7 @@ class TestGenerateTable(unittest.TestCase):
         NUM_CUT_CARDS = 13
         TEST_SAMPLES = 1
         import random
+
         rng = random.Random(42)
 
         raw_scores = run_monte_carlo("A_A_Unsuited", "Dealer", TEST_SAMPLES, rng)
@@ -90,7 +91,9 @@ class TestGenerateTable(unittest.TestCase):
         # Multiple elements
         res = compute_statistics([2, 4, 4, 4, 5, 5, 7, 9])
         self.assertEqual(res["mu"], EXPECTED_MU_MULTI)
-        expected_se = math.sqrt((VARIANCE_NUMERATOR / DEGREES_OF_FREEDOM)) / math.sqrt(SAMPLE_SIZE)
+        expected_se = math.sqrt((VARIANCE_NUMERATOR / DEGREES_OF_FREEDOM)) / math.sqrt(
+            SAMPLE_SIZE
+        )
         self.assertAlmostEqual(res["se"], expected_se)
 
     def test_canonical_to_cards_errors(self):
@@ -109,6 +112,7 @@ class TestGenerateTable(unittest.TestCase):
     def test_run_monte_carlo_errors(self):
         """Test error conditions in run_monte_carlo."""
         import random
+
         rng = random.Random(42)
         with self.assertRaises(ValueError):
             run_monte_carlo("A_A_Unsuited", "InvalidPlayer", 1, rng)
@@ -121,7 +125,7 @@ class TestGenerateTable(unittest.TestCase):
         with self.assertRaises(argparse.ArgumentTypeError):
             positive_int("-1")
 
-    @patch('sys.argv', ['generate_table.py', '--samples', '1', '--seed', '42'])
+    @patch("sys.argv", ["generate_table.py", "--samples", "1", "--seed", "42"])
     def test_main(self):
         """Test main integration generates file successfully."""
         if os.path.exists("expected_crib_points.json"):
@@ -136,19 +140,19 @@ class TestGenerateTable(unittest.TestCase):
 
         NUM_CANONICAL_PAIRS = 169
         self.assertEqual(len(data), NUM_CANONICAL_PAIRS)
-        self.assertIn("A_A_Unsuited", data)
-        self.assertIn("Dealer", data["A_A_Unsuited"])
-        self.assertIn("Pone", data["A_A_Unsuited"])
+        self.assertTrue("A_A_Unsuited" in data)
+        self.assertTrue("Dealer" in data["A_A_Unsuited"])
+        self.assertTrue("Pone" in data["A_A_Unsuited"])
 
         # Because we're only doing 1 sample, only 1 cut card will be present.
         # Find which cut card was selected and assert it's valid.
         cut_cards_present = list(data["A_A_Unsuited"]["Dealer"].keys())
         self.assertEqual(len(cut_cards_present), 1)
-        self.assertIn(cut_cards_present[0], "A23456789TJQK")
+        self.assertTrue(cut_cards_present[0] in "A23456789TJQK")
 
         os.remove("expected_crib_points.json")
 
-    @patch('sys.argv', ['generate_table.py', '--samples', '1'])
+    @patch("sys.argv", ["generate_table.py", "--samples", "1"])
     def test_main_no_seed(self):
         """Test main integration generates file successfully without seed."""
         if os.path.exists("expected_crib_points.json"):
@@ -160,5 +164,5 @@ class TestGenerateTable(unittest.TestCase):
         os.remove("expected_crib_points.json")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

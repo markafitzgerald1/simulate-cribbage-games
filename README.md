@@ -80,6 +80,18 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 - Play one game as first dealer with post-decision coach analysis against a first pone using dynamic (simulation-based) discard and play strategies assisted by end of dynamic player simulation position game points estimates: `python simulate_cribbage_games.py --first-dealer-keep-user-selected --coach-discard-simulated-hand-count 160 --first-dealer-play-user-entered --coach-play-simulated-hand-count 900 --first-pone-discard-based-on-simulations 160 --first-pone-play-based-on-simulations 900 --hide-first-pone-hand --unlimited-hands-per-game --estimate-first-pone-incomplete-game-wins-and-game-points --estimate-first-dealer-incomplete-game-wins-and-game-points`
 - Help on additional simulation options: `python simulate_cribbage_games.py --help`
 
+## Artifact Pipeline
+
+Generate the Monte Carlo expected crib points table from the repository root:
+
+```sh
+python artifact_pipeline/generate_table.py --samples 1000 --seed 42
+```
+
+The command writes `expected_crib_points.json` in the current working
+directory. Use a larger `--samples` value for less noisy estimates; `--seed` is
+optional and makes runs reproducible.
+
 ## Smoke Tests and Usage Examples
 
 All of the following should exit with status code 0 and no raised exception:
