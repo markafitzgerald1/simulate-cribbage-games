@@ -103,6 +103,8 @@ class TestGenerateTable(unittest.TestCase):
             canonical_to_cards("A_X_Suited")
         with self.assertRaises(ValueError):
             canonical_to_cards("A_2_Invalid")
+        with self.assertRaises(ValueError):
+            canonical_to_cards("A_A_Suited")
 
     def test_run_monte_carlo_errors(self):
         """Test error conditions in run_monte_carlo."""

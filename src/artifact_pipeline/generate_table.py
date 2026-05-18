@@ -61,6 +61,9 @@ def canonical_to_cards(canonical_pair):
 
     is_suited = suit_status == "Suited"
 
+    if rank1_idx == rank2_idx and is_suited:
+        raise ValueError(f"Impossible canonical pair: {canonical_pair}. Same rank pairs cannot be Suited.")
+
     card_1 = Card(rank1_idx, 0)
     card_2 = Card(rank2_idx, 0 if is_suited else 1)
 
