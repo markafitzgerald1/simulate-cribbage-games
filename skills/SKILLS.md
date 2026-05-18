@@ -26,7 +26,9 @@ default skill for documentation and Python backend work.
 8. When publishing, verify the pushed branch and pull request URL. If a GitHub
    integration cannot create the PR, use another authenticated path instead of
    changing the branch or bypassing review.
-9. Update `README.md`, `AGENTS.md`, and this file together when shared workflow
+9. Before resolving a pull request review thread, reply with why the feedback is
+   considered resolved and identify the agent or human making that assessment.
+10. Update `README.md`, `AGENTS.md`, and this file together when shared workflow
    guidance changes.
 
 ## Skill Authoring Rules

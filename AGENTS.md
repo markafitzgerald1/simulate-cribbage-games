@@ -210,6 +210,11 @@ If GitHub review comments exist, inspect their current thread status and address
 unresolved comments before requesting review again. Reply clearly when an agent
 implemented a change on behalf of a human.
 
+Before resolving a pull request review thread, add a reply that explains why
+the thread is considered resolved. Reference the code, documentation, test, or
+reasoned no-change decision that addresses the feedback, and identify the agent
+or human who made that assessment.
+
 Near the end of this section, observe these boundaries: do not claim an issue is
 complete until requested files are updated, required constraints are represented
 in documentation, and the diff has been reviewed against the issue text. Do not
