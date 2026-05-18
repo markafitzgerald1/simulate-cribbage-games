@@ -22,6 +22,15 @@ sampling, or measured simulation results.
 must never attempt to format, lint, refactor, reorganize, or mechanically clean
 up that file unless a human maintainer explicitly requests a direct edit.
 
+## License And AI Provenance
+
+This project uses AI coding assistants in its development. All AI-generated
+code, documentation, and repository changes are rigorously reviewed, tested
+where applicable, and modified as needed by human maintainers before merge.
+
+The compiled repository and all of its contents are distributed under the
+Mozilla Public License 2.0. See `LICENSE` for details.
+
 ## Setup
 
 ### Common

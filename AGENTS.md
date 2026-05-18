@@ -24,6 +24,20 @@ preference tables that are not mathematically justified. Do not port frontend,
 React, Vite, Storybook, Playwright, or UI component rules from other
 repositories unless the task explicitly targets this repository's browser UI.
 
+## License And AI Provenance
+
+This project uses AI coding assistants in its development. All AI-generated
+code, documentation, and repository changes must be rigorously reviewed, tested
+where applicable, and modified as needed by human maintainers before merge.
+
+The compiled repository and all of its contents are distributed under the
+Mozilla Public License 2.0. See `LICENSE` for details.
+
+Near the end of this section, observe these boundaries: do not present
+AI-generated work as a substitute for human review, do not merge unreviewed
+AI-generated code, and do not add code or content whose provenance or licensing
+is unclear.
+
 ## Version Control Workflow
 
 All AI agents and human developers must work on feature branches and submit code
