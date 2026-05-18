@@ -34,3 +34,5 @@
 /htmlcov/
 /coverage\.xml
 /env*/
+.pyc
+__pycache__/
