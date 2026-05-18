@@ -1,6 +1,35 @@
 # Simulate Cribbage Games
 
-Simulate and analyze the play of hands and games of cribbage between two opponents.
+Simulate and analyze the play of hands and games of cribbage between two
+opponents.
+
+## Agent Governance
+
+Repository-wide agent and developer instructions live in `AGENTS.md`, with
+local skill guidance in `skills/SKILLS.md`. Read both before making complex
+changes.
+
+All AI agents and human developers must work on feature branches and submit code
+exclusively through pull requests. Direct pushes to `main` are strictly
+forbidden.
+
+The simulator's governing technical principle is objective mathematical
+simulation over subjective heuristics. Scoring, discard, play, and expected
+value logic must be justified by cribbage rules, enumeration, probability,
+sampling, or measured simulation results.
+
+`simulate_cribbage_games.py` is a legacy, immutable external dependency. Agents
+must never attempt to format, lint, refactor, reorganize, or mechanically clean
+up that file unless a human maintainer explicitly requests a direct edit.
+
+## License And AI Provenance
+
+This project uses AI coding assistants in its development. All AI-generated
+code, documentation, and repository changes are rigorously reviewed, tested
+where applicable, and modified as needed by human maintainers before merge.
+
+The compiled repository and all of its contents are distributed under the
+Mozilla Public License 2.0. See `LICENSE` for details.
 
 ## Setup
 
@@ -16,6 +45,12 @@ Simulate and analyze the play of hands and games of cribbage between two opponen
 - Run pre-commit hooks: `pre-commit run --all-files`
 - Check for type errors: `mypy simulate_cribbage_games.py`
 - Run unit tests, generate machine parseable test coverage info (can be used in the Visual Studio Code Coverage Gutters extension, for example) and ensure that the unit test code coverage percentage has not decreased: `coverage run && coverage xml && coverage report`
+- New code that imports or relies on parts of `simulate_cribbage_games.py` must
+  first prove the used legacy surface with 100% unit test coverage and related
+  automated acceptance test coverage.
+- Before code changes are pushed or marked ready for review, run at least one
+  smoke test or usage example from this README and sanity-check the output.
+  Automate that acceptance test when practical.
 - Ensure no code duplications of size 59 tokens or larger: `pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive`
 - Check for pylint flagged code issues: `pylint simulate_cribbage_games.py`
 - Check for flake8 flagged code issues: `flake8`
