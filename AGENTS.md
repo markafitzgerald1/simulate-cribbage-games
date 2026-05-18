@@ -185,6 +185,13 @@ Before opening or updating a pull request, summarize what changed, why it
 changed, and which validation commands were run. Include any skipped checks and
 the reason they were skipped.
 
+Use local `git` as the source of truth for branch, commit, and push state before
+creating a pull request. After pushing, verify that the remote branch exists and
+record the pull request URL. If one GitHub integration cannot create the pull
+request because of permissions, use another authenticated path such as the
+GitHub CLI or GitHub web UI rather than changing the branch or pushing to
+`main`.
+
 If GitHub review comments exist, inspect their current thread status and address
 unresolved comments before requesting review again. Reply clearly when an agent
 implemented a change on behalf of a human.

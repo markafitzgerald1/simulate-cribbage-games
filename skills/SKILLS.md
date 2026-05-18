@@ -23,7 +23,10 @@ default skill for documentation and Python backend work.
 6. Run at least one README smoke test or usage example for code changes, and
    sanity-check the output before review.
 7. Run the required checks from `AGENTS.md`, or record why a check was skipped.
-8. Update `README.md`, `AGENTS.md`, and this file together when shared workflow
+8. When publishing, verify the pushed branch and pull request URL. If a GitHub
+   integration cannot create the PR, use another authenticated path instead of
+   changing the branch or bypassing review.
+9. Update `README.md`, `AGENTS.md`, and this file together when shared workflow
    guidance changes.
 
 ## Skill Authoring Rules
