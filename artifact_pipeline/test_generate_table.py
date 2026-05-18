@@ -9,17 +9,22 @@ from unittest.mock import patch
 import argparse
 from artifact_pipeline.generate_table import (
     accumulator_to_statistics,
+    accumulators_to_output,
     get_canonical_pairs,
     canonical_to_cards,
     run_monte_carlo,
+    run_monte_carlo_into_accumulators,
     compute_statistics,
+    run_generation,
     statistics_to_accumulator,
+    minimum_completed_sample_count,
+    reached_target_sample_count,
     main,
     positive_int,
 )
 
 
-class TestGenerateTable(unittest.TestCase):
+class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_get_canonical_pairs(self):
         """Test that exactly 169 pairs are generated and formatted correctly."""
         pairs = get_canonical_pairs()
@@ -73,6 +78,14 @@ class TestGenerateTable(unittest.TestCase):
         total_scores = sum(len(scores) for scores in raw_scores.values())
         self.assertEqual(total_scores, test_samples)
 
+    def test_run_monte_carlo_pone(self):
+        """Test Monte Carlo simulation for pone role."""
+        rng = random.Random(42)
+
+        raw_scores = run_monte_carlo("A_A_Unsuited", "Pone", 1, rng)
+
+        self.assertEqual(sum(len(scores) for scores in raw_scores.values()), 1)
+
     def test_compute_statistics(self):
         """Test variance tracking calculations."""
         expected_mu_single = 5.0
@@ -111,6 +124,24 @@ class TestGenerateTable(unittest.TestCase):
         self.assertAlmostEqual(round_tripped["mu"], statistics["mu"])
         self.assertAlmostEqual(round_tripped["se"], statistics["se"])
 
+    def test_accumulator_to_statistics_empty(self):
+        self.assertIsNone(
+            accumulator_to_statistics({"n": 0, "sum": 0.0, "sum_squares": 0.0})
+        )
+
+    def test_statistics_to_accumulator_requires_n(self):
+        with self.assertRaises(ValueError):
+            statistics_to_accumulator({"mu": 1.0})
+
+    def test_accumulators_to_output_skips_empty_accumulator(self):
+        accumulators = {
+            "A_A_Unsuited": {"Dealer": {"A": {"n": 0, "sum": 0.0, "sum_squares": 0.0}}}
+        }
+
+        output = accumulators_to_output(accumulators)
+
+        self.assertEqual(output["A_A_Unsuited"]["Dealer"], {})
+
     def test_canonical_to_cards_errors(self):
         """Test error conditions in canonical_to_cards."""
         with self.assertRaises(ValueError):
@@ -129,6 +160,39 @@ class TestGenerateTable(unittest.TestCase):
         rng = random.Random(42)
         with self.assertRaises(ValueError):
             run_monte_carlo("A_A_Unsuited", "InvalidPlayer", 1, rng)
+
+    def test_run_monte_carlo_into_accumulators_errors(self):
+        rng = random.Random(42)
+        with self.assertRaises(ValueError):
+            run_monte_carlo_into_accumulators(
+                {},
+                "A_A_Unsuited",
+                "InvalidPlayer",
+                1,
+                {"rng": rng, "first_sample_index": 0, "seed": None},
+            )
+
+    def test_run_generation_infinite(self):
+        args = argparse.Namespace(infinite=True, checkpoint_frequency=1, seed=42)
+        rng = random.Random(42)
+        accumulators = {}
+
+        made_progress = run_generation(args, rng, ["A_A_Unsuited"], accumulators)
+
+        self.assertTrue(made_progress)
+        self.assertEqual(
+            minimum_completed_sample_count(accumulators, ["A_A_Unsuited"]), 1
+        )
+
+    def test_run_generation_no_progress(self):
+        args = argparse.Namespace(
+            infinite=False, checkpoint_frequency=1, samples=0, seed=42
+        )
+        rng = random.Random(42)
+        accumulators = {}
+
+        self.assertFalse(run_generation(args, rng, ["A_A_Unsuited"], accumulators))
+        self.assertFalse(reached_target_sample_count(accumulators, ["A_A_Unsuited"], 1))
 
     def test_positive_int(self):
         """Test positive_int logic."""
@@ -176,6 +240,69 @@ class TestGenerateTable(unittest.TestCase):
 
         self.assertTrue(os.path.exists("expected_crib_points.json"))
         os.remove("expected_crib_points.json")
+
+    @patch("sys.argv", ["generate_table.py"])
+    def test_main_requires_samples_unless_infinite(self):
+        with self.assertRaises(SystemExit):
+            main()
+
+    def test_main_writes_existing_target_without_progress(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                    "--no-resume",
+                ],
+            ):
+                main()
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                main()
+
+            with open(output_path, "r", encoding="utf-8") as output_file:
+                data = json.load(output_file)
+
+            total_samples = sum(
+                stats["n"] for stats in data["A_A_Unsuited"]["Dealer"].values()
+            )
+            self.assertEqual(total_samples, 1)
+
+    def test_main_infinite_interrupt_writes_checkpoint(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+
+            with patch(
+                "sys.argv",
+                ["generate_table.py", "--infinite", "--output", output_path],
+            ), patch(
+                "artifact_pipeline.generate_table.run_generation",
+                side_effect=[False, KeyboardInterrupt],
+            ):
+                with self.assertRaises(SystemExit) as context:
+                    main()
+
+            self.assertEqual(context.exception.code, 130)
+            self.assertTrue(os.path.exists(output_path))
 
     def test_main_resumes_existing_output(self):
         """Test main resumes from a prior checkpoint."""

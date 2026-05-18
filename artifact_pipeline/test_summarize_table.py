@@ -1,15 +1,21 @@
 import io
+import json
+import os
+import tempfile
 import unittest
 from unittest.mock import patch
 
 from artifact_pipeline.summarize_table import (
     build_table,
     combine_estimates,
+    combine_suit_estimates,
     format_value,
     get_pair_estimate,
     get_pair_stat,
+    main,
     mean,
     mean_cut_stat,
+    parse_args,
     pool_cut_estimate,
     print_csv_table,
     print_markdown_table,
@@ -42,6 +48,9 @@ class TestSummarizeTable(unittest.TestCase):
         self.assertEqual(estimate["mu"], 5.0)
         self.assertAlmostEqual(estimate["se"], (13 / 3) ** 0.5)
 
+    def test_pool_cut_estimate_empty(self):
+        self.assertIsNone(pool_cut_estimate({"A": {"se": 1.0}}))
+
     def test_pool_cut_estimate_without_sample_counts(self):
         cut_stats = {
             "A": {"mu": 4.0, "se": 1.0},
@@ -64,6 +73,14 @@ class TestSummarizeTable(unittest.TestCase):
 
         self.assertEqual(combined["mu"], 5.0)
         self.assertAlmostEqual(combined["se"], (0.25**2 * 4 + 0.75**2 * 4) ** 0.5)
+
+    def test_combine_estimates_empty(self):
+        self.assertIsNone(combine_estimates(()))
+
+    def test_combine_suit_estimates_with_missing_unsuited(self):
+        estimate = {"n": 1, "mu": 8.0, "se": 0.0}
+
+        self.assertEqual(combine_suit_estimates(estimate, None, "actual"), estimate)
 
     def test_get_pair_stat_same_rank(self):
         data = {
@@ -162,6 +179,52 @@ class TestSummarizeTable(unittest.TestCase):
         output = stdout.getvalue()
         self.assertTrue(output.startswith(",A,2,3,4,5,6,7,8,9,T,J,Q,K"))
         self.assertTrue("A,1.00" in output)
+
+    @patch("sys.argv", ["summarize_table.py"])
+    def test_parse_args_defaults(self):
+        args = parse_args()
+
+        self.assertEqual(args.path, "expected_crib_points.json")
+        self.assertEqual(args.role, "Dealer")
+        self.assertEqual(args.statistic, "mu")
+        self.assertEqual(args.format, "markdown")
+        self.assertEqual(args.precision, 2)
+        self.assertEqual(args.suit_weighting, "actual")
+        self.assertFalse(args.show_se)
+
+    def test_main_prints_markdown(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+            with open(output_path, "w", encoding="utf-8") as output_file:
+                json.dump(
+                    {"A_A_Unsuited": {"Dealer": {"A": {"n": 1, "mu": 5.0}}}},
+                    output_file,
+                )
+
+            with patch(
+                "sys.argv",
+                ["summarize_table.py", "--role", "Dealer", output_path],
+            ), patch("sys.stdout", new_callable=io.StringIO) as stdout:
+                main()
+
+        self.assertTrue("5.00" in stdout.getvalue())
+
+    def test_main_prints_csv(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+            with open(output_path, "w", encoding="utf-8") as output_file:
+                json.dump(
+                    {"A_A_Unsuited": {"Dealer": {"A": {"n": 1, "mu": 5.0}}}},
+                    output_file,
+                )
+
+            with patch(
+                "sys.argv",
+                ["summarize_table.py", "--format", "csv", output_path],
+            ), patch("sys.stdout", new_callable=io.StringIO) as stdout:
+                main()
+
+        self.assertTrue(stdout.getvalue().startswith(",A,2,3,4,5,6,7,8,9,T,J,Q,K"))
 
 
 if __name__ == "__main__":
