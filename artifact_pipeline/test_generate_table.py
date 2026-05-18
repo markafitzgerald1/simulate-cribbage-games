@@ -2,14 +2,17 @@ import unittest
 import math
 import os
 import json
+import tempfile
 from unittest.mock import patch
 
 import argparse
 from artifact_pipeline.generate_table import (
+    accumulator_to_statistics,
     get_canonical_pairs,
     canonical_to_cards,
     run_monte_carlo,
     compute_statistics,
+    statistics_to_accumulator,
     main,
     positive_int,
 )
@@ -85,16 +88,28 @@ class TestGenerateTable(unittest.TestCase):
 
         # Single element
         res = compute_statistics([5])
+        self.assertEqual(res["n"], 1)
         self.assertEqual(res["mu"], EXPECTED_MU_SINGLE)
         self.assertEqual(res["se"], EXPECTED_SE_ZERO)
 
         # Multiple elements
         res = compute_statistics([2, 4, 4, 4, 5, 5, 7, 9])
+        self.assertEqual(res["n"], SAMPLE_SIZE)
         self.assertEqual(res["mu"], EXPECTED_MU_MULTI)
         expected_se = math.sqrt((VARIANCE_NUMERATOR / DEGREES_OF_FREEDOM)) / math.sqrt(
             SAMPLE_SIZE
         )
         self.assertAlmostEqual(res["se"], expected_se)
+
+    def test_statistics_accumulator_round_trip(self):
+        statistics = compute_statistics([2, 4, 6])
+
+        accumulator = statistics_to_accumulator(statistics)
+        round_tripped = accumulator_to_statistics(accumulator)
+
+        self.assertEqual(round_tripped["n"], statistics["n"])
+        self.assertAlmostEqual(round_tripped["mu"], statistics["mu"])
+        self.assertAlmostEqual(round_tripped["se"], statistics["se"])
 
     def test_canonical_to_cards_errors(self):
         """Test error conditions in canonical_to_cards."""
@@ -149,6 +164,7 @@ class TestGenerateTable(unittest.TestCase):
         cut_cards_present = list(data["A_A_Unsuited"]["Dealer"].keys())
         self.assertEqual(len(cut_cards_present), 1)
         self.assertTrue(cut_cards_present[0] in "A23456789TJQK")
+        self.assertEqual(data["A_A_Unsuited"]["Dealer"][cut_cards_present[0]]["n"], 1)
 
         os.remove("expected_crib_points.json")
 
@@ -162,6 +178,135 @@ class TestGenerateTable(unittest.TestCase):
 
         self.assertTrue(os.path.exists("expected_crib_points.json"))
         os.remove("expected_crib_points.json")
+
+    def test_main_resumes_existing_output(self):
+        """Test main resumes from a prior checkpoint."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                    "--no-resume",
+                ],
+            ):
+                main()
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--seed",
+                    "43",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                main()
+
+            with open(output_path, "r") as output_file:
+                data = json.load(output_file)
+
+            total_samples = sum(
+                stats["n"] for stats in data["A_A_Unsuited"]["Dealer"].values()
+            )
+            self.assertEqual(total_samples, 2)
+
+    def test_main_reaches_target_across_multiple_checkpoints(self):
+        """Test finite runs continue until the cumulative sample target."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--checkpoint-frequency",
+                    "1",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                    "--no-resume",
+                ],
+            ):
+                main()
+
+            with open(output_path, "r") as output_file:
+                data = json.load(output_file)
+
+            total_samples = sum(
+                stats["n"] for stats in data["A_A_Unsuited"]["Dealer"].values()
+            )
+            self.assertEqual(total_samples, 2)
+
+    def test_seeded_resume_matches_fresh_seeded_run(self):
+        """Test seeded resume continues the deterministic sample sequence."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            resumed_output_path = os.path.join(temp_dir, "resumed.json")
+            fresh_output_path = os.path.join(temp_dir, "fresh.json")
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--seed",
+                    "42",
+                    "--output",
+                    resumed_output_path,
+                    "--no-resume",
+                ],
+            ):
+                main()
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--seed",
+                    "42",
+                    "--output",
+                    resumed_output_path,
+                ],
+            ):
+                main()
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--seed",
+                    "42",
+                    "--output",
+                    fresh_output_path,
+                    "--no-resume",
+                ],
+            ):
+                main()
+
+            with open(resumed_output_path, "r") as resumed_file:
+                resumed_data = json.load(resumed_file)
+            with open(fresh_output_path, "r") as fresh_file:
+                fresh_data = json.load(fresh_file)
+
+            self.assertEqual(resumed_data, fresh_data)
 
 
 if __name__ == "__main__":

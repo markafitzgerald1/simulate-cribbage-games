@@ -18,6 +18,10 @@ from artifact_pipeline.adapter import (  # noqa: E402
 )
 
 
+DEFAULT_OUTPUT_PATH = "expected_crib_points.json"
+DEFAULT_CHECKPOINT_FREQUENCY = 100
+
+
 def get_canonical_pairs():
     """
     Generate the 169 canonical discard pairs.
@@ -123,6 +127,124 @@ def run_monte_carlo(canonical_pair, player, num_samples, rng):
     return raw_scores_by_cut
 
 
+def empty_accumulator():
+    return {"n": 0, "sum": 0.0, "sum_squares": 0.0}
+
+
+def update_accumulator(accumulator, value):
+    accumulator["n"] += 1
+    accumulator["sum"] += value
+    accumulator["sum_squares"] += value * value
+
+
+def accumulator_to_statistics(accumulator):
+    n = accumulator["n"]
+    if n == 0:
+        return None
+
+    mu = accumulator["sum"] / n
+    if n == 1:
+        return {"n": n, "mu": mu, "se": 0.0}
+
+    variance = (accumulator["sum_squares"] - n * mu * mu) / (n - 1)
+    se = math.sqrt(max(variance, 0.0)) / math.sqrt(n)
+    return {"n": n, "mu": mu, "se": se}
+
+
+def statistics_to_accumulator(statistics):
+    if "n" not in statistics:
+        raise ValueError(
+            "Existing output lacks n values. Regenerate it or rerun with --no-resume."
+        )
+
+    n = int(statistics["n"])
+    mu = statistics["mu"]
+    se = statistics.get("se", 0.0)
+    if n <= 1:
+        return {"n": n, "sum": mu * n, "sum_squares": mu * mu * n}
+
+    variance = se * se * n
+    return {
+        "n": n,
+        "sum": mu * n,
+        "sum_squares": (n - 1) * variance + n * mu * mu,
+    }
+
+
+def load_accumulators(output_path):
+    if not os.path.exists(output_path):
+        return {}
+
+    with open(output_path, "r") as table_file:
+        table_data = json.load(table_file)
+
+    accumulators = {}
+    for pair, pair_data in table_data.items():
+        accumulators[pair] = {}
+        for player, player_data in pair_data.items():
+            accumulators[pair][player] = {}
+            for cut_card, statistics in player_data.items():
+                accumulators[pair][player][cut_card] = statistics_to_accumulator(
+                    statistics
+                )
+    return accumulators
+
+
+def get_cut_accumulator(accumulators, pair, player, cut_card):
+    pair_data = accumulators.setdefault(pair, {})
+    player_data = pair_data.setdefault(player, {})
+    return player_data.setdefault(cut_card, empty_accumulator())
+
+
+def get_total_sample_count(accumulators, pair, player):
+    return sum(
+        accumulator["n"]
+        for accumulator in accumulators.get(pair, {}).get(player, {}).values()
+    )
+
+
+def run_monte_carlo_into_accumulators(
+    accumulators, canonical_pair, player, num_samples, rng, first_sample_index, seed
+):
+    """
+    Run Monte Carlo samples and add raw score totals to cumulative accumulators.
+    """
+    if player not in ("Dealer", "Pone"):
+        raise ValueError(f"Invalid player role: {player}. Must be 'Dealer' or 'Pone'.")
+
+    discarded_cards = canonical_to_cards(canonical_pair)
+    remaining_deck = [card for card in DECK_SET if card not in discarded_cards]
+
+    for sample_offset in range(num_samples):
+        sample_rng = rng
+        if seed is not None:
+            sample_index = first_sample_index + sample_offset
+            sample_rng = random.Random(
+                f"{seed}:{canonical_pair}:{player}:{sample_index}"
+            )
+
+        opponent_dealt = sample_rng.sample(remaining_deck, 6)
+
+        if player == "Dealer":
+            kept = BEST_STATIC_SELECT_PONE_KEPT_CARDS(opponent_dealt)
+        else:
+            kept = BEST_STATIC_SELECT_DEALER_KEPT_CARDS(opponent_dealt)
+
+        opponent_discards = [c for c in opponent_dealt if c not in kept]
+        remaining_after_deal = [c for c in remaining_deck if c not in opponent_dealt]
+        cut_card = sample_rng.choice(remaining_after_deal)
+        crib_hand = discarded_cards + opponent_discards
+        score = score_hand_and_starter(crib_hand, cut_card, is_crib=True)
+
+        cut_card_rank_str = Index.indices[cut_card.index]
+        update_accumulator(
+            get_cut_accumulator(
+                accumulators, canonical_pair, player, cut_card_rank_str
+            ),
+            score,
+        )
+
+
 def compute_statistics(raw_scores):
     """
     Compute mean (mu) and standard error (se) from a list of raw scores.
@@ -133,12 +255,80 @@ def compute_statistics(raw_scores):
 
     mu = sum(raw_scores) / n
     if n == 1:
-        return {"mu": mu, "se": 0.0}
+        return {"n": n, "mu": mu, "se": 0.0}
 
     variance = sum((x - mu) ** 2 for x in raw_scores) / (n - 1)
     se = math.sqrt(variance) / math.sqrt(n)
 
-    return {"mu": mu, "se": se}
+    return {"n": n, "mu": mu, "se": se}
+
+
+def accumulators_to_output(accumulators):
+    output = {}
+    for pair in get_canonical_pairs():
+        pair_data = {}
+        for player in ["Dealer", "Pone"]:
+            player_data = {}
+            for cut_card in Index.indices:
+                accumulator = accumulators.get(pair, {}).get(player, {}).get(cut_card)
+                if accumulator:
+                    statistics = accumulator_to_statistics(accumulator)
+                    if statistics is not None:
+                        player_data[cut_card] = statistics
+            pair_data[player] = player_data
+        output[pair] = pair_data
+    return output
+
+
+def write_output(accumulators, output_path):
+    temporary_output_path = f"{output_path}.tmp"
+    with open(temporary_output_path, "w") as output_file:
+        json.dump(accumulators_to_output(accumulators), output_file, indent=2)
+        output_file.write("\n")
+    os.replace(temporary_output_path, output_path)
+
+
+def run_generation(args, rng, pairs, accumulators):
+    made_progress = False
+    for pair in pairs:
+        for player in ["Dealer", "Pone"]:
+            current_samples = get_total_sample_count(accumulators, pair, player)
+            if args.infinite:
+                samples_to_run = args.checkpoint_frequency
+            else:
+                samples_to_run = min(
+                    args.checkpoint_frequency,
+                    max(args.samples - current_samples, 0),
+                )
+
+            if samples_to_run > 0:
+                run_monte_carlo_into_accumulators(
+                    accumulators,
+                    pair,
+                    player,
+                    samples_to_run,
+                    rng,
+                    current_samples,
+                    args.seed,
+                )
+                made_progress = True
+    return made_progress
+
+
+def minimum_completed_sample_count(accumulators, pairs):
+    return min(
+        get_total_sample_count(accumulators, pair, player)
+        for pair in pairs
+        for player in ["Dealer", "Pone"]
+    )
+
+
+def reached_target_sample_count(accumulators, pairs, target_samples):
+    return all(
+        get_total_sample_count(accumulators, pair, player) >= target_samples
+        for pair in pairs
+        for player in ["Dealer", "Pone"]
+    )
 
 
 def positive_int(value):
@@ -155,13 +345,41 @@ def main():
     parser.add_argument(
         "--samples",
         type=positive_int,
-        required=True,
-        help="Number of Monte Carlo samples per pair (must be > 0).",
+        help="Target cumulative Monte Carlo samples per pair (must be > 0).",
     )
     parser.add_argument(
-        "--seed", type=int, help="Optional RNG seed for reproducible generation."
+        "--infinite",
+        action="store_true",
+        help="Keep adding samples until interrupted.",
+    )
+    parser.add_argument(
+        "--checkpoint-frequency",
+        type=positive_int,
+        default=DEFAULT_CHECKPOINT_FREQUENCY,
+        help=(
+            "Samples per pair/player to add before each checkpoint "
+            f"(default: {DEFAULT_CHECKPOINT_FREQUENCY})."
+        ),
+    )
+    parser.add_argument(
+        "--output",
+        default=DEFAULT_OUTPUT_PATH,
+        help=f"Output JSON path (default: {DEFAULT_OUTPUT_PATH}).",
+    )
+    parser.add_argument(
+        "--no-resume",
+        action="store_true",
+        help="Ignore any existing output file and start a fresh run.",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        help="Optional RNG seed for reproducible generation.",
     )
     args = parser.parse_args()
+
+    if not args.infinite and args.samples is None:
+        parser.error("--samples is required unless --infinite is set")
 
     if args.seed is not None:
         rng = random.Random(args.seed)
@@ -169,27 +387,35 @@ def main():
         rng = random.Random()
 
     pairs = get_canonical_pairs()
+    accumulators = {} if args.no_resume else load_accumulators(args.output)
 
-    final_output = {}
+    try:
+        while True:
+            made_progress = run_generation(args, rng, pairs, accumulators)
+            if made_progress:
+                write_output(accumulators, args.output)
+                completed_samples = minimum_completed_sample_count(accumulators, pairs)
+                print(
+                    f"Checkpoint written: {args.output} "
+                    f"(n >= {completed_samples} samples per pair/player)"
+                )
 
-    for pair in pairs:
-        pair_data = {}
-        for player in ["Dealer", "Pone"]:
-            raw_scores_by_cut = run_monte_carlo(pair, player, args.samples, rng)
+            if not args.infinite:
+                if not made_progress:
+                    write_output(accumulators, args.output)
+                    break
+                if reached_target_sample_count(accumulators, pairs, args.samples):
+                    break
+    except KeyboardInterrupt:
+        write_output(accumulators, args.output)
+        completed_samples = minimum_completed_sample_count(accumulators, pairs)
+        print(
+            f"\nInterrupted. Checkpoint written: {args.output} "
+            f"(n >= {completed_samples} samples per pair/player)"
+        )
+        raise SystemExit(130)
 
-            player_data = {}
-            for cut_card in Index.indices:
-                raw_scores = raw_scores_by_cut[cut_card]
-                stats = compute_statistics(raw_scores)
-                if stats is not None:
-                    player_data[cut_card] = stats
-            pair_data[player] = player_data
-        final_output[pair] = pair_data
-
-    with open("expected_crib_points.json", "w") as f:
-        json.dump(final_output, f, indent=2)
-
-    print("Table generated successfully: expected_crib_points.json")
+    print(f"Table generated successfully: {args.output}")
 
 
 if __name__ == "__main__":  # pragma: no cover
