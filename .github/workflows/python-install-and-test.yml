@@ -76,3 +76,18 @@ jobs:
       - name: Check for PEP8 style violations
         run: |
           flake8
+
+  build:
+    runs-on: ubuntu-latest
+    needs:
+      - legacy-tests
+      - artifact-tests
+      - lint-and-typecheck
+    strategy:
+      matrix:
+        python-version: ["3.9.20"]
+
+    steps:
+      - name: Confirm split validation passed
+        run: |
+          echo "All Python validation jobs passed."
