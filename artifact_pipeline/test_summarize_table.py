@@ -144,7 +144,7 @@ class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-
         self.assertEqual(estimate["mu"], 5.0)
         self.assertAlmostEqual(estimate["se"], (0.25**2 * 4 + 0.75**2 * 4) ** 0.5)
 
-    def test_build_table_is_symmetric(self):
+    def test_build_table_shows_each_discard_pair_once(self):
         data = {
             "A_A_Unsuited": {"Dealer": {"A": {"n": 1, "mu": 1.0}}},
             "A_2_Suited": {"Dealer": {"A": {"n": 1, "mu": 5.0}}},
@@ -155,7 +155,7 @@ class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-
         table = build_table(data, "Dealer", "actual")
 
         self.assertEqual(table[0][0]["mu"], 1.0)
-        self.assertEqual(table[0][1]["mu"], 5.0)
+        self.assertIsNone(table[0][1])
         self.assertEqual(table[1][0]["mu"], 5.0)
         self.assertEqual(table[1][1]["mu"], 2.0)
 

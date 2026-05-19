@@ -145,9 +145,10 @@ def build_table(
     for row_index, row_rank in enumerate(RANKS):
         row: List[Optional[Estimate]] = []
         for col_index, col_rank in enumerate(RANKS):
-            rank_1, rank_2 = (
-                (row_rank, col_rank) if row_index <= col_index else (col_rank, row_rank)
-            )
+            if col_index > row_index:
+                row.append(None)
+                continue
+            rank_1, rank_2 = col_rank, row_rank
             row.append(
                 get_pair_estimate(
                     data,
