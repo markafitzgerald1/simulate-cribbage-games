@@ -1,9 +1,11 @@
 import unittest
+import io
 import math
 import os
 import json
 import random
 import tempfile
+from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
 
 import argparse
@@ -23,6 +25,11 @@ from artifact_pipeline.generate_table import (
     main,
     positive_int,
 )
+
+
+def run_main_silently():
+    with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+        main()
 
 
 class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-methods
@@ -149,6 +156,10 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         with self.assertRaises(ValueError):
             canonical_to_cards("A_2")
         with self.assertRaises(ValueError):
+            canonical_to_cards("10_2_Suited")
+        with self.assertRaises(ValueError):
+            canonical_to_cards("A_10_Suited")
+        with self.assertRaises(ValueError):
             canonical_to_cards("X_2_Suited")
         with self.assertRaises(ValueError):
             canonical_to_cards("A_X_Suited")
@@ -221,50 +232,69 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         with self.assertRaises(argparse.ArgumentTypeError):
             positive_int("-1")
 
-    @patch("sys.argv", ["generate_table.py", "--samples", "1", "--seed", "42"])
     def test_main(self):
         """Test main integration generates file successfully."""
-        if os.path.exists("expected_crib_points.json"):
-            os.remove("expected_crib_points.json")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
 
-        main()
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                run_main_silently()
 
-        self.assertTrue(os.path.exists("expected_crib_points.json"))
+            self.assertTrue(os.path.exists(output_path))
 
-        with open("expected_crib_points.json", "r", encoding="utf-8") as f:
-            data = json.load(f)
+            with open(output_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
 
-        num_canonical_pairs = 169
-        self.assertEqual(data["__metadata__"], build_metadata(42))
-        self.assertEqual(len(data), num_canonical_pairs + 1)
-        self.assertTrue("A_A_Unsuited" in data)
-        self.assertTrue("Dealer" in data["A_A_Unsuited"])
-        self.assertTrue("Pone" in data["A_A_Unsuited"])
+            num_canonical_pairs = 169
+            self.assertEqual(data["__metadata__"], build_metadata(42))
+            self.assertEqual(len(data), num_canonical_pairs + 1)
+            self.assertTrue("A_A_Unsuited" in data)
+            self.assertTrue("Dealer" in data["A_A_Unsuited"])
+            self.assertTrue("Pone" in data["A_A_Unsuited"])
 
-        # Because we're only doing 1 sample, only 1 cut card will be present.
-        # Find which cut card was selected and assert it's valid.
-        cut_cards_present = list(data["A_A_Unsuited"]["Dealer"].keys())
-        self.assertEqual(len(cut_cards_present), 1)
-        self.assertTrue(cut_cards_present[0] in "A23456789TJQK")
-        self.assertEqual(data["A_A_Unsuited"]["Dealer"][cut_cards_present[0]]["n"], 1)
+            # Because we're only doing 1 sample, only 1 cut card will be present.
+            # Find which cut card was selected and assert it's valid.
+            cut_cards_present = list(data["A_A_Unsuited"]["Dealer"].keys())
+            self.assertEqual(len(cut_cards_present), 1)
+            self.assertTrue(cut_cards_present[0] in "A23456789TJQK")
+            self.assertEqual(
+                data["A_A_Unsuited"]["Dealer"][cut_cards_present[0]]["n"], 1
+            )
 
-        os.remove("expected_crib_points.json")
-
-    @patch("sys.argv", ["generate_table.py", "--samples", "1"])
     def test_main_no_seed(self):
         """Test main integration generates file successfully without seed."""
-        if os.path.exists("expected_crib_points.json"):
-            os.remove("expected_crib_points.json")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
 
-        main()
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                run_main_silently()
 
-        self.assertTrue(os.path.exists("expected_crib_points.json"))
-        os.remove("expected_crib_points.json")
+            self.assertTrue(os.path.exists(output_path))
 
     @patch("sys.argv", ["generate_table.py"])
     def test_main_requires_samples_unless_infinite(self):
         with self.assertRaises(SystemExit):
-            main()
+            run_main_silently()
 
     def test_main_writes_existing_target_without_progress(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -283,7 +313,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     "--no-resume",
                 ],
             ):
-                main()
+                run_main_silently()
 
             with patch(
                 "sys.argv",
@@ -297,7 +327,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     output_path,
                 ],
             ):
-                main()
+                run_main_silently()
 
             with open(output_path, "r", encoding="utf-8") as output_file:
                 data = json.load(output_file)
@@ -319,7 +349,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 side_effect=[False, KeyboardInterrupt],
             ):
                 with self.assertRaises(SystemExit) as context:
-                    main()
+                    run_main_silently()
 
             self.assertEqual(context.exception.code, 130)
             self.assertTrue(os.path.exists(output_path))
@@ -342,7 +372,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     "--no-resume",
                 ],
             ):
-                main()
+                run_main_silently()
 
             with patch(
                 "sys.argv",
@@ -356,7 +386,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     output_path,
                 ],
             ):
-                main()
+                run_main_silently()
 
             with open(output_path, "r", encoding="utf-8") as output_file:
                 data = json.load(output_file)
@@ -383,7 +413,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     "--no-resume",
                 ],
             ):
-                main()
+                run_main_silently()
 
             with patch(
                 "sys.argv",
@@ -398,7 +428,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 ],
             ):
                 with self.assertRaises(ValueError):
-                    main()
+                    run_main_silently()
 
     def test_unseeded_resume_rejects_later_seed(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -415,7 +445,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     "--no-resume",
                 ],
             ):
-                main()
+                run_main_silently()
 
             with patch(
                 "sys.argv",
@@ -430,7 +460,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 ],
             ):
                 with self.assertRaises(ValueError):
-                    main()
+                    run_main_silently()
 
     def test_resume_rejects_missing_metadata(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -451,7 +481,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 ["generate_table.py", "--samples", "2", "--output", output_path],
             ):
                 with self.assertRaises(ValueError):
-                    main()
+                    run_main_silently()
 
     def test_main_reaches_target_across_multiple_checkpoints(self):
         """Test finite runs continue until the cumulative sample target."""
@@ -473,7 +503,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     "--no-resume",
                 ],
             ):
-                main()
+                run_main_silently()
 
             with open(output_path, "r", encoding="utf-8") as output_file:
                 data = json.load(output_file)
@@ -502,7 +532,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     "--no-resume",
                 ],
             ):
-                main()
+                run_main_silently()
 
             with patch(
                 "sys.argv",
@@ -516,7 +546,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     resumed_output_path,
                 ],
             ):
-                main()
+                run_main_silently()
 
             with patch(
                 "sys.argv",
@@ -531,7 +561,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     "--no-resume",
                 ],
             ):
-                main()
+                run_main_silently()
 
             with open(resumed_output_path, "r", encoding="utf-8") as resumed_file:
                 resumed_data = json.load(resumed_file)
