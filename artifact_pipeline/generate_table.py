@@ -326,9 +326,10 @@ def compute_statistics(raw_scores):
     return {"n": n, "mu": mu, "se": se}
 
 
-def accumulators_to_output(accumulators, seed=None):
+def accumulators_to_output(accumulators, seed=None, pairs=None):
     output = {METADATA_KEY: build_metadata(seed)}
-    for pair in get_canonical_pairs():
+    pairs_to_use = pairs if pairs is not None else get_canonical_pairs()
+    for pair in pairs_to_use:
         pair_data = {}
         for player in ["Dealer", "Pone"]:
             player_data = {}
@@ -343,10 +344,12 @@ def accumulators_to_output(accumulators, seed=None):
     return output
 
 
-def write_output(accumulators, output_path, seed=None):
+def write_output(accumulators, output_path, seed=None, pairs=None):
     temporary_output_path = f"{output_path}.tmp"
     with open(temporary_output_path, "w", encoding="utf-8") as output_file:
-        json.dump(accumulators_to_output(accumulators, seed), output_file, indent=2)
+        json.dump(
+            accumulators_to_output(accumulators, seed, pairs), output_file, indent=2
+        )
         output_file.write("\n")
     os.replace(temporary_output_path, output_path)
 
@@ -405,7 +408,7 @@ def positive_int(value):
     return ivalue
 
 
-def main():
+def main(override_pairs=None):
     parser = argparse.ArgumentParser(
         description="Generate crib points expected values table."
     )
@@ -453,13 +456,13 @@ def main():
     else:
         rng = random.Random()
 
-    pairs = get_canonical_pairs()
+    pairs = override_pairs if override_pairs is not None else get_canonical_pairs()
     accumulators = load_or_initialize_accumulators(
         args.output, args.no_resume, args.seed
     )
 
     def checkpoint():
-        write_output(accumulators, args.output, args.seed)
+        write_output(accumulators, args.output, args.seed, pairs)
 
     try:
         while True:

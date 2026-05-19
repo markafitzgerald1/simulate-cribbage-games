@@ -27,9 +27,9 @@ from artifact_pipeline.generate_table import (
 )
 
 
-def run_main_silently():
+def run_main_silently(override_pairs=None):
     with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
-        main()
+        main(override_pairs)
 
 
 class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-methods
@@ -287,14 +287,14 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     output_path,
                 ],
             ):
-                run_main_silently()
+                run_main_silently(["A_A_Unsuited"])
 
             self.assertTrue(os.path.exists(output_path))
 
     @patch("sys.argv", ["generate_table.py"])
     def test_main_requires_samples_unless_infinite(self):
         with self.assertRaises(SystemExit):
-            run_main_silently()
+            run_main_silently(["A_A_Unsuited"])
 
     def test_main_writes_existing_target_without_progress(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -313,7 +313,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     "--no-resume",
                 ],
             ):
-                run_main_silently()
+                run_main_silently(["A_A_Unsuited"])
 
             with patch(
                 "sys.argv",
@@ -327,7 +327,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     output_path,
                 ],
             ):
-                run_main_silently()
+                run_main_silently(["A_A_Unsuited"])
 
             with open(output_path, "r", encoding="utf-8") as output_file:
                 data = json.load(output_file)
@@ -349,7 +349,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 side_effect=[False, KeyboardInterrupt],
             ):
                 with self.assertRaises(SystemExit) as context:
-                    run_main_silently()
+                    run_main_silently(["A_A_Unsuited"])
 
             self.assertEqual(context.exception.code, 130)
             self.assertTrue(os.path.exists(output_path))
@@ -372,7 +372,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     "--no-resume",
                 ],
             ):
-                run_main_silently()
+                run_main_silently(["A_A_Unsuited"])
 
             with patch(
                 "sys.argv",
@@ -386,7 +386,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     output_path,
                 ],
             ):
-                run_main_silently()
+                run_main_silently(["A_A_Unsuited"])
 
             with open(output_path, "r", encoding="utf-8") as output_file:
                 data = json.load(output_file)
@@ -413,7 +413,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     "--no-resume",
                 ],
             ):
-                run_main_silently()
+                run_main_silently(["A_A_Unsuited"])
 
             with patch(
                 "sys.argv",
@@ -428,7 +428,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 ],
             ):
                 with self.assertRaises(ValueError):
-                    run_main_silently()
+                    run_main_silently(["A_A_Unsuited"])
 
     def test_unseeded_resume_rejects_later_seed(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -445,7 +445,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     "--no-resume",
                 ],
             ):
-                run_main_silently()
+                run_main_silently(["A_A_Unsuited"])
 
             with patch(
                 "sys.argv",
@@ -460,7 +460,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 ],
             ):
                 with self.assertRaises(ValueError):
-                    run_main_silently()
+                    run_main_silently(["A_A_Unsuited"])
 
     def test_resume_rejects_missing_metadata(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -481,7 +481,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 ["generate_table.py", "--samples", "2", "--output", output_path],
             ):
                 with self.assertRaises(ValueError):
-                    run_main_silently()
+                    run_main_silently(["A_A_Unsuited"])
 
     def test_main_reaches_target_across_multiple_checkpoints(self):
         """Test finite runs continue until the cumulative sample target."""
@@ -503,7 +503,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     "--no-resume",
                 ],
             ):
-                run_main_silently()
+                run_main_silently(["A_A_Unsuited"])
 
             with open(output_path, "r", encoding="utf-8") as output_file:
                 data = json.load(output_file)
@@ -532,7 +532,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     "--no-resume",
                 ],
             ):
-                run_main_silently()
+                run_main_silently(["A_A_Unsuited"])
 
             with patch(
                 "sys.argv",
@@ -546,7 +546,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     resumed_output_path,
                 ],
             ):
-                run_main_silently()
+                run_main_silently(["A_A_Unsuited"])
 
             with patch(
                 "sys.argv",
@@ -561,7 +561,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     "--no-resume",
                 ],
             ):
-                run_main_silently()
+                run_main_silently(["A_A_Unsuited"])
 
             with open(resumed_output_path, "r", encoding="utf-8") as resumed_file:
                 resumed_data = json.load(resumed_file)
