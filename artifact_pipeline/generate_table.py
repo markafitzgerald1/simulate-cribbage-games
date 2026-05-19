@@ -62,6 +62,9 @@ def canonical_to_cards(canonical_pair):
     if len(parts) != 3:
         raise ValueError(f"Invalid canonical pair format: {canonical_pair}")
 
+    if len(parts[0]) != 1 or len(parts[1]) != 1:
+        raise ValueError(f"Invalid rank in canonical pair: {canonical_pair}")
+
     rank1_idx = Index.indices.find(parts[0])
     rank2_idx = Index.indices.find(parts[1])
 

@@ -76,7 +76,7 @@ def combine_estimates(
     se = math.sqrt(
         sum((weight * estimate.get("se", 0.0)) ** 2 for weight, estimate in normalized)
     )
-    n = sum(weight * estimate.get("n", 0.0) for weight, estimate in normalized)
+    n = sum(estimate.get("n", 0.0) for _, estimate in normalized)
     return {"n": n, "mu": mu, "se": se}
 
 
