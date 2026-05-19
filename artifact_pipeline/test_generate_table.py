@@ -10,6 +10,7 @@ import argparse
 from artifact_pipeline.generate_table import (
     accumulator_to_statistics,
     accumulators_to_output,
+    build_metadata,
     get_canonical_pairs,
     canonical_to_cards,
     run_monte_carlo,
@@ -141,6 +142,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         output = accumulators_to_output(accumulators)
 
         self.assertEqual(output["A_A_Unsuited"]["Dealer"], {})
+        self.assertEqual(output["__metadata__"], build_metadata(None))
 
     def test_canonical_to_cards_errors(self):
         """Test error conditions in canonical_to_cards."""
@@ -176,13 +178,21 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         args = argparse.Namespace(infinite=True, checkpoint_frequency=1, seed=42)
         rng = random.Random(42)
         accumulators = {}
+        checkpoint_calls = []
 
-        made_progress = run_generation(args, rng, ["A_A_Unsuited"], accumulators)
+        made_progress = run_generation(
+            args,
+            rng,
+            ["A_A_Unsuited"],
+            accumulators,
+            checkpoint=lambda: checkpoint_calls.append(True),
+        )
 
         self.assertTrue(made_progress)
         self.assertEqual(
             minimum_completed_sample_count(accumulators, ["A_A_Unsuited"]), 1
         )
+        self.assertEqual(len(checkpoint_calls), 2)
 
     def test_run_generation_no_progress(self):
         args = argparse.Namespace(
@@ -193,6 +203,15 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
 
         self.assertFalse(run_generation(args, rng, ["A_A_Unsuited"], accumulators))
         self.assertFalse(reached_target_sample_count(accumulators, ["A_A_Unsuited"], 1))
+
+    def test_run_generation_progress_without_checkpoint_callback(self):
+        args = argparse.Namespace(
+            infinite=False, checkpoint_frequency=1, samples=1, seed=42
+        )
+        rng = random.Random(42)
+        accumulators = {}
+
+        self.assertTrue(run_generation(args, rng, ["A_A_Unsuited"], accumulators))
 
     def test_positive_int(self):
         """Test positive_int logic."""
@@ -216,7 +235,8 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             data = json.load(f)
 
         num_canonical_pairs = 169
-        self.assertEqual(len(data), num_canonical_pairs)
+        self.assertEqual(data["__metadata__"], build_metadata(42))
+        self.assertEqual(len(data), num_canonical_pairs + 1)
         self.assertTrue("A_A_Unsuited" in data)
         self.assertTrue("Dealer" in data["A_A_Unsuited"])
         self.assertTrue("Pone" in data["A_A_Unsuited"])
@@ -331,7 +351,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     "--samples",
                     "2",
                     "--seed",
-                    "43",
+                    "42",
                     "--output",
                     output_path,
                 ],
@@ -345,6 +365,93 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 stats["n"] for stats in data["A_A_Unsuited"]["Dealer"].values()
             )
             self.assertEqual(total_samples, 2)
+
+    def test_seeded_resume_rejects_different_seed(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                    "--no-resume",
+                ],
+            ):
+                main()
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--seed",
+                    "43",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with self.assertRaises(ValueError):
+                    main()
+
+    def test_unseeded_resume_rejects_later_seed(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--output",
+                    output_path,
+                    "--no-resume",
+                ],
+            ):
+                main()
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with self.assertRaises(ValueError):
+                    main()
+
+    def test_resume_rejects_missing_metadata(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+            with open(output_path, "w", encoding="utf-8") as output_file:
+                json.dump(
+                    {
+                        "A_A_Unsuited": {
+                            "Dealer": {"A": {"n": 1, "mu": 5.0, "se": 0.0}},
+                            "Pone": {},
+                        }
+                    },
+                    output_file,
+                )
+
+            with patch(
+                "sys.argv",
+                ["generate_table.py", "--samples", "2", "--output", output_path],
+            ):
+                with self.assertRaises(ValueError):
+                    main()
 
     def test_main_reaches_target_across_multiple_checkpoints(self):
         """Test finite runs continue until the cumulative sample target."""

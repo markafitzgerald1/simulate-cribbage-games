@@ -96,10 +96,11 @@ directory. Use a larger `--samples` value for less noisy estimates; `--seed` is
 optional and makes runs reproducible.
 
 Generation resumes from an existing `expected_crib_points.json` by default and
-periodically rewrites that file atomically. The `--samples` value is a
-cumulative target per discard pair and player role, not the number of additional
-samples to add. Use `--checkpoint-frequency` to control how many samples per
-pair and role are added between checkpoints:
+periodically rewrites that file atomically after each discard pair and player
+role chunk. The `--samples` value is a cumulative target per discard pair and
+player role, not the number of additional samples to add. Use
+`--checkpoint-frequency` to control how many samples per pair and role are added
+between checkpoints:
 
 ```sh
 python artifact_pipeline/generate_table.py --samples 5000 --checkpoint-frequency 100
@@ -114,9 +115,12 @@ python artifact_pipeline/generate_table.py --infinite --checkpoint-frequency 100
 ```
 
 Ignore an existing output file with `--no-resume`, or write to another path with
-`--output`. Seeded runs are deterministic by cumulative sample index, so a
+`--output`. The output file records whether the original run used `--seed` and,
+if so, the seed value. Resumed runs must use the same seed options as the
+existing output. Seeded runs are deterministic by cumulative sample index, so a
 seeded resumed run produces the same table as a fresh seeded run to the same
-sample target.
+sample target. If the original run did not specify `--seed`, resume without
+`--seed`; use `--no-resume` to start a new seeded table.
 
 ## Smoke Tests and Usage Examples
 

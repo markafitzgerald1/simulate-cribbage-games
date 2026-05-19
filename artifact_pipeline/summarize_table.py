@@ -91,10 +91,8 @@ def combine_suit_estimates(
         return suited
     if suit_weighting == "unsuited-only":
         return unsuited
-    if suited is None:
-        return unsuited
-    if unsuited is None:
-        return suited
+    if suited is None or unsuited is None:
+        return None
     if suit_weighting == "unweighted":
         return combine_estimates(((0.5, suited), (0.5, unsuited)))
     return combine_estimates(((SUITED_WEIGHT, suited), (UNSUITED_WEIGHT, unsuited)))

@@ -22,6 +22,8 @@ from artifact_pipeline.adapter import (  # noqa: E402
 
 DEFAULT_OUTPUT_PATH = "expected_crib_points.json"
 DEFAULT_CHECKPOINT_FREQUENCY = 100
+METADATA_KEY = "__metadata__"
+GENERATION_METHOD = "artifact_pipeline.generate_table.v1"
 
 
 def get_canonical_pairs():
@@ -173,15 +175,26 @@ def statistics_to_accumulator(statistics):
     }
 
 
-def load_accumulators(output_path):
+def build_metadata(seed):
+    return {
+        "generation_method": GENERATION_METHOD,
+        "seed": seed,
+        "seed_was_specified": seed is not None,
+    }
+
+
+def load_output(output_path):
     if not os.path.exists(output_path):
-        return {}
+        return {}, None
 
     with open(output_path, "r", encoding="utf-8") as table_file:
         table_data = json.load(table_file)
 
+    metadata = table_data.get(METADATA_KEY)
     accumulators = {}
     for pair, pair_data in table_data.items():
+        if pair == METADATA_KEY:
+            continue
         accumulators[pair] = {}
         for player, player_data in pair_data.items():
             accumulators[pair][player] = {}
@@ -189,6 +202,39 @@ def load_accumulators(output_path):
                 accumulators[pair][player][cut_card] = statistics_to_accumulator(
                     statistics
                 )
+    return accumulators, metadata
+
+
+def has_samples(accumulators):
+    return any(
+        accumulator["n"] > 0
+        for pair_data in accumulators.values()
+        for player_data in pair_data.values()
+        for accumulator in player_data.values()
+    )
+
+
+def validate_resume_metadata(metadata, seed, output_path):
+    if metadata is None:
+        raise ValueError(
+            f"Existing output {output_path} lacks resume metadata. "
+            "Regenerate it or rerun with --no-resume."
+        )
+    expected_metadata = build_metadata(seed)
+    if metadata != expected_metadata:
+        raise ValueError(
+            f"Existing output {output_path} was generated with metadata "
+            f"{metadata}, but this run requested {expected_metadata}. "
+            "Use the same seed options as the original run or rerun with --no-resume."
+        )
+
+
+def load_or_initialize_accumulators(output_path, no_resume, seed):
+    if no_resume:
+        return {}
+    accumulators, metadata = load_output(output_path)
+    if has_samples(accumulators):
+        validate_resume_metadata(metadata, seed, output_path)
     return accumulators
 
 
@@ -277,8 +323,8 @@ def compute_statistics(raw_scores):
     return {"n": n, "mu": mu, "se": se}
 
 
-def accumulators_to_output(accumulators):
-    output = {}
+def accumulators_to_output(accumulators, seed=None):
+    output = {METADATA_KEY: build_metadata(seed)}
     for pair in get_canonical_pairs():
         pair_data = {}
         for player in ["Dealer", "Pone"]:
@@ -294,15 +340,15 @@ def accumulators_to_output(accumulators):
     return output
 
 
-def write_output(accumulators, output_path):
+def write_output(accumulators, output_path, seed=None):
     temporary_output_path = f"{output_path}.tmp"
     with open(temporary_output_path, "w", encoding="utf-8") as output_file:
-        json.dump(accumulators_to_output(accumulators), output_file, indent=2)
+        json.dump(accumulators_to_output(accumulators, seed), output_file, indent=2)
         output_file.write("\n")
     os.replace(temporary_output_path, output_path)
 
 
-def run_generation(args, rng, pairs, accumulators):
+def run_generation(args, rng, pairs, accumulators, checkpoint=None):
     made_progress = False
     for pair in pairs:
         for player in ["Dealer", "Pone"]:
@@ -328,6 +374,8 @@ def run_generation(args, rng, pairs, accumulators):
                     },
                 )
                 made_progress = True
+                if checkpoint:
+                    checkpoint()
     return made_progress
 
 
@@ -403,13 +451,19 @@ def main():
         rng = random.Random()
 
     pairs = get_canonical_pairs()
-    accumulators = {} if args.no_resume else load_accumulators(args.output)
+    accumulators = load_or_initialize_accumulators(
+        args.output, args.no_resume, args.seed
+    )
+
+    def checkpoint():
+        write_output(accumulators, args.output, args.seed)
 
     try:
         while True:
-            made_progress = run_generation(args, rng, pairs, accumulators)
+            made_progress = run_generation(
+                args, rng, pairs, accumulators, checkpoint=checkpoint
+            )
             if made_progress:
-                write_output(accumulators, args.output)
                 completed_samples = minimum_completed_sample_count(accumulators, pairs)
                 print(
                     f"Checkpoint written: {args.output} "
@@ -418,12 +472,12 @@ def main():
 
             if not args.infinite:
                 if not made_progress:
-                    write_output(accumulators, args.output)
+                    checkpoint()
                     break
                 if reached_target_sample_count(accumulators, pairs, args.samples):
                     break
     except KeyboardInterrupt as exc:
-        write_output(accumulators, args.output)
+        checkpoint()
         completed_samples = minimum_completed_sample_count(accumulators, pairs)
         print(
             f"\nInterrupted. Checkpoint written: {args.output} "

@@ -198,15 +198,17 @@ rankings. Do not replace objective simulation with subjective heuristics.
 
 When generating Monte Carlo artifact tables, make long runs resumable and
 checkpointed where practical. Persist enough state in the artifact to continue
-without duplicating samples and to summarize uncertainty correctly. For crib
-point tables, this means preserving at least sample count, mean, and standard
-error (`n`, `mu`, and `se`) for each generated bucket.
+without duplicating samples, validate resume compatibility, and summarize
+uncertainty correctly. For crib point tables, this means preserving at least
+sample count, mean, and standard error (`n`, `mu`, and `se`) for each generated
+bucket, plus seed and generation-method metadata for the file as a whole.
 
 Seeded generation should be reproducible across resume boundaries. A resumed
 seeded run to a target sample count should produce the same table as a fresh
 seeded run to that same target. Unseeded resumed runs may add fresh
-non-reproducible samples, but they must still respect saved sample counts and
-avoid overwriting prior work.
+non-reproducible samples, but they must still respect saved sample counts,
+preserve the unseeded metadata, reject later seeded resumes, and avoid
+overwriting prior work.
 
 Summary views must represent impossible card states explicitly. For example,
 same-rank discards cannot be suited, so suited-only discard summaries should

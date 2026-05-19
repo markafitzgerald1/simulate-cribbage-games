@@ -27,7 +27,9 @@ default skill for documentation and Python backend work.
    checkpoint progress periodically, and keep sample counts with means and
    standard errors so summary tables can show uncertainty honestly.
 9. When randomness is seedable, make resumed seeded runs deterministic by
-   cumulative sample index or another explicit non-duplicating scheme.
+   cumulative sample index or another explicit non-duplicating scheme. Persist
+   seed metadata and reject resume attempts that would mix seeded and unseeded
+   runs or different seed values.
 10. When summarizing card tables, represent impossible states explicitly rather
    than filling them from a nearby valid state. For example, same-rank discards
    are never suited.

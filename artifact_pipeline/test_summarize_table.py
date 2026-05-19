@@ -22,7 +22,7 @@ from artifact_pipeline.summarize_table import (
 )
 
 
-class TestSummarizeTable(unittest.TestCase):
+class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_mean(self):
         self.assertIsNone(mean([]))
         self.assertEqual(mean([2.0, 4.0]), 3.0)
@@ -77,10 +77,17 @@ class TestSummarizeTable(unittest.TestCase):
     def test_combine_estimates_empty(self):
         self.assertIsNone(combine_estimates(()))
 
-    def test_combine_suit_estimates_with_missing_unsuited(self):
+    def test_combine_suit_estimates_with_missing_unsuited_actual_is_incomplete(self):
         estimate = {"n": 1, "mu": 8.0, "se": 0.0}
 
-        self.assertEqual(combine_suit_estimates(estimate, None, "actual"), estimate)
+        self.assertIsNone(combine_suit_estimates(estimate, None, "actual"))
+
+    def test_combine_suit_estimates_with_missing_unsuited_suited_only(self):
+        estimate = {"n": 1, "mu": 8.0, "se": 0.0}
+
+        self.assertEqual(
+            combine_suit_estimates(estimate, None, "suited-only"), estimate
+        )
 
     def test_get_pair_stat_same_rank(self):
         data = {
