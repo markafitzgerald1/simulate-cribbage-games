@@ -47,6 +47,18 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+      - id: pylint-artifact-pipeline
+        name: pylint-artifact-pipeline
+        entry: pylint --persistent=n artifact_pipeline
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: flake8-artifact-pipeline
+        name: flake8-artifact-pipeline
+        entry: flake8 artifact_pipeline
+        language: system
+        pass_filenames: false
+        always_run: true
   - repo: https://github.com/PyCQA/flake8
     rev: "7.1.1"
     hooks:

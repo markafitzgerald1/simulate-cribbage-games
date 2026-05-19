@@ -108,6 +108,7 @@ coverage report
 mypy simulate_cribbage_games.py
 pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive
 pylint simulate_cribbage_games.py
+pylint --persistent=n artifact_pipeline
 flake8
 ```
 
@@ -193,6 +194,45 @@ Near the end of this section, observe these boundaries: do not tune decisions by
 personal cribbage preference, vague "strong play" claims, or opaque AI-generated
 rankings. Do not replace objective simulation with subjective heuristics.
 
+## Artifact Pipeline And Statistical Tables
+
+When generating Monte Carlo artifact tables, make long runs resumable and
+checkpointed where practical. Persist enough state in the artifact to continue
+without duplicating samples, validate resume compatibility, and summarize
+uncertainty correctly. For crib point tables, this means preserving at least
+sample count, mean, and standard error (`n`, `mu`, and `se`) for each generated
+bucket, plus seed and generation-method metadata for the file as a whole.
+
+Seeded generation should be reproducible across resume boundaries. A resumed
+seeded run to a target sample count should produce the same table as a fresh
+seeded run to that same target. Unseeded resumed runs may add fresh
+non-reproducible samples, but they must still respect saved sample counts,
+preserve the unseeded metadata, reject later seeded resumes, and avoid
+overwriting prior work.
+
+Summary views must represent impossible card states explicitly. For example,
+same-rank discards cannot be suited, so suited-only discard summaries should
+leave pair cells blank rather than reusing unsuited pair values.
+
+When comparing generated tables to published cribbage tables, include
+uncertainty in the comparison. Treat differences within statistical uncertainty
+or within a small stated tolerance as rough agreement, and document known
+methodology differences such as suited handling, crib flushes, opponent discard
+policy, or static versus iterative discard selection.
+
+Near the end of this section, observe these boundaries: do not summarize
+Monte Carlo output without the sample counts needed to compute the displayed
+uncertainty. Do not claim exact agreement with external tables when the
+generation methodology differs.
+
+## Lint Configuration Expectations
+
+Do not assume lint rules are enforced unless they are present in local
+configuration or pre-commit output. The artifact pipeline is covered by local
+pre-commit and CI checks for both `pylint --persistent=n artifact_pipeline` and
+`flake8 artifact_pipeline`. The current pylint configuration does not enforce
+magic-number checks or unusually strict short-variable-name checks.
+
 ## Pull Request Readiness
 
 Before opening or updating a pull request, summarize what changed, why it
@@ -209,6 +249,11 @@ GitHub CLI or GitHub web UI rather than changing the branch or pushing to
 If GitHub review comments exist, inspect their current thread status and address
 unresolved comments before requesting review again. Reply clearly when an agent
 implemented a change on behalf of a human.
+
+Before resolving a pull request review thread, add a reply that explains why
+the thread is considered resolved. Reference the code, documentation, test, or
+reasoned no-change decision that addresses the feedback, and identify the agent
+or human who made that assessment.
 
 Near the end of this section, observe these boundaries: do not claim an issue is
 complete until requested files are updated, required constraints are represented

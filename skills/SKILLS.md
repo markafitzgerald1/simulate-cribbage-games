@@ -23,10 +23,24 @@ default skill for documentation and Python backend work.
 6. Run at least one README smoke test or usage example for code changes, and
    sanity-check the output before review.
 7. Run the required checks from `AGENTS.md`, or record why a check was skipped.
-8. When publishing, verify the pushed branch and pull request URL. If a GitHub
+8. For long-running Monte Carlo artifact generation, preserve resumability,
+   checkpoint progress periodically, and keep sample counts with means and
+   standard errors so summary tables can show uncertainty honestly.
+9. When randomness is seedable, make resumed seeded runs deterministic by
+   cumulative sample index or another explicit non-duplicating scheme. Persist
+   seed metadata and reject resume attempts that would mix seeded and unseeded
+   runs or different seed values.
+10. When summarizing card tables, represent impossible states explicitly rather
+   than filling them from a nearby valid state. For example, same-rank discards
+   are never suited.
+11. Do not assume lint rules such as magic-number checks or strict short-name
+   checks exist unless local configuration or pre-commit output shows them.
+12. When publishing, verify the pushed branch and pull request URL. If a GitHub
    integration cannot create the PR, use another authenticated path instead of
    changing the branch or bypassing review.
-9. Update `README.md`, `AGENTS.md`, and this file together when shared workflow
+13. Before resolving a pull request review thread, reply with why the feedback is
+   considered resolved and identify the agent or human making that assessment.
+14. Update `README.md`, `AGENTS.md`, and this file together when shared workflow
    guidance changes.
 
 ## Skill Authoring Rules
@@ -48,7 +62,9 @@ permits direct pushes to `main` or bypasses pull request review.
 
 Python backend work must preserve existing validation expectations: unit tests
 through `coverage`, type checks through `mypy`, duplicate-code checks through
-PMD CPD, and lint checks through `pylint` and `flake8`.
+PMD CPD, and lint checks through `pylint` and `flake8`. Artifact pipeline
+Python code must pass both `pylint --persistent=n artifact_pipeline` and
+`flake8 artifact_pipeline` locally and in CI.
 
 Coverage must not decrease as a result of code changes. New simulator behavior
 must include focused tests, especially for cribbage scoring, discard selection,
@@ -62,6 +78,10 @@ and related automated acceptance coverage before the new code depends on it.
 Every code change should run at least one acceptance-style README command from
 the smoke tests or usage examples, ideally through automation, with a quick
 human sanity check of the resulting output.
+
+Artifact pipeline changes that produce statistical tables should include
+focused tests for resume behavior, seeded reproducibility, checkpoint output,
+summary-table formatting, and impossible card states such as suited pairs.
 
 Near the end of this section, observe these boundaries: do not lower coverage
 requirements, remove quality checks, add broad ignore comments, or refactor the

@@ -52,7 +52,10 @@ Mozilla Public License 2.0. See `LICENSE` for details.
   smoke test or usage example from this README and sanity-check the output.
   Automate that acceptance test when practical.
 - Ensure no code duplications of size 59 tokens or larger: `pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive`
-- Check for pylint flagged code issues: `pylint simulate_cribbage_games.py`
+- Check for pylint flagged code issues in the legacy simulator:
+  `pylint simulate_cribbage_games.py`
+- Check for pylint flagged code issues in the artifact pipeline:
+  `pylint --persistent=n artifact_pipeline`
 - Check for flake8 flagged code issues: `flake8`
 - _Optional:_ Build the start of hand position + current dealer wins, losses and game points database to improve positional play of simulation-based play and discard strategies' (takes about 30 minutes on my laptop): `python simulate_cribbage_games.py --unlimited-hands-per-game --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions --games-per-update 2000 --tally-start-of-hand-position-results --game-count 1000000 --show-calc-cache-usage-stats`. Can be run longer (`--infinite-game-count` then Control+C to stop) for likely better results - exact point of diminishing returns currently hard to measure for performance and open bug reasons and not yet established.
 
@@ -79,6 +82,45 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 - Play one game as first pone with post-decision coach analysis against a first dealer using dynamic (simulation-based) discard and play strategies assisted by end of dynamic player simulation position game points estimates: `python simulate_cribbage_games.py --first-pone-keep-user-selected --coach-discard-simulated-hand-count 160 --first-pone-play-user-entered --coach-play-simulated-hand-count 900 --first-dealer-discard-based-on-simulations 160 --first-dealer-play-based-on-simulations 900 --hide-first-dealer-hand --unlimited-hands-per-game --estimate-first-pone-incomplete-game-wins-and-game-points --estimate-first-dealer-incomplete-game-wins-and-game-points`
 - Play one game as first dealer with post-decision coach analysis against a first pone using dynamic (simulation-based) discard and play strategies assisted by end of dynamic player simulation position game points estimates: `python simulate_cribbage_games.py --first-dealer-keep-user-selected --coach-discard-simulated-hand-count 160 --first-dealer-play-user-entered --coach-play-simulated-hand-count 900 --first-pone-discard-based-on-simulations 160 --first-pone-play-based-on-simulations 900 --hide-first-pone-hand --unlimited-hands-per-game --estimate-first-pone-incomplete-game-wins-and-game-points --estimate-first-dealer-incomplete-game-wins-and-game-points`
 - Help on additional simulation options: `python simulate_cribbage_games.py --help`
+
+## Artifact Pipeline
+
+Generate the Monte Carlo expected crib points table from the repository root:
+
+```sh
+python artifact_pipeline/generate_table.py --samples 1000 --seed 42
+```
+
+The command writes `expected_crib_points.json` in the current working
+directory. Use a larger `--samples` value for less noisy estimates; `--seed` is
+optional and makes runs reproducible.
+
+Generation resumes from an existing `expected_crib_points.json` by default and
+periodically rewrites that file atomically after each discard pair and player
+role chunk. The `--samples` value is a cumulative target per discard pair and
+player role, not the number of additional samples to add. Use
+`--checkpoint-frequency` to control how many samples per pair and role are added
+between checkpoints:
+
+```sh
+python artifact_pipeline/generate_table.py --samples 5000 --checkpoint-frequency 100
+```
+
+For open-ended table building, run with `--infinite` and interrupt with
+Control-C when the table is precise enough. The interrupt handler writes the
+latest checkpoint before exiting:
+
+```sh
+python artifact_pipeline/generate_table.py --infinite --checkpoint-frequency 100
+```
+
+Ignore an existing output file with `--no-resume`, or write to another path with
+`--output`. The output file records whether the original run used `--seed` and,
+if so, the seed value. Resumed runs must use the same seed options as the
+existing output. Seeded runs are deterministic by cumulative sample index, so a
+seeded resumed run produces the same table as a fresh seeded run to the same
+sample target. If the original run did not specify `--seed`, resume without
+`--seed`; use `--no-resume` to start a new seeded table.
 
 ## Smoke Tests and Usage Examples
 
@@ -140,7 +182,6 @@ All of the following should exit with status code 0 and no raised exception:
     - reduce the maximum code duplication size allowed by `pmd cpd` to the lowest amount that that maximizes overall code quality,
     - add code type annotations everywhere they can be added and update the corresponding pre-commit hook;
   - add missing pre-commit hooks:
-    - `pylint`,
     - Markdown lint;
   - add missing GitHub WorkFlow checks:
     - Markdown lint;
