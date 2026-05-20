@@ -354,7 +354,7 @@ def write_output(accumulators, output_path, seed=None, pairs=None):
     os.replace(temporary_output_path, output_path)
 
 
-def run_generation(args, rng, pairs, accumulators, checkpoint=None):
+def run_generation(args, rng, pairs, accumulators, checkpoint=None, generation_accumulators=None):
     made_progress = False
     for pair in pairs:
         for player in ["Dealer", "Pone"]:
@@ -401,6 +401,24 @@ def reached_target_sample_count(accumulators, pairs, target_samples):
     )
 
 
+def calculate_max_ev_shift(prev_accumulators, current_accumulators, pairs):
+    max_shift = 0.0
+    for pair in pairs:
+        for player in ["Dealer", "Pone"]:
+            prev_data = prev_accumulators.get(pair, {}).get(player, {})
+            curr_data = current_accumulators.get(pair, {}).get(player, {})
+            for cut_card in Index.indices:
+                prev_acc = prev_data.get(cut_card, empty_accumulator())
+                curr_acc = curr_data.get(cut_card, empty_accumulator())
+                prev_stats = accumulator_to_statistics(prev_acc)
+                curr_stats = accumulator_to_statistics(curr_acc)
+                if prev_stats and curr_stats:
+                    shift = abs(curr_stats["mu"] - prev_stats["mu"])
+                    if shift > max_shift:
+                        max_shift = shift
+    return max_shift
+
+
 def positive_int(value):
     ivalue = int(value)
     if ivalue <= 0:
@@ -442,6 +460,16 @@ def main(override_pairs=None):
         help="Ignore any existing output file and start a fresh run.",
     )
     parser.add_argument(
+        "--max-generations",
+        type=positive_int,
+        help="Hard cap on convergence loop generations.",
+    )
+    parser.add_argument(
+        "--convergence-threshold",
+        type=float,
+        help="Halt when maximum EV shift is below this threshold.",
+    )
+    parser.add_argument(
         "--seed",
         type=int,
         help="Optional RNG seed for reproducible generation.",
@@ -464,17 +492,42 @@ def main(override_pairs=None):
     def checkpoint():
         write_output(accumulators, args.output, args.seed, pairs)
 
+    generation_accumulators = None
+    generation = 0
+
     try:
         while True:
+            if args.max_generations is not None and generation >= args.max_generations:
+                print(f"Warning: Hardcap reached at generation {generation}.")
+                checkpoint()
+                break
+
+            prev_accumulators = {
+                pair: {
+                    player: {
+                        cut: dict(acc) for cut, acc in player_data.items()
+                    } for player, player_data in pair_data.items()
+                } for pair, pair_data in accumulators.items()
+                if pair != METADATA_KEY
+            }
+
             made_progress = run_generation(
-                args, rng, pairs, accumulators, checkpoint=checkpoint
+                args, rng, pairs, accumulators, checkpoint=checkpoint, generation_accumulators=generation_accumulators
             )
+
             if made_progress:
                 completed_samples = minimum_completed_sample_count(accumulators, pairs)
                 print(
-                    f"Checkpoint written: {args.output} "
+                    f"Generation {generation} Checkpoint written: {args.output} "
                     f"(n >= {completed_samples} samples per pair/player)"
                 )
+
+            if args.convergence_threshold is not None and generation > 0:
+                max_shift = calculate_max_ev_shift(prev_accumulators, accumulators, pairs)
+                if max_shift <= args.convergence_threshold:
+                    print(f"Converged at generation {generation} with max EV shift {max_shift} <= {args.convergence_threshold}")
+                    checkpoint()
+                    break
 
             if not args.infinite:
                 if not made_progress:
@@ -482,6 +535,9 @@ def main(override_pairs=None):
                     break
                 if reached_target_sample_count(accumulators, pairs, args.samples):
                     break
+
+            generation_accumulators = prev_accumulators
+            generation += 1
     except KeyboardInterrupt as exc:
         checkpoint()
         completed_samples = minimum_completed_sample_count(accumulators, pairs)
