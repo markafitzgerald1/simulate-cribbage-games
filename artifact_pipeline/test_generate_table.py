@@ -9,6 +9,8 @@ from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
 
 import argparse
+import simulate_cribbage_games
+from artifact_pipeline.adapter import Card
 from artifact_pipeline.generate_table import (
     accumulator_to_statistics,
     accumulators_to_output,
@@ -26,6 +28,7 @@ from artifact_pipeline.generate_table import (
     reached_target_sample_count,
     main,
     positive_int,
+    select_opponent_kept_cards_dynamic,
 )
 
 
@@ -69,7 +72,11 @@ def _count_dealer_samples(output_path, pair="A_A_Unsuited"):
     return sum(stats["n"] for stats in data[pair]["Dealer"].values()), data
 
 
-class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-methods
+# Justification: Many separate test cases are required to exhaustively cover all code paths,
+# integration hooks, CLI parameters, and state transition edge cases, ensuring 100% statement
+# and branch coverage.
+# pylint: disable=too-many-public-methods
+class TestGenerateTable(unittest.TestCase):
     def test_get_canonical_pairs(self):
         """Test that exactly 169 pairs are generated and formatted correctly."""
         pairs = get_canonical_pairs()
@@ -454,6 +461,9 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
 
             self.assertEqual(resumed_data, fresh_data)
 
+    # Justification: Validating statistical alignment with published Hessel averages across
+    # multiple suited/unsuited discard pairs and roles requires tracking numerous cut-rank
+    # card counts, expected values, sums of variances, and rollups.
     # pylint: disable=too-many-locals
     def test_hessel_fixture(self):
         hessel_expected_averages = {
@@ -530,11 +540,10 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
 
                     self.assertLessEqual(abs(mu_rollup - expected_ev), 2.58 * se_rollup)
                 else:
-                    # pylint: disable=cell-var-from-loop
                     pair_suited_str = f"{rank1}_{rank2}_Suited"
                     pair_unsuited_str = f"{rank1}_{rank2}_Unsuited"
 
-                    def rollup_suit(suit_str):
+                    def rollup_suit(suit_str, r1, r2):
                         dealer_data = data[suit_str]["Dealer"]
                         mu_sum = 0.0
                         var_sum = 0.0
@@ -543,9 +552,8 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                             n = stats["n"]
                             if n == 0:
                                 continue
-                            # pylint: disable=cell-var-from-loop
-                            discard_count = (1 if rank1 == cut_rank_str else 0) + (
-                                1 if rank2 == cut_rank_str else 0
+                            discard_count = (1 if r1 == cut_rank_str else 0) + (
+                                1 if r2 == cut_rank_str else 0
                             )
                             weight = 4 - discard_count
                             mu_sum += stats["mu"] * weight
@@ -553,8 +561,10 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                             w_sum += weight
                         return mu_sum / w_sum, math.sqrt(var_sum) / w_sum
 
-                    mu_suited, se_suited = rollup_suit(pair_suited_str)
-                    mu_unsuited, se_unsuited = rollup_suit(pair_unsuited_str)
+                    mu_suited, se_suited = rollup_suit(pair_suited_str, rank1, rank2)
+                    mu_unsuited, se_unsuited = rollup_suit(
+                        pair_unsuited_str, rank1, rank2
+                    )
 
                     mu_rollup = (0.25 * mu_suited) + (0.75 * mu_unsuited)
                     se_rollup = math.sqrt(
@@ -698,15 +708,9 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
 
     def test_custom_expected_crib_points_ignoring_suit(self):
         """Test the monkeypatched ignoring-suit expected crib points handler."""
-        # pylint: disable=import-outside-toplevel
-        import simulate_cribbage_games
-        from artifact_pipeline.generate_table import select_opponent_kept_cards_dynamic
-
         gen_acc = {
             "A_2_Unsuited": {"Dealer": {"A": {"n": 1, "sum": 5.0, "sum_squares": 25.0}}}
         }
-
-        from artifact_pipeline.adapter import Card
 
         def fake_keep(opponent_dealt):
             del opponent_dealt
@@ -715,7 +719,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             )
 
         with patch(
-            "artifact_pipeline.adapter.keep_max_post_cut_hand_plus_crib_points",
+            "artifact_pipeline.generate_table.keep_max_post_cut_hand_plus_crib_points",
             fake_keep,
         ):
             val = select_opponent_kept_cards_dynamic(

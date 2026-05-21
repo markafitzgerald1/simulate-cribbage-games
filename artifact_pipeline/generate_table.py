@@ -8,8 +8,11 @@ import sys
 if __package__ in (None, ""):  # pragma: no cover
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# The import below follows the script-mode path shim.
+# Justification: The script path shims must be placed at the very top before any
+# workspace modules (such as artifact_pipeline or simulate_cribbage_games) are imported,
+# otherwise standalone CLI runs cannot locate these packages.
 # pylint: disable=wrong-import-position
+import simulate_cribbage_games  # noqa: E402
 from artifact_pipeline.adapter import (  # noqa: E402
     Index,
     Card,
@@ -17,6 +20,8 @@ from artifact_pipeline.adapter import (  # noqa: E402
     score_hand_and_starter,
     BEST_STATIC_SELECT_PONE_KEPT_CARDS,
     BEST_STATIC_SELECT_DEALER_KEPT_CARDS,
+    keep_max_post_cut_hand_plus_crib_points,
+    minus_crib_points,
 )
 
 
@@ -171,8 +176,6 @@ def select_opponent_kept_cards_dynamic(
             generation_accumulators, pair_str, opponent_role, [card_1, card_2]
         )
 
-    import simulate_cribbage_games  # pylint: disable=import-outside-toplevel
-
     orig_non_suited = (
         simulate_cribbage_games.expected_random_opponent_discard_crib_points
     )
@@ -188,11 +191,6 @@ def select_opponent_kept_cards_dynamic(
             custom_expected_crib_points_ignoring_suit
         )
 
-        from artifact_pipeline.adapter import (  # pylint: disable=import-outside-toplevel
-            keep_max_post_cut_hand_plus_crib_points,
-            minus_crib_points,
-        )
-
         if opponent_role == "Dealer":
             return keep_max_post_cut_hand_plus_crib_points(opponent_dealt)
         return minus_crib_points(opponent_dealt)
@@ -205,7 +203,6 @@ def select_opponent_kept_cards_dynamic(
         )
 
 
-# pylint: disable=too-many-locals
 def run_monte_carlo(
     canonical_pair, player, num_samples, rng, generation_accumulators=None
 ):
@@ -231,20 +228,18 @@ def run_monte_carlo(
             player, opponent_dealt, generation_accumulators
         )
 
-        opponent_discards = [c for c in opponent_dealt if c not in kept]
-
         # Cut card is drawn from the 44 remaining cards
         remaining_after_deal = [c for c in remaining_deck if c not in opponent_dealt]
         cut_card = rng.choice(remaining_after_deal)
 
-        # Form the crib hand
-        crib_hand = discarded_cards + opponent_discards
+        # Form the crib hand and calculate score
+        score = score_hand_and_starter(
+            discarded_cards + [c for c in opponent_dealt if c not in kept],
+            cut_card,
+            is_crib=True,
+        )
 
-        # Calculate score
-        score = score_hand_and_starter(crib_hand, cut_card, is_crib=True)
-
-        cut_card_rank_str = Index.indices[cut_card.index]
-        raw_scores_by_cut[cut_card_rank_str].append(score)
+        raw_scores_by_cut[Index.indices[cut_card.index]].append(score)
 
     return raw_scores_by_cut
 
@@ -471,6 +466,9 @@ def accumulators_to_output(
     return output
 
 
+# Justification: Seven parameters are required to serialize all components of the Monte
+# Carlo state (including RNG seeds, list of active pairs, the current policy generation,
+# and prior IBR policy states) to the output file wrapper safely.
 # pylint: disable=too-many-arguments,too-many-positional-arguments
 def write_output(
     accumulators,
@@ -493,7 +491,10 @@ def write_output(
     os.replace(temporary_output_path, output_path)
 
 
-# pylint: disable=too-many-arguments,too-many-positional-arguments,unused-argument
+# Justification: Six arguments are necessary to coordinate the execution parameters, RNG,
+# target pairs, active accumulator mappings, checkpoints, and prior generations in
+# a single cohesive runner interface.
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 def run_generation(
     args, rng, pairs, accumulators, checkpoint=None, generation_accumulators=None
 ):
@@ -572,6 +573,9 @@ def positive_int(value):
     return ivalue
 
 
+# Justification: The main entry point manages CLI argument parsing, interactive execution
+# loops, files loading/saving, Ctrl-C signal management, and complex nested conditional
+# flow for multi-generation best-response convergence checking.
 # pylint: disable=too-many-statements,too-many-branches,too-many-nested-blocks
 def main(override_pairs=None):
     parser = argparse.ArgumentParser(

@@ -22,7 +22,10 @@ from artifact_pipeline.summarize_table import (
 )
 
 
-class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-methods
+# Justification: A large number of unit tests is required to comprehensively cover all
+# formatting, rollups, and math helper functions, ensuring 100% statement and branch coverage.
+# pylint: disable=too-many-public-methods
+class TestSummarizeTable(unittest.TestCase):
     def test_mean(self):
         self.assertIsNone(mean([]))
         self.assertEqual(mean([2.0, 4.0]), 3.0)

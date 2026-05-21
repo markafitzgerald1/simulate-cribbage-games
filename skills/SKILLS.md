@@ -35,6 +35,9 @@ default skill for documentation and Python backend work.
    are never suited.
 11. Do not assume lint rules such as magic-number checks or strict short-name
    checks exist unless local configuration or pre-commit output shows them.
+   Avoid using `# pylint: disable=` annotations unless completely unavoidable.
+   If a disable is absolutely necessary, you must always add a detailed inline
+   justification comment.
 12. When publishing, verify the pushed branch and pull request URL. If a GitHub
    integration cannot create the PR, use another authenticated path instead of
    changing the branch or bypassing review.
@@ -84,7 +87,7 @@ focused tests for resume behavior, seeded reproducibility, checkpoint output,
 summary-table formatting, and impossible card states such as suited pairs.
 
 Near the end of this section, observe these boundaries: do not lower coverage
-requirements, remove quality checks, add broad ignore comments, or refactor the
-legacy `simulate_cribbage_games.py` dependency. Do not replace mathematical
-simulation with subjective heuristics. Do not build on untested legacy behavior
-or skip end-to-end smoke coverage for code changes.
+requirements, remove quality checks, add broad ignore comments or un-justified lint
+disables, or refactor the legacy `simulate_cribbage_games.py` dependency. Do not
+replace mathematical simulation with subjective heuristics. Do not build on
+untested legacy behavior or skip end-to-end smoke coverage for code changes.

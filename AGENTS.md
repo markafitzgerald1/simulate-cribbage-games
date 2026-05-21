@@ -233,6 +233,11 @@ pre-commit and CI checks for both `pylint --persistent=n artifact_pipeline` and
 `flake8 artifact_pipeline`. The current pylint configuration does not enforce
 magic-number checks or unusually strict short-variable-name checks.
 
+Avoid using `# pylint: disable=` or any other lint-disabling annotations unless
+completely unavoidable and absolutely necessary. If a lint rule must be disabled,
+you must always add a detailed inline comment explaining the precise, technical
+justification for the exception.
+
 ## Pull Request Readiness
 
 Before opening or updating a pull request, summarize what changed, why it
