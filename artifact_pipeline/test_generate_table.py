@@ -13,8 +13,10 @@ from artifact_pipeline.generate_table import (
     accumulator_to_statistics,
     accumulators_to_output,
     build_metadata,
+    calculate_max_ev_shift,
     get_canonical_pairs,
     canonical_to_cards,
+    load_or_initialize_accumulators,
     run_monte_carlo,
     run_monte_carlo_into_accumulators,
     compute_statistics,
@@ -30,6 +32,41 @@ from artifact_pipeline.generate_table import (
 def run_main_silently(override_pairs=None):
     with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
         main(override_pairs)
+
+
+def _make_main_args(output_path, samples="1", seed="42", no_resume=False, extra=None):
+    args = [
+        "generate_table.py",
+        "--samples",
+        samples,
+        "--seed",
+        seed,
+        "--output",
+        output_path,
+    ]
+    if no_resume:
+        args.append("--no-resume")
+    if extra:
+        args.extend(extra)
+    return args
+
+
+def _run_seeded_fresh(output_path, samples="1", seed="42", pairs=None, extra=None):
+    args = _make_main_args(output_path, samples, seed, no_resume=True, extra=extra)
+    with patch("sys.argv", args):
+        run_main_silently(pairs or ["A_A_Unsuited"])
+
+
+def _run_seeded_resume(output_path, samples="2", seed="42", pairs=None):
+    args = _make_main_args(output_path, samples, seed)
+    with patch("sys.argv", args):
+        run_main_silently(pairs or ["A_A_Unsuited"])
+
+
+def _count_dealer_samples(output_path, pair="A_A_Unsuited"):
+    with open(output_path, "r", encoding="utf-8") as output_file:
+        data = json.load(output_file)
+    return sum(stats["n"] for stats in data[pair]["Dealer"].values()), data
 
 
 class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-methods
@@ -300,41 +337,10 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")
 
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "1",
-                    "--seed",
-                    "42",
-                    "--output",
-                    output_path,
-                    "--no-resume",
-                ],
-            ):
-                run_main_silently(["A_A_Unsuited"])
+            _run_seeded_fresh(output_path)
+            _run_seeded_resume(output_path, samples="1")
 
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "1",
-                    "--seed",
-                    "42",
-                    "--output",
-                    output_path,
-                ],
-            ):
-                run_main_silently(["A_A_Unsuited"])
-
-            with open(output_path, "r", encoding="utf-8") as output_file:
-                data = json.load(output_file)
-
-            total_samples = sum(
-                stats["n"] for stats in data["A_A_Unsuited"]["Dealer"].values()
-            )
+            total_samples, _ = _count_dealer_samples(output_path)
             self.assertEqual(total_samples, 1)
 
     def test_main_infinite_interrupt_writes_checkpoint(self):
@@ -359,76 +365,20 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")
 
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "1",
-                    "--seed",
-                    "42",
-                    "--output",
-                    output_path,
-                    "--no-resume",
-                ],
-            ):
-                run_main_silently(["A_A_Unsuited"])
+            _run_seeded_fresh(output_path)
+            _run_seeded_resume(output_path)
 
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "2",
-                    "--seed",
-                    "42",
-                    "--output",
-                    output_path,
-                ],
-            ):
-                run_main_silently(["A_A_Unsuited"])
-
-            with open(output_path, "r", encoding="utf-8") as output_file:
-                data = json.load(output_file)
-
-            total_samples = sum(
-                stats["n"] for stats in data["A_A_Unsuited"]["Dealer"].values()
-            )
+            total_samples, _ = _count_dealer_samples(output_path)
             self.assertEqual(total_samples, 2)
 
     def test_seeded_resume_rejects_different_seed(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")
 
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "1",
-                    "--seed",
-                    "42",
-                    "--output",
-                    output_path,
-                    "--no-resume",
-                ],
-            ):
-                run_main_silently(["A_A_Unsuited"])
+            _run_seeded_fresh(output_path)
 
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "2",
-                    "--seed",
-                    "43",
-                    "--output",
-                    output_path,
-                ],
-            ):
-                with self.assertRaises(ValueError):
-                    run_main_silently(["A_A_Unsuited"])
+            with self.assertRaises(ValueError):
+                _run_seeded_resume(output_path, seed="43")
 
     def test_unseeded_resume_rejects_later_seed(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -447,20 +397,8 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             ):
                 run_main_silently(["A_A_Unsuited"])
 
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "2",
-                    "--seed",
-                    "42",
-                    "--output",
-                    output_path,
-                ],
-            ):
-                with self.assertRaises(ValueError):
-                    run_main_silently(["A_A_Unsuited"])
+            with self.assertRaises(ValueError):
+                _run_seeded_resume(output_path)
 
     def test_resume_rejects_missing_metadata(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -488,29 +426,13 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")
 
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "2",
-                    "--checkpoint-frequency",
-                    "1",
-                    "--seed",
-                    "42",
-                    "--output",
-                    output_path,
-                    "--no-resume",
-                ],
-            ):
-                run_main_silently(["A_A_Unsuited"])
-
-            with open(output_path, "r", encoding="utf-8") as output_file:
-                data = json.load(output_file)
-
-            total_samples = sum(
-                stats["n"] for stats in data["A_A_Unsuited"]["Dealer"].values()
+            _run_seeded_fresh(
+                output_path,
+                samples="2",
+                extra=["--checkpoint-frequency", "1"],
             )
+
+            total_samples, _ = _count_dealer_samples(output_path)
             self.assertEqual(total_samples, 2)
 
     def test_seeded_resume_matches_fresh_seeded_run(self):
@@ -519,54 +441,13 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             resumed_output_path = os.path.join(temp_dir, "resumed.json")
             fresh_output_path = os.path.join(temp_dir, "fresh.json")
 
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "1",
-                    "--seed",
-                    "42",
-                    "--output",
-                    resumed_output_path,
-                    "--no-resume",
-                ],
-            ):
-                run_main_silently(["A_A_Unsuited"])
+            _run_seeded_fresh(resumed_output_path)
+            _run_seeded_resume(resumed_output_path)
 
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "2",
-                    "--seed",
-                    "42",
-                    "--output",
-                    resumed_output_path,
-                ],
-            ):
-                run_main_silently(["A_A_Unsuited"])
+            _run_seeded_fresh(fresh_output_path, samples="2")
 
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "2",
-                    "--seed",
-                    "42",
-                    "--output",
-                    fresh_output_path,
-                    "--no-resume",
-                ],
-            ):
-                run_main_silently(["A_A_Unsuited"])
-
-            with open(resumed_output_path, "r", encoding="utf-8") as resumed_file:
-                resumed_data = json.load(resumed_file)
-            with open(fresh_output_path, "r", encoding="utf-8") as fresh_file:
-                fresh_data = json.load(fresh_file)
+            _, resumed_data = _count_dealer_samples(resumed_output_path)
+            _, fresh_data = _count_dealer_samples(fresh_output_path)
 
             self.assertEqual(resumed_data, fresh_data)
 
@@ -601,9 +482,16 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     output_path,
                 ],
             ):
-                target_pairs = ["5_5_Unsuited", "2_3_Suited", "2_3_Unsuited",
-                                "7_8_Suited", "7_8_Unsuited", "6_7_Suited", "6_7_Unsuited",
-                                "A_A_Unsuited"]
+                target_pairs = [
+                    "5_5_Unsuited",
+                    "2_3_Suited",
+                    "2_3_Unsuited",
+                    "7_8_Suited",
+                    "7_8_Unsuited",
+                    "6_7_Suited",
+                    "6_7_Unsuited",
+                    "A_A_Unsuited",
+                ]
                 run_main_silently(target_pairs)
 
             with open(output_path, "r", encoding="utf-8") as output_file:
@@ -625,7 +513,9 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                         if n == 0:
                             continue
 
-                        discard_count = (1 if rank1 == cut_rank_str else 0) + (1 if rank2 == cut_rank_str else 0)
+                        discard_count = (1 if rank1 == cut_rank_str else 0) + (
+                            1 if rank2 == cut_rank_str else 0
+                        )
                         weight = 4 - discard_count
 
                         total_mu_sum += stats["mu"] * weight
@@ -651,7 +541,9 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                             if n == 0:
                                 continue
                             # pylint: disable=cell-var-from-loop
-                            discard_count = (1 if rank1 == cut_rank_str else 0) + (1 if rank2 == cut_rank_str else 0)
+                            discard_count = (1 if rank1 == cut_rank_str else 0) + (
+                                1 if rank2 == cut_rank_str else 0
+                            )
                             weight = 4 - discard_count
                             mu_sum += stats["mu"] * weight
                             var_sum += (stats["se"] ** 2) * weight * weight
@@ -662,16 +554,33 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     mu_unsuited, se_unsuited = rollup_suit(pair_unsuited_str)
 
                     mu_rollup = (0.25 * mu_suited) + (0.75 * mu_unsuited)
-                    se_rollup = math.sqrt((0.25 ** 2) * (se_suited ** 2) + (0.75 ** 2) * (se_unsuited ** 2))
+                    se_rollup = math.sqrt(
+                        (0.25**2) * (se_suited**2) + (0.75**2) * (se_unsuited**2)
+                    )
 
                     self.assertLessEqual(abs(mu_rollup - expected_ev), 2.58 * se_rollup)
-                    self.assertGreater(mu_suited + 2.58 * math.sqrt(se_suited**2 + se_unsuited**2), mu_unsuited)
+                    self.assertGreater(
+                        mu_suited + 2.58 * math.sqrt(se_suited**2 + se_unsuited**2),
+                        mu_unsuited,
+                    )
 
     def test_calculate_max_ev_shift(self):
-        # pylint: disable=import-outside-toplevel
-        from artifact_pipeline.generate_table import calculate_max_ev_shift
-        prev = {"A_A_Unsuited": {"Dealer": {"A": {"n": 1, "sum": 5.0, "sum_squares": 25.0}, "2": {"n": 1, "sum": 10.0, "sum_squares": 100.0}}}}
-        curr = {"A_A_Unsuited": {"Dealer": {"A": {"n": 2, "sum": 15.0, "sum_squares": 125.0}, "2": {"n": 1, "sum": 10.0, "sum_squares": 100.0}}}}
+        prev = {
+            "A_A_Unsuited": {
+                "Dealer": {
+                    "A": {"n": 1, "sum": 5.0, "sum_squares": 25.0},
+                    "2": {"n": 1, "sum": 10.0, "sum_squares": 100.0},
+                }
+            }
+        }
+        curr = {
+            "A_A_Unsuited": {
+                "Dealer": {
+                    "A": {"n": 2, "sum": 15.0, "sum_squares": 125.0},
+                    "2": {"n": 1, "sum": 10.0, "sum_squares": 100.0},
+                }
+            }
+        }
         shift = calculate_max_ev_shift(prev, curr, ["A_A_Unsuited"])
         self.assertAlmostEqual(shift, 2.5)
 
@@ -695,7 +604,9 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 with patch("artifact_pipeline.generate_table.print") as mock_print:
                     run_main_silently(["A_A_Unsuited"])
 
-                    mock_print.assert_any_call("Warning: Hardcap reached at generation 1.")
+                    mock_print.assert_any_call(
+                        "Warning: Hardcap reached at generation 1."
+                    )
 
     def test_convergence_threshold(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -717,14 +628,83 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 ],
             ):
                 with patch("artifact_pipeline.generate_table.print") as mock_print:
-                    with patch("artifact_pipeline.generate_table.calculate_max_ev_shift", side_effect=[1.0, 0.0]):
-                        with patch("artifact_pipeline.generate_table.reached_target_sample_count", side_effect=[False, False, False, False, False, False, False, True]):
+                    with patch(
+                        "artifact_pipeline.generate_table.calculate_max_ev_shift",
+                        side_effect=[1.0, 0.0],
+                    ):
+                        with patch(
+                            "artifact_pipeline.generate_table.reached_target_sample_count",
+                            side_effect=[
+                                False,
+                                False,
+                                False,
+                                False,
+                                False,
+                                False,
+                                False,
+                                True,
+                            ],
+                        ):
                             run_main_silently(["A_A_Unsuited"])
                     found = False
                     for call in mock_print.call_args_list:
-                        if call.args and isinstance(call.args[0], str) and call.args[0].startswith("Converged at generation"):
+                        if (
+                            call.args
+                            and isinstance(call.args[0], str)
+                            and call.args[0].startswith("Converged at generation")
+                        ):
                             found = True
                     self.assertTrue(found)
+
+    def test_resume_validates_metadata_with_empty_accumulators(self):
+        """Metadata is checked even when accumulators have no samples."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+            with open(output_path, "w", encoding="utf-8") as output_file:
+                json.dump(
+                    {
+                        "__metadata__": build_metadata(42),
+                        "A_A_Unsuited": {
+                            "Dealer": {},
+                            "Pone": {},
+                        },
+                    },
+                    output_file,
+                )
+
+            with self.assertRaises(ValueError):
+                load_or_initialize_accumulators(output_path, False, 99)
+
+    def test_calculate_max_ev_shift_dropped_bucket(self):
+        """Shift counts a bucket that existed previously but not now."""
+        prev = {
+            "A_A_Unsuited": {
+                "Dealer": {
+                    "A": {"n": 1, "sum": 7.0, "sum_squares": 49.0},
+                },
+            },
+        }
+        curr = {"A_A_Unsuited": {"Dealer": {}}}
+        shift = calculate_max_ev_shift(prev, curr, ["A_A_Unsuited"])
+        self.assertAlmostEqual(shift, 7.0)
+
+    def test_calculate_max_ev_shift_new_bucket(self):
+        """Shift counts a bucket that appears only in current."""
+        prev = {"A_A_Unsuited": {"Dealer": {}}}
+        curr = {
+            "A_A_Unsuited": {
+                "Dealer": {
+                    "A": {"n": 1, "sum": 3.0, "sum_squares": 9.0},
+                },
+            },
+        }
+        shift = calculate_max_ev_shift(prev, curr, ["A_A_Unsuited"])
+        self.assertAlmostEqual(shift, 3.0)
+
+    def test_calculate_max_ev_shift_neither_exists(self):
+        """Shift is zero when neither side has any data."""
+        shift = calculate_max_ev_shift({}, {}, ["A_A_Unsuited"])
+        self.assertAlmostEqual(shift, 0.0)
 
 
 if __name__ == "__main__":

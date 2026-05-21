@@ -37,3 +37,4 @@
 /expected_crib_points.json
 *.py[cod]
 __pycache__/
+expected_crib_points.ibr-smoke.json

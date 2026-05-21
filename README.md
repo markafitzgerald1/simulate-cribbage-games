@@ -51,7 +51,7 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 - Before code changes are pushed or marked ready for review, run at least one
   smoke test or usage example from this README and sanity-check the output.
   Automate that acceptance test when practical.
-- Ensure no code duplications of size 59 tokens or larger: `pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive`
+- Ensure no code duplications of size 59 tokens or larger: `pmd cpd --language python --minimum-tokens 59 --dir simulate_cribbage_games.py,test_simulate_cribbage_games.py,setup.py,artifact_pipeline`
 - Check for pylint flagged code issues in the legacy simulator:
   `pylint simulate_cribbage_games.py`
 - Check for pylint flagged code issues in the artifact pipeline:
@@ -185,7 +185,7 @@ All of the following should exit with status code 0 and no raised exception:
     - Markdown lint;
   - add missing GitHub WorkFlow checks:
     - Markdown lint;
-  - factor out the `pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive` duplication between `README.md` and `.pre-commit-config.yaml`; and
+  - factor out the `pmd cpd --language python --minimum-tokens 59 --dir simulate_cribbage_games.py,test_simulate_cribbage_games.py,setup.py,artifact_pipeline` duplication between `README.md` and `.pre-commit-config.yaml`; and
   - update all third party dependencies:
     - `python` -> ~= 3.11
     - everything in `requirements.txt` (e.g. `mypy`).

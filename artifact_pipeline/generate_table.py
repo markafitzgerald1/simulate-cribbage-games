@@ -236,7 +236,7 @@ def load_or_initialize_accumulators(output_path, no_resume, seed):
     if no_resume:
         return {}
     accumulators, metadata = load_output(output_path)
-    if has_samples(accumulators):
+    if has_samples(accumulators) or metadata is not None:
         validate_resume_metadata(metadata, seed, output_path)
     return accumulators
 
@@ -355,7 +355,9 @@ def write_output(accumulators, output_path, seed=None, pairs=None):
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments,unused-argument
-def run_generation(args, rng, pairs, accumulators, checkpoint=None, generation_accumulators=None):
+def run_generation(
+    args, rng, pairs, accumulators, checkpoint=None, generation_accumulators=None
+):
     made_progress = False
     for pair in pairs:
         for player in ["Dealer", "Pone"]:
@@ -402,6 +404,16 @@ def reached_target_sample_count(accumulators, pairs, target_samples):
     )
 
 
+def _ev_shift(prev_data, curr_data, cut_card):
+    prev_stats = accumulator_to_statistics(prev_data.get(cut_card, empty_accumulator()))
+    curr_stats = accumulator_to_statistics(curr_data.get(cut_card, empty_accumulator()))
+    if not prev_stats and not curr_stats:
+        return 0.0
+    prev_mu = prev_stats["mu"] if prev_stats else 0.0
+    curr_mu = curr_stats["mu"] if curr_stats else 0.0
+    return abs(curr_mu - prev_mu)
+
+
 def calculate_max_ev_shift(prev_accumulators, current_accumulators, pairs):
     max_shift = 0.0
     for pair in pairs:
@@ -409,13 +421,7 @@ def calculate_max_ev_shift(prev_accumulators, current_accumulators, pairs):
             prev_data = prev_accumulators.get(pair, {}).get(player, {})
             curr_data = current_accumulators.get(pair, {}).get(player, {})
             for cut_card in Index.indices:
-                prev_acc = prev_data.get(cut_card, empty_accumulator())
-                curr_acc = curr_data.get(cut_card, empty_accumulator())
-                prev_stats = accumulator_to_statistics(prev_acc)
-                curr_stats = accumulator_to_statistics(curr_acc)
-                if prev_stats and curr_stats:
-                    shift = abs(curr_stats["mu"] - prev_stats["mu"])
-                    max_shift = max(max_shift, shift)
+                max_shift = max(max_shift, _ev_shift(prev_data, curr_data, cut_card))
     return max_shift
 
 
@@ -505,15 +511,20 @@ def main(override_pairs=None):
 
             prev_accumulators = {
                 pair: {
-                    player: {
-                        cut: dict(acc) for cut, acc in player_data.items()
-                    } for player, player_data in pair_data.items()
-                } for pair, pair_data in accumulators.items()
+                    player: {cut: dict(acc) for cut, acc in player_data.items()}
+                    for player, player_data in pair_data.items()
+                }
+                for pair, pair_data in accumulators.items()
                 if pair != METADATA_KEY
             }
 
             made_progress = run_generation(
-                args, rng, pairs, accumulators, checkpoint=checkpoint, generation_accumulators=generation_accumulators
+                args,
+                rng,
+                pairs,
+                accumulators,
+                checkpoint=checkpoint,
+                generation_accumulators=generation_accumulators,
             )
 
             if made_progress:
@@ -524,9 +535,13 @@ def main(override_pairs=None):
                 )
 
             if args.convergence_threshold is not None and generation > 0:
-                max_shift = calculate_max_ev_shift(prev_accumulators, accumulators, pairs)
+                max_shift = calculate_max_ev_shift(
+                    prev_accumulators, accumulators, pairs
+                )
                 if max_shift <= args.convergence_threshold:
-                    print(f"Converged at generation {generation} with max EV shift {max_shift} <= {args.convergence_threshold}")
+                    print(
+                        f"Converged at generation {generation} with max EV shift {max_shift} <= {args.convergence_threshold}"
+                    )
                     checkpoint()
                     break
 

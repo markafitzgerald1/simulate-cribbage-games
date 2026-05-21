@@ -70,9 +70,20 @@ jobs:
       - name: Check artifact pipeline pylint issues
         run: |
           pylint --persistent=n artifact_pipeline
+      - name: Install PMD for CPD
+        run: |
+          PMD_VERSION=7.14.0
+          curl -sSfL \
+            "https://github.com/pmd/pmd/releases/download/pmd_releases%2F${PMD_VERSION}/pmd-dist-${PMD_VERSION}-bin.zip" \
+            -o pmd.zip
+          unzip -q pmd.zip
+          echo "$PWD/pmd-bin-${PMD_VERSION}/bin" >> "$GITHUB_PATH"
       - name: Check for type errors
         run: |
-          mypy simulate_cribbage_games.py
+          mypy simulate_cribbage_games.py artifact_pipeline
+      - name: Check duplicate Python code
+        run: |
+          pmd cpd --language python --minimum-tokens 59 --dir simulate_cribbage_games.py,test_simulate_cribbage_games.py,setup.py,artifact_pipeline
       - name: Check for PEP8 style violations
         run: |
           flake8
