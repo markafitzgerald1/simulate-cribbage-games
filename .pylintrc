@@ -7,3 +7,6 @@ disable=
     W0511, # fixme
 [FORMAT]
 max-line-length=185
+
+[BASIC]
+bad-names-rgxs=^[a-z][0-9]+$

@@ -43,15 +43,18 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 - Install dependencies: `pip install -r requirements.txt` _(may require local admin to install black globally... or use a [virtualenv](https://virtualenv.pypa.io/en/latest/) instead!)_
 - Install pre-commit hooks: `pre-commit install`
 - Run pre-commit hooks: `pre-commit run --all-files`
-- Check for type errors: `mypy simulate_cribbage_games.py`
+- Check for type errors: `mypy simulate_cribbage_games.py artifact_pipeline`
 - Run unit tests, generate machine parseable test coverage info (can be used in the Visual Studio Code Coverage Gutters extension, for example) and ensure that the unit test code coverage percentage has not decreased: `coverage run && coverage xml && coverage report`
+- The total Python coverage threshold is configured in `.coveragerc` and is
+  enforced by `coverage report` in local hooks and CI.
 - New code that imports or relies on parts of `simulate_cribbage_games.py` must
   first prove the used legacy surface with 100% unit test coverage and related
   automated acceptance test coverage.
 - Before code changes are pushed or marked ready for review, run at least one
   smoke test or usage example from this README and sanity-check the output.
   Automate that acceptance test when practical.
-- Ensure no code duplications of size 59 tokens or larger: `pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive`
+- Ensure no code duplications of size 59 tokens or larger:
+  `pmd cpd --language python --minimum-tokens 59 --dir simulate_cribbage_games.py,test_simulate_cribbage_games.py,setup.py,artifact_pipeline`
 - Check for pylint flagged code issues in the legacy simulator:
   `pylint simulate_cribbage_games.py`
 - Check for pylint flagged code issues in the artifact pipeline:
@@ -122,6 +125,29 @@ seeded resumed run produces the same table as a fresh seeded run to the same
 sample target. If the original run did not specify `--seed`, resume without
 `--seed`; use `--no-resume` to start a new seeded table.
 
+Summarize a generated table as Markdown:
+
+```sh
+python artifact_pipeline/summarize_table.py expected_crib_points.json --show-se
+```
+
+Compare a generated table against the rank-only Hessel crib averages:
+
+```sh
+python artifact_pipeline/compare_hessel.py expected_crib_points.json --role both
+```
+
+The default Markdown output is a 2D discard-rank delta view followed by summary
+statistics. Use `--view rows` for a detailed row report, `--sort abs-delta` or
+`--sort z-score` to put the largest row differences first, and
+`--max-abs-delta` or `--max-z-score` in automation when a run should fail
+outside an explicit tolerance.
+
+The legacy static discard strategy uses a `diskcache` directory named
+`expected_random_opponent_discard_crib_points_cache` relative to the process
+working directory. From the repository root, that cache lives at
+`./expected_random_opponent_discard_crib_points_cache/` and is ignored by Git.
+
 ## Smoke Tests and Usage Examples
 
 All of the following should exit with status code 0 and no raised exception:
@@ -185,7 +211,8 @@ All of the following should exit with status code 0 and no raised exception:
     - Markdown lint;
   - add missing GitHub WorkFlow checks:
     - Markdown lint;
-  - factor out the `pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive` duplication between `README.md` and `.pre-commit-config.yaml`; and
+    - factor out the `pmd cpd --language python --minimum-tokens 59 --dir simulate_cribbage_games.py,test_simulate_cribbage_games.py,setup.py,artifact_pipeline`
+      duplication between `README.md` and `.pre-commit-config.yaml`; and
   - update all third party dependencies:
     - `python` -> ~= 3.11
     - everything in `requirements.txt` (e.g. `mypy`).

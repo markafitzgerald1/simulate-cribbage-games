@@ -41,9 +41,21 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+      - id: coverage-artifact-pipeline-check
+        name: coverage-artifact-pipeline-check
+        entry: coverage report --fail-under=100 -m --include='artifact_pipeline/*'
+        language: system
+        pass_filenames: false
+        always_run: true
       - id: cpd-check
         name: cpd-check
-        entry: pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive
+        entry: pmd cpd --language python --minimum-tokens 59 --dir simulate_cribbage_games.py,test_simulate_cribbage_games.py,setup.py,artifact_pipeline
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: mypy-project-check
+        name: mypy-project-check
+        entry: mypy simulate_cribbage_games.py artifact_pipeline
         language: system
         pass_filenames: false
         always_run: true

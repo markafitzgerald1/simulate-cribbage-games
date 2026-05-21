@@ -61,10 +61,13 @@ permits direct pushes to `main` or bypasses pull request review.
 ## Python Backend Guardrails
 
 Python backend work must preserve existing validation expectations: unit tests
-through `coverage`, type checks through `mypy`, duplicate-code checks through
-PMD CPD, and lint checks through `pylint` and `flake8`. Artifact pipeline
-Python code must pass both `pylint --persistent=n artifact_pipeline` and
-`flake8 artifact_pipeline` locally and in CI.
+through `coverage`, type checks through
+`mypy simulate_cribbage_games.py artifact_pipeline`, duplicate-code checks
+through
+`pmd cpd --language python --minimum-tokens 59 --dir simulate_cribbage_games.py,test_simulate_cribbage_games.py,setup.py,artifact_pipeline`,
+and lint checks through `pylint` and `flake8`. Artifact pipeline Python code
+must pass that cross-boundary CPD check, `pylint --persistent=n
+artifact_pipeline`, and `flake8 artifact_pipeline` locally and in CI.
 
 Coverage must not decrease as a result of code changes. New simulator behavior
 must include focused tests, especially for cribbage scoring, discard selection,

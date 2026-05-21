@@ -36,6 +36,34 @@ def run_main_silently(override_pairs=None):
         main(override_pairs)
 
 
+def run_generator_with_args(output_path, *args, override_pairs=None):
+    argv = ["generate_table.py", *args, "--output", output_path]
+    with patch("sys.argv", argv):
+        run_main_silently(override_pairs or ["A_A_Unsuited"])
+
+
+def dealer_total_samples(data, pair="A_A_Unsuited"):
+    return sum(stats["n"] for stats in data[pair]["Dealer"].values())
+
+
+def load_json(path):
+    with open(path, "r", encoding="utf-8") as output_file:
+        return json.load(output_file)
+
+
+def write_legacy_sample_table(path):
+    with open(path, "w", encoding="utf-8") as output_file:
+        json.dump(
+            {
+                "A_A_Unsuited": {
+                    "Dealer": {"A": {"n": 1, "mu": 5.0, "se": 0.0}},
+                    "Pone": {},
+                }
+            },
+            output_file,
+        )
+
+
 class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_get_canonical_pairs(self):
         """Test that exactly 169 pairs are generated and formatted correctly."""
@@ -304,42 +332,12 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")
 
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "1",
-                    "--seed",
-                    "42",
-                    "--output",
-                    output_path,
-                    "--no-resume",
-                ],
-            ):
-                run_main_silently(["A_A_Unsuited"])
-
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "1",
-                    "--seed",
-                    "42",
-                    "--output",
-                    output_path,
-                ],
-            ):
-                run_main_silently(["A_A_Unsuited"])
-
-            with open(output_path, "r", encoding="utf-8") as output_file:
-                data = json.load(output_file)
-
-            total_samples = sum(
-                stats["n"] for stats in data["A_A_Unsuited"]["Dealer"].values()
+            run_generator_with_args(
+                output_path, "--samples", "1", "--seed", "42", "--no-resume"
             )
-            self.assertEqual(total_samples, 1)
+            run_generator_with_args(output_path, "--samples", "1", "--seed", "42")
+
+            self.assertEqual(dealer_total_samples(load_json(output_path)), 1)
 
     def test_main_infinite_interrupt_writes_checkpoint(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -363,61 +361,20 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")
 
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "1",
-                    "--seed",
-                    "42",
-                    "--output",
-                    output_path,
-                    "--no-resume",
-                ],
-            ):
-                run_main_silently(["A_A_Unsuited"])
-
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "2",
-                    "--seed",
-                    "42",
-                    "--output",
-                    output_path,
-                ],
-            ):
-                run_main_silently(["A_A_Unsuited"])
-
-            with open(output_path, "r", encoding="utf-8") as output_file:
-                data = json.load(output_file)
-
-            total_samples = sum(
-                stats["n"] for stats in data["A_A_Unsuited"]["Dealer"].values()
+            run_generator_with_args(
+                output_path, "--samples", "1", "--seed", "42", "--no-resume"
             )
-            self.assertEqual(total_samples, 2)
+            run_generator_with_args(output_path, "--samples", "2", "--seed", "42")
+
+            self.assertEqual(dealer_total_samples(load_json(output_path)), 2)
 
     def test_seeded_resume_rejects_different_seed(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")
 
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "1",
-                    "--seed",
-                    "42",
-                    "--output",
-                    output_path,
-                    "--no-resume",
-                ],
-            ):
-                run_main_silently(["A_A_Unsuited"])
+            run_generator_with_args(
+                output_path, "--samples", "1", "--seed", "42", "--no-resume"
+            )
 
             with patch(
                 "sys.argv",
@@ -438,18 +395,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")
 
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "1",
-                    "--output",
-                    output_path,
-                    "--no-resume",
-                ],
-            ):
-                run_main_silently(["A_A_Unsuited"])
+            run_generator_with_args(output_path, "--samples", "1", "--no-resume")
 
             with patch(
                 "sys.argv",
@@ -469,16 +415,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
     def test_resume_rejects_missing_metadata(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")
-            with open(output_path, "w", encoding="utf-8") as output_file:
-                json.dump(
-                    {
-                        "A_A_Unsuited": {
-                            "Dealer": {"A": {"n": 1, "mu": 5.0, "se": 0.0}},
-                            "Pone": {},
-                        }
-                    },
-                    output_file,
-                )
+            write_legacy_sample_table(output_path)
 
             with patch(
                 "sys.argv",
@@ -492,30 +429,18 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")
 
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "2",
-                    "--checkpoint-frequency",
-                    "1",
-                    "--seed",
-                    "42",
-                    "--output",
-                    output_path,
-                    "--no-resume",
-                ],
-            ):
-                run_main_silently(["A_A_Unsuited"])
-
-            with open(output_path, "r", encoding="utf-8") as output_file:
-                data = json.load(output_file)
-
-            total_samples = sum(
-                stats["n"] for stats in data["A_A_Unsuited"]["Dealer"].values()
+            run_generator_with_args(
+                output_path,
+                "--samples",
+                "2",
+                "--checkpoint-frequency",
+                "1",
+                "--seed",
+                "42",
+                "--no-resume",
             )
-            self.assertEqual(total_samples, 2)
+
+            self.assertEqual(dealer_total_samples(load_json(output_path)), 2)
 
     def test_seeded_resume_matches_fresh_seeded_run(self):
         """Test seeded resume continues the deterministic sample sequence."""
@@ -653,7 +578,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     pair_suited_str = f"{rank1}_{rank2}_Suited"
                     pair_unsuited_str = f"{rank1}_{rank2}_Unsuited"
 
-                    def rollup_suit(suit_str, r1, r2):
+                    def rollup_suit(suit_str, first_rank, second_rank):
                         dealer_data = data[suit_str]["Dealer"]
                         mu_sum = 0.0
                         var_sum = 0.0
@@ -662,8 +587,8 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                             n = stats["n"]
                             if n == 0:
                                 continue
-                            discard_count = (1 if r1 == cut_rank_str else 0) + (
-                                1 if r2 == cut_rank_str else 0
+                            discard_count = (1 if first_rank == cut_rank_str else 0) + (
+                                1 if second_rank == cut_rank_str else 0
                             )
                             weight = 4 - discard_count
                             mu_sum += stats["mu"] * weight

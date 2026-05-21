@@ -93,17 +93,17 @@ def canonical_to_cards(canonical_pair):
 
 def cards_to_canonical(card_1, card_2):
     if card_1.index <= card_2.index:
-        c1, c2 = card_1, card_2
+        first_card, second_card = card_1, card_2
     else:
-        c1, c2 = card_2, card_1
+        first_card, second_card = card_2, card_1
 
-    rank1 = Index.indices[c1.index]
-    rank2 = Index.indices[c2.index]
+    rank1 = Index.indices[first_card.index]
+    rank2 = Index.indices[second_card.index]
 
-    if c1.index == c2.index:
+    if first_card.index == second_card.index:
         suit_status = "Unsuited"
     else:
-        suit_status = "Suited" if c1.suit == c2.suit else "Unsuited"
+        suit_status = "Suited" if first_card.suit == second_card.suit else "Unsuited"
 
     return f"{rank1}_{rank2}_{suit_status}"
 
