@@ -16,7 +16,11 @@ from simulate_cribbage_games import (  # noqa: E402
     score_hand_and_starter,
     BEST_STATIC_SELECT_PONE_KEPT_CARDS,
     BEST_STATIC_SELECT_DEALER_KEPT_CARDS,
+    keep_max_post_cut_hand_plus_crib_points,
+    keep_max_post_cut_hand_minus_crib_points,
 )
+
+minus_crib_points = keep_max_post_cut_hand_minus_crib_points
 
 __all__ = [
     "Card",
@@ -25,4 +29,6 @@ __all__ = [
     "score_hand_and_starter",
     "BEST_STATIC_SELECT_PONE_KEPT_CARDS",
     "BEST_STATIC_SELECT_DEALER_KEPT_CARDS",
+    "keep_max_post_cut_hand_plus_crib_points",
+    "minus_crib_points",
 ]

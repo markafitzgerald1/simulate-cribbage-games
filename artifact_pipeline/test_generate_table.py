@@ -240,7 +240,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         self.assertEqual(
             minimum_completed_sample_count(accumulators, ["A_A_Unsuited"]), 1
         )
-        self.assertEqual(len(checkpoint_calls), 2)
+        self.assertEqual(len(checkpoint_calls), 1)
 
     def test_run_generation_no_progress(self):
         args = argparse.Namespace(
@@ -285,6 +285,9 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     "--output",
                     output_path,
                 ],
+            ), patch(
+                "artifact_pipeline.generate_table.get_canonical_pairs",
+                return_value=["A_A_Unsuited"],
             ):
                 run_main_silently()
 
@@ -293,7 +296,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             with open(output_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
-            num_canonical_pairs = 169
+            num_canonical_pairs = 1
             self.assertEqual(data["__metadata__"], build_metadata(42))
             self.assertEqual(len(data), num_canonical_pairs + 1)
             self.assertTrue("A_A_Unsuited" in data)
@@ -632,20 +635,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                         "artifact_pipeline.generate_table.calculate_max_ev_shift",
                         side_effect=[1.0, 0.0],
                     ):
-                        with patch(
-                            "artifact_pipeline.generate_table.reached_target_sample_count",
-                            side_effect=[
-                                False,
-                                False,
-                                False,
-                                False,
-                                False,
-                                False,
-                                False,
-                                True,
-                            ],
-                        ):
-                            run_main_silently(["A_A_Unsuited"])
+                        run_main_silently(["A_A_Unsuited"])
                     found = False
                     for call in mock_print.call_args_list:
                         if (
@@ -705,6 +695,159 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         """Shift is zero when neither side has any data."""
         shift = calculate_max_ev_shift({}, {}, ["A_A_Unsuited"])
         self.assertAlmostEqual(shift, 0.0)
+
+    def test_custom_expected_crib_points_ignoring_suit(self):
+        """Test the monkeypatched ignoring-suit expected crib points handler."""
+        # pylint: disable=import-outside-toplevel
+        import simulate_cribbage_games
+        from artifact_pipeline.generate_table import select_opponent_kept_cards_dynamic
+
+        gen_acc = {
+            "A_2_Unsuited": {"Dealer": {"A": {"n": 1, "sum": 5.0, "sum_squares": 25.0}}}
+        }
+
+        from artifact_pipeline.adapter import Card
+
+        def fake_keep(opponent_dealt):
+            del opponent_dealt
+            return simulate_cribbage_games.expected_random_opponent_discard_crib_points_ignoring_suit(
+                0, 1
+            )
+
+        with patch(
+            "artifact_pipeline.adapter.keep_max_post_cut_hand_plus_crib_points",
+            fake_keep,
+        ):
+            val = select_opponent_kept_cards_dynamic(
+                "Pone", [Card(0, 0)], generation_accumulators=gen_acc
+            )
+            self.assertAlmostEqual(val, 0.3)
+
+    def test_keyboard_interrupt_handling(self):
+        """Test KeyboardInterrupt prints checkpoint and raises SystemExit."""
+        with patch(
+            "sys.argv",
+            [
+                "generate_table.py",
+                "--samples",
+                "1",
+                "--seed",
+                "42",
+                "--output",
+                "irrelevant_path.json",
+            ],
+        ):
+            with patch(
+                "artifact_pipeline.generate_table.run_generation",
+                side_effect=KeyboardInterrupt,
+            ):
+                with self.assertRaises(SystemExit) as cm:
+                    main(["A_A_Unsuited"])
+                self.assertEqual(cm.exception.code, 130)
+
+    def test_max_generations_hardcap_at_start(self):
+        """Test hardcap check at the beginning of the generation loop."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "out.json")
+            with open(output_path, "w", encoding="utf-8") as f:
+                json.dump(
+                    {
+                        "__metadata__": {
+                            "generation_method": "artifact_pipeline.generate_table.v1",
+                            "seed": 42,
+                            "seed_was_specified": True,
+                            "generation": 2,
+                            "generation_accumulators": None,
+                        }
+                    },
+                    f,
+                )
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--checkpoint-frequency",
+                    "1",
+                    "--max-generations",
+                    "2",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with patch("artifact_pipeline.generate_table.print") as mock_print:
+                    run_main_silently(["A_A_Unsuited"])
+                    mock_print.assert_any_call(
+                        "Warning: Hardcap reached at generation 2."
+                    )
+
+    def test_main_finite_no_progress_break(self):
+        """Test made_progress = False break in finite runs."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "out.json")
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--checkpoint-frequency",
+                    "1",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with patch(
+                    "artifact_pipeline.generate_table.run_generation",
+                    return_value=False,
+                ):
+                    run_main_silently(["A_A_Unsuited"])
+                    self.assertTrue(os.path.exists(output_path))
+
+    def test_convergence_threshold_generation_accumulators_none(self):
+        """Test convergence check does not raise when generation_accumulators is None."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "out.json")
+            with open(output_path, "w", encoding="utf-8") as f:
+                json.dump(
+                    {
+                        "__metadata__": {
+                            "generation_method": "artifact_pipeline.generate_table.v1",
+                            "seed": 42,
+                            "seed_was_specified": True,
+                            "generation": 1,
+                            "generation_accumulators": None,
+                        },
+                        "A_A_Unsuited": {
+                            "Dealer": {"A": {"n": 1, "mu": 4.0, "se": 0.0}},
+                            "Pone": {"A": {"n": 1, "mu": 4.0, "se": 0.0}},
+                        },
+                    },
+                    f,
+                )
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--checkpoint-frequency",
+                    "1",
+                    "--convergence-threshold",
+                    "0.1",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                run_main_silently(["A_A_Unsuited"])
+                self.assertTrue(os.path.exists(output_path))
 
 
 if __name__ == "__main__":

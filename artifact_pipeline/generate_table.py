@@ -90,10 +90,128 @@ def canonical_to_cards(canonical_pair):
     return [card_1, card_2]
 
 
-def run_monte_carlo(canonical_pair, player, num_samples, rng):
+def cards_to_canonical(card_1, card_2):
+    """
+    Convert two Card objects to their canonical pair string representation.
+    """
+    index_1 = card_1.index
+    index_2 = card_2.index
+    rank_1 = Index.indices[index_1]
+    rank_2 = Index.indices[index_2]
+
+    # Sort ranks so rank_1 index is <= rank_2 index
+    if index_1 > index_2:
+        index_1, index_2 = index_2, index_1
+        rank_1, rank_2 = rank_2, rank_1
+        card_1, card_2 = card_2, card_1
+
+    is_suited = (card_1.suit == card_2.suit) and (index_1 != index_2)
+    suit_str = "Suited" if is_suited else "Unsuited"
+    return f"{rank_1}_{rank_2}_{suit_str}"
+
+
+def get_expected_crib_points_from_accumulators(
+    generation_accumulators, pair_str, player_role, discarded_cards
+):
+    """
+    Calculate the expected crib score from generation accumulators for the discard pair,
+    weighted by the probability of each cut card.
+    """
+    discarded_indices = [card_item.index for card_item in discarded_cards]
+    total_expected_value = 0.0
+    total_weight = 0
+
+    for rank_idx, rank_str in enumerate(Index.indices):
+        match_count = discarded_indices.count(rank_idx)
+        weight = 4 - match_count
+
+        # Retrieve statistics from prior generation's accumulator
+        accum_dict = (
+            generation_accumulators.get(pair_str, {}).get(player_role, {}).get(rank_str)
+        )
+        if accum_dict and accum_dict["n"] > 0:
+            mean_score = accum_dict["sum"] / accum_dict["n"]
+        else:
+            mean_score = 0.0
+
+        total_expected_value += mean_score * weight
+        total_weight += weight
+
+    return total_expected_value / total_weight if total_weight > 0 else 0.0
+
+
+def select_opponent_kept_cards_dynamic(
+    player_role, opponent_dealt, generation_accumulators=None
+):
+    """
+    Select the opponent's kept cards.
+    If generation_accumulators is provided, greedily maximize/minimize
+    based on expected crib values from the prior generation.
+    """
+    if generation_accumulators is None:
+        if player_role == "Dealer":
+            return BEST_STATIC_SELECT_PONE_KEPT_CARDS(opponent_dealt)
+        return BEST_STATIC_SELECT_DEALER_KEPT_CARDS(opponent_dealt)
+
+    opponent_role = "Pone" if player_role == "Dealer" else "Dealer"
+
+    def custom_expected_crib_points(discarded_dealt_cards):
+        pair_str = cards_to_canonical(
+            discarded_dealt_cards[0], discarded_dealt_cards[1]
+        )
+        return get_expected_crib_points_from_accumulators(
+            generation_accumulators, pair_str, opponent_role, discarded_dealt_cards
+        )
+
+    def custom_expected_crib_points_ignoring_suit(discard1_idx, discard2_idx):
+        card_1 = Card(discard1_idx, 0)
+        card_2 = Card(discard2_idx, 1)
+        pair_str = cards_to_canonical(card_1, card_2)
+        return get_expected_crib_points_from_accumulators(
+            generation_accumulators, pair_str, opponent_role, [card_1, card_2]
+        )
+
+    import simulate_cribbage_games  # pylint: disable=import-outside-toplevel
+
+    orig_non_suited = (
+        simulate_cribbage_games.expected_random_opponent_discard_crib_points
+    )
+    orig_suited = (
+        simulate_cribbage_games.expected_random_opponent_discard_crib_points_ignoring_suit
+    )
+
+    try:
+        simulate_cribbage_games.expected_random_opponent_discard_crib_points = (
+            custom_expected_crib_points
+        )
+        simulate_cribbage_games.expected_random_opponent_discard_crib_points_ignoring_suit = (
+            custom_expected_crib_points_ignoring_suit
+        )
+
+        from artifact_pipeline.adapter import (  # pylint: disable=import-outside-toplevel
+            keep_max_post_cut_hand_plus_crib_points,
+            minus_crib_points,
+        )
+
+        if opponent_role == "Dealer":
+            return keep_max_post_cut_hand_plus_crib_points(opponent_dealt)
+        return minus_crib_points(opponent_dealt)
+    finally:
+        simulate_cribbage_games.expected_random_opponent_discard_crib_points = (
+            orig_non_suited
+        )
+        simulate_cribbage_games.expected_random_opponent_discard_crib_points_ignoring_suit = (
+            orig_suited
+        )
+
+
+# pylint: disable=too-many-locals
+def run_monte_carlo(
+    canonical_pair, player, num_samples, rng, generation_accumulators=None
+):
     """
     Run Monte Carlo simulation for a specific canonical pair and player.
-    Uses legacy Gen 0 opponent logic for the opponent's discards.
+    Uses dynamic opponent logic based on generation_accumulators.
     Returns raw score data.
     """
     if player not in ("Dealer", "Pone"):
@@ -109,12 +227,9 @@ def run_monte_carlo(canonical_pair, player, num_samples, rng):
         opponent_dealt = rng.sample(remaining_deck, 6)
 
         # Determine opponent strategy
-        if player == "Dealer":
-            # If we are Dealer, the crib is ours. Opponent is Pone.
-            kept = BEST_STATIC_SELECT_PONE_KEPT_CARDS(opponent_dealt)
-        else:
-            # If we are Pone, the crib is opponent's (Dealer's).
-            kept = BEST_STATIC_SELECT_DEALER_KEPT_CARDS(opponent_dealt)
+        kept = select_opponent_kept_cards_dynamic(
+            player, opponent_dealt, generation_accumulators
+        )
 
         opponent_discards = [c for c in opponent_dealt if c not in kept]
 
@@ -178,11 +293,13 @@ def statistics_to_accumulator(statistics):
     }
 
 
-def build_metadata(seed):
+def build_metadata(seed, generation=0, generation_accumulators=None):
     return {
         "generation_method": GENERATION_METHOD,
         "seed": seed,
         "seed_was_specified": seed is not None,
+        "generation": generation,
+        "generation_accumulators": generation_accumulators,
     }
 
 
@@ -223,22 +340,28 @@ def validate_resume_metadata(metadata, seed, output_path):
             f"Existing output {output_path} lacks resume metadata. "
             "Regenerate it or rerun with --no-resume."
         )
-    expected_metadata = build_metadata(seed)
-    if metadata != expected_metadata:
-        raise ValueError(
-            f"Existing output {output_path} was generated with metadata "
-            f"{metadata}, but this run requested {expected_metadata}. "
-            "Use the same seed options as the original run or rerun with --no-resume."
-        )
+    for key in ["generation_method", "seed", "seed_was_specified"]:
+        if metadata.get(key) != build_metadata(seed).get(key):
+            expected_metadata = build_metadata(seed)
+            raise ValueError(
+                f"Existing output {output_path} was generated with metadata "
+                f"{metadata}, but this run requested {expected_metadata}. "
+                "Use the same seed options as the original run or rerun with --no-resume."
+            )
 
 
 def load_or_initialize_accumulators(output_path, no_resume, seed):
     if no_resume:
-        return {}
+        return {}, 0, None
     accumulators, metadata = load_output(output_path)
     if has_samples(accumulators) or metadata is not None:
         validate_resume_metadata(metadata, seed, output_path)
-    return accumulators
+    generation = 0
+    generation_accumulators = None
+    if metadata is not None:
+        generation = metadata.get("generation", 0)
+        generation_accumulators = metadata.get("generation_accumulators")
+    return accumulators, generation, generation_accumulators
 
 
 def get_cut_accumulator(accumulators, pair, player, cut_card):
@@ -254,21 +377,19 @@ def get_total_sample_count(accumulators, pair, player):
     )
 
 
-def select_opponent_kept_cards(player, opponent_dealt):
-    if player == "Dealer":
-        return BEST_STATIC_SELECT_PONE_KEPT_CARDS(opponent_dealt)
-    return BEST_STATIC_SELECT_DEALER_KEPT_CARDS(opponent_dealt)
-
-
 def sample_rng_for_index(rng, seed, canonical_pair, player, sample_index):
     if seed is None:
         return rng
     return random.Random(f"{seed}:{canonical_pair}:{player}:{sample_index}")
 
 
-def score_crib_sample(discarded_cards, remaining_deck, player, sample_rng):
+def score_crib_sample(
+    discarded_cards, remaining_deck, player, sample_rng, generation_accumulators=None
+):
     opponent_dealt = sample_rng.sample(remaining_deck, 6)
-    kept = select_opponent_kept_cards(player, opponent_dealt)
+    kept = select_opponent_kept_cards_dynamic(
+        player, opponent_dealt, generation_accumulators
+    )
     opponent_discards = [card for card in opponent_dealt if card not in kept]
     remaining_after_deal = [
         card for card in remaining_deck if card not in opponent_dealt
@@ -297,7 +418,11 @@ def run_monte_carlo_into_accumulators(
             sampling["rng"], sampling["seed"], canonical_pair, player, sample_index
         )
         cut_card, score = score_crib_sample(
-            discarded_cards, remaining_deck, player, sample_rng
+            discarded_cards,
+            remaining_deck,
+            player,
+            sample_rng,
+            sampling.get("generation_accumulators"),
         )
         cut_card_rank_str = Index.indices[cut_card.index]
         update_accumulator(
@@ -326,8 +451,10 @@ def compute_statistics(raw_scores):
     return {"n": n, "mu": mu, "se": se}
 
 
-def accumulators_to_output(accumulators, seed=None, pairs=None):
-    output = {METADATA_KEY: build_metadata(seed)}
+def accumulators_to_output(
+    accumulators, seed=None, pairs=None, generation=0, generation_accumulators=None
+):
+    output = {METADATA_KEY: build_metadata(seed, generation, generation_accumulators)}
     pairs_to_use = pairs if pairs is not None else get_canonical_pairs()
     for pair in pairs_to_use:
         pair_data = {}
@@ -344,11 +471,23 @@ def accumulators_to_output(accumulators, seed=None, pairs=None):
     return output
 
 
-def write_output(accumulators, output_path, seed=None, pairs=None):
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+def write_output(
+    accumulators,
+    output_path,
+    seed=None,
+    pairs=None,
+    generation=0,
+    generation_accumulators=None,
+):
     temporary_output_path = f"{output_path}.tmp"
     with open(temporary_output_path, "w", encoding="utf-8") as output_file:
         json.dump(
-            accumulators_to_output(accumulators, seed, pairs), output_file, indent=2
+            accumulators_to_output(
+                accumulators, seed, pairs, generation, generation_accumulators
+            ),
+            output_file,
+            indent=2,
         )
         output_file.write("\n")
     os.replace(temporary_output_path, output_path)
@@ -380,11 +519,12 @@ def run_generation(
                         "rng": rng,
                         "first_sample_index": current_samples,
                         "seed": args.seed,
+                        "generation_accumulators": generation_accumulators,
                     },
                 )
                 made_progress = True
-                if checkpoint:
-                    checkpoint()
+    if made_progress and checkpoint:
+        checkpoint()
     return made_progress
 
 
@@ -432,7 +572,7 @@ def positive_int(value):
     return ivalue
 
 
-# pylint: disable=too-many-statements
+# pylint: disable=too-many-statements,too-many-branches,too-many-nested-blocks
 def main(override_pairs=None):
     parser = argparse.ArgumentParser(
         description="Generate crib points expected values table."
@@ -492,15 +632,19 @@ def main(override_pairs=None):
         rng = random.Random()
 
     pairs = override_pairs if override_pairs is not None else get_canonical_pairs()
-    accumulators = load_or_initialize_accumulators(
+    accumulators, generation, generation_accumulators = load_or_initialize_accumulators(
         args.output, args.no_resume, args.seed
     )
 
     def checkpoint():
-        write_output(accumulators, args.output, args.seed, pairs)
-
-    generation_accumulators = None
-    generation = 0
+        write_output(
+            accumulators,
+            args.output,
+            args.seed,
+            pairs,
+            generation,
+            generation_accumulators,
+        )
 
     try:
         while True:
@@ -509,51 +653,91 @@ def main(override_pairs=None):
                 checkpoint()
                 break
 
-            prev_accumulators = {
-                pair: {
-                    player: {cut: dict(acc) for cut, acc in player_data.items()}
-                    for player, player_data in pair_data.items()
-                }
-                for pair, pair_data in accumulators.items()
-                if pair != METADATA_KEY
-            }
+            # Inner checkpoint loop: sample in chunks up to checkpoint_frequency
+            # until reached_target_sample_count confirms the entire matrix is met
+            # for the active generation.
+            while True:
+                if not args.infinite and reached_target_sample_count(
+                    accumulators, pairs, args.samples
+                ):
+                    break
 
-            made_progress = run_generation(
-                args,
-                rng,
-                pairs,
-                accumulators,
-                checkpoint=checkpoint,
-                generation_accumulators=generation_accumulators,
-            )
-
-            if made_progress:
-                completed_samples = minimum_completed_sample_count(accumulators, pairs)
-                print(
-                    f"Generation {generation} Checkpoint written: {args.output} "
-                    f"(n >= {completed_samples} samples per pair/player)"
+                made_progress = run_generation(
+                    args,
+                    rng,
+                    pairs,
+                    accumulators,
+                    checkpoint=checkpoint,
+                    generation_accumulators=generation_accumulators,
                 )
 
-            if args.convergence_threshold is not None and generation > 0:
-                max_shift = calculate_max_ev_shift(
-                    prev_accumulators, accumulators, pairs
-                )
-                if max_shift <= args.convergence_threshold:
-                    print(
-                        f"Converged at generation {generation} with max EV shift {max_shift} <= {args.convergence_threshold}"
+                if made_progress:
+                    completed_samples = minimum_completed_sample_count(
+                        accumulators, pairs
                     )
-                    checkpoint()
+                    print(
+                        f"Generation {generation} Checkpoint written: {args.output} "
+                        f"(n >= {completed_samples} samples per pair/player)"
+                    )
+
+                if not args.infinite:
+                    if not made_progress:
+                        break
+                    if reached_target_sample_count(accumulators, pairs, args.samples):
+                        break
+                else:
+                    made_progress = False
                     break
 
             if not args.infinite:
-                if not made_progress:
+                # Check convergence threshold if set and generation > 0
+                if args.convergence_threshold is not None and generation > 0:
+                    if generation_accumulators is not None:
+                        max_shift = calculate_max_ev_shift(
+                            generation_accumulators, accumulators, pairs
+                        )
+                        if max_shift <= args.convergence_threshold:
+                            print(
+                                f"Converged at generation {generation} with max EV shift {max_shift} <= {args.convergence_threshold}"
+                            )
+                            checkpoint()
+                            break
+
+                # Advance policy generation only when entire sample target is fully met
+                if reached_target_sample_count(accumulators, pairs, args.samples):
+                    if (
+                        args.max_generations is None
+                        and args.convergence_threshold is None
+                    ):
+                        break
+
+                    if (
+                        args.max_generations is not None
+                        and (generation + 1) >= args.max_generations
+                    ):
+                        print(
+                            f"Warning: Hardcap reached at generation {generation + 1}."
+                        )
+                        checkpoint()
+                        break
+
+                    generation_accumulators = {
+                        pair: {
+                            player: {cut: dict(acc) for cut, acc in player_data.items()}
+                            for player, player_data in pair_data.items()
+                        }
+                        for pair, pair_data in accumulators.items()
+                        if pair != METADATA_KEY
+                    }
+                    accumulators = {}
+                    generation += 1
+                    checkpoint()
+                else:
                     checkpoint()
                     break
-                if reached_target_sample_count(accumulators, pairs, args.samples):
-                    break
-
-            generation_accumulators = prev_accumulators
-            generation += 1
+            else:
+                # Infinite loop checkpoints but does not advance generation
+                made_progress = False
     except KeyboardInterrupt as exc:
         checkpoint()
         completed_samples = minimum_completed_sample_count(accumulators, pairs)
