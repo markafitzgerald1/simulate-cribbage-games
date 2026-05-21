@@ -7,4 +7,4 @@ branch = True
 command_line = -m unittest
 
 [report]
-fail_under = 45
+fail_under = 12

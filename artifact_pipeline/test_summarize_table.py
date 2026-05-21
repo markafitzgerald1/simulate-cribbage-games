@@ -22,21 +22,6 @@ from artifact_pipeline.summarize_table import (
 )
 
 
-def a2_suited_unsuited_table():
-    return {
-        "A_2_Suited": {"Dealer": {"A": {"n": 1, "mu": 8.0}}},
-        "A_2_Unsuited": {"Dealer": {"A": {"n": 1, "mu": 4.0}}},
-    }
-
-
-def write_single_dealer_table(path):
-    with open(path, "w", encoding="utf-8") as output_file:
-        json.dump(
-            {"A_A_Unsuited": {"Dealer": {"A": {"n": 1, "mu": 5.0}}}},
-            output_file,
-        )
-
-
 class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_mean(self):
         self.assertIsNone(mean([]))
@@ -125,12 +110,18 @@ class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-
         )
 
     def test_get_pair_stat_actual_suit_weighting(self):
-        data = a2_suited_unsuited_table()
+        data = {
+            "A_2_Suited": {"Dealer": {"A": {"n": 1, "mu": 8.0}}},
+            "A_2_Unsuited": {"Dealer": {"A": {"n": 1, "mu": 4.0}}},
+        }
 
         self.assertEqual(get_pair_stat(data, ("A", "2"), "Dealer", "mu", "actual"), 5.0)
 
     def test_get_pair_stat_other_suit_weighting(self):
-        data = a2_suited_unsuited_table()
+        data = {
+            "A_2_Suited": {"Dealer": {"A": {"n": 1, "mu": 8.0}}},
+            "A_2_Unsuited": {"Dealer": {"A": {"n": 1, "mu": 4.0}}},
+        }
 
         self.assertEqual(
             get_pair_stat(data, ("A", "2"), "Dealer", "mu", "unweighted"), 6.0
@@ -211,7 +202,11 @@ class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-
     def test_main_prints_markdown(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")
-            write_single_dealer_table(output_path)
+            with open(output_path, "w", encoding="utf-8") as output_file:
+                json.dump(
+                    {"A_A_Unsuited": {"Dealer": {"A": {"n": 1, "mu": 5.0}}}},
+                    output_file,
+                )
 
             with patch(
                 "sys.argv",
@@ -224,7 +219,11 @@ class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-
     def test_main_prints_csv(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")
-            write_single_dealer_table(output_path)
+            with open(output_path, "w", encoding="utf-8") as output_file:
+                json.dump(
+                    {"A_A_Unsuited": {"Dealer": {"A": {"n": 1, "mu": 5.0}}}},
+                    output_file,
+                )
 
             with patch(
                 "sys.argv",

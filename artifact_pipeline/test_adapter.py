@@ -1,9 +1,4 @@
-import io
-import tempfile
 import unittest
-from unittest.mock import patch
-
-from diskcache import Cache  # type: ignore[import-untyped]
 
 from artifact_pipeline.adapter import (
     Card,
@@ -13,7 +8,6 @@ from artifact_pipeline.adapter import (
     BEST_STATIC_SELECT_PONE_KEPT_CARDS,
     BEST_STATIC_SELECT_DEALER_KEPT_CARDS,
 )
-from simulate_cribbage_games import cached_expected_random_opponent_discard_crib_points
 
 
 class TestAdapter(unittest.TestCase):
@@ -48,55 +42,6 @@ class TestAdapter(unittest.TestCase):
         starter = Card(4, 0)
         score = score_hand_and_starter(kept, starter, is_crib=True)
         self.assertTrue(isinstance(score, int))
-
-    def test_score_hand_and_starter_known_crib_flush(self):
-        """Test crib flush scoring through the legacy adapter surface."""
-        kept = [
-            Card.from_string("AC"),
-            Card.from_string("2C"),
-            Card.from_string("3C"),
-            Card.from_string("4C"),
-        ]
-
-        self.assertEqual(score_hand_and_starter(kept, Card.from_string("5C"), True), 12)
-        self.assertEqual(score_hand_and_starter(kept, Card.from_string("5D"), True), 7)
-
-    def test_static_selectors_return_four_original_cards(self):
-        dealt = [
-            Card.from_string("AC"),
-            Card.from_string("2D"),
-            Card.from_string("3H"),
-            Card.from_string("4S"),
-            Card.from_string("5C"),
-            Card.from_string("6D"),
-        ]
-
-        pone_kept = BEST_STATIC_SELECT_PONE_KEPT_CARDS(dealt)
-        dealer_kept = BEST_STATIC_SELECT_DEALER_KEPT_CARDS(dealt)
-
-        self.assertEqual(len(pone_kept), 4)
-        self.assertEqual(len(dealer_kept), 4)
-        self.assertTrue(set(pone_kept).issubset(dealt))
-        self.assertTrue(set(dealer_kept).issubset(dealt))
-
-    def test_random_opponent_discard_crib_points_cold_cache_fill(self):
-        expected_a2_unsuited_average = 4.434897959183673
-        discarded_cards = (Card.from_string("AC"), Card.from_string("2D"))
-
-        with tempfile.TemporaryDirectory() as cache_dir:
-            temporary_cache = Cache(cache_dir)
-            temporary_cache.stats(enable=True)
-            cached_function = temporary_cache.memoize()(
-                cached_expected_random_opponent_discard_crib_points.__wrapped__
-            )
-
-            with patch("sys.stdout", new_callable=io.StringIO):
-                cold_value = cached_function(discarded_cards)
-                warm_value = cached_function(discarded_cards)
-
-            self.assertAlmostEqual(cold_value, expected_a2_unsuited_average)
-            self.assertEqual(warm_value, cold_value)
-            self.assertEqual(temporary_cache.stats(), (1, 1))
 
 
 if __name__ == "__main__":

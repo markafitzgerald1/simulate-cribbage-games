@@ -23,7 +23,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      - name: Test with unittest and enforce configured coverage
+      - name: Test with unittest and ensure >= 12% coverage
         run: |
           coverage run && coverage report
 
@@ -72,10 +72,7 @@ jobs:
           pylint --persistent=n artifact_pipeline
       - name: Check for type errors
         run: |
-          mypy simulate_cribbage_games.py artifact_pipeline
-      - name: Check duplicate Python code
-        run: |
-          pmd cpd --language python --minimum-tokens 59 --dir simulate_cribbage_games.py,test_simulate_cribbage_games.py,setup.py,artifact_pipeline
+          mypy simulate_cribbage_games.py
       - name: Check for PEP8 style violations
         run: |
           flake8

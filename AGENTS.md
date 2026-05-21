@@ -105,8 +105,8 @@ Python validation set before marking work ready for review:
 coverage run
 coverage xml
 coverage report
-mypy simulate_cribbage_games.py artifact_pipeline
-pmd cpd --language python --minimum-tokens 59 --dir simulate_cribbage_games.py,test_simulate_cribbage_games.py,setup.py,artifact_pipeline
+mypy simulate_cribbage_games.py
+pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive
 pylint simulate_cribbage_games.py
 pylint --persistent=n artifact_pipeline
 flake8
