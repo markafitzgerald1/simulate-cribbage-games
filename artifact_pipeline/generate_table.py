@@ -136,11 +136,8 @@ def get_expected_crib_points_from_accumulators(
         )
         if accum_dict and accum_dict["n"] > 0:
             mean_score = accum_dict["sum"] / accum_dict["n"]
-        else:
-            mean_score = 0.0
-
-        total_expected_value += mean_score * weight
-        total_weight += weight
+            total_expected_value += mean_score * weight
+            total_weight += weight
 
     return total_expected_value / total_weight if total_weight > 0 else 0.0
 

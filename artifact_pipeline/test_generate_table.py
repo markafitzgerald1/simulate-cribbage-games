@@ -29,6 +29,7 @@ from artifact_pipeline.generate_table import (
     main,
     positive_int,
     select_opponent_kept_cards_dynamic,
+    get_expected_crib_points_from_accumulators,
 )
 
 
@@ -725,7 +726,7 @@ class TestGenerateTable(unittest.TestCase):
             val = select_opponent_kept_cards_dynamic(
                 "Pone", [Card(0, 0)], generation_accumulators=gen_acc
             )
-            self.assertAlmostEqual(val, 0.3)
+            self.assertAlmostEqual(val, 5.0)
 
     def test_keyboard_interrupt_handling(self):
         """Test KeyboardInterrupt prints checkpoint and raises SystemExit."""
@@ -852,6 +853,33 @@ class TestGenerateTable(unittest.TestCase):
             ):
                 run_main_silently(["A_A_Unsuited"])
                 self.assertTrue(os.path.exists(output_path))
+
+    def test_get_expected_crib_points_from_accumulators_avoids_zero_ev_for_unsampled_ranks(
+        self,
+    ):
+        """Test that unsampled cut cards (n=0 or missing) do not drag expected crib EV down to zero."""
+        generation_accumulators = {
+            "A_A_Unsuited": {
+                "Dealer": {
+                    "A": {"n": 2, "sum": 10.0, "sum_squares": 50.0},
+                    "2": {"n": 0, "sum": 0.0, "sum_squares": 0.0},
+                }
+            }
+        }
+        discarded_cards = canonical_to_cards("A_A_Unsuited")
+        ev = get_expected_crib_points_from_accumulators(
+            generation_accumulators, "A_A_Unsuited", "Dealer", discarded_cards
+        )
+        self.assertAlmostEqual(ev, 5.0)
+
+    def test_get_expected_crib_points_from_accumulators_empty_accumulators(self):
+        """Test that completely empty or unsampled accumulators return 0.0 and do not divide by zero."""
+        generation_accumulators = {"A_A_Unsuited": {"Dealer": {}}}
+        discarded_cards = canonical_to_cards("A_A_Unsuited")
+        ev = get_expected_crib_points_from_accumulators(
+            generation_accumulators, "A_A_Unsuited", "Dealer", discarded_cards
+        )
+        self.assertAlmostEqual(ev, 0.0)
 
 
 if __name__ == "__main__":
