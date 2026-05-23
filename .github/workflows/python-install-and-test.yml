@@ -25,7 +25,8 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Test with unittest and ensure >= 12% coverage
         run: |
-          coverage run && coverage report
+          coverage run -m unittest test_simulate_cribbage_games.py
+          coverage report --fail-under=12 --include="simulate_cribbage_games.py,setup.py"
 
   artifact-tests:
     runs-on: ubuntu-latest
