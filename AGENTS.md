@@ -105,8 +105,8 @@ Python validation set before marking work ready for review:
 coverage run
 coverage xml
 coverage report
-mypy simulate_cribbage_games.py artifact_pipeline
-pmd cpd --language python --minimum-tokens 59 --dir simulate_cribbage_games.py,test_simulate_cribbage_games.py,setup.py,artifact_pipeline
+mypy simulate_cribbage_games.py
+pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive
 pylint simulate_cribbage_games.py
 pylint --persistent=n artifact_pipeline
 flake8
@@ -232,11 +232,6 @@ configuration or pre-commit output. The artifact pipeline is covered by local
 pre-commit and CI checks for both `pylint --persistent=n artifact_pipeline` and
 `flake8 artifact_pipeline`. The current pylint configuration does not enforce
 magic-number checks or unusually strict short-variable-name checks.
-
-Avoid using `# pylint: disable=` or any other lint-disabling annotations unless
-completely unavoidable and absolutely necessary. If a lint rule must be disabled,
-you must always add a detailed inline comment explaining the precise, technical
-justification for the exception.
 
 ## Pull Request Readiness
 

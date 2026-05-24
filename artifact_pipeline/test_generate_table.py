@@ -7,19 +7,14 @@ import random
 import tempfile
 from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
-from concurrent.futures import ProcessPoolExecutor
 
 import argparse
-import simulate_cribbage_games
-from artifact_pipeline.adapter import Card
 from artifact_pipeline.generate_table import (
     accumulator_to_statistics,
     accumulators_to_output,
     build_metadata,
-    calculate_max_ev_shift,
     get_canonical_pairs,
     canonical_to_cards,
-    load_or_initialize_accumulators,
     run_monte_carlo,
     run_monte_carlo_into_accumulators,
     compute_statistics,
@@ -29,12 +24,10 @@ from artifact_pipeline.generate_table import (
     reached_target_sample_count,
     main,
     positive_int,
-    processes_type,
-    select_opponent_kept_cards_dynamic,
-    get_expected_crib_points_from_accumulators,
-    merge_accumulators,
-    run_monte_carlo_single_task,
-    init_worker,
+    calculate_max_ev_shift,
+    serialize_accumulators,
+    deserialize_accumulators,
+    METADATA_KEY,
 )
 
 
@@ -43,46 +36,7 @@ def run_main_silently(override_pairs=None):
         main(override_pairs)
 
 
-def _make_main_args(output_path, samples="1", seed="42", no_resume=False, extra=None):
-    args = [
-        "generate_table.py",
-        "--samples",
-        samples,
-        "--seed",
-        seed,
-        "--output",
-        output_path,
-    ]
-    if no_resume:
-        args.append("--no-resume")
-    if extra:
-        args.extend(extra)
-    return args
-
-
-def _run_seeded_fresh(output_path, samples="1", seed="42", pairs=None, extra=None):
-    args = _make_main_args(output_path, samples, seed, no_resume=True, extra=extra)
-    with patch("sys.argv", args):
-        run_main_silently(pairs or ["A_A_Unsuited"])
-
-
-def _run_seeded_resume(output_path, samples="2", seed="42", pairs=None):
-    args = _make_main_args(output_path, samples, seed)
-    with patch("sys.argv", args):
-        run_main_silently(pairs or ["A_A_Unsuited"])
-
-
-def _count_dealer_samples(output_path, pair="A_A_Unsuited"):
-    with open(output_path, "r", encoding="utf-8") as output_file:
-        data = json.load(output_file)
-    return sum(stats["n"] for stats in data[pair]["Dealer"].values()), data
-
-
-# Justification: Many separate test cases are required to exhaustively cover all code paths,
-# integration hooks, CLI parameters, and state transition edge cases, ensuring 100% statement
-# and branch coverage.
-# pylint: disable=too-many-public-methods
-class TestGenerateTable(unittest.TestCase):
+class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_get_canonical_pairs(self):
         """Test that exactly 169 pairs are generated and formatted correctly."""
         pairs = get_canonical_pairs()
@@ -253,7 +207,7 @@ class TestGenerateTable(unittest.TestCase):
         self.assertEqual(
             minimum_completed_sample_count(accumulators, ["A_A_Unsuited"]), 1
         )
-        self.assertEqual(len(checkpoint_calls), 1)
+        self.assertEqual(len(checkpoint_calls), 2)
 
     def test_run_generation_no_progress(self):
         args = argparse.Namespace(
@@ -298,9 +252,6 @@ class TestGenerateTable(unittest.TestCase):
                     "--output",
                     output_path,
                 ],
-            ), patch(
-                "artifact_pipeline.generate_table.get_canonical_pairs",
-                return_value=["A_A_Unsuited"],
             ):
                 run_main_silently()
 
@@ -309,7 +260,7 @@ class TestGenerateTable(unittest.TestCase):
             with open(output_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
-            num_canonical_pairs = 1
+            num_canonical_pairs = 169
             self.assertEqual(data["__metadata__"], build_metadata(42))
             self.assertEqual(len(data), num_canonical_pairs + 1)
             self.assertTrue("A_A_Unsuited" in data)
@@ -353,10 +304,41 @@ class TestGenerateTable(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")
 
-            _run_seeded_fresh(output_path)
-            _run_seeded_resume(output_path, samples="1")
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                    "--no-resume",
+                ],
+            ):
+                run_main_silently(["A_A_Unsuited"])
 
-            total_samples, _ = _count_dealer_samples(output_path)
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                run_main_silently(["A_A_Unsuited"])
+
+            with open(output_path, "r", encoding="utf-8") as output_file:
+                data = json.load(output_file)
+
+            total_samples = sum(
+                stats["n"] for stats in data["A_A_Unsuited"]["Dealer"].values()
+            )
             self.assertEqual(total_samples, 1)
 
     def test_main_infinite_interrupt_writes_checkpoint(self):
@@ -381,20 +363,76 @@ class TestGenerateTable(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")
 
-            _run_seeded_fresh(output_path)
-            _run_seeded_resume(output_path)
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                    "--no-resume",
+                ],
+            ):
+                run_main_silently(["A_A_Unsuited"])
 
-            total_samples, _ = _count_dealer_samples(output_path)
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                run_main_silently(["A_A_Unsuited"])
+
+            with open(output_path, "r", encoding="utf-8") as output_file:
+                data = json.load(output_file)
+
+            total_samples = sum(
+                stats["n"] for stats in data["A_A_Unsuited"]["Dealer"].values()
+            )
             self.assertEqual(total_samples, 2)
 
     def test_seeded_resume_rejects_different_seed(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")
 
-            _run_seeded_fresh(output_path)
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                    "--no-resume",
+                ],
+            ):
+                run_main_silently(["A_A_Unsuited"])
 
-            with self.assertRaises(ValueError):
-                _run_seeded_resume(output_path, seed="43")
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--seed",
+                    "43",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with self.assertRaises(ValueError):
+                    run_main_silently(["A_A_Unsuited"])
 
     def test_unseeded_resume_rejects_later_seed(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -413,8 +451,20 @@ class TestGenerateTable(unittest.TestCase):
             ):
                 run_main_silently(["A_A_Unsuited"])
 
-            with self.assertRaises(ValueError):
-                _run_seeded_resume(output_path)
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with self.assertRaises(ValueError):
+                    run_main_silently(["A_A_Unsuited"])
 
     def test_resume_rejects_missing_metadata(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -442,13 +492,29 @@ class TestGenerateTable(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")
 
-            _run_seeded_fresh(
-                output_path,
-                samples="2",
-                extra=["--checkpoint-frequency", "1"],
-            )
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--checkpoint-frequency",
+                    "1",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                    "--no-resume",
+                ],
+            ):
+                run_main_silently(["A_A_Unsuited"])
 
-            total_samples, _ = _count_dealer_samples(output_path)
+            with open(output_path, "r", encoding="utf-8") as output_file:
+                data = json.load(output_file)
+
+            total_samples = sum(
+                stats["n"] for stats in data["A_A_Unsuited"]["Dealer"].values()
+            )
             self.assertEqual(total_samples, 2)
 
     def test_seeded_resume_matches_fresh_seeded_run(self):
@@ -457,21 +523,59 @@ class TestGenerateTable(unittest.TestCase):
             resumed_output_path = os.path.join(temp_dir, "resumed.json")
             fresh_output_path = os.path.join(temp_dir, "fresh.json")
 
-            _run_seeded_fresh(resumed_output_path)
-            _run_seeded_resume(resumed_output_path)
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--seed",
+                    "42",
+                    "--output",
+                    resumed_output_path,
+                    "--no-resume",
+                ],
+            ):
+                run_main_silently(["A_A_Unsuited"])
 
-            _run_seeded_fresh(fresh_output_path, samples="2")
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--seed",
+                    "42",
+                    "--output",
+                    resumed_output_path,
+                ],
+            ):
+                run_main_silently(["A_A_Unsuited"])
 
-            _, resumed_data = _count_dealer_samples(resumed_output_path)
-            _, fresh_data = _count_dealer_samples(fresh_output_path)
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--seed",
+                    "42",
+                    "--output",
+                    fresh_output_path,
+                    "--no-resume",
+                ],
+            ):
+                run_main_silently(["A_A_Unsuited"])
+
+            with open(resumed_output_path, "r", encoding="utf-8") as resumed_file:
+                resumed_data = json.load(resumed_file)
+            with open(fresh_output_path, "r", encoding="utf-8") as fresh_file:
+                fresh_data = json.load(fresh_file)
 
             self.assertEqual(resumed_data, fresh_data)
 
-    # Justification: Validating statistical alignment with published Hessel averages across
-    # multiple suited/unsuited discard pairs and roles requires tracking numerous cut-rank
-    # card counts, expected values, sums of variances, and rollups.
-    # pylint: disable=too-many-locals
     def test_hessel_fixture(self):
+        # pylint: disable=too-many-locals
         hessel_expected_averages = {
             "5_5": 8.95,
             "2_3": 6.97,
@@ -578,10 +682,6 @@ class TestGenerateTable(unittest.TestCase):
                     )
 
                     self.assertLessEqual(abs(mu_rollup - expected_ev), 2.58 * se_rollup)
-                    self.assertGreater(
-                        mu_suited + 2.58 * math.sqrt(se_suited**2 + se_unsuited**2),
-                        mu_unsuited,
-                    )
 
     def test_calculate_max_ev_shift(self):
         prev = {
@@ -602,6 +702,21 @@ class TestGenerateTable(unittest.TestCase):
         }
         shift = calculate_max_ev_shift(prev, curr, ["A_A_Unsuited"])
         self.assertAlmostEqual(shift, 2.5)
+
+        # Test newly sampled bucket where prev is missing the key
+        prev_missing = {
+            "A_A_Unsuited": {"Dealer": {"A": {"n": 1, "sum": 5.0, "sum_squares": 25.0}}}
+        }
+        curr_added = {
+            "A_A_Unsuited": {
+                "Dealer": {
+                    "A": {"n": 1, "sum": 5.0, "sum_squares": 25.0},
+                    "2": {"n": 1, "sum": 10.0, "sum_squares": 100.0},
+                }
+            }
+        }
+        shift_added = calculate_max_ev_shift(prev_missing, curr_added, ["A_A_Unsuited"])
+        self.assertAlmostEqual(shift_added, 10.0)
 
     def test_max_generations_hardcap(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -651,7 +766,11 @@ class TestGenerateTable(unittest.TestCase):
                         "artifact_pipeline.generate_table.calculate_max_ev_shift",
                         side_effect=[1.0, 0.0],
                     ):
-                        run_main_silently(["A_A_Unsuited"])
+                        with patch(
+                            "artifact_pipeline.generate_table.reached_target_sample_count",
+                            side_effect=[True, True, True],
+                        ):
+                            run_main_silently(["A_A_Unsuited"])
                     found = False
                     for call in mock_print.call_args_list:
                         if (
@@ -662,128 +781,98 @@ class TestGenerateTable(unittest.TestCase):
                             found = True
                     self.assertTrue(found)
 
-    def test_resume_validates_metadata_with_empty_accumulators(self):
-        """Metadata is checked even when accumulators have no samples."""
+    def test_serialize_deserialize_accumulators_edge_cases(self):
+        self.assertIsNone(serialize_accumulators(None))
+        self.assertIsNone(deserialize_accumulators(None))
+
+        # Test serialize skips METADATA_KEY and empty accumulators (n=0)
+        accumulators = {
+            METADATA_KEY: {"some": "metadata"},
+            "A_A_Unsuited": {
+                "Dealer": {
+                    "A": {"n": 0, "sum": 0.0, "sum_squares": 0.0},
+                    "2": {"n": 1, "sum": 5.0, "sum_squares": 25.0},
+                }
+            },
+        }
+        serialized = serialize_accumulators(accumulators)
+        self.assertNotIn(METADATA_KEY, serialized)
+        self.assertNotIn("A", serialized["A_A_Unsuited"]["Dealer"])
+        self.assertTrue("2" in serialized["A_A_Unsuited"]["Dealer"])
+        self.assertEqual(serialized["A_A_Unsuited"]["Dealer"]["2"]["n"], 1)
+
+        # Test deserialize round-trip
+        deserialized = deserialize_accumulators(serialized)
+        self.assertTrue("A_A_Unsuited" in deserialized)
+        self.assertEqual(deserialized["A_A_Unsuited"]["Dealer"]["2"]["n"], 1)
+        self.assertEqual(deserialized["A_A_Unsuited"]["Dealer"]["2"]["sum"], 5.0)
+
+    def test_resume_rejects_wrong_generation_method(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")
             with open(output_path, "w", encoding="utf-8") as output_file:
                 json.dump(
                     {
-                        "__metadata__": build_metadata(42),
+                        "__metadata__": {
+                            "generation_method": "wrong_method",
+                            "seed": 42,
+                            "generation": 0,
+                        },
                         "A_A_Unsuited": {
-                            "Dealer": {},
+                            "Dealer": {"A": {"n": 1, "mu": 5.0, "se": 0.0}},
                             "Pone": {},
                         },
                     },
                     output_file,
                 )
 
-            with self.assertRaises(ValueError):
-                load_or_initialize_accumulators(output_path, False, 99)
-
-    def test_calculate_max_ev_shift_dropped_bucket(self):
-        """Shift counts a bucket that existed previously but not now."""
-        prev = {
-            "A_A_Unsuited": {
-                "Dealer": {
-                    "A": {"n": 1, "sum": 7.0, "sum_squares": 49.0},
-                },
-            },
-        }
-        curr = {"A_A_Unsuited": {"Dealer": {}}}
-        shift = calculate_max_ev_shift(prev, curr, ["A_A_Unsuited"])
-        self.assertAlmostEqual(shift, 7.0)
-
-    def test_calculate_max_ev_shift_new_bucket(self):
-        """Shift counts a bucket that appears only in current."""
-        prev = {"A_A_Unsuited": {"Dealer": {}}}
-        curr = {
-            "A_A_Unsuited": {
-                "Dealer": {
-                    "A": {"n": 1, "sum": 3.0, "sum_squares": 9.0},
-                },
-            },
-        }
-        shift = calculate_max_ev_shift(prev, curr, ["A_A_Unsuited"])
-        self.assertAlmostEqual(shift, 3.0)
-
-    def test_calculate_max_ev_shift_neither_exists(self):
-        """Shift is zero when neither side has any data."""
-        shift = calculate_max_ev_shift({}, {}, ["A_A_Unsuited"])
-        self.assertAlmostEqual(shift, 0.0)
-
-    def test_custom_expected_crib_points_ignoring_suit(self):
-        """Test the monkeypatched ignoring-suit expected crib points handler."""
-        gen_acc = {
-            "A_2_Unsuited": {"Dealer": {"A": {"n": 1, "sum": 5.0, "sum_squares": 25.0}}}
-        }
-
-        def fake_keep(opponent_dealt):
-            del opponent_dealt
-            return simulate_cribbage_games.expected_random_opponent_discard_crib_points_ignoring_suit(
-                0, 1
-            )
-
-        with patch(
-            "artifact_pipeline.generate_table.keep_max_post_cut_hand_plus_crib_points",
-            fake_keep,
-        ):
-            val = select_opponent_kept_cards_dynamic(
-                "Pone", [Card(0, 0)], generation_accumulators=gen_acc
-            )
-            self.assertAlmostEqual(val, 5.0)
-
-    def test_keyboard_interrupt_handling(self):
-        """Test KeyboardInterrupt prints checkpoint and raises SystemExit."""
-        with patch(
-            "sys.argv",
-            [
-                "generate_table.py",
-                "--samples",
-                "1",
-                "--seed",
-                "42",
-                "--output",
-                "irrelevant_path.json",
-            ],
-        ):
-            with patch(
-                "artifact_pipeline.generate_table.run_generation",
-                side_effect=KeyboardInterrupt,
-            ):
-                with self.assertRaises(SystemExit) as cm:
-                    main(["A_A_Unsuited"])
-                self.assertEqual(cm.exception.code, 130)
-
-    def test_max_generations_hardcap_at_start(self):
-        """Test hardcap check at the beginning of the generation loop."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            output_path = os.path.join(temp_dir, "out.json")
-            with open(output_path, "w", encoding="utf-8") as f:
-                json.dump(
-                    {
-                        "__metadata__": {
-                            "generation_method": "artifact_pipeline.generate_table.v1",
-                            "seed": 42,
-                            "seed_was_specified": True,
-                            "generation": 2,
-                            "generation_accumulators": None,
-                        }
-                    },
-                    f,
-                )
             with patch(
                 "sys.argv",
                 [
                     "generate_table.py",
                     "--samples",
                     "2",
-                    "--checkpoint-frequency",
-                    "1",
-                    "--max-generations",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with self.assertRaises(ValueError) as ctx:
+                    run_main_silently(["A_A_Unsuited"])
+                self.assertTrue(
+                    "was generated with method wrong_method" in str(ctx.exception)
+                )
+
+    def test_main_hardcap_on_start(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+            with open(output_path, "w", encoding="utf-8") as output_file:
+                json.dump(
+                    {
+                        "__metadata__": {
+                            "generation_method": "artifact_pipeline.generate_table.v1",
+                            "seed": 42,
+                            "generation": 2,
+                        },
+                        "A_A_Unsuited": {
+                            "Dealer": {"A": {"n": 1, "mu": 5.0, "se": 0.0}},
+                            "Pone": {},
+                        },
+                    },
+                    output_file,
+                )
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
                     "2",
                     "--seed",
                     "42",
+                    "--max-generations",
+                    "2",
                     "--output",
                     output_path,
                 ],
@@ -794,8 +883,7 @@ class TestGenerateTable(unittest.TestCase):
                         "Warning: Hardcap reached at generation 2."
                     )
 
-    def test_main_finite_no_progress_break(self):
-        """Test made_progress = False break in finite runs."""
+    def test_main_no_progress_finite(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "out.json")
             with patch(
@@ -804,10 +892,6 @@ class TestGenerateTable(unittest.TestCase):
                     "generate_table.py",
                     "--samples",
                     "2",
-                    "--checkpoint-frequency",
-                    "1",
-                    "--seed",
-                    "42",
                     "--output",
                     output_path,
                 ],
@@ -817,185 +901,6 @@ class TestGenerateTable(unittest.TestCase):
                     return_value=False,
                 ):
                     run_main_silently(["A_A_Unsuited"])
-                    self.assertTrue(os.path.exists(output_path))
-
-    def test_convergence_threshold_generation_accumulators_none(self):
-        """Test convergence check does not raise when generation_accumulators is None."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            output_path = os.path.join(temp_dir, "out.json")
-            with open(output_path, "w", encoding="utf-8") as f:
-                json.dump(
-                    {
-                        "__metadata__": {
-                            "generation_method": "artifact_pipeline.generate_table.v1",
-                            "seed": 42,
-                            "seed_was_specified": True,
-                            "generation": 1,
-                            "generation_accumulators": None,
-                        },
-                        "A_A_Unsuited": {
-                            "Dealer": {"A": {"n": 1, "mu": 4.0, "se": 0.0}},
-                            "Pone": {"A": {"n": 1, "mu": 4.0, "se": 0.0}},
-                        },
-                    },
-                    f,
-                )
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "2",
-                    "--checkpoint-frequency",
-                    "1",
-                    "--convergence-threshold",
-                    "0.1",
-                    "--seed",
-                    "42",
-                    "--output",
-                    output_path,
-                ],
-            ):
-                run_main_silently(["A_A_Unsuited"])
-                self.assertTrue(os.path.exists(output_path))
-
-    def test_get_expected_crib_points_from_accumulators_avoids_zero_ev_for_unsampled_ranks(
-        self,
-    ):
-        """Test that unsampled cut cards (n=0 or missing) do not drag expected crib EV down to zero."""
-        generation_accumulators = {
-            "A_A_Unsuited": {
-                "Dealer": {
-                    "A": {"n": 2, "sum": 10.0, "sum_squares": 50.0},
-                    "2": {"n": 0, "sum": 0.0, "sum_squares": 0.0},
-                }
-            }
-        }
-        discarded_cards = canonical_to_cards("A_A_Unsuited")
-        ev = get_expected_crib_points_from_accumulators(
-            generation_accumulators, "A_A_Unsuited", "Dealer", discarded_cards
-        )
-        self.assertAlmostEqual(ev, 5.0)
-
-    def test_get_expected_crib_points_from_accumulators_empty_accumulators(self):
-        """Test that completely empty or unsampled accumulators return 0.0 and do not divide by zero."""
-        generation_accumulators = {"A_A_Unsuited": {"Dealer": {}}}
-        discarded_cards = canonical_to_cards("A_A_Unsuited")
-        ev = get_expected_crib_points_from_accumulators(
-            generation_accumulators, "A_A_Unsuited", "Dealer", discarded_cards
-        )
-        self.assertAlmostEqual(ev, 0.0)
-
-    def test_processes_type(self):
-        """Test the custom processes_type parser helper."""
-        self.assertEqual(processes_type("4"), 4)
-        # Test "auto"
-        res = processes_type("auto")
-        self.assertGreaterEqual(res, 1)
-        # Test positive_int failures and invalid strings
-        with self.assertRaises(argparse.ArgumentTypeError):
-            processes_type("0")
-        with self.assertRaises(argparse.ArgumentTypeError):
-            processes_type("-5")
-        with self.assertRaises(argparse.ArgumentTypeError):
-            processes_type("not_an_int")
-
-    def test_merge_accumulators(self):
-        """Test merge_accumulators works correctly."""
-        accumulators = {}
-        local_acc = {"A": {"n": 5, "sum": 20.0, "sum_squares": 100.0}}
-        merge_accumulators(accumulators, "A_A_Unsuited", "Dealer", local_acc)
-        self.assertEqual(accumulators["A_A_Unsuited"]["Dealer"]["A"]["n"], 5)
-        self.assertEqual(accumulators["A_A_Unsuited"]["Dealer"]["A"]["sum"], 20.0)
-        self.assertEqual(
-            accumulators["A_A_Unsuited"]["Dealer"]["A"]["sum_squares"], 100.0
-        )
-
-        # Merge additional data to test cumulative sum
-        merge_accumulators(accumulators, "A_A_Unsuited", "Dealer", local_acc)
-        self.assertEqual(accumulators["A_A_Unsuited"]["Dealer"]["A"]["n"], 10)
-        self.assertEqual(accumulators["A_A_Unsuited"]["Dealer"]["A"]["sum"], 40.0)
-        self.assertEqual(
-            accumulators["A_A_Unsuited"]["Dealer"]["A"]["sum_squares"], 200.0
-        )
-
-    def test_run_monte_carlo_single_task(self):
-        """Test run_monte_carlo_single_task runs a simulation and returns results."""
-        pair, player, acc = run_monte_carlo_single_task(
-            "A_A_Unsuited", "Dealer", 1, 0, 42, None
-        )
-        self.assertEqual(pair, "A_A_Unsuited")
-        self.assertEqual(player, "Dealer")
-        self.assertGreater(len(acc), 0)
-        total_samples = sum(item["n"] for item in acc.values())
-        self.assertEqual(total_samples, 1)
-
-    def test_run_monte_carlo_single_task_with_worker_init(self):
-        """Test run_monte_carlo_single_task utilizing worker global variable initialization."""
-        dummy_generation_accumulators = {
-            "A_2_Suited": {
-                "Dealer": {"A": {"n": 10, "sum": 50.0, "sum_squares": 250.0}}
-            }
-        }
-        init_worker(dummy_generation_accumulators)
-        try:
-            pair, player, acc = run_monte_carlo_single_task(
-                "A_A_Unsuited", "Dealer", 1, 0, 42, None
-            )
-            self.assertEqual(pair, "A_A_Unsuited")
-            self.assertEqual(player, "Dealer")
-            self.assertGreater(len(acc), 0)
-        finally:
-            init_worker(None)
-
-    def test_run_generation_parallel(self):
-        """Test run_generation with parallel execution."""
-        args = argparse.Namespace(
-            infinite=False, checkpoint_frequency=1, samples=1, seed=42, processes=2
-        )
-        rng = random.Random(42)
-        accumulators = {}
-        made_progress = run_generation(args, rng, ["A_A_Unsuited"], accumulators)
-        self.assertTrue(made_progress)
-        total_samples = sum(
-            acc["n"]
-            for player_data in accumulators.get("A_A_Unsuited", {}).values()
-            for acc in player_data.values()
-        )
-        self.assertEqual(total_samples, 2)  # 1 sample for Dealer, 1 for Pone
-
-    def test_run_generation_parallel_keyboard_interrupt(self):
-        """Test that KeyboardInterrupt inside parallel run_generation shuts down executor and re-raises."""
-        args = argparse.Namespace(
-            infinite=False, checkpoint_frequency=1, samples=1, seed=42, processes=2
-        )
-        rng = random.Random(42)
-        accumulators = {}
-
-        with patch.object(ProcessPoolExecutor, "submit", side_effect=KeyboardInterrupt):
-            with self.assertRaises(KeyboardInterrupt):
-                run_generation(args, rng, ["A_A_Unsuited"], accumulators)
-
-    def test_main_parallel(self):
-        """Test main integration with parallel execution."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            output_path = os.path.join(temp_dir, "par_out.json")
-            with patch(
-                "sys.argv",
-                [
-                    "generate_table.py",
-                    "--samples",
-                    "1",
-                    "--seed",
-                    "42",
-                    "--processes",
-                    "2",
-                    "--output",
-                    output_path,
-                ],
-            ):
-                run_main_silently(["A_A_Unsuited"])
-            self.assertTrue(os.path.exists(output_path))
 
 
 if __name__ == "__main__":

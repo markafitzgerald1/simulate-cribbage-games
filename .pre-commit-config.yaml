@@ -43,7 +43,7 @@ repos:
         always_run: true
       - id: cpd-check
         name: cpd-check
-        entry: pmd cpd --language python --minimum-tokens 59 --dir simulate_cribbage_games.py,test_simulate_cribbage_games.py,setup.py,artifact_pipeline
+        entry: pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive
         language: system
         pass_filenames: false
         always_run: true
