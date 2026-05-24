@@ -353,7 +353,7 @@ def load_or_initialize_accumulators(output_path, no_resume, seed):
     if no_resume:
         return {}, None
     accumulators, metadata = load_output(output_path)
-    if has_samples(accumulators):
+    if metadata is not None or has_samples(accumulators):
         validate_resume_metadata(metadata, seed, output_path)
     return accumulators, metadata
 
@@ -499,12 +499,12 @@ def run_generation(
     for pair in pairs:
         for player in ["Dealer", "Pone"]:
             current_samples = get_total_sample_count(accumulators, pair, player)
-            if args.infinite:
+            if args.infinite and getattr(args, "samples", None) is None:
                 samples_to_run = args.checkpoint_frequency
             else:
                 samples_to_run = min(
                     args.checkpoint_frequency,
-                    max(args.samples - current_samples, 0),
+                    max(getattr(args, "samples", 0) - current_samples, 0),
                 )
 
             if samples_to_run > 0:
@@ -629,6 +629,9 @@ def main(override_pairs=None):
         parser.error(
             "--samples is required when using generation stop flags in --infinite mode"
         )
+
+    if args.convergence_threshold is not None and args.convergence_threshold < 0:
+        parser.error("--convergence-threshold must be non-negative")
 
     if args.seed is not None:
         rng = random.Random(args.seed)
