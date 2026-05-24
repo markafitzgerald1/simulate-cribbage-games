@@ -28,6 +28,8 @@ from artifact_pipeline.generate_table import (
     serialize_accumulators,
     deserialize_accumulators,
     METADATA_KEY,
+    write_output,
+    load_or_initialize_accumulators,
     select_opponent_kept_cards_dynamic,
 )
 from artifact_pipeline.adapter import Card, DECK_SET
@@ -1008,6 +1010,75 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             generation_accumulators={},
         )
         self.assertEqual(len(kept_no_discards), 4)
+
+    def test_main_negative_convergence_threshold(self):
+        """Test that main rejects a negative convergence threshold."""
+        with patch(
+            "sys.argv",
+            [
+                "generate_table.py",
+                "--samples",
+                "1",
+                "--convergence-threshold",
+                "-0.5",
+            ],
+        ):
+            with self.assertRaises(SystemExit):
+                run_main_silently(["A_A_Unsuited"])
+
+    def test_run_generation_infinite_exact_samples(self):
+        """Test run_generation caps samples correctly when infinite is True but samples is not None."""
+        args = argparse.Namespace(
+            infinite=True, checkpoint_frequency=100, samples=50, seed=42
+        )
+        rng = random.Random(42)
+        accumulators = {}
+        # current samples is 0, target samples is 50. Since infinite is True,
+        # it should cap the samples to 50 (instead of 100).
+        made_progress = run_generation(
+            args,
+            rng,
+            ["A_A_Unsuited"],
+            accumulators,
+        )
+        self.assertTrue(made_progress)
+        self.assertEqual(
+            minimum_completed_sample_count(accumulators, ["A_A_Unsuited"]), 50
+        )
+
+    def test_load_accumulators_empty_with_metadata_validates(self):
+        """Test load_or_initialize_accumulators validates resume metadata when accumulators are empty."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+
+            # Write a checkpoint that has empty accumulators but contains metadata.
+            # In particular, metadata will have seed=42.
+            write_output(
+                accumulators={},
+                output_path=output_path,
+                seed=42,
+                pairs=["A_A_Unsuited"],
+                generation=1,
+                generation_accumulators={},
+            )
+
+            # If we try to resume with a matching seed (42), it should succeed and return metadata.
+            accs, meta = load_or_initialize_accumulators(
+                output_path=output_path,
+                no_resume=False,
+                seed=42,
+            )
+            self.assertEqual(accs, {"A_A_Unsuited": {"Dealer": {}, "Pone": {}}})
+            self.assertEqual(meta["seed"], 42)
+
+            # If we try to resume with a non-matching seed (99), it should raise ValueError
+            # because of the incompatible seed, even though current accumulators are empty.
+            with self.assertRaises(ValueError):
+                load_or_initialize_accumulators(
+                    output_path=output_path,
+                    no_resume=False,
+                    seed=99,
+                )
 
 
 if __name__ == "__main__":
