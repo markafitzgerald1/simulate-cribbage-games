@@ -24,7 +24,13 @@ from artifact_pipeline.generate_table import (
     reached_target_sample_count,
     main,
     positive_int,
+    calculate_max_ev_shift,
+    serialize_accumulators,
+    deserialize_accumulators,
+    METADATA_KEY,
+    select_opponent_kept_cards_dynamic,
 )
+from artifact_pipeline.adapter import Card, DECK_SET
 
 
 def run_main_silently(override_pairs=None):
@@ -569,6 +575,439 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 fresh_data = json.load(fresh_file)
 
             self.assertEqual(resumed_data, fresh_data)
+
+    def test_hessel_fixture(self):
+        # pylint: disable=too-many-locals
+        hessel_expected_averages = {
+            "5_5": 8.95,
+            "2_3": 6.97,
+            "7_8": 6.58,
+            "6_7": 4.94,
+            "A_A": 5.26,
+        }
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "300",
+                    "--checkpoint-frequency",
+                    "300",
+                    "--max-generations",
+                    "2",
+                    "--convergence-threshold",
+                    "0.1",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                target_pairs = [
+                    "5_5_Unsuited",
+                    "2_3_Suited",
+                    "2_3_Unsuited",
+                    "7_8_Suited",
+                    "7_8_Unsuited",
+                    "6_7_Suited",
+                    "6_7_Unsuited",
+                    "A_A_Unsuited",
+                ]
+                run_main_silently(target_pairs)
+
+            with open(output_path, "r", encoding="utf-8") as output_file:
+                data = json.load(output_file)
+
+            for key, expected_ev in hessel_expected_averages.items():
+                rank1, rank2 = key.split("_")
+
+                if rank1 == rank2:
+                    pair_str = f"{rank1}_{rank2}_Unsuited"
+                    dealer_data = data[pair_str]["Dealer"]
+
+                    total_mu_sum = 0.0
+                    total_variance = 0.0
+                    total_weight = 0
+
+                    for cut_rank_str, stats in dealer_data.items():
+                        n = stats["n"]
+                        if n == 0:
+                            continue
+
+                        discard_count = (1 if rank1 == cut_rank_str else 0) + (
+                            1 if rank2 == cut_rank_str else 0
+                        )
+                        weight = 4 - discard_count
+
+                        total_mu_sum += stats["mu"] * weight
+                        total_variance += (stats["se"] ** 2) * weight * weight
+                        total_weight += weight
+
+                    mu_rollup = total_mu_sum / total_weight
+                    se_rollup = math.sqrt(total_variance) / total_weight
+
+                    self.assertLessEqual(abs(mu_rollup - expected_ev), 3.0 * se_rollup)
+                else:
+                    pair_suited_str = f"{rank1}_{rank2}_Suited"
+                    pair_unsuited_str = f"{rank1}_{rank2}_Unsuited"
+
+                    def rollup_suit(suit_str, r1, r2):
+                        dealer_data = data[suit_str]["Dealer"]
+                        mu_sum = 0.0
+                        var_sum = 0.0
+                        w_sum = 0
+                        for cut_rank_str, stats in dealer_data.items():
+                            n = stats["n"]
+                            if n == 0:
+                                continue
+                            discard_count = (1 if r1 == cut_rank_str else 0) + (
+                                1 if r2 == cut_rank_str else 0
+                            )
+                            weight = 4 - discard_count
+                            mu_sum += stats["mu"] * weight
+                            var_sum += (stats["se"] ** 2) * weight * weight
+                            w_sum += weight
+                        return mu_sum / w_sum, math.sqrt(var_sum) / w_sum
+
+                    mu_suited, se_suited = rollup_suit(pair_suited_str, rank1, rank2)
+                    mu_unsuited, se_unsuited = rollup_suit(
+                        pair_unsuited_str, rank1, rank2
+                    )
+
+                    mu_rollup = (0.25 * mu_suited) + (0.75 * mu_unsuited)
+                    se_rollup = math.sqrt(
+                        (0.25**2) * (se_suited**2) + (0.75**2) * (se_unsuited**2)
+                    )
+
+                    self.assertLessEqual(abs(mu_rollup - expected_ev), 3.0 * se_rollup)
+
+    def test_calculate_max_ev_shift(self):
+        prev = {
+            "A_A_Unsuited": {
+                "Dealer": {
+                    "A": {"n": 1, "sum": 5.0, "sum_squares": 25.0},
+                    "2": {"n": 1, "sum": 10.0, "sum_squares": 100.0},
+                }
+            }
+        }
+        curr = {
+            "A_A_Unsuited": {
+                "Dealer": {
+                    "A": {"n": 2, "sum": 15.0, "sum_squares": 125.0},
+                    "2": {"n": 1, "sum": 10.0, "sum_squares": 100.0},
+                }
+            }
+        }
+        shift = calculate_max_ev_shift(prev, curr, ["A_A_Unsuited"])
+        self.assertAlmostEqual(shift, 2.5)
+
+        # Test newly sampled bucket where prev is missing the key
+        prev_missing = {
+            "A_A_Unsuited": {"Dealer": {"A": {"n": 1, "sum": 5.0, "sum_squares": 25.0}}}
+        }
+        curr_added = {
+            "A_A_Unsuited": {
+                "Dealer": {
+                    "A": {"n": 1, "sum": 5.0, "sum_squares": 25.0},
+                    "2": {"n": 1, "sum": 10.0, "sum_squares": 100.0},
+                }
+            }
+        }
+        shift_added = calculate_max_ev_shift(prev_missing, curr_added, ["A_A_Unsuited"])
+        self.assertAlmostEqual(shift_added, 10.0)
+
+    def test_max_generations_hardcap(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "out.json")
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--checkpoint-frequency",
+                    "1",
+                    "--max-generations",
+                    "1",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with patch("artifact_pipeline.generate_table.print") as mock_print:
+                    run_main_silently(["A_A_Unsuited"])
+
+                    mock_print.assert_any_call(
+                        "Warning: Hardcap reached at generation 1."
+                    )
+
+    def test_convergence_threshold(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "out.json")
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--checkpoint-frequency",
+                    "1",
+                    "--max-generations",
+                    "5",
+                    "--convergence-threshold",
+                    "0.0",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with patch("artifact_pipeline.generate_table.print") as mock_print:
+                    with patch(
+                        "artifact_pipeline.generate_table.calculate_max_ev_shift",
+                        side_effect=[1.0, 0.0],
+                    ):
+                        with patch(
+                            "artifact_pipeline.generate_table.reached_target_sample_count",
+                            side_effect=[True, True, True],
+                        ):
+                            run_main_silently(["A_A_Unsuited"])
+                    found = False
+                    for call in mock_print.call_args_list:
+                        if (
+                            call.args
+                            and isinstance(call.args[0], str)
+                            and call.args[0].startswith("Converged at generation")
+                        ):
+                            found = True
+                    self.assertTrue(found)
+
+    def test_serialize_deserialize_accumulators_edge_cases(self):
+        self.assertIsNone(serialize_accumulators(None))
+        self.assertIsNone(deserialize_accumulators(None))
+
+        # Test serialize skips METADATA_KEY and empty accumulators (n=0)
+        accumulators = {
+            METADATA_KEY: {"some": "metadata"},
+            "A_A_Unsuited": {
+                "Dealer": {
+                    "A": {"n": 0, "sum": 0.0, "sum_squares": 0.0},
+                    "2": {"n": 1, "sum": 5.0, "sum_squares": 25.0},
+                }
+            },
+        }
+        serialized = serialize_accumulators(accumulators)
+        self.assertNotIn(METADATA_KEY, serialized)
+        self.assertNotIn("A", serialized["A_A_Unsuited"]["Dealer"])
+        self.assertTrue("2" in serialized["A_A_Unsuited"]["Dealer"])
+        self.assertEqual(serialized["A_A_Unsuited"]["Dealer"]["2"]["n"], 1)
+
+        # Test deserialize round-trip
+        deserialized = deserialize_accumulators(serialized)
+        self.assertTrue("A_A_Unsuited" in deserialized)
+        self.assertEqual(deserialized["A_A_Unsuited"]["Dealer"]["2"]["n"], 1)
+        self.assertEqual(deserialized["A_A_Unsuited"]["Dealer"]["2"]["sum"], 5.0)
+
+    def test_resume_rejects_wrong_generation_method(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+            with open(output_path, "w", encoding="utf-8") as output_file:
+                json.dump(
+                    {
+                        "__metadata__": {
+                            "generation_method": "wrong_method",
+                            "seed": 42,
+                            "generation": 0,
+                        },
+                        "A_A_Unsuited": {
+                            "Dealer": {"A": {"n": 1, "mu": 5.0, "se": 0.0}},
+                            "Pone": {},
+                        },
+                    },
+                    output_file,
+                )
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--seed",
+                    "42",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with self.assertRaises(ValueError) as ctx:
+                    run_main_silently(["A_A_Unsuited"])
+                self.assertTrue(
+                    "was generated with method wrong_method" in str(ctx.exception)
+                )
+
+    def test_main_hardcap_on_start(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+            with open(output_path, "w", encoding="utf-8") as output_file:
+                json.dump(
+                    {
+                        "__metadata__": {
+                            "generation_method": "artifact_pipeline.generate_table.v1",
+                            "seed": 42,
+                            "generation": 2,
+                        },
+                        "A_A_Unsuited": {
+                            "Dealer": {"A": {"n": 1, "mu": 5.0, "se": 0.0}},
+                            "Pone": {},
+                        },
+                    },
+                    output_file,
+                )
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--seed",
+                    "42",
+                    "--max-generations",
+                    "2",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with patch("artifact_pipeline.generate_table.print") as mock_print:
+                    run_main_silently(["A_A_Unsuited"])
+                    mock_print.assert_any_call(
+                        "Warning: Hardcap reached at generation 2."
+                    )
+
+    def test_main_no_progress_finite(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "out.json")
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with patch(
+                    "artifact_pipeline.generate_table.run_generation",
+                    return_value=False,
+                ):
+                    run_main_silently(["A_A_Unsuited"])
+
+    def test_main_infinite_requires_samples_with_stop_flags(self):
+        """Test that --infinite with stop flags but no --samples raises error."""
+        with patch(
+            "sys.argv",
+            [
+                "generate_table.py",
+                "--infinite",
+                "--max-generations",
+                "2",
+            ],
+        ):
+            with self.assertRaises(SystemExit):
+                with redirect_stderr(io.StringIO()):
+                    main(["A_A_Unsuited"])
+
+    def test_main_infinite_with_max_generations(self):
+        """Test that --infinite with --samples and --max-generations terminates correctly."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "out.json")
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--infinite",
+                    "--max-generations",
+                    "1",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with patch("artifact_pipeline.generate_table.print") as mock_print:
+                    run_main_silently(["A_A_Unsuited"])
+                    mock_print.assert_any_call(
+                        "Warning: Hardcap reached at generation 1."
+                    )
+
+    def test_main_infinite_no_stop_flags_transitions_forever(self):
+        """Test that --infinite with --samples and no stop flags transitions to next gen without stopping."""
+
+        class StopLoopException(Exception):
+            pass
+
+        # We want to run the real run_generation on the first call to let the first generation
+        # reach its target samples, and then raise StopLoopException on the second call (Gen 1).
+        call_count = 0
+        real_run_gen = run_generation
+
+        def run_gen_side_effect(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count > 1:
+                raise StopLoopException("Loop stopped as expected")
+            return real_run_gen(*args, **kwargs)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "out.json")
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--infinite",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with patch(
+                    "artifact_pipeline.generate_table.run_generation",
+                    side_effect=run_gen_side_effect,
+                ):
+                    with self.assertRaises(StopLoopException):
+                        run_main_silently(["A_A_Unsuited"])
+
+    def test_select_opponent_kept_cards_dynamic_excludes_discard_cards(self):
+        """Test that select_opponent_kept_cards_dynamic temporarily excludes player discard cards."""
+        dealt = [
+            Card(0, 0),
+            Card(1, 0),
+            Card(2, 0),
+            Card(3, 0),
+            Card(4, 0),
+            Card(5, 0),
+        ]
+        player_discards = [Card(6, 0), Card(7, 0)]
+        orig_deck_len = len(DECK_SET)
+        kept = select_opponent_kept_cards_dynamic(
+            "Dealer",
+            dealt,
+            generation_accumulators={},
+            player_discard_cards=player_discards,
+        )
+        self.assertEqual(len(kept), 4)
+        self.assertEqual(len(DECK_SET), orig_deck_len)
+
+        # Test when player_discard_cards is None (the else branch)
+        kept_no_discards = select_opponent_kept_cards_dynamic(
+            "Dealer",
+            dealt,
+            generation_accumulators={},
+        )
+        self.assertEqual(len(kept_no_discards), 4)
 
 
 if __name__ == "__main__":
