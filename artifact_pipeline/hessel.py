@@ -7,6 +7,9 @@ Source:
 https://cribbage121.com/cardcombinations/discardtables.php
 http://www.cribbageforum.com/YourCrib.htm
 http://www.cribbageforum.com/OppCrib.htm
+Craig Hessel's original Geocities site (archived via Wayback Machine):
+https://web.archive.org/web/20091026234150/http://www.geocities.com/craig_hessel/
+https://web.archive.org/web/20091027102030/http://geocities.com/craig_hessel/dump.htm
 
 Cribbage 121 republishes comparison values from Hessel's discard tables for
 "player" (own crib) and "opponent" (opponent's crib). In this repository's

@@ -1,5 +1,6 @@
 # pylint: disable=duplicate-code
-# Standalone CLI tools duplicate some canonical structures and argparse setups for script-mode execution safety.
+# Argparse CLI options for separate pipeline entry-point scripts share common arguments,
+# which are kept inline to maintain standalone script usability without import complexity.
 import argparse
 import itertools
 import json
@@ -14,29 +15,10 @@ if __package__ in (None, ""):  # pragma: no cover
 from artifact_pipeline.adapter import (  # noqa: E402
     Index,
     cached_pairs_runs_and_fifteens_points,
+    get_canonical_pairs,
 )
 
 DEFAULT_OUTPUT_PATH = "expected_crib_points.analytical.json"
-
-
-def get_canonical_pairs():
-    """
-    Generate the 169 canonical discard pairs.
-    Format: [Rank1]_[Rank2]_[SuitStatus]
-    """
-    pairs = []
-    num_indices = len(Index.indices)
-    for rank1_index in range(num_indices):
-        for rank2_index in range(rank1_index, num_indices):
-            rank1 = Index.indices[rank1_index]
-            rank2 = Index.indices[rank2_index]
-
-            if rank1_index == rank2_index:
-                pairs.append(f"{rank1}_{rank2}_Unsuited")
-            else:
-                pairs.append(f"{rank1}_{rank2}_Suited")
-                pairs.append(f"{rank1}_{rank2}_Unsuited")
-    return pairs
 
 
 def get_analytical_pairs():
