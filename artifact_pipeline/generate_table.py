@@ -621,6 +621,15 @@ def main(override_pairs=None):
     if not args.infinite and args.samples is None:
         parser.error("--samples is required unless --infinite is set")
 
+    if (
+        args.infinite
+        and args.samples is None
+        and (args.convergence_threshold is not None or args.max_generations is not None)
+    ):
+        parser.error(
+            "--samples is required when using generation stop flags in --infinite mode"
+        )
+
     if args.seed is not None:
         rng = random.Random(args.seed)
     else:
@@ -656,9 +665,9 @@ def main(override_pairs=None):
                 checkpoint()
                 break
 
-            # If not infinite and we've reached the target sample count for this generation,
+            # If we've reached the target sample count for this generation,
             # we check if we should continue to the next generation.
-            if not args.infinite and reached_target_sample_count(
+            if args.samples is not None and reached_target_sample_count(
                 accumulators, pairs, args.samples
             ):
                 # 1. Perform convergence check if convergence threshold is specified and generation > 0
@@ -677,7 +686,8 @@ def main(override_pairs=None):
                 next_generation = generation + 1
                 max_generations_limit = args.max_generations
                 if max_generations_limit is None and args.convergence_threshold is None:
-                    max_generations_limit = 1
+                    if not args.infinite:
+                        max_generations_limit = 1
 
                 if (
                     max_generations_limit is not None

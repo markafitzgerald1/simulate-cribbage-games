@@ -904,6 +904,82 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 ):
                     run_main_silently(["A_A_Unsuited"])
 
+    def test_main_infinite_requires_samples_with_stop_flags(self):
+        """Test that --infinite with stop flags but no --samples raises error."""
+        with patch(
+            "sys.argv",
+            [
+                "generate_table.py",
+                "--infinite",
+                "--max-generations",
+                "2",
+            ],
+        ):
+            with self.assertRaises(SystemExit):
+                with redirect_stderr(io.StringIO()):
+                    main(["A_A_Unsuited"])
+
+    def test_main_infinite_with_max_generations(self):
+        """Test that --infinite with --samples and --max-generations terminates correctly."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "out.json")
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--infinite",
+                    "--max-generations",
+                    "1",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with patch("artifact_pipeline.generate_table.print") as mock_print:
+                    run_main_silently(["A_A_Unsuited"])
+                    mock_print.assert_any_call(
+                        "Warning: Hardcap reached at generation 1."
+                    )
+
+    def test_main_infinite_no_stop_flags_transitions_forever(self):
+        """Test that --infinite with --samples and no stop flags transitions to next gen without stopping."""
+
+        class StopLoopException(Exception):
+            pass
+
+        # We want to run the real run_generation on the first call to let the first generation
+        # reach its target samples, and then raise StopLoopException on the second call (Gen 1).
+        call_count = 0
+        real_run_gen = run_generation
+
+        def run_gen_side_effect(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count > 1:
+                raise StopLoopException("Loop stopped as expected")
+            return real_run_gen(*args, **kwargs)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "out.json")
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--infinite",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with patch(
+                    "artifact_pipeline.generate_table.run_generation",
+                    side_effect=run_gen_side_effect,
+                ):
+                    with self.assertRaises(StopLoopException):
+                        run_main_silently(["A_A_Unsuited"])
+
     def test_select_opponent_kept_cards_dynamic_excludes_discard_cards(self):
         """Test that select_opponent_kept_cards_dynamic temporarily excludes player discard cards."""
         dealt = [
