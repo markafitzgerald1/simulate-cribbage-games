@@ -109,7 +109,7 @@ def cards_to_canonical(card_1, card_2):
 
 
 def select_opponent_kept_cards_dynamic(
-    player, opponent_dealt, generation_accumulators=None
+    player, opponent_dealt, generation_accumulators=None, player_discard_cards=None
 ):
     # pylint: disable=too-many-locals
     if generation_accumulators is None:
@@ -123,7 +123,12 @@ def select_opponent_kept_cards_dynamic(
     max_score = None
     best_kept = None
 
-    starters = [card for card in DECK_SET if card not in opponent_dealt]
+    if player_discard_cards:
+        deck_set_to_use = set(c for c in DECK_SET if c not in player_discard_cards)
+    else:
+        deck_set_to_use = DECK_SET
+
+    starters = [card for card in deck_set_to_use if card not in opponent_dealt]
 
     for kept_combination in itertools.combinations(opponent_dealt, 4):
         kept_hand = list(kept_combination)
@@ -377,7 +382,7 @@ def score_crib_sample(
 ):
     opponent_dealt = sample_rng.sample(remaining_deck, 6)
     kept = select_opponent_kept_cards_dynamic(
-        player, opponent_dealt, generation_accumulators
+        player, opponent_dealt, generation_accumulators, discarded_cards
     )
     opponent_discards = [card for card in opponent_dealt if card not in kept]
     remaining_after_deal = [

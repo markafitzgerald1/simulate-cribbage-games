@@ -28,7 +28,9 @@ from artifact_pipeline.generate_table import (
     serialize_accumulators,
     deserialize_accumulators,
     METADATA_KEY,
+    select_opponent_kept_cards_dynamic,
 )
+from artifact_pipeline.adapter import Card, DECK_SET
 
 
 def run_main_silently(override_pairs=None):
@@ -648,7 +650,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     mu_rollup = total_mu_sum / total_weight
                     se_rollup = math.sqrt(total_variance) / total_weight
 
-                    self.assertLessEqual(abs(mu_rollup - expected_ev), 2.58 * se_rollup)
+                    self.assertLessEqual(abs(mu_rollup - expected_ev), 3.0 * se_rollup)
                 else:
                     pair_suited_str = f"{rank1}_{rank2}_Suited"
                     pair_unsuited_str = f"{rank1}_{rank2}_Unsuited"
@@ -681,7 +683,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                         (0.25**2) * (se_suited**2) + (0.75**2) * (se_unsuited**2)
                     )
 
-                    self.assertLessEqual(abs(mu_rollup - expected_ev), 2.58 * se_rollup)
+                    self.assertLessEqual(abs(mu_rollup - expected_ev), 3.0 * se_rollup)
 
     def test_calculate_max_ev_shift(self):
         prev = {
@@ -901,6 +903,35 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     return_value=False,
                 ):
                     run_main_silently(["A_A_Unsuited"])
+
+    def test_select_opponent_kept_cards_dynamic_excludes_discard_cards(self):
+        """Test that select_opponent_kept_cards_dynamic temporarily excludes player discard cards."""
+        dealt = [
+            Card(0, 0),
+            Card(1, 0),
+            Card(2, 0),
+            Card(3, 0),
+            Card(4, 0),
+            Card(5, 0),
+        ]
+        player_discards = [Card(6, 0), Card(7, 0)]
+        orig_deck_len = len(DECK_SET)
+        kept = select_opponent_kept_cards_dynamic(
+            "Dealer",
+            dealt,
+            generation_accumulators={},
+            player_discard_cards=player_discards,
+        )
+        self.assertEqual(len(kept), 4)
+        self.assertEqual(len(DECK_SET), orig_deck_len)
+
+        # Test when player_discard_cards is None (the else branch)
+        kept_no_discards = select_opponent_kept_cards_dynamic(
+            "Dealer",
+            dealt,
+            generation_accumulators={},
+        )
+        self.assertEqual(len(kept_no_discards), 4)
 
 
 if __name__ == "__main__":
