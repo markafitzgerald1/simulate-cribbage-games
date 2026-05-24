@@ -1,3 +1,19 @@
+"""Monte Carlo Expected Crib Points Table Generator.
+
+This script executes multi-process Monte Carlo simulations to evaluate expected
+crib points for the 169 canonical suited/unsuited discard pairs. It simulates
+suit-ful deal distributions, accounting for crib flush rules and card-removal
+effects.
+
+Relationship to the Analytical Solver:
+- While analytical_solver.py evaluates expected crib values algebraically using a
+  suit-free rank model (converging in seconds), this script performs suited Monte
+  Carlo simulations (modeling flush math and strategy variance).
+- This script can be bootstrapped via the `--bootstrap` option using the
+  analytical solver's converged expected_crib_points.analytical.json as the
+  Generation 0 policy baseline, allowing dynamic play from the first sample.
+"""
+
 import argparse
 import itertools
 import json

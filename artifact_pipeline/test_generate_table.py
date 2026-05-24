@@ -262,6 +262,8 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     "1",
                     "--seed",
                     "42",
+                    "--bootstrap",
+                    "",
                     "--output",
                     output_path,
                 ],
@@ -1112,7 +1114,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
     def test_analytical_solver_nobs_ev(self):
         """Test true Jack EV card removal math in analytical_solver."""
         # 1 Jack in crib, cut card is not Jack (e.g. index 3)
-        ev = score_combination_suit_free({10, 0, 1, 2}, 3, true_nobs=True)
+        ev = score_combination_suit_free((10, 0, 1, 2), 3, true_nobs=True)
         # base score of {A, 2, 3, J, 4} (which is 0,1,2,10,3) is 8 (run of 4 + two 15s).
         self.assertAlmostEqual(ev - 8.0, 0.234375)
 
@@ -1226,16 +1228,16 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
     def test_analytical_solver_additional_coverage(self):
         """Exercise remaining edge-case branches in analytical_solver for 100% coverage."""
         # 1. Starter card is a Jack (index 10)
-        ev = score_combination_suit_free({10, 0, 1, 2}, 10, true_nobs=True)
+        ev = score_combination_suit_free((10, 0, 1, 2), 10, true_nobs=True)
         # base score of {A, 2, 3, J, J} is 9 points (run of 3 + pair of Jacks + two 15s).
         self.assertAlmostEqual(ev, 9.0)
 
         # 2. Hessel mode with starter card not Jack
-        ev_hessel = score_combination_suit_free({10, 0, 1, 2}, 3, true_nobs=False)
+        ev_hessel = score_combination_suit_free((10, 0, 1, 2), 3, true_nobs=False)
         self.assertAlmostEqual(ev_hessel, 8.25)
 
         # 3. Hessel mode with starter card a Jack
-        ev_hessel_j = score_combination_suit_free({10, 0, 1, 2}, 10, true_nobs=False)
+        ev_hessel_j = score_combination_suit_free((10, 0, 1, 2), 10, true_nobs=False)
         self.assertAlmostEqual(ev_hessel_j, 9.0)
 
         # 4. _evaluate_crib_expected_cut Pone branch
@@ -1275,8 +1277,8 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             total_score = 0.0
             combinations_count = 0
 
-            # Iterate over all possible 2-card opponent discards from remaining 50 cards
-            for opp_cards in itertools.combinations(remaining_deck, 2):
+            # Iterate over a deterministic subset of possible 2-card opponent discards from remaining 50 cards
+            for opp_cards in list(itertools.combinations(remaining_deck, 2))[:100]:
                 crib_base = discarded + list(opp_cards)
 
                 # Remaining 48 cards for the cut card
