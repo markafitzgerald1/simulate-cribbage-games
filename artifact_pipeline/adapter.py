@@ -14,6 +14,7 @@ from simulate_cribbage_games import (  # noqa: E402
     Index,
     DECK_SET,
     score_hand_and_starter,
+    cached_pairs_runs_and_fifteens_points,
     BEST_STATIC_SELECT_PONE_KEPT_CARDS,
     BEST_STATIC_SELECT_DEALER_KEPT_CARDS,
 )
@@ -23,6 +24,7 @@ __all__ = [
     "Index",
     "DECK_SET",
     "score_hand_and_starter",
+    "cached_pairs_runs_and_fifteens_points",
     "BEST_STATIC_SELECT_PONE_KEPT_CARDS",
     "BEST_STATIC_SELECT_DEALER_KEPT_CARDS",
 ]

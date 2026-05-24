@@ -349,12 +349,24 @@ def validate_resume_metadata(metadata, seed, output_path):
         )
 
 
-def load_or_initialize_accumulators(output_path, no_resume, seed):
+def load_or_initialize_accumulators(output_path, no_resume, seed, bootstrap_path=None):
     if no_resume:
-        return {}, None
-    accumulators, metadata = load_output(output_path)
-    if metadata is not None or has_samples(accumulators):
-        validate_resume_metadata(metadata, seed, output_path)
+        accumulators, metadata = {}, None
+    else:
+        accumulators, metadata = load_output(output_path)
+        if metadata is not None or has_samples(accumulators):
+            validate_resume_metadata(metadata, seed, output_path)
+            return accumulators, metadata
+
+    # Fresh run (not resuming) - check if we should bootstrap
+    if bootstrap_path and os.path.exists(bootstrap_path):
+        bootstrap_accumulators, _ = load_output(bootstrap_path)
+        metadata = {
+            "generation": 0,
+            "generation_accumulators": serialize_accumulators(bootstrap_accumulators),
+        }
+        return {}, metadata
+
     return accumulators, metadata
 
 
@@ -616,6 +628,17 @@ def main(override_pairs=None):
         type=int,
         help="Optional RNG seed for reproducible generation.",
     )
+    parser.add_argument(
+        "--bootstrap",
+        default="expected_crib_points.analytical.json",
+        help="Optional JSON path to bootstrap baseline Generation 0 policy.",
+    )
+    parser.add_argument(
+        "--dampening",
+        type=float,
+        default=0.50,
+        help="Policy update dampening factor (default: 0.50).",
+    )
     args = parser.parse_args()
 
     if not args.infinite and args.samples is None:
@@ -633,6 +656,9 @@ def main(override_pairs=None):
     if args.convergence_threshold is not None and args.convergence_threshold < 0:
         parser.error("--convergence-threshold must be non-negative")
 
+    if args.dampening <= 0.0 or args.dampening > 1.0:
+        parser.error("--dampening must be in range (0.0, 1.0]")
+
     if args.seed is not None:
         rng = random.Random(args.seed)
     else:
@@ -640,7 +666,7 @@ def main(override_pairs=None):
 
     pairs = override_pairs if override_pairs is not None else get_canonical_pairs()
     accumulators, metadata = load_or_initialize_accumulators(
-        args.output, args.no_resume, args.seed
+        args.output, args.no_resume, args.seed, args.bootstrap
     )
 
     generation = 0
@@ -661,6 +687,7 @@ def main(override_pairs=None):
             generation_accumulators,
         )
 
+    # pylint: disable=too-many-nested-blocks
     try:
         while True:
             if args.max_generations is not None and generation >= args.max_generations:
@@ -707,14 +734,69 @@ def main(override_pairs=None):
                 print(
                     f"Generation {generation} complete. Transitioning to Generation {next_generation}..."
                 )
-                generation_accumulators = {
-                    pair: {
-                        player: {cut: dict(acc) for cut, acc in player_data.items()}
-                        for player, player_data in pair_data.items()
-                    }
-                    for pair, pair_data in accumulators.items()
-                    if pair != METADATA_KEY
-                }
+                prev_gen_accumulators = generation_accumulators
+                dampening = args.dampening
+                generation_accumulators = {}
+                # pylint: disable=too-many-nested-blocks
+                for pair in pairs:
+                    if pair == METADATA_KEY:
+                        continue
+                    generation_accumulators[pair] = {}
+                    for player in ["Dealer", "Pone"]:
+                        generation_accumulators[pair][player] = {}
+                        prior_player_data = (
+                            prev_gen_accumulators.get(pair, {}).get(player, {})
+                            if prev_gen_accumulators
+                            else {}
+                        )
+                        measured_player_data = accumulators.get(pair, {}).get(
+                            player, {}
+                        )
+                        for cut in Index.indices:
+                            # Prior stats
+                            prior_acc = prior_player_data.get(cut)
+                            if prior_acc:
+                                stats_prior = accumulator_to_statistics(prior_acc)
+                                val_prior = (
+                                    stats_prior["mu"]
+                                    if stats_prior is not None
+                                    else 0.0
+                                )
+                            else:
+                                val_prior = 0.0
+
+                            # Measured stats
+                            measured_acc = measured_player_data.get(cut)
+                            if measured_acc:
+                                stats_measured = accumulator_to_statistics(measured_acc)
+                                val_measured = (
+                                    stats_measured["mu"]
+                                    if stats_measured is not None
+                                    else 0.0
+                                )
+                                n_measured = stats_measured["n"]
+                                se_measured = stats_measured["se"]
+                            else:
+                                val_measured = 0.0
+                                n_measured = 0
+                                se_measured = 0.0
+
+                            # Apply low-pass dampened update
+                            if prior_acc:
+                                val_new = val_prior + dampening * (
+                                    val_measured - val_prior
+                                )
+                            else:
+                                val_new = val_measured
+
+                            stats_new = {
+                                "n": n_measured,
+                                "mu": val_new,
+                                "se": se_measured,
+                            }
+                            generation_accumulators[pair][player][cut] = (
+                                statistics_to_accumulator(stats_new)
+                            )
                 accumulators = {}
                 generation = next_generation
                 checkpoint()

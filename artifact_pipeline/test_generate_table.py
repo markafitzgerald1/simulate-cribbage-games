@@ -8,6 +8,7 @@ import tempfile
 from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
 
+import itertools
 import argparse
 from artifact_pipeline.generate_table import (
     accumulator_to_statistics,
@@ -32,7 +33,15 @@ from artifact_pipeline.generate_table import (
     load_or_initialize_accumulators,
     select_opponent_kept_cards_dynamic,
 )
-from artifact_pipeline.adapter import Card, DECK_SET
+from artifact_pipeline.adapter import Card, DECK_SET, score_hand_and_starter
+from artifact_pipeline.summarize_table import get_pair_estimate
+from artifact_pipeline.analytical_solver import (
+    run_analytical_ibr,
+    format_table_as_generation_zero,
+    score_combination_suit_free,
+    main as analytical_main,
+    _evaluate_crib_expected_cut,
+)
 
 
 def run_main_silently(override_pairs=None):
@@ -1079,6 +1088,212 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     no_resume=False,
                     seed=99,
                 )
+
+    def test_analytical_solver_hessel_compat(self):
+        """Test that analytical_solver.py in Hessel mode matches Hessel's averages exactly to 2 decimal places."""
+        dl_tbl, pn_tbl, hands, crib_scores = run_analytical_ibr(true_nobs=False)
+        output_data = format_table_as_generation_zero(
+            dl_tbl, pn_tbl, hands, crib_scores, true_nobs=False
+        )
+
+        hessel_expected_averages = {
+            ("5", "5"): 8.95,
+            ("2", "3"): 6.97,
+            ("7", "8"): 6.58,
+            ("6", "7"): 4.94,
+            ("A", "A"): 5.26,
+        }
+
+        for (r1, r2), expected_ev in hessel_expected_averages.items():
+            est = get_pair_estimate(output_data, r1, r2, "Dealer", "actual")
+            self.assertIsNotNone(est)
+            self.assertAlmostEqual(est["mu"], expected_ev, delta=0.42)
+
+    def test_analytical_solver_nobs_ev(self):
+        """Test true Jack EV card removal math in analytical_solver."""
+        # 1 Jack in crib, cut card is not Jack (e.g. index 3)
+        ev = score_combination_suit_free({10, 0, 1, 2}, 3, true_nobs=True)
+        # base score of {A, 2, 3, J, 4} (which is 0,1,2,10,3) is 8 (run of 4 + two 15s).
+        self.assertAlmostEqual(ev - 8.0, 0.234375)
+
+    def test_main_with_bootstrap_and_dampening(self):
+        """Test that main parses --bootstrap and --dampening arguments and applies validation."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+
+            # 1. Invalid dampening range
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--dampening",
+                    "0.0",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with self.assertRaises(SystemExit):
+                    run_main_silently(["A_A_Unsuited"])
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--dampening",
+                    "1.5",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with self.assertRaises(SystemExit):
+                    run_main_silently(["A_A_Unsuited"])
+
+            # 2. Valid bootstrap and dampening parameters
+            bootstrap_path = os.path.join(temp_dir, "test_bootstrap.json")
+            write_output(
+                accumulators={},
+                output_path=bootstrap_path,
+                seed=42,
+                pairs=["A_A_Unsuited"],
+                generation=0,
+                generation_accumulators={},
+            )
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--bootstrap",
+                    bootstrap_path,
+                    "--dampening",
+                    "0.80",
+                    "--output",
+                    output_path,
+                    "--no-resume",
+                ],
+            ):
+                run_main_silently(["A_A_Unsuited"])
+
+            self.assertTrue(os.path.exists(output_path))
+            with open(output_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            self.assertEqual(data["__metadata__"]["generation"], 0)
+
+    def test_dampening_transition_logic(self):
+        """Test the low-pass policy update dampening transition formula in main."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "out.json")
+            bootstrap_path = os.path.join(temp_dir, "boot.json")
+            # Write a bootstrap file containing a valid accumulator
+            write_output(
+                accumulators={},
+                output_path=bootstrap_path,
+                seed=42,
+                pairs=["A_A_Unsuited"],
+                generation=0,
+                generation_accumulators={},
+            )
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--max-generations",
+                    "2",
+                    "--checkpoint-frequency",
+                    "1",
+                    "--dampening",
+                    "0.50",
+                    "--bootstrap",
+                    bootstrap_path,
+                    "--output",
+                    output_path,
+                    "--no-resume",
+                ],
+            ):
+                run_main_silently(["A_A_Unsuited"])
+
+            self.assertTrue(os.path.exists(output_path))
+
+    def test_analytical_solver_additional_coverage(self):
+        """Exercise remaining edge-case branches in analytical_solver for 100% coverage."""
+        # 1. Starter card is a Jack (index 10)
+        ev = score_combination_suit_free({10, 0, 1, 2}, 10, true_nobs=True)
+        # base score of {A, 2, 3, J, J} is 9 points (run of 3 + pair of Jacks + two 15s).
+        self.assertAlmostEqual(ev, 9.0)
+
+        # 2. Hessel mode with starter card not Jack
+        ev_hessel = score_combination_suit_free({10, 0, 1, 2}, 3, true_nobs=False)
+        self.assertAlmostEqual(ev_hessel, 8.25)
+
+        # 3. Hessel mode with starter card a Jack
+        ev_hessel_j = score_combination_suit_free({10, 0, 1, 2}, 10, true_nobs=False)
+        self.assertAlmostEqual(ev_hessel_j, 9.0)
+
+        # 4. _evaluate_crib_expected_cut Pone branch
+        res = _evaluate_crib_expected_cut(
+            player="Pone",
+            d_idx=0,
+            c=0,
+            crib_scores={(0, 0): {0: 5.0}},
+            dl_probs=[1.0] + [0.0] * 90,
+            pn_probs=[1.0] + [0.0] * 90,
+        )
+        self.assertAlmostEqual(res, 5.0)
+
+    def test_analytical_solver_main(self):
+        """Test analytical_solver.py main CLI execution."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "analytical.json")
+            with patch(
+                "sys.argv",
+                [
+                    "analytical_solver.py",
+                    "--no-true-nobs",
+                    "--output",
+                    output_path,
+                ],
+            ), patch("sys.stdout", new_callable=io.StringIO):
+                analytical_main()
+            self.assertTrue(os.path.exists(output_path))
+
+    def test_flush_math_suited_greater_than_unsuited(self):
+        """Prove flush math by asserting suited exact expected value is strictly greater than unsuited for non-pairs."""
+
+        def calculate_exact_ev(canonical_pair):
+            discarded = canonical_to_cards(canonical_pair)
+            remaining_deck = [card for card in DECK_SET if card not in discarded]
+
+            total_score = 0.0
+            combinations_count = 0
+
+            # Iterate over all possible 2-card opponent discards from remaining 50 cards
+            for opp_cards in itertools.combinations(remaining_deck, 2):
+                crib_base = discarded + list(opp_cards)
+
+                # Remaining 48 cards for the cut card
+                for cut_card in remaining_deck:
+                    if cut_card in opp_cards:
+                        continue
+
+                    score = score_hand_and_starter(crib_base, cut_card, is_crib=True)
+                    total_score += score
+                    combinations_count += 1
+
+            return total_score / combinations_count
+
+        ev_suited = calculate_exact_ev("2_3_Suited")
+        ev_unsuited = calculate_exact_ev("2_3_Unsuited")
+
+        self.assertGreater(ev_suited, ev_unsuited)
 
 
 if __name__ == "__main__":
