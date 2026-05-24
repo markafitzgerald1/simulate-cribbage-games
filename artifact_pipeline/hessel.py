@@ -3,13 +3,14 @@
 The source table is rank-only and therefore has 91 discard pairs. It does not
 distinguish suited from unsuited discards.
 
-Source:
+Primary Source (Craig Hessel's original Geocities site, retrieved from the Wayback Machine crawl on October 26/27, 2009, immediately before Geocities went offline):
+https://web.archive.org/web/20091026234150/http://www.geocities.com/craig_hessel/
+https://web.archive.org/web/20091027102030/http://geocities.com/craig_hessel/dump.htm
+
+Secondary Sources (republishing Hessel's work or subset values):
 https://cribbage121.com/cardcombinations/discardtables.php
 http://www.cribbageforum.com/YourCrib.htm
 http://www.cribbageforum.com/OppCrib.htm
-Craig Hessel's original Geocities site (archived via Wayback Machine):
-https://web.archive.org/web/20091026234150/http://www.geocities.com/craig_hessel/
-https://web.archive.org/web/20091027102030/http://geocities.com/craig_hessel/dump.htm
 
 Cribbage 121 republishes comparison values from Hessel's discard tables for
 "player" (own crib) and "opponent" (opponent's crib). In this repository's
