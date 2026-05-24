@@ -34,6 +34,7 @@ from artifact_pipeline.generate_table import (
     get_expected_crib_points_from_accumulators,
     merge_accumulators,
     run_monte_carlo_single_task,
+    init_worker,
 )
 
 
@@ -929,6 +930,24 @@ class TestGenerateTable(unittest.TestCase):
         total_samples = sum(item["n"] for item in acc.values())
         self.assertEqual(total_samples, 1)
 
+    def test_run_monte_carlo_single_task_with_worker_init(self):
+        """Test run_monte_carlo_single_task utilizing worker global variable initialization."""
+        dummy_generation_accumulators = {
+            "A_2_Suited": {
+                "Dealer": {"A": {"n": 10, "sum": 50.0, "sum_squares": 250.0}}
+            }
+        }
+        init_worker(dummy_generation_accumulators)
+        try:
+            pair, player, acc = run_monte_carlo_single_task(
+                "A_A_Unsuited", "Dealer", 1, 0, 42, None
+            )
+            self.assertEqual(pair, "A_A_Unsuited")
+            self.assertEqual(player, "Dealer")
+            self.assertGreater(len(acc), 0)
+        finally:
+            init_worker(None)
+
     def test_run_generation_parallel(self):
         """Test run_generation with parallel execution."""
         args = argparse.Namespace(
@@ -956,6 +975,27 @@ class TestGenerateTable(unittest.TestCase):
         with patch.object(ProcessPoolExecutor, "submit", side_effect=KeyboardInterrupt):
             with self.assertRaises(KeyboardInterrupt):
                 run_generation(args, rng, ["A_A_Unsuited"], accumulators)
+
+    def test_main_parallel(self):
+        """Test main integration with parallel execution."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "par_out.json")
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--seed",
+                    "42",
+                    "--processes",
+                    "2",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                run_main_silently(["A_A_Unsuited"])
+            self.assertTrue(os.path.exists(output_path))
 
 
 if __name__ == "__main__":

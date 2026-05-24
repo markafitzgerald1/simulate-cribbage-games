@@ -53,7 +53,10 @@ def compare_to_hessel(
             hessel = HESSEL_AVERAGES[pair][role]
             delta = estimate["mu"] - hessel
             se = estimate.get("se", 0.0)
-            z_score = abs(delta) / se if se else math.inf
+            if se:
+                z_score = abs(delta) / se
+            else:
+                z_score = 0.0 if abs(delta) < 1e-9 else math.inf
             rows.append(
                 {
                     "pair": pair,

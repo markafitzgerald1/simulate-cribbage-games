@@ -1,5 +1,6 @@
 import io
 import json
+import math
 import os
 import tempfile
 import unittest
@@ -159,13 +160,23 @@ class TestCompareHessel(unittest.TestCase):
         self.assertTrue("Dealer delta" in output)
         self.assertTrue("Summary:" in output)
 
+    def test_compare_to_hessel_zero_se(self):
+        data = {
+            "A_A_Unsuited": {
+                "Dealer": {"A": {"n": 1, "mu": 5.46, "se": 0.0}},
+            }
+        }
+        rows = compare_to_hessel(data, ("Dealer",), "actual")
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["z_score"], math.inf)
+
     def test_main_markdown_rows(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")
             output = run_main_with_single_dealer_table(output_path, "--view", "rows")
 
         self.assertTrue("| AA | Dealer | 5.260 | 5.260 | 0.000 |" in output)
-        self.assertTrue(output.rstrip().endswith("max_z_score=inf"))
+        self.assertTrue(output.rstrip().endswith("max_z_score=0.000"))
 
     def test_main_csv_threshold_failure(self):
         with tempfile.TemporaryDirectory() as temp_dir:

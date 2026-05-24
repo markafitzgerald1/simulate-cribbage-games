@@ -426,23 +426,52 @@ def run_monte_carlo_into_accumulators(
         )
 
 
+# pylint: disable=too-few-public-methods
+# Justification: WorkerState acts solely as a namespace for caching prior generation table
+# estimates to avoid pickle overhead per worker process, hence requiring no public methods.
+class WorkerState:
+    """
+    Module-level class to cache prior generation table once per subprocess
+    worker during parallel Monte Carlo simulation runs.
+    """
+
+    generation_accumulators = None
+
+
+def init_worker(generation_accumulators):
+    """
+    Initialize a worker process with the generation accumulators to avoid pickling overhead.
+    """
+    WorkerState.generation_accumulators = generation_accumulators
+
+
 # Justification: Six parameters are required to serialize all components of the Monte
 # Carlo state chunk (including RNG seeds, the active pair, player role, and generation state)
 # to the subprocess worker cleanly.
 # pylint: disable=too-many-arguments,too-many-positional-arguments
 def run_monte_carlo_single_task(
-    pair, player, num_samples, first_sample_index, seed, generation_accumulators
+    pair,
+    player,
+    num_samples,
+    first_sample_index,
+    seed,
+    generation_accumulators=None,
 ):
     """
     Worker task to run a chunk of Monte Carlo samples for one pair and player.
     Returns the accumulated results for this chunk.
     """
     local_accumulators = {}
+    gen_acc = (
+        generation_accumulators
+        if generation_accumulators is not None
+        else WorkerState.generation_accumulators
+    )
     sampling = {
         "rng": random.Random() if seed is None else None,
         "first_sample_index": first_sample_index,
         "seed": seed,
-        "generation_accumulators": generation_accumulators,
+        "generation_accumulators": gen_acc,
     }
     run_monte_carlo_into_accumulators(
         local_accumulators, pair, player, num_samples, sampling
@@ -550,20 +579,24 @@ def run_generation(
 
     if tasks:
         if processes > 1:
-            with ProcessPoolExecutor(max_workers=processes) as executor:
-                futures = [
-                    executor.submit(
-                        run_monte_carlo_single_task,
-                        pair,
-                        player,
-                        samples_to_run,
-                        first_sample_index,
-                        args.seed,
-                        generation_accumulators,
-                    )
-                    for pair, player, samples_to_run, first_sample_index in tasks
-                ]
+            with ProcessPoolExecutor(
+                max_workers=processes,
+                initializer=init_worker,
+                initargs=(generation_accumulators,),
+            ) as executor:
                 try:
+                    futures = [
+                        executor.submit(
+                            run_monte_carlo_single_task,
+                            pair,
+                            player,
+                            samples_to_run,
+                            first_sample_index,
+                            args.seed,
+                            None,
+                        )
+                        for pair, player, samples_to_run, first_sample_index in tasks
+                    ]
                     for future in as_completed(futures):
                         pair, player, local_player_acc = future.result()
                         merge_accumulators(accumulators, pair, player, local_player_acc)
