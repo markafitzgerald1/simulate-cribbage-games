@@ -7,6 +7,7 @@ import random
 import tempfile
 from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
+from concurrent.futures import ProcessPoolExecutor
 
 import argparse
 import simulate_cribbage_games
@@ -28,8 +29,11 @@ from artifact_pipeline.generate_table import (
     reached_target_sample_count,
     main,
     positive_int,
+    processes_type,
     select_opponent_kept_cards_dynamic,
     get_expected_crib_points_from_accumulators,
+    merge_accumulators,
+    run_monte_carlo_single_task,
 )
 
 
@@ -880,6 +884,78 @@ class TestGenerateTable(unittest.TestCase):
             generation_accumulators, "A_A_Unsuited", "Dealer", discarded_cards
         )
         self.assertAlmostEqual(ev, 0.0)
+
+    def test_processes_type(self):
+        """Test the custom processes_type parser helper."""
+        self.assertEqual(processes_type("4"), 4)
+        # Test "auto"
+        res = processes_type("auto")
+        self.assertGreaterEqual(res, 1)
+        # Test positive_int failures and invalid strings
+        with self.assertRaises(argparse.ArgumentTypeError):
+            processes_type("0")
+        with self.assertRaises(argparse.ArgumentTypeError):
+            processes_type("-5")
+        with self.assertRaises(argparse.ArgumentTypeError):
+            processes_type("not_an_int")
+
+    def test_merge_accumulators(self):
+        """Test merge_accumulators works correctly."""
+        accumulators = {}
+        local_acc = {"A": {"n": 5, "sum": 20.0, "sum_squares": 100.0}}
+        merge_accumulators(accumulators, "A_A_Unsuited", "Dealer", local_acc)
+        self.assertEqual(accumulators["A_A_Unsuited"]["Dealer"]["A"]["n"], 5)
+        self.assertEqual(accumulators["A_A_Unsuited"]["Dealer"]["A"]["sum"], 20.0)
+        self.assertEqual(
+            accumulators["A_A_Unsuited"]["Dealer"]["A"]["sum_squares"], 100.0
+        )
+
+        # Merge additional data to test cumulative sum
+        merge_accumulators(accumulators, "A_A_Unsuited", "Dealer", local_acc)
+        self.assertEqual(accumulators["A_A_Unsuited"]["Dealer"]["A"]["n"], 10)
+        self.assertEqual(accumulators["A_A_Unsuited"]["Dealer"]["A"]["sum"], 40.0)
+        self.assertEqual(
+            accumulators["A_A_Unsuited"]["Dealer"]["A"]["sum_squares"], 200.0
+        )
+
+    def test_run_monte_carlo_single_task(self):
+        """Test run_monte_carlo_single_task runs a simulation and returns results."""
+        pair, player, acc = run_monte_carlo_single_task(
+            "A_A_Unsuited", "Dealer", 1, 0, 42, None
+        )
+        self.assertEqual(pair, "A_A_Unsuited")
+        self.assertEqual(player, "Dealer")
+        self.assertGreater(len(acc), 0)
+        total_samples = sum(item["n"] for item in acc.values())
+        self.assertEqual(total_samples, 1)
+
+    def test_run_generation_parallel(self):
+        """Test run_generation with parallel execution."""
+        args = argparse.Namespace(
+            infinite=False, checkpoint_frequency=1, samples=1, seed=42, processes=2
+        )
+        rng = random.Random(42)
+        accumulators = {}
+        made_progress = run_generation(args, rng, ["A_A_Unsuited"], accumulators)
+        self.assertTrue(made_progress)
+        total_samples = sum(
+            acc["n"]
+            for player_data in accumulators.get("A_A_Unsuited", {}).values()
+            for acc in player_data.values()
+        )
+        self.assertEqual(total_samples, 2)  # 1 sample for Dealer, 1 for Pone
+
+    def test_run_generation_parallel_keyboard_interrupt(self):
+        """Test that KeyboardInterrupt inside parallel run_generation shuts down executor and re-raises."""
+        args = argparse.Namespace(
+            infinite=False, checkpoint_frequency=1, samples=1, seed=42, processes=2
+        )
+        rng = random.Random(42)
+        accumulators = {}
+
+        with patch.object(ProcessPoolExecutor, "submit", side_effect=KeyboardInterrupt):
+            with self.assertRaises(KeyboardInterrupt):
+                run_generation(args, rng, ["A_A_Unsuited"], accumulators)
 
 
 if __name__ == "__main__":

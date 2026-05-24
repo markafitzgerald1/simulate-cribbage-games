@@ -1,4 +1,5 @@
 import argparse
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import json
 import math
 import os
@@ -425,6 +426,40 @@ def run_monte_carlo_into_accumulators(
         )
 
 
+# Justification: Six parameters are required to serialize all components of the Monte
+# Carlo state chunk (including RNG seeds, the active pair, player role, and generation state)
+# to the subprocess worker cleanly.
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+def run_monte_carlo_single_task(
+    pair, player, num_samples, first_sample_index, seed, generation_accumulators
+):
+    """
+    Worker task to run a chunk of Monte Carlo samples for one pair and player.
+    Returns the accumulated results for this chunk.
+    """
+    local_accumulators = {}
+    sampling = {
+        "rng": random.Random() if seed is None else None,
+        "first_sample_index": first_sample_index,
+        "seed": seed,
+        "generation_accumulators": generation_accumulators,
+    }
+    run_monte_carlo_into_accumulators(
+        local_accumulators, pair, player, num_samples, sampling
+    )
+    return pair, player, local_accumulators.get(pair, {}).get(player, {})
+
+
+def merge_accumulators(accumulators, pair, player, local_player_acc):
+    pair_data = accumulators.setdefault(pair, {})
+    player_data = pair_data.setdefault(player, {})
+    for cut_card, local_acc in local_player_acc.items():
+        main_acc = player_data.setdefault(cut_card, empty_accumulator())
+        main_acc["n"] += local_acc["n"]
+        main_acc["sum"] += local_acc["sum"]
+        main_acc["sum_squares"] += local_acc["sum_squares"]
+
+
 def compute_statistics(raw_scores):
     """
     Compute mean (mu) and standard error (se) from a list of raw scores.
@@ -490,12 +525,16 @@ def write_output(
 
 # Justification: Six arguments are necessary to coordinate the execution parameters, RNG,
 # target pairs, active accumulator mappings, checkpoints, and prior generations in
-# a single cohesive runner interface.
-# pylint: disable=too-many-arguments,too-many-positional-arguments
+# a single cohesive runner interface. Additionally, it handles parallel executor loops,
+# KeyboardInterrupt worker termination, and complex state merging.
+# pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-branches
 def run_generation(
     args, rng, pairs, accumulators, checkpoint=None, generation_accumulators=None
 ):
+    processes = getattr(args, "processes", 1)
     made_progress = False
+
+    tasks = []
     for pair in pairs:
         for player in ["Dealer", "Pone"]:
             current_samples = get_total_sample_count(accumulators, pair, player)
@@ -506,8 +545,34 @@ def run_generation(
                     args.checkpoint_frequency,
                     max(args.samples - current_samples, 0),
                 )
-
             if samples_to_run > 0:
+                tasks.append((pair, player, samples_to_run, current_samples))
+
+    if tasks:
+        if processes > 1:
+            with ProcessPoolExecutor(max_workers=processes) as executor:
+                futures = [
+                    executor.submit(
+                        run_monte_carlo_single_task,
+                        pair,
+                        player,
+                        samples_to_run,
+                        first_sample_index,
+                        args.seed,
+                        generation_accumulators,
+                    )
+                    for pair, player, samples_to_run, first_sample_index in tasks
+                ]
+                try:
+                    for future in as_completed(futures):
+                        pair, player, local_player_acc = future.result()
+                        merge_accumulators(accumulators, pair, player, local_player_acc)
+                except KeyboardInterrupt:
+                    executor.shutdown(wait=False, cancel_futures=True)
+                    raise
+            made_progress = True
+        else:
+            for pair, player, samples_to_run, current_samples in tasks:
                 run_monte_carlo_into_accumulators(
                     accumulators,
                     pair,
@@ -521,6 +586,7 @@ def run_generation(
                     },
                 )
                 made_progress = True
+
     if made_progress and checkpoint:
         checkpoint()
     return made_progress
@@ -561,6 +627,22 @@ def calculate_max_ev_shift(prev_accumulators, current_accumulators, pairs):
             for cut_card in Index.indices:
                 max_shift = max(max_shift, _ev_shift(prev_data, curr_data, cut_card))
     return max_shift
+
+
+def processes_type(value):
+    if value.lower() == "auto":
+        return max(1, (os.cpu_count() or 1) - 1)
+    try:
+        ivalue = int(value)
+        if ivalue <= 0:
+            raise argparse.ArgumentTypeError(
+                f"{value} is an invalid positive int value"
+            )
+        return ivalue
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            f"{value} must be a positive integer or 'auto'"
+        ) from exc
 
 
 def positive_int(value):
@@ -622,7 +704,20 @@ def main(override_pairs=None):
         type=int,
         help="Optional RNG seed for reproducible generation.",
     )
+    parser.add_argument(
+        "--processes",
+        type=processes_type,
+        default=1,
+        help="Number of parallel worker processes to use or 'auto' (default: 1).",
+    )
     args = parser.parse_args()
+
+    if args.processes > 1:
+        print(
+            f"Running Monte Carlo simulations in parallel using {args.processes} worker processes..."
+        )
+    else:
+        print("Running Monte Carlo simulations sequentially (1 worker process)...")
 
     if not args.infinite and args.samples is None:
         parser.error("--samples is required unless --infinite is set")
@@ -724,11 +819,16 @@ def main(override_pairs=None):
 
                     generation_accumulators = {
                         pair: {
-                            player: {cut: dict(acc) for cut, acc in player_data.items()}
-                            for player, player_data in pair_data.items()
+                            player: {
+                                cut: dict(accumulators[pair][player][cut])
+                                for cut in Index.indices
+                                if cut in accumulators[pair][player]
+                            }
+                            for player in ["Dealer", "Pone"]
+                            if player in accumulators[pair]
                         }
-                        for pair, pair_data in accumulators.items()
-                        if pair != METADATA_KEY
+                        for pair in get_canonical_pairs()
+                        if pair in accumulators
                     }
                     accumulators = {}
                     generation += 1
