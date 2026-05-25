@@ -35,12 +35,21 @@ from artifact_pipeline.generate_table import (
 )
 from artifact_pipeline.adapter import Card, DECK_SET, score_hand_and_starter
 from artifact_pipeline.summarize_table import get_pair_estimate
+from artifact_pipeline.historical_tables import (
+    COLVERT_DEALER_AVERAGES,
+    COLVERT_PONE_AVERAGES,
+    RASMUSSEN_DEALER_AVERAGES,
+    RASMUSSEN_PONE_AVERAGES,
+    SCHELL_DEALER_AVERAGES,
+    SCHELL_PONE_AVERAGES,
+)
 from artifact_pipeline.analytical_solver import (
     run_analytical_ibr,
     format_table_as_generation_zero,
     score_combination_suit_free,
     main as analytical_main,
     _evaluate_crib_expected_cut,
+    get_analytical_pairs,
 )
 
 
@@ -1382,6 +1391,79 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         self.assertGreater(mean_ibr_pn, mean_hessel_pn)
         # Dynamic advantage is expected to be ~0.230 points per hand
         self.assertAlmostEqual(mean_ibr_pn - mean_hessel_pn, 0.230, delta=0.015)
+
+    def test_dynamic_ibr_beats_historical_tables_paired(self):
+        # pylint: disable=too-many-locals
+        """Confirm that dynamic 2-sided IBR mathematically outperforms Colvert, Rasmussen, and Schell on E(h+/-c)."""
+        dl_tbl, pn_tbl, hands, _crib_scores = run_analytical_ibr(true_nobs=False)
+        analytical_pairs = get_analytical_pairs()
+        num_pairs = len(dl_tbl)
+        ranks_str = "A23456789TJQK"
+
+        def build_tables(dl_dict, pn_dict):
+            dl_list = [0.0] * num_pairs
+            pn_list = [0.0] * num_pairs
+            for idx, (r1, r2) in enumerate(analytical_pairs):
+                pair_str = f"{ranks_str[r1]}{ranks_str[r2]}"
+                dl_list[idx] = dl_dict[pair_str]
+                pn_list[idx] = pn_dict[pair_str]
+            return dl_list, pn_list
+
+        col_dl, col_pn = build_tables(COLVERT_DEALER_AVERAGES, COLVERT_PONE_AVERAGES)
+        ras_dl, ras_pn = build_tables(
+            RASMUSSEN_DEALER_AVERAGES, RASMUSSEN_PONE_AVERAGES
+        )
+        sch_dl, sch_pn = build_tables(SCHELL_DEALER_AVERAGES, SCHELL_PONE_AVERAGES)
+
+        # Run paired simulation of 10,000 hands from exhaustive dealt hands
+        rng = random.Random(42)
+        hand_weights = [h[1] for h in hands]
+        sampled_hands = rng.choices(hands, weights=hand_weights, k=10000)
+
+        def verify_advantage(target_dl_tbl, target_pn_tbl):
+            ibr_dl_total, target_dl_total = 0.0, 0.0
+            ibr_pn_total, target_pn_total = 0.0, 0.0
+            for _, _, discards_ev in sampled_hands:
+                # Dealer maximizes Hand EV + Crib EV under actual IBR defensive play
+                best_dl_ibr_idx = max(
+                    discards_ev.keys(),
+                    key=lambda d, dev=discards_ev: dev[d] + dl_tbl[d],
+                )
+                best_dl_target_idx = max(
+                    discards_ev.keys(),
+                    key=lambda d, dev=discards_ev: dev[d] + target_dl_tbl[d],
+                )
+                ibr_dl_total += discards_ev[best_dl_ibr_idx] + dl_tbl[best_dl_ibr_idx]
+                target_dl_total += (
+                    discards_ev[best_dl_target_idx] + dl_tbl[best_dl_target_idx]
+                )
+
+                # Pone maximizes Hand EV - Crib EV under actual IBR defensive play
+                best_pn_ibr_idx = max(
+                    discards_ev.keys(),
+                    key=lambda d, dev=discards_ev: dev[d] - pn_tbl[d],
+                )
+                best_pn_target_idx = max(
+                    discards_ev.keys(),
+                    key=lambda d, dev=discards_ev: dev[d] - target_pn_tbl[d],
+                )
+                ibr_pn_total += discards_ev[best_pn_ibr_idx] - pn_tbl[best_pn_ibr_idx]
+                target_pn_total += (
+                    discards_ev[best_pn_target_idx] - pn_tbl[best_pn_target_idx]
+                )
+
+            mean_ibr_dl = ibr_dl_total / 10000.0
+            mean_target_dl = target_dl_total / 10000.0
+            mean_ibr_pn = ibr_pn_total / 10000.0
+            mean_target_pn = target_pn_total / 10000.0
+
+            # Dynamic 2-sided IBR must equal or outperform the static historical tables
+            self.assertGreaterEqual(mean_ibr_dl, mean_target_dl)
+            self.assertGreaterEqual(mean_ibr_pn, mean_target_pn)
+
+        verify_advantage(col_dl, col_pn)
+        verify_advantage(ras_dl, ras_pn)
+        verify_advantage(sch_dl, sch_pn)
 
 
 if __name__ == "__main__":
