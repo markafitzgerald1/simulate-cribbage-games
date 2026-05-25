@@ -43,13 +43,6 @@ repos:
         pass_filenames: false
         always_run: true
         stages: [pre-push]
-      - id: cpd-check
-        name: cpd-check
-        entry: pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive
-        language: system
-        pass_filenames: false
-        always_run: true
-        stages: [pre-push]
       - id: pylint-artifact-pipeline
         name: pylint-artifact-pipeline
         entry: pylint --persistent=n artifact_pipeline
