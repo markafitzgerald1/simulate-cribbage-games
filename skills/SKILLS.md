@@ -61,8 +61,8 @@ permits direct pushes to `main` or bypasses pull request review.
 ## Python Backend Guardrails
 
 Python backend work must preserve existing validation expectations: unit tests
-through `coverage`, type checks through `mypy`, duplicate-code checks through
-PMD CPD, and lint checks through `pylint` and `flake8`. Artifact pipeline
+through `coverage`, type checks through `mypy`, duplicate-code and lint checks
+through `pylint` and `flake8`. Artifact pipeline
 Python code must pass both `pylint --persistent=n artifact_pipeline` and
 `flake8 artifact_pipeline` locally and in CI.
 

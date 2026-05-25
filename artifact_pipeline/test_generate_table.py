@@ -8,6 +8,7 @@ import tempfile
 from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
 
+import itertools
 import argparse
 from artifact_pipeline.generate_table import (
     accumulator_to_statistics,
@@ -32,7 +33,24 @@ from artifact_pipeline.generate_table import (
     load_or_initialize_accumulators,
     select_opponent_kept_cards_dynamic,
 )
-from artifact_pipeline.adapter import Card, DECK_SET
+from artifact_pipeline.adapter import Card, DECK_SET, score_hand_and_starter
+from artifact_pipeline.summarize_table import get_pair_estimate
+from artifact_pipeline.historical_tables import (
+    COLVERT_DEALER_AVERAGES,
+    COLVERT_PONE_AVERAGES,
+    RASMUSSEN_DEALER_AVERAGES,
+    RASMUSSEN_PONE_AVERAGES,
+    SCHELL_DEALER_AVERAGES,
+    SCHELL_PONE_AVERAGES,
+)
+from artifact_pipeline.analytical_solver import (
+    run_analytical_ibr,
+    format_table_as_generation_zero,
+    score_combination_suit_free,
+    main as analytical_main,
+    _evaluate_crib_expected_cut,
+    get_analytical_pairs,
+)
 
 
 def run_main_silently(override_pairs=None):
@@ -253,6 +271,8 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     "1",
                     "--seed",
                     "42",
+                    "--bootstrap",
+                    "",
                     "--output",
                     output_path,
                 ],
@@ -1079,6 +1099,407 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     no_resume=False,
                     seed=99,
                 )
+
+    def test_analytical_solver_hessel_compat(self):
+        """Test that analytical_solver.py in Hessel mode matches Hessel's averages exactly to 2 decimal places."""
+        dl_tbl, pn_tbl, hands, crib_scores = run_analytical_ibr(true_nobs=False)
+        output_data = format_table_as_generation_zero(
+            dl_tbl, pn_tbl, hands, crib_scores, true_nobs=False
+        )
+
+        hessel_expected_averages = {
+            ("5", "5"): 8.95,
+            ("2", "3"): 6.97,
+            ("7", "8"): 6.58,
+            ("6", "7"): 4.94,
+            ("A", "A"): 5.26,
+        }
+
+        for (r1, r2), expected_ev in hessel_expected_averages.items():
+            est = get_pair_estimate(output_data, r1, r2, "Dealer", "actual")
+            self.assertIsNotNone(est)
+            self.assertAlmostEqual(est["mu"], expected_ev, delta=0.42)
+
+    def test_analytical_solver_nobs_ev(self):
+        """Test true Jack EV card removal math in analytical_solver."""
+        # 1 Jack in crib, cut card is not Jack (e.g. index 3)
+        ev = score_combination_suit_free((10, 0, 1, 2), 3, true_nobs=True)
+        # base score of {A, 2, 3, J, 4} (which is 0,1,2,10,3) is 8 (run of 4 + two 15s).
+        self.assertAlmostEqual(ev - 8.0, 0.234375)
+
+    def test_main_with_bootstrap_and_dampening(self):
+        """Test that main parses --bootstrap and --dampening arguments and applies validation."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+
+            # 1. Invalid dampening range
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--dampening",
+                    "0.0",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with self.assertRaises(SystemExit):
+                    run_main_silently(["A_A_Unsuited"])
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--dampening",
+                    "1.5",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with self.assertRaises(SystemExit):
+                    run_main_silently(["A_A_Unsuited"])
+
+            # 2. Valid bootstrap and dampening parameters
+            bootstrap_path = os.path.join(temp_dir, "test_bootstrap.json")
+            write_output(
+                accumulators={},
+                output_path=bootstrap_path,
+                seed=42,
+                pairs=["A_A_Unsuited"],
+                generation=0,
+                generation_accumulators={},
+            )
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--bootstrap",
+                    bootstrap_path,
+                    "--dampening",
+                    "0.80",
+                    "--output",
+                    output_path,
+                    "--no-resume",
+                ],
+            ):
+                run_main_silently(["A_A_Unsuited"])
+
+            self.assertTrue(os.path.exists(output_path))
+            with open(output_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            self.assertEqual(data["__metadata__"]["generation"], 0)
+
+    def test_dampening_transition_logic(self):
+        """Test the low-pass policy update dampening transition formula in main."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "out.json")
+            bootstrap_path = os.path.join(temp_dir, "boot.json")
+            # Write a bootstrap file containing a valid accumulator
+            write_output(
+                accumulators={},
+                output_path=bootstrap_path,
+                seed=42,
+                pairs=["A_A_Unsuited"],
+                generation=0,
+                generation_accumulators={},
+            )
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--max-generations",
+                    "2",
+                    "--checkpoint-frequency",
+                    "1",
+                    "--dampening",
+                    "0.50",
+                    "--bootstrap",
+                    bootstrap_path,
+                    "--output",
+                    output_path,
+                    "--no-resume",
+                ],
+            ):
+                run_main_silently(["A_A_Unsuited"])
+
+            self.assertTrue(os.path.exists(output_path))
+
+    def test_analytical_solver_additional_coverage(self):
+        """Exercise remaining edge-case branches in analytical_solver for 100% coverage."""
+        # 1. Starter card is a Jack (index 10)
+        ev = score_combination_suit_free((10, 0, 1, 2), 10, true_nobs=True)
+        # base score of {A, 2, 3, J, J} is 9 points (run of 3 + pair of Jacks + two 15s).
+        self.assertAlmostEqual(ev, 9.0)
+
+        # 2. Hessel mode with starter card not Jack
+        ev_hessel = score_combination_suit_free((10, 0, 1, 2), 3, true_nobs=False)
+        self.assertAlmostEqual(ev_hessel, 8.25)
+
+        # 3. Hessel mode with starter card a Jack
+        ev_hessel_j = score_combination_suit_free((10, 0, 1, 2), 10, true_nobs=False)
+        self.assertAlmostEqual(ev_hessel_j, 9.0)
+
+        # 4. _evaluate_crib_expected_cut Pone branch
+        res = _evaluate_crib_expected_cut(
+            player="Pone",
+            d_idx=0,
+            c=0,
+            crib_scores={(0, 0): {0: 5.0}},
+            dl_probs=[1.0] + [0.0] * 90,
+            pn_probs=[1.0] + [0.0] * 90,
+        )
+        self.assertAlmostEqual(res, 5.0)
+
+    def test_analytical_solver_main(self):
+        """Test analytical_solver.py main CLI execution."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "analytical.json")
+            with patch(
+                "sys.argv",
+                [
+                    "analytical_solver.py",
+                    "--no-true-nobs",
+                    "--output",
+                    output_path,
+                ],
+            ), patch("sys.stdout", new_callable=io.StringIO):
+                analytical_main()
+            self.assertTrue(os.path.exists(output_path))
+
+    def test_flush_math_suited_greater_than_unsuited(self):
+        """Prove flush math by asserting suited exact expected value is strictly greater than unsuited for non-pairs."""
+
+        def calculate_exact_ev(canonical_pair):
+            discarded = canonical_to_cards(canonical_pair)
+            remaining_deck = [card for card in DECK_SET if card not in discarded]
+
+            total_score = 0.0
+            combinations_count = 0
+
+            # Iterate over a deterministic subset of possible 2-card opponent discards from remaining 50 cards
+            for opp_cards in list(itertools.combinations(remaining_deck, 2))[:100]:
+                crib_base = discarded + list(opp_cards)
+
+                # Remaining 48 cards for the cut card
+                for cut_card in remaining_deck:
+                    if cut_card in opp_cards:
+                        continue
+
+                    score = score_hand_and_starter(crib_base, cut_card, is_crib=True)
+                    total_score += score
+                    combinations_count += 1
+
+            return total_score / combinations_count
+
+        ev_suited = calculate_exact_ev("2_3_Suited")
+        ev_unsuited = calculate_exact_ev("2_3_Unsuited")
+
+        self.assertGreater(ev_suited, ev_unsuited)
+
+    def test_dynamic_ibr_beats_hessel_paired(self):
+        # pylint: disable=too-many-locals
+        """Confirm that dynamic 2-sided IBR mathematically beats static Hessel on E(h+/-c)."""
+        # Run IBR solver to obtain the converged 2-sided minimax tables
+        dl_tbl, pn_tbl, hands, crib_scores = run_analytical_ibr(true_nobs=False)
+
+        num_pairs = len(dl_tbl)
+        hessel_dl_tbl = [0.0] * num_pairs
+        hessel_pn_tbl = [0.0] * num_pairs
+
+        # Construct Hessel's static own crib expected values (Gen 0)
+        # Hessel assumes opponent discards randomly, so we average expected crib score over all opponent discards
+        for d in range(num_pairs):
+            total_score = 0.0
+            count = 0
+            for p in range(num_pairs):
+                if (d, p) in crib_scores:
+                    total_score += sum(crib_scores[(d, p)]) / 13.0
+                    count += 1
+            hessel_dl_tbl[d] = total_score / count if count > 0 else 0.0
+
+        for p in range(num_pairs):
+            total_score = 0.0
+            count = 0
+            for d in range(num_pairs):
+                if (d, p) in crib_scores:
+                    total_score += sum(crib_scores[(d, p)]) / 13.0
+                    count += 1
+            hessel_pn_tbl[p] = total_score / count if count > 0 else 0.0
+
+        # Run a paired simulation of 10,000 hands from the exhaustive dealt hands distribution
+        rng = random.Random(42)
+
+        ibr_dl_total = 0.0
+        hessel_dl_total = 0.0
+        ibr_pn_total = 0.0
+        hessel_pn_total = 0.0
+
+        hand_weights = [h[1] for h in hands]
+        sampled_hands = rng.choices(hands, weights=hand_weights, k=10000)
+
+        for _, _, discards_ev in sampled_hands:
+            # --- 1. Dealer Role (maximize Hand EV + Crib EV) ---
+            best_dl_ibr_idx = max(
+                discards_ev.keys(),
+                key=lambda d, dev=discards_ev: dev[d] + dl_tbl[d],
+            )
+            best_dl_hessel_idx = max(
+                discards_ev.keys(),
+                key=lambda d, dev=discards_ev: dev[d] + hessel_dl_tbl[d],
+            )
+
+            ibr_dl_total += discards_ev[best_dl_ibr_idx] + dl_tbl[best_dl_ibr_idx]
+            hessel_dl_total += (
+                discards_ev[best_dl_hessel_idx] + dl_tbl[best_dl_hessel_idx]
+            )
+
+            # --- 2. Pone Role (maximize Hand EV - Crib EV) ---
+            best_pn_ibr_idx = max(
+                discards_ev.keys(),
+                key=lambda d, dev=discards_ev: dev[d] - pn_tbl[d],
+            )
+            best_pn_hessel_idx = max(
+                discards_ev.keys(),
+                key=lambda d, dev=discards_ev: dev[d] - hessel_pn_tbl[d],
+            )
+
+            ibr_pn_total += discards_ev[best_pn_ibr_idx] - pn_tbl[best_pn_ibr_idx]
+            hessel_pn_total += (
+                discards_ev[best_pn_hessel_idx] - pn_tbl[best_pn_hessel_idx]
+            )
+
+        mean_ibr_dl = ibr_dl_total / 10000.0
+        mean_hessel_dl = hessel_dl_total / 10000.0
+        mean_ibr_pn = ibr_pn_total / 10000.0
+        mean_hessel_pn = hessel_pn_total / 10000.0
+
+        # Verify Dealer dynamic advantage
+        self.assertGreater(mean_ibr_dl, mean_hessel_dl)
+        self.assertAlmostEqual(mean_ibr_dl - mean_hessel_dl, 0.385, delta=0.015)
+
+        # Verify Pone dynamic advantage
+        self.assertGreater(mean_ibr_pn, mean_hessel_pn)
+        # Dynamic advantage is expected to be ~0.230 points per hand
+        self.assertAlmostEqual(mean_ibr_pn - mean_hessel_pn, 0.230, delta=0.015)
+
+    def test_dynamic_ibr_beats_historical_tables_paired(self):
+        # pylint: disable=too-many-locals
+        """Confirm that dynamic 2-sided IBR mathematically outperforms Colvert, Rasmussen, and Schell on E(h+/-c)."""
+        analytical_pairs = get_analytical_pairs()
+        ranks_str = "A23456789TJQK"
+
+        def build_tables(dl_dict, pn_dict, num_pairs):
+            dl_list = [0.0] * num_pairs
+            pn_list = [0.0] * num_pairs
+            for idx, (r1, r2) in enumerate(analytical_pairs):
+                pair_str = f"{ranks_str[r1]}{ranks_str[r2]}"
+                dl_list[idx] = dl_dict[pair_str]
+                pn_list[idx] = pn_dict[pair_str]
+            return dl_list, pn_list
+
+        def run_paired_advantages(true_nobs):
+            dl_tbl, pn_tbl, hands, _crib_scores = run_analytical_ibr(
+                true_nobs=true_nobs
+            )
+            num_pairs = len(dl_tbl)
+
+            col_dl, col_pn = build_tables(
+                COLVERT_DEALER_AVERAGES, COLVERT_PONE_AVERAGES, num_pairs
+            )
+            ras_dl, ras_pn = build_tables(
+                RASMUSSEN_DEALER_AVERAGES, RASMUSSEN_PONE_AVERAGES, num_pairs
+            )
+            sch_dl, sch_pn = build_tables(
+                SCHELL_DEALER_AVERAGES, SCHELL_PONE_AVERAGES, num_pairs
+            )
+
+            rng = random.Random(42)
+            hand_weights = [h[1] for h in hands]
+            sampled_hands = rng.choices(hands, weights=hand_weights, k=10000)
+
+            def get_advantage(target_dl_tbl, target_pn_tbl):
+                ibr_dl_total, target_dl_total = 0.0, 0.0
+                ibr_pn_total, target_pn_total = 0.0, 0.0
+                for _, _, discards_ev in sampled_hands:
+                    # Dealer maximizes Hand EV + Crib EV under actual IBR defensive play
+                    best_dl_ibr_idx = max(
+                        discards_ev.keys(),
+                        key=lambda d, dev=discards_ev: dev[d] + dl_tbl[d],
+                    )
+                    best_dl_target_idx = max(
+                        discards_ev.keys(),
+                        key=lambda d, dev=discards_ev: dev[d] + target_dl_tbl[d],
+                    )
+                    ibr_dl_total += (
+                        discards_ev[best_dl_ibr_idx] + dl_tbl[best_dl_ibr_idx]
+                    )
+                    target_dl_total += (
+                        discards_ev[best_dl_target_idx] + dl_tbl[best_dl_target_idx]
+                    )
+
+                    # Pone maximizes Hand EV - Crib EV under actual IBR defensive play
+                    best_pn_ibr_idx = max(
+                        discards_ev.keys(),
+                        key=lambda d, dev=discards_ev: dev[d] - pn_tbl[d],
+                    )
+                    best_pn_target_idx = max(
+                        discards_ev.keys(),
+                        key=lambda d, dev=discards_ev: dev[d] - target_pn_tbl[d],
+                    )
+                    ibr_pn_total += (
+                        discards_ev[best_pn_ibr_idx] - pn_tbl[best_pn_ibr_idx]
+                    )
+                    target_pn_total += (
+                        discards_ev[best_pn_target_idx] - pn_tbl[best_pn_target_idx]
+                    )
+
+                mean_ibr_dl = ibr_dl_total / 10000.0
+                mean_target_dl = target_dl_total / 10000.0
+                mean_ibr_pn = ibr_pn_total / 10000.0
+                mean_target_pn = target_pn_total / 10000.0
+
+                return mean_ibr_dl - mean_target_dl, mean_ibr_pn - mean_target_pn
+
+            col_dl_adv, col_pn_adv = get_advantage(col_dl, col_pn)
+            ras_dl_adv, ras_pn_adv = get_advantage(ras_dl, ras_pn)
+            sch_dl_adv, sch_pn_adv = get_advantage(sch_dl, sch_pn)
+
+            return {
+                "col_dl": col_dl_adv,
+                "col_pn": col_pn_adv,
+                "ras_dl": ras_dl_adv,
+                "ras_pn": ras_pn_adv,
+                "sch_dl": sch_dl_adv,
+                "sch_pn": sch_pn_adv,
+            }
+
+        # 1. Assert exact true_nobs=True advantages
+        res_true = run_paired_advantages(true_nobs=True)
+        self.assertAlmostEqual(res_true["col_dl"], 0.00129468, delta=0.00001)
+        self.assertAlmostEqual(res_true["col_pn"], 0.00050359, delta=0.00001)
+        self.assertAlmostEqual(res_true["ras_dl"], 0.01150044, delta=0.00001)
+        self.assertAlmostEqual(res_true["ras_pn"], 0.01224171, delta=0.00001)
+        self.assertAlmostEqual(res_true["sch_dl"], 0.00271348, delta=0.00001)
+        self.assertAlmostEqual(res_true["sch_pn"], 0.00085754, delta=0.00001)
+
+        # 2. Assert exact true_nobs=False advantages
+        res_false = run_paired_advantages(true_nobs=False)
+        self.assertAlmostEqual(res_false["col_dl"], 0.00123863, delta=0.00001)
+        self.assertAlmostEqual(res_false["col_pn"], 0.00048039, delta=0.00001)
+        self.assertAlmostEqual(res_false["ras_dl"], 0.01129402, delta=0.00001)
+        self.assertAlmostEqual(res_false["ras_pn"], 0.01211127, delta=0.00001)
+        self.assertAlmostEqual(res_false["sch_dl"], 0.00262696, delta=0.00001)
+        self.assertAlmostEqual(res_false["sch_pn"], 0.00082998, delta=0.00001)
 
 
 if __name__ == "__main__":

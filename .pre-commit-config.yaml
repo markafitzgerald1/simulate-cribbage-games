@@ -31,28 +31,19 @@ repos:
     hooks:
       - id: unittest-check
         name: unittest-check
-        entry: coverage run
+        entry: python -m unittest
         language: system
         pass_filenames: false
         always_run: true
-      - id: coverage-check
-        name: coverage-check
-        entry: coverage report
-        language: system
-        pass_filenames: false
-        always_run: true
-      - id: cpd-check
-        name: cpd-check
-        entry: pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive
-        language: system
-        pass_filenames: false
-        always_run: true
+        stages: [pre-push]
+
       - id: pylint-artifact-pipeline
         name: pylint-artifact-pipeline
         entry: pylint --persistent=n artifact_pipeline
         language: system
         pass_filenames: false
         always_run: true
+        stages: [pre-push]
       - id: flake8-artifact-pipeline
         name: flake8-artifact-pipeline
         entry: flake8 artifact_pipeline

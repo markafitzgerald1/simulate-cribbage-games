@@ -163,11 +163,17 @@ def build_table(
 
 
 def format_value(
-    estimate: Optional[Estimate], statistic: str, precision: int, show_se: bool
+    estimate: Optional[Estimate],
+    statistic: str,
+    precision: int,
+    show_se: bool,
+    round_to: Optional[float] = None,
 ) -> str:
     if not estimate or statistic not in estimate:
         return ""
     value = estimate[statistic]
+    if round_to is not None and round_to > 0:
+        value = round(value / round_to) * round_to
     if show_se and statistic == "mu":
         return f"{value:.{precision}f} +/- {estimate['se']:.{precision}f}"
     if statistic == "n":
@@ -180,9 +186,10 @@ def print_markdown_table(
     statistic: str,
     precision: int,
     show_se: bool,
+    round_to: Optional[float] = None,
 ) -> None:
     formatted_rows = [
-        [format_value(value, statistic, precision, show_se) for value in row]
+        [format_value(value, statistic, precision, show_se, round_to) for value in row]
         for row in table
     ]
     headers = ["", *RANKS]
@@ -210,6 +217,7 @@ def print_csv_table(
     statistic: str,
     precision: int,
     show_se: bool,
+    round_to: Optional[float] = None,
 ) -> None:
     writer = csv.writer(sys.stdout)
     writer.writerow(["", *RANKS])
@@ -217,7 +225,10 @@ def print_csv_table(
         writer.writerow(
             [
                 rank,
-                *[format_value(value, statistic, precision, show_se) for value in row],
+                *[
+                    format_value(value, statistic, precision, show_se, round_to)
+                    for value in row
+                ],
             ]
         )
 
@@ -235,7 +246,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--role",
         choices=("Dealer", "Pone"),
-        default="Dealer",
+        required=True,
         help="Dealer means discarding to your crib; Pone means discarding to opponent's crib.",
     )
     parser.add_argument(
@@ -270,6 +281,12 @@ def parse_args() -> argparse.Namespace:
             "actual uses 25%% suited and 75%% unsuited."
         ),
     )
+    parser.add_argument(
+        "--round-to",
+        type=float,
+        default=None,
+        help="Round values to the nearest multiple of this number (e.g. 0.25).",
+    )
     return parser.parse_args()
 
 
@@ -280,9 +297,13 @@ def main() -> None:
 
     table = build_table(data, args.role, args.suit_weighting)
     if args.format == "csv":
-        print_csv_table(table, args.statistic, args.precision, args.show_se)
+        print_csv_table(
+            table, args.statistic, args.precision, args.show_se, args.round_to
+        )
     else:
-        print_markdown_table(table, args.statistic, args.precision, args.show_se)
+        print_markdown_table(
+            table, args.statistic, args.precision, args.show_se, args.round_to
+        )
 
 
 if __name__ == "__main__":  # pragma: no cover

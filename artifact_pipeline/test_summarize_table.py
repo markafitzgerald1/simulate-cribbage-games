@@ -167,6 +167,12 @@ class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-
             "1.23 +/- 0.57",
         )
         self.assertEqual(format_value({"n": 12.5}, "n", 2, False), "12")
+        self.assertEqual(
+            format_value({"mu": 1.13}, "mu", 2, False, round_to=0.25), "1.25"
+        )
+        self.assertEqual(
+            format_value({"mu": 1.12}, "mu", 2, False, round_to=0.25), "1.00"
+        )
 
     def test_print_markdown_table(self):
         table = [[{"mu": 1.0, "se": 0.25}]]
@@ -187,7 +193,7 @@ class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-
         self.assertTrue(output.startswith(",A,2,3,4,5,6,7,8,9,T,J,Q,K"))
         self.assertTrue("A,1.00" in output)
 
-    @patch("sys.argv", ["summarize_table.py"])
+    @patch("sys.argv", ["summarize_table.py", "--role", "Dealer"])
     def test_parse_args_defaults(self):
         args = parse_args()
 
@@ -198,6 +204,7 @@ class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-
         self.assertEqual(args.precision, 2)
         self.assertEqual(args.suit_weighting, "actual")
         self.assertFalse(args.show_se)
+        self.assertIsNone(args.round_to)
 
     def test_main_prints_markdown(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -227,7 +234,14 @@ class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-
 
             with patch(
                 "sys.argv",
-                ["summarize_table.py", "--format", "csv", output_path],
+                [
+                    "summarize_table.py",
+                    "--role",
+                    "Dealer",
+                    "--format",
+                    "csv",
+                    output_path,
+                ],
             ), patch("sys.stdout", new_callable=io.StringIO) as stdout:
                 main()
 

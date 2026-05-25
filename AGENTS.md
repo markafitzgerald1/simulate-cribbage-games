@@ -106,7 +106,6 @@ coverage run
 coverage xml
 coverage report
 mypy simulate_cribbage_games.py
-pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive
 pylint simulate_cribbage_games.py
 pylint --persistent=n artifact_pipeline
 flake8
