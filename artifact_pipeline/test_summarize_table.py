@@ -193,7 +193,7 @@ class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-
         self.assertTrue(output.startswith(",A,2,3,4,5,6,7,8,9,T,J,Q,K"))
         self.assertTrue("A,1.00" in output)
 
-    @patch("sys.argv", ["summarize_table.py"])
+    @patch("sys.argv", ["summarize_table.py", "--role", "Dealer"])
     def test_parse_args_defaults(self):
         args = parse_args()
 
@@ -234,7 +234,14 @@ class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-
 
             with patch(
                 "sys.argv",
-                ["summarize_table.py", "--format", "csv", output_path],
+                [
+                    "summarize_table.py",
+                    "--role",
+                    "Dealer",
+                    "--format",
+                    "csv",
+                    output_path,
+                ],
             ), patch("sys.stdout", new_callable=io.StringIO) as stdout:
                 main()
 

@@ -246,7 +246,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--role",
         choices=("Dealer", "Pone"),
-        default="Dealer",
+        required=True,
         help="Dealer means discarding to your crib; Pone means discarding to opponent's crib.",
     )
     parser.add_argument(
