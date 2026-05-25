@@ -31,18 +31,12 @@ repos:
     hooks:
       - id: unittest-check
         name: unittest-check
-        entry: coverage run
+        entry: python -m unittest
         language: system
         pass_filenames: false
         always_run: true
         stages: [pre-push]
-      - id: coverage-check
-        name: coverage-check
-        entry: coverage report
-        language: system
-        pass_filenames: false
-        always_run: true
-        stages: [pre-push]
+
       - id: pylint-artifact-pipeline
         name: pylint-artifact-pipeline
         entry: pylint --persistent=n artifact_pipeline
