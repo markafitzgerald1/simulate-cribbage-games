@@ -1297,6 +1297,59 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
 
         self.assertGreater(ev_suited, ev_unsuited)
 
+    def test_dynamic_ibr_beats_hessel_paired(self):
+        # pylint: disable=too-many-locals
+        """Confirm that dynamic 2-sided IBR mathematically beats static Hessel on E(h+/-c)."""
+        # Run IBR solver to obtain the converged 2-sided minimax tables
+        dl_tbl, _pn_tbl, hands, crib_scores = run_analytical_ibr(true_nobs=False)
+
+        num_pairs = len(dl_tbl)
+        hessel_dl_tbl = [0.0] * num_pairs
+
+        # Construct Hessel's static own crib expected values (Gen 0)
+        # Hessel assumes opponent discards randomly, so we average expected crib score over all opponent discards
+        for d in range(num_pairs):
+            total_score = 0.0
+            count = 0
+            for p in range(num_pairs):
+                if (d, p) in crib_scores:
+                    total_score += sum(crib_scores[(d, p)]) / 13.0
+                    count += 1
+            hessel_dl_tbl[d] = total_score / count if count > 0 else 0.0
+
+        # Run a paired simulation of 10,000 hands from the exhaustive dealt hands distribution
+        rng = random.Random(42)
+
+        ibr_total_score = 0.0
+        hessel_total_score = 0.0
+
+        hand_weights = [h[1] for h in hands]
+        sampled_hands = rng.choices(hands, weights=hand_weights, k=10000)
+
+        for _, _, discards_ev in sampled_hands:
+            # Dealer maximizes Hand EV + Crib EV under actual IBR defensive play
+            best_dl_ibr_idx = max(
+                discards_ev.keys(),
+                key=lambda d, dev=discards_ev: dev[d] + dl_tbl[d],
+            )
+            best_dl_hessel_idx = max(
+                discards_ev.keys(),
+                key=lambda d, dev=discards_ev: dev[d] + hessel_dl_tbl[d],
+            )
+
+            ibr_total_score += discards_ev[best_dl_ibr_idx] + dl_tbl[best_dl_ibr_idx]
+            hessel_total_score += (
+                discards_ev[best_dl_hessel_idx] + dl_tbl[best_dl_hessel_idx]
+            )
+
+        mean_ibr = ibr_total_score / 10000.0
+        mean_hessel = hessel_total_score / 10000.0
+
+        # Verify that dynamic 2-sided IBR Dealer has a strictly higher expected value than Hessel
+        self.assertGreater(mean_ibr, mean_hessel)
+        # Dynamic advantage is expected to be ~0.385 points per hand
+        self.assertAlmostEqual(mean_ibr - mean_hessel, 0.385, delta=0.015)
+
 
 if __name__ == "__main__":
     unittest.main()
