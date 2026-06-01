@@ -29,7 +29,14 @@ def run_main_with_single_dealer_table(output_path, *args):
         output_path,
         {"Dealer": {"A": {"n": 1, "mu": 5.26, "se": 0.0}}},
     )
-    argv = ["compare_hessel.py", "--role", "Dealer", *args, output_path]
+    argv = [
+        "compare_hessel.py",
+        "--role",
+        "Dealer",
+        "--allow-incomplete",
+        *args,
+        output_path,
+    ]
     with patch("sys.argv", argv), patch(
         "sys.stdout", new_callable=io.StringIO
     ) as stdout:
@@ -118,11 +125,12 @@ class TestCompareHessel(unittest.TestCase):
         self.assertEqual(roles_from_arg("both"), ("Dealer", "Pone"))
 
     def test_threshold_failed(self):
-        summary = {"max_abs_delta": 0.2, "max_z_score": 3.0}
+        summary = {"max_abs_delta": 0.2, "max_z_score": 3.0, "count": 91}
 
-        self.assertFalse(threshold_failed(summary, 0.2, 3.0))
-        self.assertTrue(threshold_failed(summary, 0.1, None))
-        self.assertTrue(threshold_failed(summary, None, 2.9))
+        self.assertFalse(threshold_failed(summary, 0.2, 3.0, expected_count=91))
+        self.assertTrue(threshold_failed(summary, 0.1, None, expected_count=91))
+        self.assertTrue(threshold_failed(summary, None, 2.9, expected_count=91))
+        self.assertTrue(threshold_failed(summary, 0.2, 3.0, expected_count=182))
 
     def test_print_markdown_table(self):
         rows = [comparison_row(delta=0.1, z_score=2.0)]

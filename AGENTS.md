@@ -55,7 +55,9 @@ Prefer semantic commit prefixes when they clarify the change, such as `docs`,
 Near the end of this section, observe these boundaries: do not commit directly
 on `main`, do not push directly to `main`, do not combine unrelated changes into
 one commit, and do not bypass review by treating local validation as a
-substitute for a pull request.
+substitute for a pull request. AI agents are permitted to commit using the
+`--no-gpg-sign` flag when committing in sandboxed environments where local GPG
+private keys are unavailable.
 
 ## Agent Skills And Repository Instructions
 
@@ -138,7 +140,9 @@ loosen quality gates, delete tests, or mark code work ready when required checks
 are failing. Do not use ignore comments or configuration changes to hide
 duplication, type, lint, formatting, or acceptance-test problems unless the pull
 request clearly justifies the exception. Do not rely on untested legacy code
-paths from `simulate_cribbage_games.py` in new code.
+paths from `simulate_cribbage_games.py` in new code. Agents must never modify,
+bypass, or disable local pre-commit hooks, CI configuration gates, or coverage
+validation rules without explicit human maintainer consent.
 
 ## Immutable External Dependency
 

@@ -31,7 +31,15 @@ repos:
     hooks:
       - id: unittest-check
         name: unittest-check
-        entry: python -m unittest
+        entry: coverage run
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+
+      - id: coverage-check
+        name: coverage-check
+        entry: coverage report
         language: system
         pass_filenames: false
         always_run: true

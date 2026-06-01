@@ -281,6 +281,11 @@ def parse_args() -> argparse.Namespace:
         type=float,
         help="Exit non-zero if any abs(delta) / se is greater than this value.",
     )
+    parser.add_argument(
+        "--allow-incomplete",
+        action="store_true",
+        help="Do not fail the comparison if the table is incomplete.",
+    )
     return parser.parse_args()
 
 
@@ -294,7 +299,10 @@ def threshold_failed(
     summary: Mapping[str, float],
     max_abs_delta: Optional[float],
     max_z_score: Optional[float],
+    expected_count: int = 91,
 ) -> bool:
+    if summary.get("count", 0.0) < expected_count:
+        return True
     return (max_abs_delta is not None and summary["max_abs_delta"] > max_abs_delta) or (
         max_z_score is not None and summary["max_z_score"] > max_z_score
     )
@@ -305,8 +313,9 @@ def main() -> None:
     with open(args.path, "r", encoding="utf-8") as table_file:
         data = json.load(table_file)
 
+    roles = roles_from_arg(args.role)
     rows = sorted_rows(
-        compare_to_hessel(data, roles_from_arg(args.role), args.suit_weighting),
+        compare_to_hessel(data, roles, args.suit_weighting),
         args.sort,
     )
     summary = summarize_rows(rows)
@@ -319,13 +328,16 @@ def main() -> None:
     else:
         print_markdown_table(
             rows,
-            roles_from_arg(args.role),
+            roles,
             args.table_statistic,
             args.precision,
         )
         print_summary(summary, args.precision)
 
-    if threshold_failed(summary, args.max_abs_delta, args.max_z_score):
+    expected_count = 0 if args.allow_incomplete else (91 * len(roles))
+    if threshold_failed(
+        summary, args.max_abs_delta, args.max_z_score, expected_count=expected_count
+    ):
         raise SystemExit(1)
 
 

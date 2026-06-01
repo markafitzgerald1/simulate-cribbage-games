@@ -100,7 +100,7 @@ def cards_to_canonical(card_1, card_2):
 
 
 def select_opponent_kept_cards_dynamic(
-    player, opponent_dealt, generation_accumulators=None, player_discard_cards=None
+    player, opponent_dealt, generation_accumulators=None
 ):
     # pylint: disable=too-many-locals
     if generation_accumulators is None:
@@ -114,11 +114,7 @@ def select_opponent_kept_cards_dynamic(
     max_score = None
     best_kept = None
 
-    if player_discard_cards:
-        deck_set_to_use = set(c for c in DECK_SET if c not in player_discard_cards)
-    else:
-        deck_set_to_use = DECK_SET
-
+    deck_set_to_use = DECK_SET
     starters = [card for card in deck_set_to_use if card not in opponent_dealt]
 
     for kept_combination in itertools.combinations(opponent_dealt, 4):
@@ -385,7 +381,7 @@ def score_crib_sample(
 ):
     opponent_dealt = sample_rng.sample(remaining_deck, 6)
     kept = select_opponent_kept_cards_dynamic(
-        player, opponent_dealt, generation_accumulators, discarded_cards
+        player, opponent_dealt, generation_accumulators
     )
     opponent_discards = [card for card in opponent_dealt if card not in kept]
     remaining_after_deal = [
@@ -754,6 +750,7 @@ def main(override_pairs=None):
                                     else 0.0
                                 )
                             else:
+                                stats_prior = None
                                 val_prior = 0.0
 
                             # Measured stats
@@ -765,25 +762,52 @@ def main(override_pairs=None):
                                     if stats_measured is not None
                                     else 0.0
                                 )
-                                n_measured = stats_measured["n"]
-                                se_measured = stats_measured["se"]
+                                n_measured = (
+                                    stats_measured["n"] if stats_measured else 0
+                                )
+                                se_measured = (
+                                    stats_measured["se"] if stats_measured else 0.0
+                                )
                             else:
+                                stats_measured = None
                                 val_measured = 0.0
                                 n_measured = 0
                                 se_measured = 0.0
 
-                            # Apply low-pass dampened update
-                            if prior_acc:
-                                val_new = val_prior + dampening * (
-                                    val_measured - val_prior
-                                )
+                            # Apply low-pass dampened update and compile new statistics
+                            if stats_measured is None:
+                                if stats_prior is not None:
+                                    val_new = val_prior
+                                    n_new = stats_prior["n"]
+                                    se_new = stats_prior["se"]
+                                else:
+                                    val_new = 0.0
+                                    n_new = 0
+                                    se_new = 0.0
                             else:
-                                val_new = val_measured
+                                if stats_prior is not None:
+                                    val_new = val_prior + dampening * (
+                                        val_measured - val_prior
+                                    )
+                                    n_new = stats_prior["n"] + n_measured
+                                    se_new = (
+                                        (
+                                            stats_prior["se"] * stats_prior["n"]
+                                            + se_measured * n_measured
+                                        )
+                                        / n_new
+                                        if n_new > 0
+                                        else 0.0
+                                    )
+                                else:
+                                    val_new = val_measured
+                                    n_new = n_measured
+                                    se_new = se_measured
 
                             stats_new = {
-                                "n": n_measured,
+                                "n": n_new,
                                 "mu": val_new,
-                                "se": se_measured,
+                                "se": se_new,
                             }
                             generation_accumulators[pair][player][cut] = (
                                 statistics_to_accumulator(stats_new)

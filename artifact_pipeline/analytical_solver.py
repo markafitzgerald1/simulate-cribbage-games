@@ -47,6 +47,22 @@ def get_analytical_pairs():
     return pairs
 
 
+def get_card_removal_factor(pair1, pair2):
+    """
+    Compute the combinatorial card-removal factor for pair2 given pair1 is removed.
+    This is proportional to product_{c} comb(4 - pair1.count(c), pair2.count(c)).
+    """
+    factor = 1.0
+    for c in set(pair2):
+        c1 = pair1.count(c)
+        c2 = pair2.count(c)
+        if c1 + c2 > 4:
+            return 0.0
+        # Re-weight from unconditioned comb(4, c2) to conditional comb(4 - c1, c2)
+        factor *= math.comb(4 - c1, c2) / math.comb(4, c2)
+    return factor
+
+
 @lru_cache(maxsize=None)
 def score_combination_suit_free(kept_indices, starter_index, true_nobs=True):
     """
@@ -132,7 +148,7 @@ def run_analytical_ibr(true_nobs=True):
       DlTbl: Expected crib value Dealer gets when Dealer discards d
       PnTbl: Expected crib value Dealer gets when Pone discards p
     """
-    # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    # pylint: disable=too-many-locals,too-many-branches,too-many-statements,too-many-nested-blocks
     # Dense mathematical IBR dynamic transition matrix computations are kept
     # unified in a single optimized block to prevent dictionary lookup overhead
     # and retain mathematical readability of the game-theoretic solver.
@@ -226,49 +242,73 @@ def run_analytical_ibr(true_nobs=True):
         pn_next = [0.0] * num_pairs
 
         # Dealer discard policy expected crib
-        # DlTbl[d] = sum_{p} Pone_discard_prob[p] * ExpectedCrib[d, p]
+        # DlTbl[d] = sum_{p} Pone_discard_prob[p | d] * ExpectedCrib[d, p]
         for d_idx in range(num_pairs):
-            expected_score = 0.0
-            for p_idx in range(num_pairs):
-                # P(Pone discards p)
-                pone_prob = 0.0
-                if pn_new_denominators[p_idx] > 0:  # pragma: no cover
-                    pone_prob = pn_new_numerators[p_idx] / sum(pn_new_numerators)
+            d_pair = analytical_pairs[d_idx]
 
-                if (d_idx, p_idx) in crib_scores:  # pragma: no cover
-                    for c in range(13):
-                        # P(starter card c | d, p)
-                        starter_prob = (
-                            4
-                            - analytical_pairs[d_idx].count(c)
-                            - analytical_pairs[p_idx].count(c)
-                        ) / 48.0
-                        expected_score += (
-                            pone_prob * starter_prob * crib_scores[(d_idx, p_idx)][c]
-                        )
+            # Compute conditional Pone discard probabilities
+            cond_probs = []
+            for p_idx in range(num_pairs):
+                pone_weight = pn_new_numerators[p_idx]
+                if pone_weight > 0:
+                    factor = get_card_removal_factor(d_pair, analytical_pairs[p_idx])
+                    cond_probs.append((p_idx, pone_weight * factor))
+                else:
+                    cond_probs.append((p_idx, 0.0))
+
+            total_cond_weight = sum(w for _, w in cond_probs)
+
+            expected_score = 0.0
+            for p_idx, cond_w in cond_probs:
+                if cond_w > 0 and total_cond_weight > 0:
+                    pone_prob = cond_w / total_cond_weight
+
+                    if (d_idx, p_idx) in crib_scores:
+                        for c in range(13):
+                            # P(starter card c | d, p)
+                            starter_prob = (
+                                4 - d_pair.count(c) - analytical_pairs[p_idx].count(c)
+                            ) / 48.0
+                            expected_score += (
+                                pone_prob
+                                * starter_prob
+                                * crib_scores[(d_idx, p_idx)][c]
+                            )
             dl_next[d_idx] = expected_score
 
         # Pone discard policy expected crib
-        # PnTbl[p] = sum_{d} Dealer_discard_prob[d] * ExpectedCrib[d, p]
+        # PnTbl[p] = sum_{d} Dealer_discard_prob[d | p] * ExpectedCrib[d, p]
         for p_idx in range(num_pairs):
-            expected_score = 0.0
-            for d_idx in range(num_pairs):
-                # P(Dealer discards d)
-                dealer_prob = 0.0
-                if dl_new_denominators[d_idx] > 0:  # pragma: no cover
-                    dealer_prob = dl_new_numerators[d_idx] / sum(dl_new_numerators)
+            p_pair = analytical_pairs[p_idx]
 
-                if (d_idx, p_idx) in crib_scores:  # pragma: no cover
-                    for c in range(13):
-                        # P(starter card c | d, p)
-                        starter_prob = (
-                            4
-                            - analytical_pairs[d_idx].count(c)
-                            - analytical_pairs[p_idx].count(c)
-                        ) / 48.0
-                        expected_score += (
-                            dealer_prob * starter_prob * crib_scores[(d_idx, p_idx)][c]
-                        )
+            # Compute conditional Dealer discard probabilities
+            cond_probs = []
+            for d_idx in range(num_pairs):
+                dealer_weight = dl_new_numerators[d_idx]
+                if dealer_weight > 0:
+                    factor = get_card_removal_factor(p_pair, analytical_pairs[d_idx])
+                    cond_probs.append((d_idx, dealer_weight * factor))
+                else:
+                    cond_probs.append((d_idx, 0.0))
+
+            total_cond_weight = sum(w for _, w in cond_probs)
+
+            expected_score = 0.0
+            for d_idx, cond_w in cond_probs:
+                if cond_w > 0 and total_cond_weight > 0:
+                    dealer_prob = cond_w / total_cond_weight
+
+                    if (d_idx, p_idx) in crib_scores:
+                        for c in range(13):
+                            # P(starter card c | d, p)
+                            starter_prob = (
+                                4 - analytical_pairs[d_idx].count(c) - p_pair.count(c)
+                            ) / 48.0
+                            expected_score += (
+                                dealer_prob
+                                * starter_prob
+                                * crib_scores[(d_idx, p_idx)][c]
+                            )
             pn_next[p_idx] = expected_score
 
         # Apply dampening
@@ -400,7 +440,7 @@ def format_table_as_generation_zero(dl_tbl, pn_tbl, hands, crib_scores, true_nob
                 )
 
                 player_data[cut_rank_str] = {
-                    "n": 10000,
+                    "n": 0,
                     "mu": expected_crib_cut,
                     "se": 0.0,
                 }
