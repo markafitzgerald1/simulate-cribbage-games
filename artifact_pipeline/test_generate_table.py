@@ -1275,6 +1275,42 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         f3 = get_card_removal_factor((0, 0, 0), (0, 0, 0))
         self.assertAlmostEqual(f3, 0.0)
 
+    def test_analytical_solver_zero_weights_coverage(self):
+        """Test that analytical solver runs cleanly when some choices have zero weights."""
+        # Patch get_hand_combinations_with_weights to return a single hand
+        # so that only 1 or 2 discard pairs are chosen, leaving all other 89 pairs with 0 weight!
+        single_hand = [((0, 0, 1, 1, 2, 2), 1)]
+
+        with patch(
+            "artifact_pipeline.analytical_solver.get_hand_combinations_with_weights",
+            return_value=single_hand,
+        ):
+            dl_tbl, pn_tbl, _, _ = run_analytical_ibr(true_nobs=False)
+            self.assertEqual(len(dl_tbl), 91)
+            self.assertEqual(len(pn_tbl), 91)
+
+    def test_dampening_multiple_generations(self):
+        """Test policy dampening across multiple generations with unseen cut ranks."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "out.json")
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "5",
+                    "--checkpoint-frequency",
+                    "1",
+                    "--max-generations",
+                    "2",
+                    "--dampening",
+                    "0.5",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                run_main_silently(["A_A_Unsuited"])
+
     def test_analytical_solver_main(self):
         """Test analytical_solver.py main CLI execution."""
         with tempfile.TemporaryDirectory() as temp_dir:
