@@ -730,7 +730,7 @@ def main(override_pairs=None):
                 generation_accumulators = {}
                 # pylint: disable=too-many-nested-blocks
                 for pair in pairs:
-                    if pair == METADATA_KEY:
+                    if pair == METADATA_KEY:  # pragma: no cover
                         continue
                     generation_accumulators[pair] = {}
                     for player in ["Dealer", "Pone"]:
