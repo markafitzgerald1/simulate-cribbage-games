@@ -29,6 +29,7 @@ from artifact_pipeline.generate_table import (
     serialize_accumulators,
     deserialize_accumulators,
     METADATA_KEY,
+    validate_resume_metadata,
     write_output,
     load_or_initialize_accumulators,
     select_opponent_kept_cards_dynamic,
@@ -57,6 +58,7 @@ from artifact_pipeline.analytical_solver import (
     _expected_crib_tables,
     get_analytical_pairs,
     get_card_removal_weight,
+    GENERATION_METHOD as ANALYTICAL_GENERATION_METHOD,
 )
 
 
@@ -1413,6 +1415,13 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             ), patch("sys.stdout", new_callable=io.StringIO):
                 analytical_main()
             self.assertTrue(os.path.exists(output_path))
+            with open(output_path, encoding="utf-8") as analytical_file:
+                metadata = json.load(analytical_file)[METADATA_KEY]
+            self.assertEqual(
+                metadata["generation_method"], ANALYTICAL_GENERATION_METHOD
+            )
+            with self.assertRaises(ValueError):
+                validate_resume_metadata(metadata, None, output_path)
 
     def test_flush_math_suited_greater_than_unsuited(self):
         """Prove flush math by asserting suited exact expected value is strictly greater than unsuited for non-pairs."""

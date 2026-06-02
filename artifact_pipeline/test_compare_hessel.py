@@ -168,6 +168,20 @@ class TestCompareHessel(unittest.TestCase):
         self.assertTrue("Dealer delta" in output)
         self.assertTrue("Summary:" in output)
 
+    def test_main_report_only_allows_incomplete_table(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+            write_table(
+                output_path,
+                {"Dealer": {"A": {"n": 1, "mu": 5.26, "se": 0.0}}},
+            )
+
+            with patch(
+                "sys.argv",
+                ["compare_hessel.py", "--role", "Dealer", output_path],
+            ), patch("sys.stdout", new_callable=io.StringIO):
+                main()
+
     def test_compare_to_hessel_zero_se(self):
         data = {
             "A_A_Unsuited": {

@@ -53,6 +53,8 @@ Mozilla Public License 2.0. See `LICENSE` for details.
   Automate that acceptance test when practical.
 - Check for pylint flagged code issues (including code duplication and similarities) in the legacy simulator:
   `pylint simulate_cribbage_games.py`
+- Run the pre-push duplicate-code gate for the immutable legacy simulator:
+  `pylint --persistent=n --disable=all --enable=duplicate-code simulate_cribbage_games.py`
 - Check for pylint flagged code issues and similarities in the artifact pipeline:
   `pylint --persistent=n artifact_pipeline`
 - Check for flake8 flagged code issues: `flake8`

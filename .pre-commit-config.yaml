@@ -52,6 +52,13 @@ repos:
         pass_filenames: false
         always_run: true
         stages: [pre-push]
+      - id: pylint-legacy-similarities
+        name: pylint-legacy-similarities
+        entry: pylint --persistent=n --disable=all --enable=duplicate-code simulate_cribbage_games.py
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
       - id: flake8-artifact-pipeline
         name: flake8-artifact-pipeline
         entry: flake8 artifact_pipeline

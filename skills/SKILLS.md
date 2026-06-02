@@ -62,7 +62,9 @@ permits direct pushes to `main` or bypasses pull request review.
 
 Python backend work must preserve existing validation expectations: unit tests
 through `coverage`, type checks through `mypy`, duplicate-code and lint checks
-through `pylint` and `flake8`. Artifact pipeline
+through `pylint` and `flake8`. The immutable legacy simulator must pass
+`pylint --persistent=n --disable=all --enable=duplicate-code
+simulate_cribbage_games.py` as a pre-push similarities gate. Artifact pipeline
 Python code must pass both `pylint --persistent=n artifact_pipeline` and
 `flake8 artifact_pipeline` locally and in CI.
 

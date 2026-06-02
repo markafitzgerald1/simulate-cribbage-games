@@ -36,6 +36,7 @@ from artifact_pipeline.adapter import (  # noqa: E402
 )
 
 DEFAULT_OUTPUT_PATH = "expected_crib_points.analytical.json"
+GENERATION_METHOD = "artifact_pipeline.analytical_solver.v1"
 
 
 def get_analytical_pairs():
@@ -431,7 +432,7 @@ def format_table_as_generation_zero(dl_tbl, pn_tbl, hands, crib_scores, true_nob
     # 2. Build canonical table matching the exact generator JSON format
     output = {
         "__metadata__": {
-            "generation_method": "artifact_pipeline.generate_table.v1",
+            "generation_method": GENERATION_METHOD,
             "seed": None,
             "seed_was_specified": False,
             "generation": 0,

@@ -109,6 +109,7 @@ coverage xml
 coverage report
 mypy simulate_cribbage_games.py
 pylint simulate_cribbage_games.py
+pylint --persistent=n --disable=all --enable=duplicate-code simulate_cribbage_games.py
 pylint --persistent=n artifact_pipeline
 flake8
 ```

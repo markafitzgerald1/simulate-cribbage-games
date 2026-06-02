@@ -335,7 +335,12 @@ def main() -> None:
         print_summary(summary, args.precision)
 
     pairs_per_role = 78 if args.suit_weighting == "suited-only" else 91
-    expected_count = 0 if args.allow_incomplete else (pairs_per_role * len(roles))
+    applying_threshold = args.max_abs_delta is not None or args.max_z_score is not None
+    expected_count = (
+        0
+        if args.allow_incomplete or not applying_threshold
+        else (pairs_per_role * len(roles))
+    )
     if threshold_failed(
         summary, args.max_abs_delta, args.max_z_score, expected_count=expected_count
     ):
