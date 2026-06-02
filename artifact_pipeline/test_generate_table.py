@@ -23,6 +23,7 @@ from artifact_pipeline.generate_table import (
     run_generation,
     statistics_to_accumulator,
     minimum_completed_sample_count,
+    policy_mean,
     empty_accumulator,
     reached_target_sample_count,
     main,
@@ -807,6 +808,33 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         shift_added = calculate_max_ev_shift(prev_missing, curr_added, ["A_A_Unsuited"])
         self.assertAlmostEqual(shift_added, 10.0)
 
+        prev_policy = {
+            "A_A_Unsuited": {
+                "Dealer": {
+                    "A": statistics_to_accumulator(
+                        {"n": 10, "mu": 0.0, "policy_mu": 10.0}
+                    )
+                }
+            }
+        }
+        curr_policy = {
+            "A_A_Unsuited": {
+                "Dealer": {
+                    "A": statistics_to_accumulator(
+                        {"n": 20, "mu": 100.0, "policy_mu": 11.0}
+                    )
+                }
+            }
+        }
+        self.assertAlmostEqual(
+            calculate_max_ev_shift(prev_policy, curr_policy, ["A_A_Unsuited"]),
+            1.0,
+        )
+
+    def test_policy_mean_prefers_policy_mu(self):
+        self.assertEqual(policy_mean({"mu": 5.0}), 5.0)
+        self.assertEqual(policy_mean({"mu": 5.0, "policy_mu": 7.5}), 7.5)
+
     def test_max_generations_hardcap(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "out.json")
@@ -1170,6 +1198,30 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     no_resume=False,
                     seed=99,
                 )
+
+    def test_explicit_missing_bootstrap_path_fails(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+            missing_bootstrap = os.path.join(temp_dir, "missing-bootstrap.json")
+
+            with self.assertRaises(FileNotFoundError):
+                load_or_initialize_accumulators(
+                    output_path=output_path,
+                    no_resume=True,
+                    seed=42,
+                    bootstrap_path=missing_bootstrap,
+                    require_bootstrap=True,
+                )
+
+            accumulators, metadata = load_or_initialize_accumulators(
+                output_path=output_path,
+                no_resume=True,
+                seed=42,
+                bootstrap_path=missing_bootstrap,
+                require_bootstrap=False,
+            )
+            self.assertEqual(accumulators, {})
+            self.assertIsNone(metadata)
 
     def test_analytical_solver_hessel_compat(self):
         """Test that analytical_solver.py in Hessel mode matches Hessel's averages exactly to 2 decimal places."""

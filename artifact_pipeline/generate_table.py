@@ -39,6 +39,7 @@ from artifact_pipeline.adapter import (  # noqa: E402
 
 
 DEFAULT_OUTPUT_PATH = "expected_crib_points.json"
+DEFAULT_BOOTSTRAP_PATH = "expected_crib_points.analytical.json"
 DEFAULT_CHECKPOINT_FREQUENCY = 100
 METADATA_KEY = "__metadata__"
 GENERATION_METHOD = "artifact_pipeline.generate_table.v1"
@@ -139,7 +140,7 @@ def select_opponent_kept_cards_dynamic(
             )
             if acc:
                 stats = accumulator_to_statistics(acc)
-                mu = stats.get("policy_mu", stats["mu"]) if stats is not None else 0.0
+                mu = policy_mean(stats) if stats is not None else 0.0
             else:
                 mu = 0.0
             total_crib_score += mu
@@ -238,6 +239,11 @@ def accumulator_to_statistics(accumulator):
         statistics["policy_mu"] = accumulator["policy_mu"]
         statistics["policy_se"] = accumulator.get("policy_se", 0.0)
     return statistics
+
+
+def policy_mean(statistics):
+    """Return the EV used for policy decisions from serialized statistics."""
+    return statistics.get("policy_mu", statistics["mu"])
 
 
 def statistics_to_accumulator(statistics):
@@ -394,7 +400,9 @@ def validate_resume_metadata(metadata, seed, output_path):
         )
 
 
-def load_or_initialize_accumulators(output_path, no_resume, seed, bootstrap_path=None):
+def load_or_initialize_accumulators(
+    output_path, no_resume, seed, bootstrap_path=None, require_bootstrap=False
+):
     if no_resume:
         accumulators, metadata = {}, None
     else:
@@ -411,6 +419,8 @@ def load_or_initialize_accumulators(output_path, no_resume, seed, bootstrap_path
             "generation_accumulators": serialize_accumulators(bootstrap_accumulators),
         }
         return {}, metadata
+    if bootstrap_path and require_bootstrap:
+        raise FileNotFoundError(f"Bootstrap file not found: {bootstrap_path}")
 
     return accumulators, metadata
 
@@ -611,8 +621,8 @@ def calculate_max_ev_shift(prev_accumulators, current_accumulators, pairs):
                 prev_stats = accumulator_to_statistics(prev_acc)
                 curr_stats = accumulator_to_statistics(curr_acc)
                 if curr_stats is not None:
-                    prev_mu = prev_stats["mu"] if prev_stats is not None else 0.0
-                    shift = abs(curr_stats["mu"] - prev_mu)
+                    prev_mu = policy_mean(prev_stats) if prev_stats is not None else 0.0
+                    shift = abs(policy_mean(curr_stats) - prev_mu)
                     max_shift = max(max_shift, shift)
     return max_shift
 
@@ -675,7 +685,7 @@ def main(override_pairs=None):
     )
     parser.add_argument(
         "--bootstrap",
-        default="expected_crib_points.analytical.json",
+        default=None,
         help="Optional JSON path to bootstrap baseline Generation 0 policy.",
     )
     parser.add_argument(
@@ -710,8 +720,15 @@ def main(override_pairs=None):
         rng = random.Random()
 
     pairs = override_pairs if override_pairs is not None else get_canonical_pairs()
+    bootstrap_path = (
+        args.bootstrap if args.bootstrap is not None else DEFAULT_BOOTSTRAP_PATH
+    )
     accumulators, metadata = load_or_initialize_accumulators(
-        args.output, args.no_resume, args.seed, args.bootstrap
+        args.output,
+        args.no_resume,
+        args.seed,
+        bootstrap_path,
+        require_bootstrap=args.bootstrap is not None,
     )
 
     generation = 0
