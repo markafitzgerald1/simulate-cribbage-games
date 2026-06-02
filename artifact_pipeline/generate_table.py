@@ -139,7 +139,7 @@ def select_opponent_kept_cards_dynamic(
             )
             if acc:
                 stats = accumulator_to_statistics(acc)
-                mu = stats["mu"] if stats is not None else 0.0
+                mu = stats.get("policy_mu", stats["mu"]) if stats is not None else 0.0
             else:
                 mu = 0.0
             total_crib_score += mu
@@ -215,20 +215,29 @@ def accumulator_to_statistics(accumulator):
     n = accumulator["n"]
     if n == 0:
         if "mu" in accumulator:
-            return {
+            statistics = {
                 "n": 0,
                 "mu": accumulator["mu"],
                 "se": accumulator.get("se", 0.0),
             }
+            if "policy_mu" in accumulator:
+                statistics["policy_mu"] = accumulator["policy_mu"]
+                statistics["policy_se"] = accumulator.get("policy_se", 0.0)
+            return statistics
         return None
 
     mu = accumulator["sum"] / n
     if n == 1:
-        return {"n": n, "mu": mu, "se": 0.0}
+        statistics = {"n": n, "mu": mu, "se": 0.0}
+    else:
+        variance = (accumulator["sum_squares"] - n * mu * mu) / (n - 1)
+        se = math.sqrt(max(variance, 0.0)) / math.sqrt(n)
+        statistics = {"n": n, "mu": mu, "se": se}
 
-    variance = (accumulator["sum_squares"] - n * mu * mu) / (n - 1)
-    se = math.sqrt(max(variance, 0.0)) / math.sqrt(n)
-    return {"n": n, "mu": mu, "se": se}
+    if "policy_mu" in accumulator:
+        statistics["policy_mu"] = accumulator["policy_mu"]
+        statistics["policy_se"] = accumulator.get("policy_se", 0.0)
+    return statistics
 
 
 def statistics_to_accumulator(statistics):
@@ -241,15 +250,56 @@ def statistics_to_accumulator(statistics):
     mu = statistics["mu"]
     se = statistics.get("se", 0.0)
     if n == 0:
-        return {"n": 0, "sum": 0.0, "sum_squares": 0.0, "mu": mu, "se": se}
-    if n <= 1:
-        return {"n": n, "sum": mu * n, "sum_squares": mu * mu * n}
+        accumulator = {"n": 0, "sum": 0.0, "sum_squares": 0.0, "mu": mu, "se": se}
+    elif n <= 1:
+        accumulator = {"n": n, "sum": mu * n, "sum_squares": mu * mu * n}
+    else:
+        variance = se * se * n
+        accumulator = {
+            "n": n,
+            "sum": mu * n,
+            "sum_squares": (n - 1) * variance + n * mu * mu,
+        }
 
-    variance = se * se * n
+    if "policy_mu" in statistics:
+        accumulator["policy_mu"] = statistics["policy_mu"]
+        accumulator["policy_se"] = statistics.get("policy_se", 0.0)
+    return accumulator
+
+
+def blend_policy_accumulators(prior_accumulator, measured_accumulator, dampening):
+    """Blend policy EV while retaining honest pooled measurement statistics."""
+    if measured_accumulator is None:
+        return (
+            dict(prior_accumulator)
+            if prior_accumulator is not None
+            else empty_accumulator()
+        )
+    if prior_accumulator is None:
+        return dict(measured_accumulator)
+
+    prior_stats = accumulator_to_statistics(prior_accumulator)
+    measured_stats = accumulator_to_statistics(measured_accumulator)
+    if prior_stats is None:
+        return dict(measured_accumulator)
+    if measured_stats is None:
+        return dict(prior_accumulator)
+
+    prior_policy_mu = prior_stats.get("policy_mu", prior_stats["mu"])
+    prior_policy_se = prior_stats.get("policy_se", prior_stats["se"])
+    policy_mu = prior_policy_mu + dampening * (measured_stats["mu"] - prior_policy_mu)
+    policy_se = math.sqrt(
+        (1.0 - dampening) ** 2 * prior_policy_se**2
+        + dampening**2 * measured_stats["se"] ** 2
+    )
     return {
-        "n": n,
-        "sum": mu * n,
-        "sum_squares": (n - 1) * variance + n * mu * mu,
+        "n": prior_accumulator["n"] + measured_accumulator["n"],
+        "sum": prior_accumulator["sum"] + measured_accumulator["sum"],
+        "sum_squares": (
+            prior_accumulator["sum_squares"] + measured_accumulator["sum_squares"]
+        ),
+        "policy_mu": policy_mu,
+        "policy_se": policy_se,
     }
 
 
@@ -748,77 +798,12 @@ def main(override_pairs=None):
                             player, {}
                         )
                         for cut in Index.indices:
-                            # Prior stats
                             prior_acc = prior_player_data.get(cut)
-                            if prior_acc:
-                                stats_prior = accumulator_to_statistics(prior_acc)
-                                val_prior = (
-                                    stats_prior["mu"]
-                                    if stats_prior is not None
-                                    else 0.0
-                                )
-                            else:
-                                stats_prior = None
-                                val_prior = 0.0
-
-                            # Measured stats
                             measured_acc = measured_player_data.get(cut)
-                            if measured_acc:
-                                stats_measured = accumulator_to_statistics(measured_acc)
-                                val_measured = (
-                                    stats_measured["mu"]
-                                    if stats_measured is not None
-                                    else 0.0
-                                )
-                                n_measured = (
-                                    stats_measured["n"] if stats_measured else 0
-                                )
-                                se_measured = (
-                                    stats_measured["se"] if stats_measured else 0.0
-                                )
-                            else:
-                                stats_measured = None
-                                val_measured = 0.0
-                                n_measured = 0
-                                se_measured = 0.0
-
-                            # Apply low-pass dampened update and compile new statistics
-                            if stats_measured is None:
-                                if stats_prior is not None:
-                                    val_new = val_prior
-                                    n_new = stats_prior["n"]
-                                    se_new = stats_prior["se"]
-                                else:
-                                    val_new = 0.0
-                                    n_new = 0
-                                    se_new = 0.0
-                            else:
-                                if stats_prior is not None:
-                                    val_new = val_prior + dampening * (
-                                        val_measured - val_prior
-                                    )
-                                    n_new = stats_prior["n"] + n_measured
-                                    se_new = (
-                                        (
-                                            stats_prior["se"] * stats_prior["n"]
-                                            + se_measured * n_measured
-                                        )
-                                        / n_new
-                                        if n_new > 0
-                                        else 0.0
-                                    )
-                                else:
-                                    val_new = val_measured
-                                    n_new = n_measured
-                                    se_new = se_measured
-
-                            stats_new = {
-                                "n": n_new,
-                                "mu": val_new,
-                                "se": se_new,
-                            }
                             generation_accumulators[pair][player][cut] = (
-                                statistics_to_accumulator(stats_new)
+                                blend_policy_accumulators(
+                                    prior_acc, measured_acc, dampening
+                                )
                             )
                 accumulators = {}
                 generation = next_generation

@@ -14,6 +14,7 @@ from artifact_pipeline.generate_table import (
     accumulator_to_statistics,
     accumulators_to_output,
     build_metadata,
+    blend_policy_accumulators,
     get_canonical_pairs,
     canonical_to_cards,
     run_monte_carlo,
@@ -22,6 +23,7 @@ from artifact_pipeline.generate_table import (
     run_generation,
     statistics_to_accumulator,
     minimum_completed_sample_count,
+    empty_accumulator,
     reached_target_sample_count,
     main,
     positive_int,
@@ -174,6 +176,52 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         round_tripped = accumulator_to_statistics(accumulator)
 
         self.assertEqual(round_tripped, statistics)
+
+    def test_policy_statistics_accumulator_round_trip(self):
+        statistics = {
+            "n": 2,
+            "mu": 5.0,
+            "se": 1.0,
+            "policy_mu": 7.5,
+            "policy_se": 0.5,
+        }
+
+        accumulator = statistics_to_accumulator(statistics)
+
+        self.assertEqual(accumulator_to_statistics(accumulator), statistics)
+
+    def test_zero_sample_policy_statistics_accumulator_round_trip(self):
+        statistics = {"n": 0, "mu": 4.25, "se": 0.0, "policy_mu": 4.0}
+
+        accumulator = statistics_to_accumulator(statistics)
+
+        self.assertEqual(
+            accumulator_to_statistics(accumulator),
+            {**statistics, "policy_se": 0.0},
+        )
+
+    def test_blend_policy_accumulators(self):
+        prior = statistics_to_accumulator({"n": 100, "mu": 10.0, "se": 1.0})
+        measured = statistics_to_accumulator({"n": 100, "mu": 0.0, "se": 2.0})
+
+        blended = accumulator_to_statistics(
+            blend_policy_accumulators(prior, measured, 0.25)
+        )
+
+        self.assertEqual(blended["n"], 200)
+        self.assertAlmostEqual(blended["mu"], 5.0)
+        self.assertAlmostEqual(blended["policy_mu"], 7.5)
+        self.assertAlmostEqual(blended["policy_se"], math.sqrt(0.75**2 + 0.5**2))
+
+    def test_blend_policy_accumulators_missing_values(self):
+        measured = statistics_to_accumulator({"n": 1, "mu": 3.0, "se": 0.0})
+        empty = empty_accumulator()
+
+        self.assertEqual(blend_policy_accumulators(None, measured, 0.5), measured)
+        self.assertEqual(blend_policy_accumulators(measured, None, 0.5), measured)
+        self.assertEqual(blend_policy_accumulators(None, None, 0.5), empty)
+        self.assertEqual(blend_policy_accumulators(empty, measured, 0.5), measured)
+        self.assertEqual(blend_policy_accumulators(measured, empty, 0.5), measured)
 
     def test_accumulator_to_statistics_empty(self):
         self.assertIsNone(
@@ -1343,7 +1391,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
 
         # 2. Hessel mode with starter card not Jack
         ev_hessel = score_combination_suit_free((10, 0, 1, 2), 3, true_nobs=False)
-        self.assertAlmostEqual(ev_hessel, 8.25)
+        self.assertAlmostEqual(ev_hessel, 8.0)
 
         # 3. Hessel mode with starter card a Jack
         ev_hessel_j = score_combination_suit_free((10, 0, 1, 2), 10, true_nobs=False)
@@ -1566,14 +1614,14 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         # Verify Dealer dynamic advantage
         self.assertGreater(mean_ibr_dl, mean_hessel_dl)
         self.assertAlmostEqual(
-            mean_ibr_dl - mean_hessel_dl, 0.01404918, delta=0.00000001
+            mean_ibr_dl - mean_hessel_dl, 0.01386251, delta=0.00000001
         )
 
         # Verify Pone dynamic advantage
         self.assertGreater(mean_ibr_pn, mean_hessel_pn)
-        # Dynamic advantage is expected to be ~0.00633299 points per hand under card-removal
+        # Dynamic advantage is expected to be ~0.00495907 points per hand under card-removal
         self.assertAlmostEqual(
-            mean_ibr_pn - mean_hessel_pn, 0.00633299, delta=0.00000001
+            mean_ibr_pn - mean_hessel_pn, 0.00495907, delta=0.00000001
         )
 
     def test_dynamic_ibr_beats_historical_tables_paired(self):
@@ -1678,12 +1726,12 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
 
         # 2. Assert exact true_nobs=False advantages
         res_false = run_paired_advantages(true_nobs=False)
-        self.assertAlmostEqual(res_false["col_dl"], 0.00235665, delta=0.00001)
-        self.assertAlmostEqual(res_false["col_pn"], 0.00104920, delta=0.00001)
-        self.assertAlmostEqual(res_false["ras_dl"], 0.00957314, delta=0.00001)
-        self.assertAlmostEqual(res_false["ras_pn"], 0.01216541, delta=0.00001)
-        self.assertAlmostEqual(res_false["sch_dl"], 0.00156391, delta=0.00001)
-        self.assertAlmostEqual(res_false["sch_pn"], 0.00063603, delta=0.00001)
+        self.assertAlmostEqual(res_false["col_dl"], 0.00294594, delta=0.00001)
+        self.assertAlmostEqual(res_false["col_pn"], 0.00192035, delta=0.00001)
+        self.assertAlmostEqual(res_false["ras_dl"], 0.01179000, delta=0.00001)
+        self.assertAlmostEqual(res_false["ras_pn"], 0.01271713, delta=0.00001)
+        self.assertAlmostEqual(res_false["sch_dl"], 0.00279004, delta=0.00001)
+        self.assertAlmostEqual(res_false["sch_pn"], 0.00167216, delta=0.00001)
 
 
 if __name__ == "__main__":

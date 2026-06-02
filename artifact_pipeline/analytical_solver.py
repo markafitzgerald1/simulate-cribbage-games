@@ -70,7 +70,6 @@ def score_combination_suit_free(kept_indices, starter_index, true_nobs=True):
     weights remaining starter ranks after removing all six dealt cards, which
     lowers the pre-starter Jack expectation when appropriate.
     """
-    _ = true_nobs
     # 1. Base points (pairs, runs, and fifteens)
     all_indices = tuple(sorted(list(kept_indices) + [starter_index]))
     base_points = cached_pairs_runs_and_fifteens_points(all_indices)
@@ -79,7 +78,7 @@ def score_combination_suit_free(kept_indices, starter_index, true_nobs=True):
     nobs_ev = 0.0
     jacks_in_crib = sum(1 for idx in kept_indices if idx == 10)
 
-    if jacks_in_crib > 0 and starter_index != 10:
+    if true_nobs and jacks_in_crib > 0 and starter_index != 10:
         # After suits are marginalized out, a remaining non-Jack starter of a
         # known rank matches each Jack's suit with probability one quarter.
         nobs_ev = jacks_in_crib * 0.25
@@ -223,7 +222,7 @@ def _expected_crib_tables(  # pylint: disable=too-many-locals
     return dl_next, pn_next
 
 
-def _run_analytical_ibr():
+def _run_analytical_ibr(true_nobs=True):
     """
     Execute the Iterated Best Response loop sequentially to solve
     for Dealer and Pone expected crib tables.
@@ -240,7 +239,7 @@ def _run_analytical_ibr():
 
     # 1. Precompute static combinations and crib scores
     hands = get_hand_combinations_with_weights()
-    crib_scores = precompute_exact_crib_scores()
+    crib_scores = precompute_exact_crib_scores(true_nobs=true_nobs)
 
     # 2. Precompute kept hand expected values for each of the 18,564 hands
     # Precomputing all unique 4-card kept rank combinations allows us to evaluate
@@ -252,7 +251,9 @@ def _run_analytical_ibr():
     kept_totals = {}
     kept_card_scores = {}
     for kept in unique_kept:
-        card_scores = [score_combination_suit_free(kept, r) for r in range(13)]
+        card_scores = [
+            score_combination_suit_free(kept, r, true_nobs=true_nobs) for r in range(13)
+        ]
         kept_totals[kept] = sum(card_scores)
         kept_card_scores[kept] = card_scores
 
@@ -322,15 +323,14 @@ def _run_analytical_ibr():
     return dl_tbl, pn_tbl, hand_kept_evs, crib_scores
 
 
-@lru_cache(maxsize=1)
-def _cached_analytical_ibr():
-    return _run_analytical_ibr()
+@lru_cache(maxsize=2)
+def _cached_analytical_ibr(true_nobs):
+    return _run_analytical_ibr(true_nobs=true_nobs)
 
 
 def run_analytical_ibr(true_nobs=True):
-    """Return the rank-conditional analytical table for either metadata mode."""
-    _ = true_nobs
-    return _cached_analytical_ibr()
+    """Return the rank-conditional analytical table for the requested Nobs mode."""
+    return _cached_analytical_ibr(true_nobs)
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments
