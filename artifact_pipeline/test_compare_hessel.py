@@ -213,6 +213,33 @@ class TestCompareHessel(unittest.TestCase):
         self.assertEqual(context.exception.code, 1)
         self.assertTrue(stdout.getvalue().startswith("pair,role,generated"))
 
+    def test_main_suited_only_accepts_complete_78_pair_table(self):
+        data = {}
+        for pair in iter_rank_pairs():
+            if pair[0] == pair[1]:
+                continue
+            key = f"{pair[0]}_{pair[1]}_Suited"
+            data[key] = {"Dealer": {"A": {"n": 1, "mu": 0.0, "se": 0.0}}}
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+            with open(output_path, "w", encoding="utf-8") as output_file:
+                json.dump(data, output_file)
+            with patch(
+                "sys.argv",
+                [
+                    "compare_hessel.py",
+                    "--role",
+                    "Dealer",
+                    "--suit-weighting",
+                    "suited-only",
+                    "--max-abs-delta",
+                    "100",
+                    output_path,
+                ],
+            ), patch("sys.stdout", new_callable=io.StringIO):
+                main()
+
 
 if __name__ == "__main__":
     unittest.main()

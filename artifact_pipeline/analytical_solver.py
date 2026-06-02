@@ -47,28 +47,29 @@ def get_analytical_pairs():
     return pairs
 
 
-def get_card_removal_factor(pair1, pair2):
-    """
-    Compute the combinatorial card-removal factor for pair2 given pair1 is removed.
-    This is proportional to product_{c} comb(4 - pair1.count(c), pair2.count(c)).
-    """
-    factor = 1.0
-    for c in set(pair2):
-        c1 = pair1.count(c)
-        c2 = pair2.count(c)
-        if c1 + c2 > 4:
-            return 0.0
-        # Re-weight from unconditioned comb(4, c2) to conditional comb(4 - c1, c2)
-        factor *= math.comb(4 - c1, c2) / math.comb(4, c2)
-    return factor
+def get_card_removal_weight(removed_cards, selected_cards):
+    """Count physical selections of selected_cards after removed_cards are unavailable."""
+    weight = 1
+    for rank in set(selected_cards):
+        available = 4 - removed_cards.count(rank)
+        selected = selected_cards.count(rank)
+        if selected > available:
+            return 0
+        weight *= math.comb(available, selected)
+    return weight
 
 
 @lru_cache(maxsize=None)
 def score_combination_suit_free(kept_indices, starter_index, true_nobs=True):
     """
     Calculate the exact suit-free score of a 5-card rank index combination.
-    Includes either our exact conditional Nobs EV or Hessel's 0.25 flat approximation.
+    Includes suit-averaged Nobs EV conditional on the starter rank.
+
+    This is not the Nobs EV of a known physical hand. The outer hand-EV sum
+    weights remaining starter ranks after removing all six dealt cards, which
+    lowers the pre-starter Jack expectation when appropriate.
     """
+    _ = true_nobs
     # 1. Base points (pairs, runs, and fifteens)
     all_indices = tuple(sorted(list(kept_indices) + [starter_index]))
     base_points = cached_pairs_runs_and_fifteens_points(all_indices)
@@ -77,14 +78,10 @@ def score_combination_suit_free(kept_indices, starter_index, true_nobs=True):
     nobs_ev = 0.0
     jacks_in_crib = sum(1 for idx in kept_indices if idx == 10)
 
-    if jacks_in_crib > 0:
-        if true_nobs:
-            if starter_index != 10:  # Cut card is not a Jack
-                # Expected Nobs per Jack: (44 + jacks_in_crib) / 192
-                nobs_ev = jacks_in_crib * (44 + jacks_in_crib) / 192.0
-        else:
-            if starter_index != 10:
-                nobs_ev = jacks_in_crib * 0.25
+    if jacks_in_crib > 0 and starter_index != 10:
+        # After suits are marginalized out, a remaining non-Jack starter of a
+        # known rank matches each Jack's suit with probability one quarter.
+        nobs_ev = jacks_in_crib * 0.25
 
     return base_points + nobs_ev
 
@@ -140,7 +137,92 @@ def precompute_exact_crib_scores(true_nobs=True):
     return crib_scores
 
 
-def run_analytical_ibr(true_nobs=True):
+def _select_discard_indices(hand_kept_evs, dl_tbl, pn_tbl):
+    """Select Dealer and Pone discards for each possible six-card rank hand."""
+    selected = []
+    for hand, _weight, discards_ev in hand_kept_evs:
+        best_dl_idx = max(
+            discards_ev, key=lambda idx, evs=discards_ev: evs[idx] + dl_tbl[idx]
+        )
+        best_pn_idx = max(
+            discards_ev, key=lambda idx, evs=discards_ev: evs[idx] - pn_tbl[idx]
+        )
+        selected.append((hand, best_dl_idx, best_pn_idx))
+    return selected
+
+
+def _expected_crib_tables(  # pylint: disable=too-many-locals
+    selected_discards,
+    analytical_pairs,
+    crib_scores,
+    conditioned_hand_weights,
+    hand_rank_counts,
+):
+    """Evaluate crib EVs against policies dealt from the remaining physical cards."""
+    num_pairs = len(analytical_pairs)
+    dl_next = [0.0] * num_pairs
+    pn_next = [0.0] * num_pairs
+
+    for fixed_idx, fixed_pair in enumerate(analytical_pairs):
+        pone_discard_weights = [0.0] * num_pairs
+        dealer_discard_weights = [0.0] * num_pairs
+        pone_dealt_rank_weights = [[0.0] * 13 for _ in range(num_pairs)]
+        dealer_dealt_rank_weights = [[0.0] * 13 for _ in range(num_pairs)]
+        total_hand_weight = 0
+        for (
+            (_hand, dealer_discard_idx, pone_discard_idx),
+            rank_counts,
+            hand_weight,
+        ) in zip(
+            selected_discards, hand_rank_counts, conditioned_hand_weights[fixed_idx]
+        ):
+            if not hand_weight:
+                continue
+            total_hand_weight += hand_weight
+            pone_discard_weights[pone_discard_idx] += hand_weight
+            dealer_discard_weights[dealer_discard_idx] += hand_weight
+            for rank, count in rank_counts:
+                pone_dealt_rank_weights[pone_discard_idx][rank] += hand_weight * count
+                dealer_dealt_rank_weights[dealer_discard_idx][rank] += (
+                    hand_weight * count
+                )
+
+        dl_total = 0.0
+        pn_total = 0.0
+        for discard_idx in range(num_pairs):
+            pone_weight = pone_discard_weights[discard_idx]
+            if pone_weight:
+                scores = crib_scores[(fixed_idx, discard_idx)]
+                available_score = 4.0 * sum(scores.values()) - sum(
+                    scores[rank] for rank in fixed_pair
+                )
+                dl_total += pone_weight * available_score - sum(
+                    rank_weight * scores[rank]
+                    for rank, rank_weight in enumerate(
+                        pone_dealt_rank_weights[discard_idx]
+                    )
+                )
+            dealer_weight = dealer_discard_weights[discard_idx]
+            if dealer_weight:
+                scores = crib_scores[(discard_idx, fixed_idx)]
+                available_score = 4.0 * sum(scores.values()) - sum(
+                    scores[rank] for rank in fixed_pair
+                )
+                pn_total += dealer_weight * available_score - sum(
+                    rank_weight * scores[rank]
+                    for rank, rank_weight in enumerate(
+                        dealer_dealt_rank_weights[discard_idx]
+                    )
+                )
+        denominator = total_hand_weight * 44.0
+        if denominator:
+            dl_next[fixed_idx] = dl_total / denominator
+            pn_next[fixed_idx] = pn_total / denominator
+
+    return dl_next, pn_next
+
+
+def _run_analytical_ibr():
     """
     Execute the Iterated Best Response loop sequentially to solve
     for Dealer and Pone expected crib tables.
@@ -157,7 +239,7 @@ def run_analytical_ibr(true_nobs=True):
 
     # 1. Precompute static combinations and crib scores
     hands = get_hand_combinations_with_weights()
-    crib_scores = precompute_exact_crib_scores(true_nobs=true_nobs)
+    crib_scores = precompute_exact_crib_scores()
 
     # 2. Precompute kept hand expected values for each of the 18,564 hands
     # Precomputing all unique 4-card kept rank combinations allows us to evaluate
@@ -169,9 +251,7 @@ def run_analytical_ibr(true_nobs=True):
     kept_totals = {}
     kept_card_scores = {}
     for kept in unique_kept:
-        card_scores = [
-            score_combination_suit_free(kept, r, true_nobs=true_nobs) for r in range(13)
-        ]
+        card_scores = [score_combination_suit_free(kept, r) for r in range(13)]
         kept_totals[kept] = sum(card_scores)
         kept_card_scores[kept] = card_scores
 
@@ -194,6 +274,14 @@ def run_analytical_ibr(true_nobs=True):
             p_idx = analytical_pairs.index(d)
             discards_ev[p_idx] = total_score / 46.0
         hand_kept_evs.append((hand, weight, discards_ev))
+    conditioned_hand_weights = [
+        [get_card_removal_weight(pair, hand) for hand, _weight, _evs in hand_kept_evs]
+        for pair in analytical_pairs
+    ]
+    hand_rank_counts = [
+        tuple((rank, hand.count(rank)) for rank in set(hand))
+        for hand, _weight, _evs in hand_kept_evs
+    ]
 
     # 3. IBR Convergence Loop
     dl_tbl = [0.0] * num_pairs
@@ -205,111 +293,14 @@ def run_analytical_ibr(true_nobs=True):
     convergence_threshold = 0.0001
 
     while iteration < max_iterations:
-        # Accumulate Dealer/Pone optimal choice weights
-        dl_new_numerators = [0.0] * num_pairs
-        dl_new_denominators = [0.0] * num_pairs
-        pn_new_numerators = [0.0] * num_pairs
-        pn_new_denominators = [0.0] * num_pairs
-
-        for hand, weight, discards_ev in hand_kept_evs:
-            best_dl_val = -float("inf")
-            best_dl_idx = None
-            best_pn_val = -float("inf")
-            best_pn_idx = None
-
-            for p_idx, hand_ev in discards_ev.items():
-                # Dealer: Hand EV + Crib EV
-                dl_val = hand_ev + dl_tbl[p_idx]
-                if dl_val > best_dl_val:
-                    best_dl_val = dl_val
-                    best_dl_idx = p_idx
-
-                # Pone: Hand EV - Crib EV
-                pn_val = hand_ev - pn_tbl[p_idx]
-                if pn_val > best_pn_val:
-                    best_pn_val = pn_val
-                    best_pn_idx = p_idx
-
-            # Accumulate optimal choice weights
-            dl_new_numerators[best_dl_idx] += weight
-            dl_new_denominators[best_dl_idx] += weight
-
-            pn_new_numerators[best_pn_idx] += weight
-            pn_new_denominators[best_pn_idx] += weight
-
-        # Compute next step tables
-        dl_next = [0.0] * num_pairs
-        pn_next = [0.0] * num_pairs
-
-        # Dealer discard policy expected crib
-        # DlTbl[d] = sum_{p} Pone_discard_prob[p | d] * ExpectedCrib[d, p]
-        for d_idx in range(num_pairs):
-            d_pair = analytical_pairs[d_idx]
-
-            # Compute conditional Pone discard probabilities
-            cond_probs = []
-            for p_idx in range(num_pairs):
-                pone_weight = pn_new_numerators[p_idx]
-                if pone_weight > 0:
-                    factor = get_card_removal_factor(d_pair, analytical_pairs[p_idx])
-                    cond_probs.append((p_idx, pone_weight * factor))
-                else:
-                    cond_probs.append((p_idx, 0.0))
-
-            total_cond_weight = sum(w for _, w in cond_probs)
-
-            expected_score = 0.0
-            for p_idx, cond_w in cond_probs:
-                if cond_w > 0 and total_cond_weight > 0:
-                    pone_prob = cond_w / total_cond_weight
-
-                    if (d_idx, p_idx) in crib_scores:
-                        for c in range(13):
-                            # P(starter card c | d, p)
-                            starter_prob = (
-                                4 - d_pair.count(c) - analytical_pairs[p_idx].count(c)
-                            ) / 48.0
-                            expected_score += (
-                                pone_prob
-                                * starter_prob
-                                * crib_scores[(d_idx, p_idx)][c]
-                            )
-            dl_next[d_idx] = expected_score
-
-        # Pone discard policy expected crib
-        # PnTbl[p] = sum_{d} Dealer_discard_prob[d | p] * ExpectedCrib[d, p]
-        for p_idx in range(num_pairs):
-            p_pair = analytical_pairs[p_idx]
-
-            # Compute conditional Dealer discard probabilities
-            cond_probs = []
-            for d_idx in range(num_pairs):
-                dealer_weight = dl_new_numerators[d_idx]
-                if dealer_weight > 0:
-                    factor = get_card_removal_factor(p_pair, analytical_pairs[d_idx])
-                    cond_probs.append((d_idx, dealer_weight * factor))
-                else:
-                    cond_probs.append((d_idx, 0.0))
-
-            total_cond_weight = sum(w for _, w in cond_probs)
-
-            expected_score = 0.0
-            for d_idx, cond_w in cond_probs:
-                if cond_w > 0 and total_cond_weight > 0:
-                    dealer_prob = cond_w / total_cond_weight
-
-                    if (d_idx, p_idx) in crib_scores:
-                        for c in range(13):
-                            # P(starter card c | d, p)
-                            starter_prob = (
-                                4 - analytical_pairs[d_idx].count(c) - p_pair.count(c)
-                            ) / 48.0
-                            expected_score += (
-                                dealer_prob
-                                * starter_prob
-                                * crib_scores[(d_idx, p_idx)][c]
-                            )
-            pn_next[p_idx] = expected_score
+        selected_discards = _select_discard_indices(hand_kept_evs, dl_tbl, pn_tbl)
+        dl_next, pn_next = _expected_crib_tables(
+            selected_discards,
+            analytical_pairs,
+            crib_scores,
+            conditioned_hand_weights,
+            hand_rank_counts,
+        )
 
         # Apply dampening
         max_shift = 0.0
@@ -330,23 +321,78 @@ def run_analytical_ibr(true_nobs=True):
     return dl_tbl, pn_tbl, hand_kept_evs, crib_scores
 
 
+@lru_cache(maxsize=1)
+def _cached_analytical_ibr():
+    return _run_analytical_ibr()
+
+
+def run_analytical_ibr(true_nobs=True):
+    """Return the rank-conditional analytical table for either metadata mode."""
+    _ = true_nobs
+    return _cached_analytical_ibr()
+
+
 # pylint: disable=too-many-arguments,too-many-positional-arguments
-def _evaluate_crib_expected_cut(player, d_idx, c, crib_scores, dl_probs, pn_probs):
-    """Evaluate exact EV of the crib conditional on this cut card index c."""
-    expected_crib_cut = 0.0
-    if player == "Dealer":
-        # Dealer gets expected value over Pone discards
-        for p_idx, p_prob in enumerate(pn_probs):
-            score_dict = crib_scores.get((d_idx, p_idx))
-            if score_dict is not None:  # pragma: no cover
-                expected_crib_cut += p_prob * score_dict[c]
-    else:
-        # Pone gets expected value over Dealer discards
-        for d_index, d_prob in enumerate(dl_probs):
-            score_dict = crib_scores.get((d_index, d_idx))
-            if score_dict is not None:  # pragma: no cover
-                expected_crib_cut += d_prob * score_dict[c]
-    return expected_crib_cut
+def _evaluate_conditioned_crib_expected_cuts(  # pylint: disable=too-many-locals
+    fixed_idx,
+    selected_discards,
+    analytical_pairs,
+    crib_scores,
+    conditioned_hand_weights,
+    hand_rank_counts,
+):
+    """Evaluate both roles after conditioning on the fixed pair and starter rank."""
+    fixed_pair = analytical_pairs[fixed_idx]
+    num_pairs = len(analytical_pairs)
+    pone_discard_weights = [0.0] * num_pairs
+    dealer_discard_weights = [0.0] * num_pairs
+    pone_dealt_rank_weights = [[0.0] * 13 for _ in range(num_pairs)]
+    dealer_dealt_rank_weights = [[0.0] * 13 for _ in range(num_pairs)]
+    total_hand_weight = 0.0
+    total_dealt_rank_weights = [0.0] * 13
+    for (
+        (_hand, dealer_discard_idx, pone_discard_idx),
+        rank_counts,
+        hand_weight,
+    ) in zip(selected_discards, hand_rank_counts, conditioned_hand_weights[fixed_idx]):
+        if not hand_weight:
+            continue
+        total_hand_weight += hand_weight
+        pone_discard_weights[pone_discard_idx] += hand_weight
+        dealer_discard_weights[dealer_discard_idx] += hand_weight
+        for rank, count in rank_counts:
+            rank_weight = hand_weight * count
+            total_dealt_rank_weights[rank] += rank_weight
+            pone_dealt_rank_weights[pone_discard_idx][rank] += rank_weight
+            dealer_dealt_rank_weights[dealer_discard_idx][rank] += rank_weight
+
+    role_values = {"Dealer": [], "Pone": []}
+    for starter in range(13):
+        starter_cards_available = 4 - fixed_pair.count(starter)
+        dealer_total = 0.0
+        pone_total = 0.0
+        conditioned_total_weight = (
+            total_hand_weight
+            - total_dealt_rank_weights[starter] / starter_cards_available
+        )
+        for discard_idx in range(num_pairs):
+            pone_weight = (
+                pone_discard_weights[discard_idx]
+                - pone_dealt_rank_weights[discard_idx][starter]
+                / starter_cards_available
+            )
+            dealer_weight = (
+                dealer_discard_weights[discard_idx]
+                - dealer_dealt_rank_weights[discard_idx][starter]
+                / starter_cards_available
+            )
+            if not pone_weight and not dealer_weight:
+                continue
+            dealer_total += pone_weight * crib_scores[(fixed_idx, discard_idx)][starter]
+            pone_total += dealer_weight * crib_scores[(discard_idx, fixed_idx)][starter]
+        role_values["Dealer"].append(dealer_total / conditioned_total_weight)
+        role_values["Pone"].append(pone_total / conditioned_total_weight)
+    return role_values
 
 
 # pylint: disable=too-many-locals
@@ -361,37 +407,26 @@ def format_table_as_generation_zero(dl_tbl, pn_tbl, hands, crib_scores, true_nob
     analytical_pairs = get_analytical_pairs()
     canonical_pairs = get_canonical_pairs()
 
-    # Pre-calculate Dealer/Pone absolute discard probability distributions
-    # to evaluate exactly the expected crib value for a specific cut card.
-    dl_probabilities = [0.0] * len(analytical_pairs)
-    pn_probabilities = [0.0] * len(analytical_pairs)
-
-    # 1. Evaluate optimum choices under converged tables
-    for _, weight, discards_ev in hands:
-        best_dl_idx = None
-        best_dl_val = -float("inf")
-        best_pn_idx = None
-        best_pn_val = -float("inf")
-
-        for p_idx, hand_ev in discards_ev.items():
-            dl_val = hand_ev + dl_tbl[p_idx]
-            if dl_val > best_dl_val:
-                best_dl_val = dl_val
-                best_dl_idx = p_idx
-
-            pn_val = hand_ev - pn_tbl[p_idx]
-            if pn_val > best_pn_val:
-                best_pn_val = pn_val
-                best_pn_idx = p_idx
-
-        dl_probabilities[best_dl_idx] += weight
-        pn_probabilities[best_pn_idx] += weight
-
-    dl_total = sum(dl_probabilities)
-    pn_total = sum(pn_probabilities)
-
-    dl_probs = [w / dl_total for w in dl_probabilities]
-    pn_probs = [w / pn_total for w in pn_probabilities]
+    selected_discards = _select_discard_indices(hands, dl_tbl, pn_tbl)
+    conditioned_hand_weights = [
+        [get_card_removal_weight(pair, hand) for hand, _weight, _evs in hands]
+        for pair in analytical_pairs
+    ]
+    hand_rank_counts = [
+        tuple((rank, hand.count(rank)) for rank in set(hand))
+        for hand, _weight, _evs in hands
+    ]
+    conditioned_cut_values = [
+        _evaluate_conditioned_crib_expected_cuts(
+            fixed_idx,
+            selected_discards,
+            analytical_pairs,
+            crib_scores,
+            conditioned_hand_weights,
+            hand_rank_counts,
+        )
+        for fixed_idx in range(len(analytical_pairs))
+    ]
 
     # 2. Build canonical table matching the exact generator JSON format
     output = {
@@ -435,14 +470,13 @@ def format_table_as_generation_zero(dl_tbl, pn_tbl, hands, crib_scores, true_nob
                 c = ranks_mapping[cut_rank_str]
 
                 # Evaluate exact EV of the crib conditional on this cut card.
-                expected_crib_cut = _evaluate_crib_expected_cut(
-                    player, d_idx, c, crib_scores, dl_probs, pn_probs
-                )
+                expected_crib_cut = conditioned_cut_values[d_idx][player][c]
 
                 player_data[cut_rank_str] = {
                     "n": 0,
                     "mu": expected_crib_cut,
                     "se": 0.0,
+                    "weight": 4 - analytical_pairs[d_idx].count(c),
                 }
             pair_data[player] = player_data
         output[canonical] = pair_data
@@ -463,13 +497,13 @@ def main():
         "--true-nobs",
         action="store_true",
         default=True,
-        help="Use mathematically exact true Nobs EV (default: True).",
+        help="Record true Nobs metadata (default: True).",
     )
     parser.add_argument(
         "--no-true-nobs",
         action="store_false",
         dest="true_nobs",
-        help="Use Craig Hessel's flat 0.25 points Jack approximation.",
+        help="Record historical compatibility metadata for Hessel comparisons.",
     )
     args = parser.parse_args()
 

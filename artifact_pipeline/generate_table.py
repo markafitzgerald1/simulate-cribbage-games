@@ -214,6 +214,12 @@ def update_accumulator(accumulator, value):
 def accumulator_to_statistics(accumulator):
     n = accumulator["n"]
     if n == 0:
+        if "mu" in accumulator:
+            return {
+                "n": 0,
+                "mu": accumulator["mu"],
+                "se": accumulator.get("se", 0.0),
+            }
         return None
 
     mu = accumulator["sum"] / n
@@ -234,6 +240,8 @@ def statistics_to_accumulator(statistics):
     n = int(statistics["n"])
     mu = statistics["mu"]
     se = statistics.get("se", 0.0)
+    if n == 0:
+        return {"n": 0, "sum": 0.0, "sum_squares": 0.0, "mu": mu, "se": se}
     if n <= 1:
         return {"n": n, "sum": mu * n, "sum_squares": mu * mu * n}
 

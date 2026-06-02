@@ -53,13 +53,22 @@ def pool_cut_estimate(cut_stats: StatsByCut) -> Optional[Estimate]:
                 se = math.sqrt(max(variance, 0.0)) / math.sqrt(total_n)
             return {"n": total_n, "mu": mu, "se": se}
 
-    mu_values = [stats["mu"] for stats in stats_with_mu]
-    se_values = [stats.get("se", 0.0) for stats in stats_with_mu]
+    weights = [stats.get("weight", 1.0) for stats in stats_with_mu]
+    weight_total = sum(weights)
+    normalized_weights = [weight / weight_total for weight in weights]
     has_n_zero = all("n" in stats and int(stats["n"]) == 0 for stats in stats_with_mu)
     return {
         "n": 0 if has_n_zero else len(stats_with_mu),
-        "mu": sum(mu_values) / len(mu_values),
-        "se": math.sqrt(sum(se * se for se in se_values)) / len(se_values),
+        "mu": sum(
+            weight * stats["mu"]
+            for weight, stats in zip(normalized_weights, stats_with_mu)
+        ),
+        "se": math.sqrt(
+            sum(
+                (weight * stats.get("se", 0.0)) ** 2
+                for weight, stats in zip(normalized_weights, stats_with_mu)
+            )
+        ),
     }
 
 

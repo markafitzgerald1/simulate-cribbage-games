@@ -33,7 +33,12 @@ from artifact_pipeline.generate_table import (
     load_or_initialize_accumulators,
     select_opponent_kept_cards_dynamic,
 )
-from artifact_pipeline.adapter import Card, DECK_SET, score_hand_and_starter
+from artifact_pipeline.adapter import (
+    Card,
+    DECK_SET,
+    cached_pairs_runs_and_fifteens_points,
+    score_hand_and_starter,
+)
 from artifact_pipeline.summarize_table import get_pair_estimate
 from artifact_pipeline.historical_tables import (
     COLVERT_DEALER_AVERAGES,
@@ -45,12 +50,13 @@ from artifact_pipeline.historical_tables import (
 )
 from artifact_pipeline.analytical_solver import (
     run_analytical_ibr,
+    _run_analytical_ibr,
     format_table_as_generation_zero,
     score_combination_suit_free,
     main as analytical_main,
-    _evaluate_crib_expected_cut,
+    _expected_crib_tables,
     get_analytical_pairs,
-    get_card_removal_factor,
+    get_card_removal_weight,
 )
 
 
@@ -158,6 +164,14 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         self.assertEqual(round_tripped["n"], statistics["n"])
         self.assertAlmostEqual(round_tripped["mu"], statistics["mu"])
         self.assertAlmostEqual(round_tripped["se"], statistics["se"])
+
+    def test_analytical_statistics_accumulator_round_trip(self):
+        statistics = {"n": 0, "mu": 4.25, "se": 0.0}
+
+        accumulator = statistics_to_accumulator(statistics)
+        round_tripped = accumulator_to_statistics(accumulator)
+
+        self.assertEqual(round_tripped, statistics)
 
     def test_accumulator_to_statistics_empty(self):
         self.assertIsNone(
@@ -1128,11 +1142,88 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             self.assertAlmostEqual(est["mu"], expected_ev, delta=0.42)
 
     def test_analytical_solver_nobs_ev(self):
-        """Test true Jack EV card removal math in analytical_solver."""
+        """Test rank-conditional Jack EV math in analytical_solver."""
         # 1 Jack in crib, cut card is not Jack (e.g. index 3)
         ev = score_combination_suit_free((10, 0, 1, 2), 3, true_nobs=True)
         # base score of {A, 2, 3, J, 4} (which is 0,1,2,10,3) is 8 (run of 4 + two 15s).
-        self.assertAlmostEqual(ev - 8.0, 0.234375)
+        self.assertAlmostEqual(ev - 8.0, 0.25)
+
+    def test_suit_aware_hand_nobs_ev_respects_known_card_removal(self):
+        """Known same-suit dealt cards reduce physical hand Nobs EV."""
+
+        def expected_nobs(dealt):
+            kept = dealt[:4]
+            starters = [card for card in DECK_SET if card not in dealt]
+            total_nobs = 0
+            for starter in starters:
+                indices = tuple(sorted([card.index for card in kept] + [starter.index]))
+                base_score = cached_pairs_runs_and_fifteens_points(indices)
+                total_nobs += score_hand_and_starter(kept, starter) - base_score
+            return total_nobs / len(starters)
+
+        no_extra_club = [
+            Card(10, 0),
+            Card(0, 1),
+            Card(1, 2),
+            Card(2, 3),
+            Card(3, 1),
+            Card(4, 2),
+        ]
+        extra_club = [
+            Card(10, 0),
+            Card(0, 0),
+            Card(1, 2),
+            Card(2, 3),
+            Card(3, 1),
+            Card(4, 2),
+        ]
+
+        self.assertAlmostEqual(expected_nobs(no_extra_club), 12 / 46)
+        self.assertAlmostEqual(expected_nobs(extra_club), 11 / 46)
+
+    def test_suit_free_hand_nobs_ev_applies_dealt_card_removal(self):
+        """Rank-only hand EV applies outer remaining-card weights around 1/4."""
+        kept = (10, 0, 1, 2)
+        dealt = (10, 0, 1, 2, 3, 4)
+
+        weighted_nobs = 0.0
+        for starter in range(13):
+            starter_weight = 4 - dealt.count(starter)
+            with_nobs = score_combination_suit_free(kept, starter)
+            without_nobs = cached_pairs_runs_and_fifteens_points(
+                tuple(sorted(kept + (starter,)))
+            )
+            weighted_nobs += starter_weight * (with_nobs - without_nobs)
+
+        self.assertAlmostEqual(weighted_nobs / 46.0, 43 / 184)
+
+    def test_analytical_bootstrap_preserves_zero_sample_means(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            bootstrap_path = os.path.join(temp_dir, "analytical.json")
+            with open(bootstrap_path, "w", encoding="utf-8") as bootstrap_file:
+                json.dump(
+                    {
+                        "A_A_Unsuited": {
+                            "Dealer": {"A": {"n": 0, "mu": 4.25, "se": 0.0}}
+                        }
+                    },
+                    bootstrap_file,
+                )
+
+            _accumulators, metadata = load_or_initialize_accumulators(
+                output_path=os.path.join(temp_dir, "output.json"),
+                no_resume=True,
+                seed=42,
+                bootstrap_path=bootstrap_path,
+            )
+
+        generation_accumulators = deserialize_accumulators(
+            metadata["generation_accumulators"]
+        )
+        stats = accumulator_to_statistics(
+            generation_accumulators["A_A_Unsuited"]["Dealer"]["A"]
+        )
+        self.assertEqual(stats, {"n": 0, "mu": 4.25, "se": 0.0})
 
     def test_main_with_bootstrap_and_dampening(self):
         """Test that main parses --bootstrap and --dampening arguments and applies validation."""
@@ -1256,24 +1347,20 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         ev_hessel_j = score_combination_suit_free((10, 0, 1, 2), 10, true_nobs=False)
         self.assertAlmostEqual(ev_hessel_j, 9.0)
 
-        # 4. _evaluate_crib_expected_cut Pone branch
-        res = _evaluate_crib_expected_cut(
-            player="Pone",
-            d_idx=0,
-            c=0,
-            crib_scores={(0, 0): {0: 5.0}},
-            dl_probs=[1.0] + [0.0] * 90,
-            pn_probs=[1.0] + [0.0] * 90,
-        )
-        self.assertAlmostEqual(res, 5.0)
+        # 4. Exact physical card-removal weight tests
+        self.assertEqual(get_card_removal_weight((0, 0), (0, 1)), 8)
+        self.assertEqual(get_card_removal_weight((0, 0, 0), (0, 0)), 0)
 
-        # 5. get_card_removal_factor tests
-        f1 = get_card_removal_factor((0, 1), (2, 3))
-        self.assertAlmostEqual(f1, 1.0)
-        f2 = get_card_removal_factor((0, 0), (0, 1))
-        self.assertAlmostEqual(f2, 0.5)
-        f3 = get_card_removal_factor((0, 0, 0), (0, 0, 0))
-        self.assertAlmostEqual(f3, 0.0)
+        # 5. No compatible dealt hands leave the analytical values at zero.
+        dl_tbl, pn_tbl = _expected_crib_tables(
+            selected_discards=[],
+            analytical_pairs=[(0, 0), (1, 1)],
+            crib_scores={},
+            conditioned_hand_weights=[[], []],
+            hand_rank_counts=[],
+        )
+        self.assertEqual(dl_tbl, [0.0, 0.0])
+        self.assertEqual(pn_tbl, [0.0, 0.0])
 
     def test_analytical_solver_zero_weights_coverage(self):
         """Test that analytical solver runs cleanly when some choices have zero weights."""
@@ -1285,7 +1372,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             "artifact_pipeline.analytical_solver.get_hand_combinations_with_weights",
             return_value=single_hand,
         ):
-            dl_tbl, pn_tbl, _, _ = run_analytical_ibr(true_nobs=False)
+            dl_tbl, pn_tbl, _, _ = _run_analytical_ibr()
             self.assertEqual(len(dl_tbl), 91)
             self.assertEqual(len(pn_tbl), 91)
 
@@ -1372,9 +1459,12 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         analytical_pairs = get_analytical_pairs()
         for d in range(num_pairs):
             total_score = 0.0
-            count = 0
+            total_weight = 0
             for p in range(num_pairs):
                 if (d, p) in crib_scores:
+                    pair_weight = get_card_removal_weight(
+                        analytical_pairs[d], analytical_pairs[p]
+                    )
                     # Weigh by exact card removal starter card probabilities
                     ev_dp = sum(
                         (
@@ -1388,15 +1478,18 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                         * crib_scores[(d, p)][c]
                         for c in range(13)
                     )
-                    total_score += ev_dp
-                    count += 1
-            hessel_dl_tbl[d] = total_score / count if count > 0 else 0.0
+                    total_score += pair_weight * ev_dp
+                    total_weight += pair_weight
+            hessel_dl_tbl[d] = total_score / total_weight if total_weight else 0.0
 
         for p in range(num_pairs):
             total_score = 0.0
-            count = 0
+            total_weight = 0
             for d in range(num_pairs):
                 if (d, p) in crib_scores:
+                    pair_weight = get_card_removal_weight(
+                        analytical_pairs[p], analytical_pairs[d]
+                    )
                     # Weigh by exact card removal starter card probabilities
                     ev_dp = sum(
                         (
@@ -1410,9 +1503,9 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                         * crib_scores[(d, p)][c]
                         for c in range(13)
                     )
-                    total_score += ev_dp
-                    count += 1
-            hessel_pn_tbl[p] = total_score / count if count > 0 else 0.0
+                    total_score += pair_weight * ev_dp
+                    total_weight += pair_weight
+            hessel_pn_tbl[p] = total_score / total_weight if total_weight else 0.0
 
         # Run a paired simulation of 10,000 hands from the exhaustive dealt hands distribution
         rng = random.Random(42)
@@ -1464,14 +1557,14 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         # Verify Dealer dynamic advantage
         self.assertGreater(mean_ibr_dl, mean_hessel_dl)
         self.assertAlmostEqual(
-            mean_ibr_dl - mean_hessel_dl, 0.01229800, delta=0.00000001
+            mean_ibr_dl - mean_hessel_dl, 0.01404918, delta=0.00000001
         )
 
         # Verify Pone dynamic advantage
         self.assertGreater(mean_ibr_pn, mean_hessel_pn)
-        # Dynamic advantage is expected to be ~0.00666557 points per hand under card-removal
+        # Dynamic advantage is expected to be ~0.00633299 points per hand under card-removal
         self.assertAlmostEqual(
-            mean_ibr_pn - mean_hessel_pn, 0.00666557, delta=0.00000001
+            mean_ibr_pn - mean_hessel_pn, 0.00633299, delta=0.00000001
         )
 
     def test_dynamic_ibr_beats_historical_tables_paired(self):
@@ -1567,21 +1660,21 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
 
         # 1. Assert exact true_nobs=True advantages
         res_true = run_paired_advantages(true_nobs=True)
-        self.assertAlmostEqual(res_true["col_dl"], 0.00235435, delta=0.00001)
-        self.assertAlmostEqual(res_true["col_pn"], 0.00202476, delta=0.00001)
-        self.assertAlmostEqual(res_true["ras_dl"], 0.00972823, delta=0.00001)
-        self.assertAlmostEqual(res_true["ras_pn"], 0.01435604, delta=0.00001)
-        self.assertAlmostEqual(res_true["sch_dl"], 0.00213880, delta=0.00001)
-        self.assertAlmostEqual(res_true["sch_pn"], 0.00244733, delta=0.00001)
+        self.assertAlmostEqual(res_true["col_dl"], 0.00235665, delta=0.00001)
+        self.assertAlmostEqual(res_true["col_pn"], 0.00104920, delta=0.00001)
+        self.assertAlmostEqual(res_true["ras_dl"], 0.00957314, delta=0.00001)
+        self.assertAlmostEqual(res_true["ras_pn"], 0.01216541, delta=0.00001)
+        self.assertAlmostEqual(res_true["sch_dl"], 0.00156391, delta=0.00001)
+        self.assertAlmostEqual(res_true["sch_pn"], 0.00063603, delta=0.00001)
 
         # 2. Assert exact true_nobs=False advantages
         res_false = run_paired_advantages(true_nobs=False)
-        self.assertAlmostEqual(res_false["col_dl"], 0.00248852, delta=0.00001)
-        self.assertAlmostEqual(res_false["col_pn"], 0.00207849, delta=0.00001)
-        self.assertAlmostEqual(res_false["ras_dl"], 0.00961953, delta=0.00001)
-        self.assertAlmostEqual(res_false["ras_pn"], 0.01418898, delta=0.00001)
-        self.assertAlmostEqual(res_false["sch_dl"], 0.00213793, delta=0.00001)
-        self.assertAlmostEqual(res_false["sch_pn"], 0.00237725, delta=0.00001)
+        self.assertAlmostEqual(res_false["col_dl"], 0.00235665, delta=0.00001)
+        self.assertAlmostEqual(res_false["col_pn"], 0.00104920, delta=0.00001)
+        self.assertAlmostEqual(res_false["ras_dl"], 0.00957314, delta=0.00001)
+        self.assertAlmostEqual(res_false["ras_pn"], 0.01216541, delta=0.00001)
+        self.assertAlmostEqual(res_false["sch_dl"], 0.00156391, delta=0.00001)
+        self.assertAlmostEqual(res_false["sch_pn"], 0.00063603, delta=0.00001)
 
 
 if __name__ == "__main__":

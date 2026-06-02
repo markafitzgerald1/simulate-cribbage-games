@@ -63,6 +63,17 @@ class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-
         self.assertEqual(estimate["mu"], 5.0)
         self.assertAlmostEqual(estimate["se"], 0.5**0.5)
 
+    def test_pool_cut_estimate_with_analytical_weights(self):
+        cut_stats = {
+            "A": {"n": 0, "mu": 3.0, "se": 0.0, "weight": 2},
+            "2": {"n": 0, "mu": 9.0, "se": 0.0, "weight": 4},
+        }
+
+        estimate = pool_cut_estimate(cut_stats)
+
+        self.assertEqual(estimate["n"], 0)
+        self.assertEqual(estimate["mu"], 7.0)
+
     def test_combine_estimates(self):
         combined = combine_estimates(
             (
