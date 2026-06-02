@@ -39,7 +39,6 @@ from artifact_pipeline.adapter import (  # noqa: E402
 
 
 DEFAULT_OUTPUT_PATH = "expected_crib_points.json"
-DEFAULT_BOOTSTRAP_PATH = "expected_crib_points.analytical.json"
 DEFAULT_CHECKPOINT_FREQUENCY = 100
 METADATA_KEY = "__metadata__"
 GENERATION_METHOD = "artifact_pipeline.generate_table.v1"
@@ -720,14 +719,11 @@ def main(override_pairs=None):
         rng = random.Random()
 
     pairs = override_pairs if override_pairs is not None else get_canonical_pairs()
-    bootstrap_path = (
-        args.bootstrap if args.bootstrap is not None else DEFAULT_BOOTSTRAP_PATH
-    )
     accumulators, metadata = load_or_initialize_accumulators(
         args.output,
         args.no_resume,
         args.seed,
-        bootstrap_path,
+        args.bootstrap,
         require_bootstrap=args.bootstrap is not None,
     )
 

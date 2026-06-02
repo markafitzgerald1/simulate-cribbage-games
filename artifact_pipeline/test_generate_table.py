@@ -1396,6 +1396,43 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 data = json.load(f)
             self.assertEqual(data["__metadata__"]["generation"], 0)
 
+    def test_main_does_not_load_coincidental_bootstrap_file(self):
+        """A local analytical artifact is ignored unless --bootstrap is explicit."""
+        original_cwd = os.getcwd()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+            bootstrap_path = os.path.join(
+                temp_dir, "expected_crib_points.analytical.json"
+            )
+            write_output(
+                accumulators={},
+                output_path=bootstrap_path,
+                seed=42,
+                pairs=["A_A_Unsuited"],
+                generation=0,
+                generation_accumulators={},
+            )
+            try:
+                os.chdir(temp_dir)
+                with patch(
+                    "sys.argv",
+                    [
+                        "generate_table.py",
+                        "--samples",
+                        "1",
+                        "--output",
+                        output_path,
+                        "--no-resume",
+                    ],
+                ):
+                    run_main_silently(["A_A_Unsuited"])
+            finally:
+                os.chdir(original_cwd)
+
+            with open(output_path, encoding="utf-8") as output_file:
+                data = json.load(output_file)
+            self.assertIsNone(data["__metadata__"]["generation_accumulators"])
+
     def test_dampening_transition_logic(self):
         """Test the low-pass policy update dampening transition formula in main."""
         with tempfile.TemporaryDirectory() as temp_dir:
