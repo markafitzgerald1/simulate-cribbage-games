@@ -122,6 +122,9 @@ integration tests that solve full discard-policy equilibria. Those tests are
 required before marking artifact-pipeline math changes ready and in CI, but they
 are too slow for the local pre-push hook. Run them explicitly with
 `coverage run --append scripts/run_slow_analytical_tests.py` as shown above.
+CI may shard these exact tests by passing group names such as `hessel-compat`,
+`support`, and `historical-compat`, then combine coverage data before enforcing
+100% artifact-pipeline coverage.
 
 Maintain or improve test coverage for changed Python behavior. Bug fixes require
 a regression test unless the fix is documentation-only or the behavior is

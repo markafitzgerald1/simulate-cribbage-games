@@ -3,24 +3,48 @@ from pathlib import Path
 import sys
 import time
 import unittest
+from typing import Iterable, List
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 os.environ["RUN_SLOW_ANALYTICAL_TESTS"] = "1"
 
+TEST_PREFIX = "artifact_pipeline.test_generate_table.TestGenerateTable."
+
+SLOW_TEST_GROUPS = {
+    "hessel-compat": [
+        TEST_PREFIX + "test_analytical_solver_hessel_compat",
+    ],
+    "support": [
+        TEST_PREFIX + "test_analytical_solver_zero_weights_coverage",
+        TEST_PREFIX + "test_analytical_solver_main",
+        TEST_PREFIX + "test_dynamic_ibr_beats_hessel_paired",
+    ],
+    "historical-compat": [
+        TEST_PREFIX + "test_dynamic_ibr_beats_historical_tables_paired",
+    ],
+}
+
 SLOW_TESTS = [
-    "artifact_pipeline.test_generate_table.TestGenerateTable."
-    "test_analytical_solver_hessel_compat",
-    "artifact_pipeline.test_generate_table.TestGenerateTable."
-    "test_analytical_solver_zero_weights_coverage",
-    "artifact_pipeline.test_generate_table.TestGenerateTable."
-    "test_analytical_solver_main",
-    "artifact_pipeline.test_generate_table.TestGenerateTable."
-    "test_dynamic_ibr_beats_hessel_paired",
-    "artifact_pipeline.test_generate_table.TestGenerateTable."
-    "test_dynamic_ibr_beats_historical_tables_paired",
+    test_name for group_tests in SLOW_TEST_GROUPS.values() for test_name in group_tests
 ]
+
+
+def _selected_tests(args: Iterable[str]) -> List[str]:
+    selected: List[str] = []
+    unknown: List[str] = []
+    for arg in args:
+        if arg in SLOW_TEST_GROUPS:
+            selected.extend(SLOW_TEST_GROUPS[arg])
+        elif arg in SLOW_TESTS:
+            selected.append(arg)
+        else:
+            unknown.append(arg)
+    if unknown:
+        groups = ", ".join(sorted(SLOW_TEST_GROUPS))
+        raise ValueError(f"Unknown slow test group/name: {unknown}. Groups: {groups}")
+    return selected or SLOW_TESTS
 
 
 class ProgressResult(unittest.TextTestResult):
@@ -38,7 +62,7 @@ class ProgressResult(unittest.TextTestResult):
 
 
 def main():
-    suite = unittest.defaultTestLoader.loadTestsFromNames(SLOW_TESTS)
+    suite = unittest.defaultTestLoader.loadTestsFromNames(_selected_tests(sys.argv[1:]))
     runner = unittest.TextTestRunner(verbosity=2, resultclass=ProgressResult)
     result = runner.run(suite)
     return 0 if result.wasSuccessful() else 1

@@ -73,7 +73,9 @@ they solve full discard-policy equilibria and are too slow for routine
 pre-push. Run them before marking analytical math changes ready, and in CI,
 with `coverage run --append scripts/run_slow_analytical_tests.py` after the
 fast artifact test run, followed by `coverage report --fail-under=100 -m
---include='artifact_pipeline/*'`.
+--include='artifact_pipeline/*'`. CI may run named slow-test groups in parallel
+and combine their coverage data with the fast artifact coverage file before the
+100% artifact-pipeline coverage report.
 
 Coverage must not decrease as a result of code changes. New simulator behavior
 must include focused tests, especially for cribbage scoring, discard selection,

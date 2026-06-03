@@ -49,7 +49,9 @@ Mozilla Public License 2.0. See `LICENSE` for details.
   analytical discard-policy math: `coverage run -m unittest discover
   artifact_pipeline && coverage run --append
   scripts/run_slow_analytical_tests.py && coverage report --fail-under=100 -m
-  --include='artifact_pipeline/*'`
+  --include='artifact_pipeline/*'`. CI shards those exact tests into named
+  groups and combines coverage data before enforcing the same 100% artifact
+  coverage gate.
 - New code that imports or relies on parts of `simulate_cribbage_games.py` must
   first prove the used legacy surface with 100% unit test coverage and related
   automated acceptance test coverage.
