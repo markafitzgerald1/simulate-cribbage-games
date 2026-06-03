@@ -68,6 +68,13 @@ simulate_cribbage_games.py` as a pre-push similarities gate. Artifact pipeline
 Python code must pass both `pylint --persistent=n artifact_pipeline` and
 `flake8 artifact_pipeline` locally and in CI.
 
+Exact analytical artifact-pipeline integration tests are opt-in locally because
+they solve full discard-policy equilibria and are too slow for routine
+pre-push. Run them before marking analytical math changes ready, and in CI,
+with `coverage run --append scripts/run_slow_analytical_tests.py` after the
+fast artifact test run, followed by `coverage report --fail-under=100 -m
+--include='artifact_pipeline/*'`.
+
 Coverage must not decrease as a result of code changes. New simulator behavior
 must include focused tests, especially for cribbage scoring, discard selection,
 play selection, game-state transitions, and command-line options.

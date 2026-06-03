@@ -107,12 +107,21 @@ Python validation set before marking work ready for review:
 coverage run
 coverage xml
 coverage report
+coverage run -m unittest discover artifact_pipeline
+coverage run --append scripts/run_slow_analytical_tests.py
+coverage report --fail-under=100 -m --include='artifact_pipeline/*'
 mypy simulate_cribbage_games.py
 pylint simulate_cribbage_games.py
 pylint --persistent=n --disable=all --enable=duplicate-code simulate_cribbage_games.py
 pylint --persistent=n artifact_pipeline
 flake8
 ```
+
+The default unittest discovery path intentionally skips exact analytical
+integration tests that solve full discard-policy equilibria. Those tests are
+required before marking artifact-pipeline math changes ready and in CI, but they
+are too slow for the local pre-push hook. Run them explicitly with
+`coverage run --append scripts/run_slow_analytical_tests.py` as shown above.
 
 Maintain or improve test coverage for changed Python behavior. Bug fixes require
 a regression test unless the fix is documentation-only or the behavior is

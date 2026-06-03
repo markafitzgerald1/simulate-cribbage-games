@@ -137,18 +137,67 @@ def precompute_exact_crib_scores(true_nobs=True):
     return crib_scores
 
 
-def _select_discard_indices(hand_kept_evs, dl_tbl, pn_tbl):
+def _hand_conditioned_policy_ev(hand, cut_values):
+    """Average policy EV over starter ranks available after the six-card hand."""
+    return sum((4 - hand.count(rank)) * cut_values[rank] for rank in range(13)) / 46.0
+
+
+def _select_discard_indices(
+    hand_kept_evs, dl_tbl, pn_tbl, dl_cut_tbl=None, pn_cut_tbl=None
+):  # pylint: disable=too-many-locals
     """Select Dealer and Pone discards for each possible six-card rank hand."""
     selected = []
     for hand, _weight, discards_ev in hand_kept_evs:
-        best_dl_idx = max(
-            discards_ev, key=lambda idx, evs=discards_ev: evs[idx] + dl_tbl[idx]
-        )
-        best_pn_idx = max(
-            discards_ev, key=lambda idx, evs=discards_ev: evs[idx] - pn_tbl[idx]
-        )
+        best_dl_idx = None
+        best_dl_score = -math.inf
+        best_pn_idx = None
+        best_pn_score = -math.inf
+        for idx, hand_ev in discards_ev.items():
+            dl_policy_ev = (
+                _hand_conditioned_policy_ev(hand, dl_cut_tbl[idx])
+                if dl_cut_tbl is not None
+                else dl_tbl[idx]
+            )
+            pn_policy_ev = (
+                _hand_conditioned_policy_ev(hand, pn_cut_tbl[idx])
+                if pn_cut_tbl is not None
+                else pn_tbl[idx]
+            )
+            dl_score = hand_ev + dl_policy_ev
+            pn_score = hand_ev - pn_policy_ev
+            if dl_score > best_dl_score:
+                best_dl_idx = idx
+                best_dl_score = dl_score
+            if pn_score > best_pn_score:
+                best_pn_idx = idx
+                best_pn_score = pn_score
         selected.append((hand, best_dl_idx, best_pn_idx))
     return selected
+
+
+def _expected_crib_cut_tables(
+    selected_discards,
+    analytical_pairs,
+    crib_scores,
+    conditioned_hand_weights,
+    hand_rank_counts,
+):
+    """Evaluate cut-rank crib policy EVs against the selected discard policy."""
+    conditioned_cut_values = [
+        _evaluate_conditioned_crib_expected_cuts(
+            fixed_idx,
+            selected_discards,
+            analytical_pairs,
+            crib_scores,
+            conditioned_hand_weights,
+            hand_rank_counts,
+        )
+        for fixed_idx in range(len(analytical_pairs))
+    ]
+    return (
+        [cut_values["Dealer"] for cut_values in conditioned_cut_values],
+        [cut_values["Pone"] for cut_values in conditioned_cut_values],
+    )
 
 
 def _expected_crib_tables(  # pylint: disable=too-many-locals
@@ -288,6 +337,8 @@ def _run_analytical_ibr(true_nobs=True):
     # 3. IBR Convergence Loop
     dl_tbl = [0.0] * num_pairs
     pn_tbl = [0.0] * num_pairs
+    dl_cut_tbl = [[0.0] * 13 for _ in range(num_pairs)]
+    pn_cut_tbl = [[0.0] * 13 for _ in range(num_pairs)]
 
     dampening = 0.50
     iteration = 0
@@ -295,8 +346,17 @@ def _run_analytical_ibr(true_nobs=True):
     convergence_threshold = 0.0001
 
     while iteration < max_iterations:
-        selected_discards = _select_discard_indices(hand_kept_evs, dl_tbl, pn_tbl)
+        selected_discards = _select_discard_indices(
+            hand_kept_evs, dl_tbl, pn_tbl, dl_cut_tbl, pn_cut_tbl
+        )
         dl_next, pn_next = _expected_crib_tables(
+            selected_discards,
+            analytical_pairs,
+            crib_scores,
+            conditioned_hand_weights,
+            hand_rank_counts,
+        )
+        dl_cut_next, pn_cut_next = _expected_crib_cut_tables(
             selected_discards,
             analytical_pairs,
             crib_scores,
@@ -313,6 +373,16 @@ def _run_analytical_ibr(true_nobs=True):
 
             dl_tbl[i] += dl_shift
             pn_tbl[i] += pn_shift
+            for starter in range(13):
+                dl_cut_shift = dampening * (
+                    dl_cut_next[i][starter] - dl_cut_tbl[i][starter]
+                )
+                pn_cut_shift = dampening * (
+                    pn_cut_next[i][starter] - pn_cut_tbl[i][starter]
+                )
+                max_shift = max(max_shift, abs(dl_cut_shift), abs(pn_cut_shift))
+                dl_cut_tbl[i][starter] += dl_cut_shift
+                pn_cut_tbl[i][starter] += pn_cut_shift
 
         if max_shift < convergence_threshold:  # pragma: no cover
             print(f"IBR converged successfully in {iteration + 1} iterations.")
@@ -320,7 +390,7 @@ def _run_analytical_ibr(true_nobs=True):
 
         iteration += 1
 
-    return dl_tbl, pn_tbl, hand_kept_evs, crib_scores
+    return dl_tbl, pn_tbl, hand_kept_evs, crib_scores, dl_cut_tbl, pn_cut_tbl
 
 
 @lru_cache(maxsize=2)
@@ -376,6 +446,10 @@ def _evaluate_conditioned_crib_expected_cuts(  # pylint: disable=too-many-locals
             total_hand_weight
             - total_dealt_rank_weights[starter] / starter_cards_available
         )
+        if not conditioned_total_weight:
+            role_values["Dealer"].append(0.0)
+            role_values["Pone"].append(0.0)
+            continue
         for discard_idx in range(num_pairs):
             pone_weight = (
                 pone_discard_weights[discard_idx]
@@ -397,7 +471,9 @@ def _evaluate_conditioned_crib_expected_cuts(  # pylint: disable=too-many-locals
 
 
 # pylint: disable=too-many-locals
-def format_table_as_generation_zero(dl_tbl, pn_tbl, hands, crib_scores, true_nobs):
+def format_table_as_generation_zero(
+    dl_tbl, pn_tbl, hands, crib_scores, true_nobs, dl_cut_tbl=None, pn_cut_tbl=None
+):
     """
     Format the 91-pair analytical tables into the exact 169 canonical
     suited/unsuited Generation 0 metadata structure expected by the generator.
@@ -408,7 +484,9 @@ def format_table_as_generation_zero(dl_tbl, pn_tbl, hands, crib_scores, true_nob
     analytical_pairs = get_analytical_pairs()
     canonical_pairs = get_canonical_pairs()
 
-    selected_discards = _select_discard_indices(hands, dl_tbl, pn_tbl)
+    selected_discards = _select_discard_indices(
+        hands, dl_tbl, pn_tbl, dl_cut_tbl, pn_cut_tbl
+    )
     conditioned_hand_weights = [
         [get_card_removal_weight(pair, hand) for hand, _weight, _evs in hands]
         for pair in analytical_pairs
@@ -512,10 +590,12 @@ def main():
         f"Starting generic suit-free analytical solver "
         f"(true-nobs={args.true_nobs})..."
     )
-    dl_tbl, pn_tbl, hands, crib_scores = run_analytical_ibr(true_nobs=args.true_nobs)
+    dl_tbl, pn_tbl, hands, crib_scores, dl_cut_tbl, pn_cut_tbl = run_analytical_ibr(
+        true_nobs=args.true_nobs
+    )
 
     output_data = format_table_as_generation_zero(
-        dl_tbl, pn_tbl, hands, crib_scores, args.true_nobs
+        dl_tbl, pn_tbl, hands, crib_scores, args.true_nobs, dl_cut_tbl, pn_cut_tbl
     )
 
     with open(args.output, "w", encoding="utf-8") as output_file:

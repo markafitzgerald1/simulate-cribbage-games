@@ -14,6 +14,7 @@ from artifact_pipeline.generate_table import (
     accumulator_to_statistics,
     accumulators_to_output,
     build_metadata,
+    build_generation_accumulators,
     blend_policy_accumulators,
     get_canonical_pairs,
     canonical_to_cards,
@@ -40,6 +41,7 @@ from artifact_pipeline.generate_table import (
 from artifact_pipeline.adapter import (
     Card,
     DECK_SET,
+    Index,
     cached_pairs_runs_and_fifteens_points,
     score_hand_and_starter,
 )
@@ -59,9 +61,16 @@ from artifact_pipeline.analytical_solver import (
     score_combination_suit_free,
     main as analytical_main,
     _expected_crib_tables,
+    _select_discard_indices,
     get_analytical_pairs,
     get_card_removal_weight,
     GENERATION_METHOD as ANALYTICAL_GENERATION_METHOD,
+)
+
+RUN_SLOW_ANALYTICAL_TESTS = os.environ.get("RUN_SLOW_ANALYTICAL_TESTS") == "1"
+requires_slow_analytical_tests = unittest.skipUnless(
+    RUN_SLOW_ANALYTICAL_TESTS,
+    "set RUN_SLOW_ANALYTICAL_TESTS=1 to run exact analytical integration tests",
 )
 
 
@@ -774,20 +783,22 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     self.assertLessEqual(abs(mu_rollup - expected_ev), 3.0 * se_rollup)
 
     def test_calculate_max_ev_shift(self):
+        def accumulator(mu, n=1):
+            return statistics_to_accumulator({"n": n, "mu": mu, "se": 0.0})
+
+        def role_values(default_mu):
+            return {cut: accumulator(default_mu) for cut in Index.indices}
+
         prev = {
             "A_A_Unsuited": {
-                "Dealer": {
-                    "A": {"n": 1, "sum": 5.0, "sum_squares": 25.0},
-                    "2": {"n": 1, "sum": 10.0, "sum_squares": 100.0},
-                }
+                "Dealer": {**role_values(0.0), "A": accumulator(5.0)},
+                "Pone": role_values(0.0),
             }
         }
         curr = {
             "A_A_Unsuited": {
-                "Dealer": {
-                    "A": {"n": 2, "sum": 15.0, "sum_squares": 125.0},
-                    "2": {"n": 1, "sum": 10.0, "sum_squares": 100.0},
-                }
+                "Dealer": {**role_values(0.0), "A": accumulator(7.5, n=2)},
+                "Pone": role_values(0.0),
             }
         }
         shift = calculate_max_ev_shift(prev, curr, ["A_A_Unsuited"])
@@ -795,14 +806,17 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
 
         # Test newly sampled bucket where prev is missing the key
         prev_missing = {
-            "A_A_Unsuited": {"Dealer": {"A": {"n": 1, "sum": 5.0, "sum_squares": 25.0}}}
+            "A_A_Unsuited": {
+                "Dealer": {
+                    cut: accumulator(0.0) for cut in Index.indices if cut != "2"
+                },
+                "Pone": role_values(0.0),
+            }
         }
         curr_added = {
             "A_A_Unsuited": {
-                "Dealer": {
-                    "A": {"n": 1, "sum": 5.0, "sum_squares": 25.0},
-                    "2": {"n": 1, "sum": 10.0, "sum_squares": 100.0},
-                }
+                "Dealer": {**role_values(0.0), "2": accumulator(10.0)},
+                "Pone": role_values(0.0),
             }
         }
         shift_added = calculate_max_ev_shift(prev_missing, curr_added, ["A_A_Unsuited"])
@@ -811,24 +825,81 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         prev_policy = {
             "A_A_Unsuited": {
                 "Dealer": {
+                    **role_values(0.0),
                     "A": statistics_to_accumulator(
                         {"n": 10, "mu": 0.0, "policy_mu": 10.0}
-                    )
-                }
+                    ),
+                },
+                "Pone": role_values(0.0),
             }
         }
         curr_policy = {
             "A_A_Unsuited": {
                 "Dealer": {
+                    **role_values(0.0),
                     "A": statistics_to_accumulator(
                         {"n": 20, "mu": 100.0, "policy_mu": 11.0}
-                    )
-                }
+                    ),
+                },
+                "Pone": role_values(0.0),
             }
         }
         self.assertAlmostEqual(
             calculate_max_ev_shift(prev_policy, curr_policy, ["A_A_Unsuited"]),
             1.0,
+        )
+
+        incomplete_curr = {
+            "A_A_Unsuited": {
+                "Dealer": {
+                    "A": {"n": 1, "sum": 5.0, "sum_squares": 25.0},
+                },
+                "Pone": role_values(0.0),
+            }
+        }
+        self.assertEqual(
+            calculate_max_ev_shift(prev, incomplete_curr, ["A_A_Unsuited"]),
+            math.inf,
+        )
+
+    def test_convergence_uses_dampened_next_policy(self):
+        prior = {
+            "A_A_Unsuited": {
+                "Dealer": {
+                    cut: statistics_to_accumulator({"n": 1, "mu": 0.0, "se": 0.0})
+                    for cut in Index.indices
+                },
+                "Pone": {
+                    cut: statistics_to_accumulator({"n": 1, "mu": 0.0, "se": 0.0})
+                    for cut in Index.indices
+                },
+            }
+        }
+        measured = {
+            "A_A_Unsuited": {
+                "Dealer": {
+                    cut: statistics_to_accumulator({"n": 1, "mu": 100.0, "se": 0.0})
+                    for cut in Index.indices
+                },
+                "Pone": {
+                    cut: statistics_to_accumulator({"n": 1, "mu": 100.0, "se": 0.0})
+                    for cut in Index.indices
+                },
+            }
+        }
+
+        next_policy = build_generation_accumulators(
+            prior, measured, ["A_A_Unsuited"], dampening=0.25
+        )
+
+        self.assertAlmostEqual(
+            calculate_max_ev_shift(
+                prior,
+                next_policy,
+                ["A_A_Unsuited"],
+                measured_accumulators=measured,
+            ),
+            25.0,
         )
 
     def test_policy_mean_prefers_policy_mu(self):
@@ -1223,11 +1294,20 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             self.assertEqual(accumulators, {})
             self.assertIsNone(metadata)
 
+    @requires_slow_analytical_tests
     def test_analytical_solver_hessel_compat(self):
         """Test that analytical_solver.py in Hessel mode matches Hessel's averages exactly to 2 decimal places."""
-        dl_tbl, pn_tbl, hands, crib_scores = run_analytical_ibr(true_nobs=False)
+        dl_tbl, pn_tbl, hands, crib_scores, dl_cut_tbl, pn_cut_tbl = run_analytical_ibr(
+            true_nobs=False
+        )
         output_data = format_table_as_generation_zero(
-            dl_tbl, pn_tbl, hands, crib_scores, true_nobs=False
+            dl_tbl,
+            pn_tbl,
+            hands,
+            crib_scores,
+            true_nobs=False,
+            dl_cut_tbl=dl_cut_tbl,
+            pn_cut_tbl=pn_cut_tbl,
         )
 
         hessel_expected_averages = {
@@ -1501,6 +1581,22 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         self.assertEqual(dl_tbl, [0.0, 0.0])
         self.assertEqual(pn_tbl, [0.0, 0.0])
 
+    def test_analytical_selection_weights_available_starters(self):
+        hand_kept_evs = [((4, 4, 4, 4, 0, 1), 1, {0: 0.0, 1: 0.0})]
+        dl_cut_tbl = [[0.0] * 13 for _ in range(2)]
+        pn_cut_tbl = [[0.0] * 13 for _ in range(2)]
+        dl_cut_tbl[0][4] = 100.0
+        dl_cut_tbl[1][0] = 1.0
+        pn_cut_tbl[0][4] = 100.0
+        pn_cut_tbl[1][0] = 1.0
+
+        selected = _select_discard_indices(
+            hand_kept_evs, [0.0, 0.0], [0.0, 0.0], dl_cut_tbl, pn_cut_tbl
+        )
+
+        self.assertEqual(selected, [((4, 4, 4, 4, 0, 1), 1, 0)])
+
+    @requires_slow_analytical_tests
     def test_analytical_solver_zero_weights_coverage(self):
         """Test that analytical solver runs cleanly when some choices have zero weights."""
         # Patch get_hand_combinations_with_weights to return a single hand
@@ -1511,7 +1607,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             "artifact_pipeline.analytical_solver.get_hand_combinations_with_weights",
             return_value=single_hand,
         ):
-            dl_tbl, pn_tbl, _, _ = _run_analytical_ibr()
+            dl_tbl, pn_tbl, _, _, _, _ = _run_analytical_ibr()
             self.assertEqual(len(dl_tbl), 91)
             self.assertEqual(len(pn_tbl), 91)
 
@@ -1537,6 +1633,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             ):
                 run_main_silently(["A_A_Unsuited"])
 
+    @requires_slow_analytical_tests
     def test_analytical_solver_main(self):
         """Test analytical_solver.py main CLI execution."""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1590,11 +1687,14 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
 
         self.assertGreater(ev_suited, ev_unsuited)
 
+    @requires_slow_analytical_tests
     def test_dynamic_ibr_beats_hessel_paired(self):
         # pylint: disable=too-many-locals
         """Confirm that dynamic 2-sided IBR mathematically beats static Hessel on E(h+/-c)."""
         # Run IBR solver to obtain the converged 2-sided minimax tables
-        dl_tbl, pn_tbl, hands, crib_scores = run_analytical_ibr(true_nobs=False)
+        dl_tbl, pn_tbl, hands, crib_scores, _dl_cut_tbl, _pn_cut_tbl = (
+            run_analytical_ibr(true_nobs=False)
+        )
 
         num_pairs = len(dl_tbl)
         hessel_dl_tbl = [0.0] * num_pairs
@@ -1703,16 +1803,17 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         # Verify Dealer dynamic advantage
         self.assertGreater(mean_ibr_dl, mean_hessel_dl)
         self.assertAlmostEqual(
-            mean_ibr_dl - mean_hessel_dl, 0.01386251, delta=0.00000001
+            mean_ibr_dl - mean_hessel_dl, 0.01404513, delta=0.00000001
         )
 
         # Verify Pone dynamic advantage
         self.assertGreater(mean_ibr_pn, mean_hessel_pn)
-        # Dynamic advantage is expected to be ~0.00495907 points per hand under card-removal
+        # Dynamic advantage is expected to be ~0.00486645 points per hand under card-removal
         self.assertAlmostEqual(
-            mean_ibr_pn - mean_hessel_pn, 0.00495907, delta=0.00000001
+            mean_ibr_pn - mean_hessel_pn, 0.00486645, delta=0.00000001
         )
 
+    @requires_slow_analytical_tests
     def test_dynamic_ibr_beats_historical_tables_paired(self):
         # pylint: disable=too-many-locals
         """Confirm that dynamic 2-sided IBR mathematically outperforms Colvert, Rasmussen, and Schell on E(h+/-c)."""
@@ -1729,8 +1830,8 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             return dl_list, pn_list
 
         def run_paired_advantages(true_nobs):
-            dl_tbl, pn_tbl, hands, _crib_scores = run_analytical_ibr(
-                true_nobs=true_nobs
+            dl_tbl, pn_tbl, hands, _crib_scores, _dl_cut_tbl, _pn_cut_tbl = (
+                run_analytical_ibr(true_nobs=true_nobs)
             )
             num_pairs = len(dl_tbl)
 
@@ -1806,21 +1907,21 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
 
         # 1. Assert exact true_nobs=True advantages
         res_true = run_paired_advantages(true_nobs=True)
-        self.assertAlmostEqual(res_true["col_dl"], 0.00235665, delta=0.00001)
-        self.assertAlmostEqual(res_true["col_pn"], 0.00104920, delta=0.00001)
-        self.assertAlmostEqual(res_true["ras_dl"], 0.00957314, delta=0.00001)
-        self.assertAlmostEqual(res_true["ras_pn"], 0.01216541, delta=0.00001)
-        self.assertAlmostEqual(res_true["sch_dl"], 0.00156391, delta=0.00001)
-        self.assertAlmostEqual(res_true["sch_pn"], 0.00063603, delta=0.00001)
+        self.assertAlmostEqual(res_true["col_dl"], 0.00244902, delta=0.00001)
+        self.assertAlmostEqual(res_true["col_pn"], 0.00110570, delta=0.00001)
+        self.assertAlmostEqual(res_true["ras_dl"], 0.00963771, delta=0.00001)
+        self.assertAlmostEqual(res_true["ras_pn"], 0.01232511, delta=0.00001)
+        self.assertAlmostEqual(res_true["sch_dl"], 0.00161527, delta=0.00001)
+        self.assertAlmostEqual(res_true["sch_pn"], 0.00066666, delta=0.00001)
 
         # 2. Assert exact true_nobs=False advantages
         res_false = run_paired_advantages(true_nobs=False)
-        self.assertAlmostEqual(res_false["col_dl"], 0.00294594, delta=0.00001)
-        self.assertAlmostEqual(res_false["col_pn"], 0.00192035, delta=0.00001)
-        self.assertAlmostEqual(res_false["ras_dl"], 0.01179000, delta=0.00001)
-        self.assertAlmostEqual(res_false["ras_pn"], 0.01271713, delta=0.00001)
+        self.assertAlmostEqual(res_false["col_dl"], 0.00300227, delta=0.00001)
+        self.assertAlmostEqual(res_false["col_pn"], 0.00198237, delta=0.00001)
+        self.assertAlmostEqual(res_false["ras_dl"], 0.01177032, delta=0.00001)
+        self.assertAlmostEqual(res_false["ras_pn"], 0.01285066, delta=0.00001)
         self.assertAlmostEqual(res_false["sch_dl"], 0.00279004, delta=0.00001)
-        self.assertAlmostEqual(res_false["sch_pn"], 0.00167216, delta=0.00001)
+        self.assertAlmostEqual(res_false["sch_pn"], 0.00170908, delta=0.00001)
 
 
 if __name__ == "__main__":

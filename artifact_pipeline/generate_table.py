@@ -608,21 +608,57 @@ def reached_target_sample_count(accumulators, pairs, target_samples):
     )
 
 
-def calculate_max_ev_shift(prev_accumulators, current_accumulators, pairs):
+def build_generation_accumulators(
+    prev_accumulators, measured_accumulators, pairs, dampening
+):
+    """Build the next policy table from prior policy and measured samples."""
+    generation_accumulators = {}
+    for pair in pairs:
+        if pair == METADATA_KEY:  # pragma: no cover
+            continue
+        generation_accumulators[pair] = {}
+        for player in ["Dealer", "Pone"]:
+            generation_accumulators[pair][player] = {}
+            prior_player_data = (
+                prev_accumulators.get(pair, {}).get(player, {})
+                if prev_accumulators
+                else {}
+            )
+            measured_player_data = measured_accumulators.get(pair, {}).get(player, {})
+            for cut in Index.indices:
+                prior_acc = prior_player_data.get(cut)
+                measured_acc = measured_player_data.get(cut)
+                generation_accumulators[pair][player][cut] = blend_policy_accumulators(
+                    prior_acc, measured_acc, dampening
+                )
+    return generation_accumulators
+
+
+def calculate_max_ev_shift(
+    prev_accumulators, current_accumulators, pairs, measured_accumulators=None
+):  # pylint: disable=too-many-locals
     max_shift = 0.0
     for pair in pairs:
         for player in ["Dealer", "Pone"]:
             prev_data = prev_accumulators.get(pair, {}).get(player, {})
             curr_data = current_accumulators.get(pair, {}).get(player, {})
+            measured_data = (
+                measured_accumulators.get(pair, {}).get(player, {})
+                if measured_accumulators is not None
+                else curr_data
+            )
             for cut_card in Index.indices:
                 prev_acc = prev_data.get(cut_card, empty_accumulator())
                 curr_acc = curr_data.get(cut_card, empty_accumulator())
+                measured_acc = measured_data.get(cut_card, empty_accumulator())
                 prev_stats = accumulator_to_statistics(prev_acc)
                 curr_stats = accumulator_to_statistics(curr_acc)
-                if curr_stats is not None:
-                    prev_mu = policy_mean(prev_stats) if prev_stats is not None else 0.0
-                    shift = abs(policy_mean(curr_stats) - prev_mu)
-                    max_shift = max(max_shift, shift)
+                measured_stats = accumulator_to_statistics(measured_acc)
+                if measured_stats is None or curr_stats is None:
+                    return math.inf
+                prev_mu = policy_mean(prev_stats) if prev_stats is not None else 0.0
+                shift = abs(policy_mean(curr_stats) - prev_mu)
+                max_shift = max(max_shift, shift)
     return max_shift
 
 
@@ -758,10 +794,16 @@ def main(override_pairs=None):
             if args.samples is not None and reached_target_sample_count(
                 accumulators, pairs, args.samples
             ):
+                next_generation_accumulators = build_generation_accumulators(
+                    generation_accumulators, accumulators, pairs, args.dampening
+                )
                 # 1. Perform convergence check if convergence threshold is specified and generation > 0
                 if args.convergence_threshold is not None and generation > 0:
                     max_shift = calculate_max_ev_shift(
-                        generation_accumulators, accumulators, pairs
+                        generation_accumulators,
+                        next_generation_accumulators,
+                        pairs,
+                        measured_accumulators=accumulators,
                     )
                     if max_shift <= args.convergence_threshold:
                         print(
@@ -792,32 +834,7 @@ def main(override_pairs=None):
                 print(
                     f"Generation {generation} complete. Transitioning to Generation {next_generation}..."
                 )
-                prev_gen_accumulators = generation_accumulators
-                dampening = args.dampening
-                generation_accumulators = {}
-                # pylint: disable=too-many-nested-blocks
-                for pair in pairs:
-                    if pair == METADATA_KEY:  # pragma: no cover
-                        continue
-                    generation_accumulators[pair] = {}
-                    for player in ["Dealer", "Pone"]:
-                        generation_accumulators[pair][player] = {}
-                        prior_player_data = (
-                            prev_gen_accumulators.get(pair, {}).get(player, {})
-                            if prev_gen_accumulators
-                            else {}
-                        )
-                        measured_player_data = accumulators.get(pair, {}).get(
-                            player, {}
-                        )
-                        for cut in Index.indices:
-                            prior_acc = prior_player_data.get(cut)
-                            measured_acc = measured_player_data.get(cut)
-                            generation_accumulators[pair][player][cut] = (
-                                blend_policy_accumulators(
-                                    prior_acc, measured_acc, dampening
-                                )
-                            )
+                generation_accumulators = next_generation_accumulators
                 accumulators = {}
                 generation = next_generation
                 checkpoint()

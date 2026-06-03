@@ -45,6 +45,11 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 - Run pre-commit hooks: `pre-commit run --all-files`
 - Check for type errors: `mypy simulate_cribbage_games.py`
 - Run unit tests, generate machine parseable test coverage info (can be used in the Visual Studio Code Coverage Gutters extension, for example) and ensure that the unit test code coverage percentage has not decreased: `coverage run && coverage xml && coverage report`
+- Run exact analytical artifact-pipeline integration tests when changing
+  analytical discard-policy math: `coverage run -m unittest discover
+  artifact_pipeline && coverage run --append
+  scripts/run_slow_analytical_tests.py && coverage report --fail-under=100 -m
+  --include='artifact_pipeline/*'`
 - New code that imports or relies on parts of `simulate_cribbage_games.py` must
   first prove the used legacy surface with 100% unit test coverage and related
   automated acceptance test coverage.
