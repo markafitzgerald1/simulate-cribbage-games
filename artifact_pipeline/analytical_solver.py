@@ -405,13 +405,30 @@ def _cached_analytical_ibr(true_nobs, max_iterations, convergence_threshold):
     )
 
 
+def _copy_analytical_ibr_result(result):
+    dl_tbl, pn_tbl, hand_kept_evs, crib_scores, dl_cut_tbl, pn_cut_tbl = result
+    return (
+        list(dl_tbl),
+        list(pn_tbl),
+        [
+            (hand, weight, dict(discards_ev))
+            for hand, weight, discards_ev in hand_kept_evs
+        ],
+        {key: dict(scores) for key, scores in crib_scores.items()},
+        [list(row) for row in dl_cut_tbl],
+        [list(row) for row in pn_cut_tbl],
+    )
+
+
 def run_analytical_ibr(
     true_nobs=True,
     max_iterations=DEFAULT_IBR_MAX_ITERATIONS,
     convergence_threshold=DEFAULT_IBR_CONVERGENCE_THRESHOLD,
 ):
     """Return the rank-conditional analytical table for the requested Nobs mode."""
-    return _cached_analytical_ibr(true_nobs, max_iterations, convergence_threshold)
+    return _copy_analytical_ibr_result(
+        _cached_analytical_ibr(true_nobs, max_iterations, convergence_threshold)
+    )
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments

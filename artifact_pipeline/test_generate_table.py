@@ -59,6 +59,7 @@ from artifact_pipeline.historical_tables import (
 from artifact_pipeline.analytical_solver import (
     run_analytical_ibr,
     _run_analytical_ibr,
+    _cached_analytical_ibr,
     format_table_as_generation_zero,
     score_combination_suit_free,
     precompute_exact_crib_scores,
@@ -1658,6 +1659,47 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         )
 
         self.assertEqual(selected, [((4, 4, 4, 4, 0, 1), 1, 0)])
+
+    def test_run_analytical_ibr_returns_fresh_cached_tables(self):
+        _cached_analytical_ibr.cache_clear()
+        solver_result = (
+            [1.0],
+            [2.0],
+            [((0, 0, 1, 1, 2, 2), 1, {0: 3.0})],
+            {(0, 0): {0: 4.0}},
+            [[5.0]],
+            [[6.0]],
+        )
+
+        try:
+            with patch(
+                "artifact_pipeline.analytical_solver._run_analytical_ibr",
+                return_value=solver_result,
+            ):
+                first = run_analytical_ibr(
+                    max_iterations=987,
+                    convergence_threshold=0.987,
+                )
+                first[0][0] = 100.0
+                first[1][0] = 200.0
+                first[2][0][2][0] = 300.0
+                first[3][(0, 0)][0] = 400.0
+                first[4][0][0] = 500.0
+                first[5][0][0] = 600.0
+
+                second = run_analytical_ibr(
+                    max_iterations=987,
+                    convergence_threshold=0.987,
+                )
+        finally:
+            _cached_analytical_ibr.cache_clear()
+
+        self.assertEqual(second[0], [1.0])
+        self.assertEqual(second[1], [2.0])
+        self.assertEqual(second[2][0][2], {0: 3.0})
+        self.assertEqual(second[3], {(0, 0): {0: 4.0}})
+        self.assertEqual(second[4], [[5.0]])
+        self.assertEqual(second[5], [[6.0]])
 
     @requires_slow_analytical_tests
     def test_analytical_solver_zero_weights_coverage(self):

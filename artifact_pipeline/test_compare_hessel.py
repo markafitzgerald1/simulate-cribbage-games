@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from artifact_pipeline.compare_hessel import (
     compare_to_hessel,
+    has_complete_cut_rank_coverage,
     iter_rank_pairs,
     main,
     print_markdown_table,
@@ -16,7 +17,7 @@ from artifact_pipeline.compare_hessel import (
     summarize_rows,
     threshold_failed,
 )
-from artifact_pipeline.hessel import HESSEL_AVERAGES
+from artifact_pipeline.hessel import HESSEL_AVERAGES, RANKS
 
 
 def write_table(path, role_data):
@@ -56,6 +57,10 @@ def comparison_row(pair="AA", abs_delta=0.2, z_score=2.0, delta=0.2):
         "z_score": z_score,
         "n": 4.0,
     }
+
+
+def cut_stats(mu):
+    return {rank: {"n": 1, "mu": mu, "se": 0.0} for rank in RANKS}
 
 
 class TestCompareHessel(unittest.TestCase):
@@ -131,6 +136,22 @@ class TestCompareHessel(unittest.TestCase):
         self.assertTrue(threshold_failed(summary, 0.1, None, expected_count=91))
         self.assertTrue(threshold_failed(summary, None, 2.9, expected_count=91))
         self.assertTrue(threshold_failed(summary, 0.2, 3.0, expected_count=182))
+
+    def test_has_complete_cut_rank_coverage(self):
+        data = {"A_A_Unsuited": {"Dealer": cut_stats(HESSEL_AVERAGES["AA"]["Dealer"])}}
+
+        self.assertFalse(
+            has_complete_cut_rank_coverage(data, ("Dealer",), "unsuited-only")
+        )
+
+        for pair in iter_rank_pairs():
+            data[f"{pair[0]}_{pair[1]}_Unsuited"] = {
+                "Dealer": cut_stats(HESSEL_AVERAGES[pair]["Dealer"])
+            }
+
+        self.assertTrue(
+            has_complete_cut_rank_coverage(data, ("Dealer",), "unsuited-only")
+        )
 
     def test_print_markdown_table(self):
         rows = [comparison_row(delta=0.1, z_score=2.0)]
@@ -227,13 +248,49 @@ class TestCompareHessel(unittest.TestCase):
         self.assertEqual(context.exception.code, 1)
         self.assertTrue(stdout.getvalue().startswith("pair,role,generated"))
 
+    def test_main_threshold_requires_cut_rank_coverage(self):
+        data = {}
+        for pair in iter_rank_pairs():
+            data[f"{pair[0]}_{pair[1]}_Unsuited"] = {
+                "Dealer": {
+                    "A": {
+                        "n": 1,
+                        "mu": HESSEL_AVERAGES[pair]["Dealer"],
+                        "se": 0.0,
+                    }
+                }
+            }
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+            with open(output_path, "w", encoding="utf-8") as output_file:
+                json.dump(data, output_file)
+
+            with patch(
+                "sys.argv",
+                [
+                    "compare_hessel.py",
+                    "--role",
+                    "Dealer",
+                    "--suit-weighting",
+                    "unsuited-only",
+                    "--max-abs-delta",
+                    "0.0",
+                    output_path,
+                ],
+            ), patch("sys.stdout", new_callable=io.StringIO):
+                with self.assertRaises(SystemExit) as context:
+                    main()
+
+        self.assertEqual(context.exception.code, 1)
+
     def test_main_suited_only_accepts_complete_78_pair_table(self):
         data = {}
         for pair in iter_rank_pairs():
             if pair[0] == pair[1]:
                 continue
             key = f"{pair[0]}_{pair[1]}_Suited"
-            data[key] = {"Dealer": {"A": {"n": 1, "mu": 0.0, "se": 0.0}}}
+            data[key] = {"Dealer": cut_stats(0.0)}
 
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")

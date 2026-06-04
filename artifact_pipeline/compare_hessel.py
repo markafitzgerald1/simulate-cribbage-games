@@ -308,6 +308,36 @@ def threshold_failed(
     )
 
 
+def expected_table_keys(pair: str, suit_weighting: str) -> Sequence[str]:
+    rank_1, rank_2 = pair[0], pair[1]
+    if rank_1 == rank_2:
+        if suit_weighting == "suited-only":
+            return ()
+        return (f"{rank_1}_{rank_2}_Unsuited",)
+    if suit_weighting == "suited-only":
+        return (f"{rank_1}_{rank_2}_Suited",)
+    if suit_weighting == "unsuited-only":
+        return (f"{rank_1}_{rank_2}_Unsuited",)
+    return (f"{rank_1}_{rank_2}_Suited", f"{rank_1}_{rank_2}_Unsuited")
+
+
+def has_complete_cut_rank_coverage(
+    data: TableData,
+    roles: Sequence[str],
+    suit_weighting: str,
+) -> bool:
+    for pair in iter_rank_pairs():
+        for table_key in expected_table_keys(pair, suit_weighting):
+            for role in roles:
+                cut_stats = data.get(table_key, {}).get(role)
+                if not cut_stats:
+                    return False
+                for cut_rank in RANKS:
+                    if "mu" not in cut_stats.get(cut_rank, {}):
+                        return False
+    return True
+
+
 def main() -> None:
     args = parse_args()
     with open(args.path, "r", encoding="utf-8") as table_file:
@@ -341,6 +371,12 @@ def main() -> None:
         if args.allow_incomplete or not applying_threshold
         else (pairs_per_role * len(roles))
     )
+    if (
+        applying_threshold
+        and not args.allow_incomplete
+        and not has_complete_cut_rank_coverage(data, roles, args.suit_weighting)
+    ):
+        raise SystemExit(1)
     if threshold_failed(
         summary, args.max_abs_delta, args.max_z_score, expected_count=expected_count
     ):
