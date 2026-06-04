@@ -84,6 +84,7 @@ PAIRED_ADVANTAGE_MAX_SAMPLES = 10000
 PAIRED_ADVANTAGE_MIN_SAMPLES = 1000
 PAIRED_ADVANTAGE_SOLVER_ITERATIONS = 20
 HESSEL_COMPAT_SOLVER_ITERATIONS = 1
+HESSEL_COMPAT_TOLERANCE = 0.12
 
 
 def run_main_silently(override_pairs=None):
@@ -1387,7 +1388,9 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         for (r1, r2), expected_ev in hessel_expected_averages.items():
             est = get_pair_estimate(output_data, r1, r2, "Dealer", "actual")
             self.assertIsNotNone(est)
-            self.assertAlmostEqual(est["mu"], expected_ev, delta=0.42)
+            self.assertAlmostEqual(
+                est["mu"], expected_ev, delta=HESSEL_COMPAT_TOLERANCE
+            )
 
     def test_analytical_solver_nobs_ev(self):
         """Test rank-conditional Jack EV math in analytical_solver."""
