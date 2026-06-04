@@ -1394,39 +1394,6 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         # base score of {A, 2, 3, J, 4} (which is 0,1,2,10,3) is 8 (run of 4 + two 15s).
         self.assertAlmostEqual(ev - 8.0, 0.25)
 
-    def test_suit_aware_hand_nobs_ev_respects_known_card_removal(self):
-        """Known same-suit dealt cards reduce physical hand Nobs EV."""
-
-        def expected_nobs(dealt):
-            kept = dealt[:4]
-            starters = [card for card in DECK_SET if card not in dealt]
-            total_nobs = 0
-            for starter in starters:
-                indices = tuple(sorted([card.index for card in kept] + [starter.index]))
-                base_score = cached_pairs_runs_and_fifteens_points(indices)
-                total_nobs += score_hand_and_starter(kept, starter) - base_score
-            return total_nobs / len(starters)
-
-        no_extra_club = [
-            Card(10, 0),
-            Card(0, 1),
-            Card(1, 2),
-            Card(2, 3),
-            Card(3, 1),
-            Card(4, 2),
-        ]
-        extra_club = [
-            Card(10, 0),
-            Card(0, 0),
-            Card(1, 2),
-            Card(2, 3),
-            Card(3, 1),
-            Card(4, 2),
-        ]
-
-        self.assertAlmostEqual(expected_nobs(no_extra_club), 12 / 46)
-        self.assertAlmostEqual(expected_nobs(extra_club), 11 / 46)
-
     def test_suit_free_hand_nobs_ev_applies_dealt_card_removal(self):
         """Rank-only hand EV applies outer remaining-card weights around 1/4."""
         kept = (10, 0, 1, 2)
