@@ -37,6 +37,8 @@ from artifact_pipeline.adapter import (  # noqa: E402
 
 DEFAULT_OUTPUT_PATH = "expected_crib_points.analytical.json"
 GENERATION_METHOD = "artifact_pipeline.analytical_solver.v1"
+DEFAULT_IBR_CONVERGENCE_THRESHOLD = 0.0001
+DEFAULT_IBR_MAX_ITERATIONS = 100
 
 
 def get_analytical_pairs():
@@ -271,7 +273,11 @@ def _expected_crib_tables(  # pylint: disable=too-many-locals
     return dl_next, pn_next
 
 
-def _run_analytical_ibr(true_nobs=True):
+def _run_analytical_ibr(
+    true_nobs=True,
+    max_iterations=DEFAULT_IBR_MAX_ITERATIONS,
+    convergence_threshold=DEFAULT_IBR_CONVERGENCE_THRESHOLD,
+):
     """
     Execute the Iterated Best Response loop sequentially to solve
     for Dealer and Pone expected crib tables.
@@ -342,9 +348,6 @@ def _run_analytical_ibr(true_nobs=True):
 
     dampening = 0.50
     iteration = 0
-    max_iterations = 100
-    convergence_threshold = 0.0001
-
     while iteration < max_iterations:
         selected_discards = _select_discard_indices(
             hand_kept_evs, dl_tbl, pn_tbl, dl_cut_tbl, pn_cut_tbl
@@ -393,14 +396,22 @@ def _run_analytical_ibr(true_nobs=True):
     return dl_tbl, pn_tbl, hand_kept_evs, crib_scores, dl_cut_tbl, pn_cut_tbl
 
 
-@lru_cache(maxsize=2)
-def _cached_analytical_ibr(true_nobs):
-    return _run_analytical_ibr(true_nobs=true_nobs)
+@lru_cache(maxsize=8)
+def _cached_analytical_ibr(true_nobs, max_iterations, convergence_threshold):
+    return _run_analytical_ibr(
+        true_nobs=true_nobs,
+        max_iterations=max_iterations,
+        convergence_threshold=convergence_threshold,
+    )
 
 
-def run_analytical_ibr(true_nobs=True):
+def run_analytical_ibr(
+    true_nobs=True,
+    max_iterations=DEFAULT_IBR_MAX_ITERATIONS,
+    convergence_threshold=DEFAULT_IBR_CONVERGENCE_THRESHOLD,
+):
     """Return the rank-conditional analytical table for the requested Nobs mode."""
-    return _cached_analytical_ibr(true_nobs)
+    return _cached_analytical_ibr(true_nobs, max_iterations, convergence_threshold)
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments

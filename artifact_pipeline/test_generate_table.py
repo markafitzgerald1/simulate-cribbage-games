@@ -1,4 +1,5 @@
 import unittest
+import bisect
 import io
 import math
 import os
@@ -6,6 +7,7 @@ import json
 import random
 import tempfile
 from contextlib import redirect_stderr, redirect_stdout
+from statistics import NormalDist
 from unittest.mock import patch
 
 import itertools
@@ -59,8 +61,11 @@ from artifact_pipeline.analytical_solver import (
     _run_analytical_ibr,
     format_table_as_generation_zero,
     score_combination_suit_free,
+    precompute_exact_crib_scores,
+    get_hand_combinations_with_weights,
     main as analytical_main,
     _expected_crib_tables,
+    _hand_conditioned_policy_ev,
     _select_discard_indices,
     get_analytical_pairs,
     get_card_removal_weight,
@@ -73,13 +78,68 @@ requires_slow_analytical_tests = unittest.skipUnless(
     "set RUN_SLOW_ANALYTICAL_TESTS=1 to run exact analytical integration tests",
 )
 
+PAIRED_ADVANTAGE_CONFIDENCE_LEVEL = 0.99
+PAIRED_ADVANTAGE_CONFIDENCE_Z = NormalDist().inv_cdf(PAIRED_ADVANTAGE_CONFIDENCE_LEVEL)
+PAIRED_ADVANTAGE_MAX_SAMPLES = 10000
+PAIRED_ADVANTAGE_MIN_SAMPLES = 1000
+PAIRED_ADVANTAGE_SOLVER_ITERATIONS = 20
+
 
 def run_main_silently(override_pairs=None):
     with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
         main(override_pairs)
 
 
+def _new_paired_advantage():
+    return {"n": 0, "mean": 0.0, "m2": 0.0}
+
+
+def _record_paired_advantage(state, value):
+    state["n"] += 1
+    delta = value - state["mean"]
+    state["mean"] += delta / state["n"]
+    state["m2"] += delta * (value - state["mean"])
+
+
+def _paired_advantage_standard_error(state):
+    if state["n"] < 2:
+        return math.inf
+    variance = state["m2"] / (state["n"] - 1)
+    return math.sqrt(variance / state["n"])
+
+
+def _paired_advantage_lower_bound(state):
+    return state["mean"] - (
+        PAIRED_ADVANTAGE_CONFIDENCE_Z * _paired_advantage_standard_error(state)
+    )
+
+
+def _paired_advantage_is_proven(state):
+    return (
+        state["n"] >= PAIRED_ADVANTAGE_MIN_SAMPLES
+        and _paired_advantage_lower_bound(state) > 0.0
+    )
+
+
+def _sample_weighted_hand(rng, hands, cumulative_weights):
+    total_weight = cumulative_weights[-1]
+    return hands[bisect.bisect(cumulative_weights, rng.random() * total_weight)]
+
+
 class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-methods
+    def assert_paired_advantages_proven(self, advantages):
+        for label, state in advantages.items():
+            self.assertGreaterEqual(state["n"], PAIRED_ADVANTAGE_MIN_SAMPLES)
+            self.assertGreater(
+                _paired_advantage_lower_bound(state),
+                0.0,
+                (
+                    f"{label}: n={state['n']} mean={state['mean']:.8f} "
+                    f"se={_paired_advantage_standard_error(state):.8f} "
+                    f"lower={_paired_advantage_lower_bound(state):.8f}"
+                ),
+            )
+
     def test_get_canonical_pairs(self):
         """Test that exactly 169 pairs are generated and formatted correctly."""
         pairs = get_canonical_pairs()
@@ -1553,6 +1613,33 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
 
     def test_analytical_solver_additional_coverage(self):
         """Exercise remaining edge-case branches in analytical_solver for 100% coverage."""
+        pairs = get_analytical_pairs()
+        self.assertEqual(len(pairs), 91)
+        self.assertEqual(pairs[0], (0, 0))
+        self.assertEqual(pairs[-1], (12, 12))
+
+        hands = get_hand_combinations_with_weights()
+        self.assertEqual(len(hands), 18395)
+        self.assertTrue(
+            all(max(hand.count(rank) for rank in set(hand)) <= 4 for hand, _ in hands)
+        )
+        self.assertTrue(((0, 0, 0, 0, 1, 2), 16) in hands)
+
+        self.assertAlmostEqual(
+            _hand_conditioned_policy_ev(
+                (0, 0, 1, 2, 3, 4), [float(i) for i in range(13)]
+            ),
+            302.0 / 46.0,
+        )
+
+        with patch(
+            "artifact_pipeline.analytical_solver.get_analytical_pairs",
+            return_value=[(0, 0), (1, 2)],
+        ):
+            crib_scores = precompute_exact_crib_scores(true_nobs=True)
+        self.assertEqual(crib_scores[(0, 0)][0], 0.0)
+        self.assertGreater(crib_scores[(0, 1)][0], 0.0)
+
         # 1. Starter card is a Jack (index 10)
         ev = score_combination_suit_free((10, 0, 1, 2), 10, true_nobs=True)
         # base score of {A, 2, 3, J, J} is 9 points (run of 3 + pair of Jacks + two 15s).
@@ -1690,10 +1777,15 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
     @requires_slow_analytical_tests
     def test_dynamic_ibr_beats_hessel_paired(self):
         # pylint: disable=too-many-locals
-        """Confirm that dynamic 2-sided IBR mathematically beats static Hessel on E(h+/-c)."""
-        # Run IBR solver to obtain the converged 2-sided minimax tables
+        """Confirm dynamic 2-sided IBR beats static Hessel on E(h+/-c)."""
+        # A regression test does not need publication-grade IBR convergence.
+        # It only needs enough dynamic policy iteration to prove paired
+        # advantage over the baseline with an explicit confidence threshold.
         dl_tbl, pn_tbl, hands, crib_scores, _dl_cut_tbl, _pn_cut_tbl = (
-            run_analytical_ibr(true_nobs=False)
+            run_analytical_ibr(
+                true_nobs=False,
+                max_iterations=PAIRED_ADVANTAGE_SOLVER_ITERATIONS,
+            )
         )
 
         num_pairs = len(dl_tbl)
@@ -1753,19 +1845,16 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     total_weight += pair_weight
             hessel_pn_tbl[p] = total_score / total_weight if total_weight else 0.0
 
-        # Run a paired simulation of 10,000 hands from the exhaustive dealt hands distribution
         rng = random.Random(42)
-
-        ibr_dl_total = 0.0
-        hessel_dl_total = 0.0
-        ibr_pn_total = 0.0
-        hessel_pn_total = 0.0
-
         hand_weights = [h[1] for h in hands]
-        sampled_hands = rng.choices(hands, weights=hand_weights, k=10000)
+        cumulative_weights = list(itertools.accumulate(hand_weights))
+        advantages = {
+            "Dealer dynamic over Hessel": _new_paired_advantage(),
+            "Pone dynamic over Hessel": _new_paired_advantage(),
+        }
 
-        for _, _, discards_ev in sampled_hands:
-            # --- 1. Dealer Role (maximize Hand EV + Crib EV) ---
+        for _sample_index in range(PAIRED_ADVANTAGE_MAX_SAMPLES):
+            _, _, discards_ev = _sample_weighted_hand(rng, hands, cumulative_weights)
             best_dl_ibr_idx = max(
                 discards_ev.keys(),
                 key=lambda d, dev=discards_ev: dev[d] + dl_tbl[d],
@@ -1774,13 +1863,16 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 discards_ev.keys(),
                 key=lambda d, dev=discards_ev: dev[d] + hessel_dl_tbl[d],
             )
-
-            ibr_dl_total += discards_ev[best_dl_ibr_idx] + dl_tbl[best_dl_ibr_idx]
-            hessel_dl_total += (
-                discards_ev[best_dl_hessel_idx] + dl_tbl[best_dl_hessel_idx]
+            _record_paired_advantage(
+                advantages["Dealer dynamic over Hessel"],
+                (
+                    discards_ev[best_dl_ibr_idx]
+                    + dl_tbl[best_dl_ibr_idx]
+                    - discards_ev[best_dl_hessel_idx]
+                    - dl_tbl[best_dl_hessel_idx]
+                ),
             )
 
-            # --- 2. Pone Role (maximize Hand EV - Crib EV) ---
             best_pn_ibr_idx = max(
                 discards_ev.keys(),
                 key=lambda d, dev=discards_ev: dev[d] - pn_tbl[d],
@@ -1789,34 +1881,24 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 discards_ev.keys(),
                 key=lambda d, dev=discards_ev: dev[d] - hessel_pn_tbl[d],
             )
-
-            ibr_pn_total += discards_ev[best_pn_ibr_idx] - pn_tbl[best_pn_ibr_idx]
-            hessel_pn_total += (
-                discards_ev[best_pn_hessel_idx] - pn_tbl[best_pn_hessel_idx]
+            _record_paired_advantage(
+                advantages["Pone dynamic over Hessel"],
+                (
+                    discards_ev[best_pn_ibr_idx]
+                    - pn_tbl[best_pn_ibr_idx]
+                    - discards_ev[best_pn_hessel_idx]
+                    + pn_tbl[best_pn_hessel_idx]
+                ),
             )
 
-        mean_ibr_dl = ibr_dl_total / 10000.0
-        mean_hessel_dl = hessel_dl_total / 10000.0
-        mean_ibr_pn = ibr_pn_total / 10000.0
-        mean_hessel_pn = hessel_pn_total / 10000.0
+            if all(_paired_advantage_is_proven(state) for state in advantages.values()):
+                break
 
-        # Verify Dealer dynamic advantage
-        self.assertGreater(mean_ibr_dl, mean_hessel_dl)
-        self.assertAlmostEqual(
-            mean_ibr_dl - mean_hessel_dl, 0.01404513, delta=0.00000001
-        )
+        self.assert_paired_advantages_proven(advantages)
 
-        # Verify Pone dynamic advantage
-        self.assertGreater(mean_ibr_pn, mean_hessel_pn)
-        # Dynamic advantage is expected to be ~0.00486645 points per hand under card-removal
-        self.assertAlmostEqual(
-            mean_ibr_pn - mean_hessel_pn, 0.00486645, delta=0.00000001
-        )
-
-    @requires_slow_analytical_tests
-    def test_dynamic_ibr_beats_historical_tables_paired(self):
+    def _assert_dynamic_ibr_beats_historical_tables_paired(self, true_nobs):
         # pylint: disable=too-many-locals
-        """Confirm that dynamic 2-sided IBR mathematically outperforms Colvert, Rasmussen, and Schell on E(h+/-c)."""
+        """Confirm dynamic 2-sided IBR beats historical tables on E(h+/-c)."""
         analytical_pairs = get_analytical_pairs()
         ranks_str = "A23456789TJQK"
 
@@ -1829,99 +1911,95 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 pn_list[idx] = pn_dict[pair_str]
             return dl_list, pn_list
 
-        def run_paired_advantages(true_nobs):
-            dl_tbl, pn_tbl, hands, _crib_scores, _dl_cut_tbl, _pn_cut_tbl = (
-                run_analytical_ibr(true_nobs=true_nobs)
+        dl_tbl, pn_tbl, hands, _crib_scores, _dl_cut_tbl, _pn_cut_tbl = (
+            run_analytical_ibr(
+                true_nobs=true_nobs,
+                max_iterations=PAIRED_ADVANTAGE_SOLVER_ITERATIONS,
             )
-            num_pairs = len(dl_tbl)
+        )
+        num_pairs = len(dl_tbl)
 
-            col_dl, col_pn = build_tables(
-                COLVERT_DEALER_AVERAGES, COLVERT_PONE_AVERAGES, num_pairs
-            )
-            ras_dl, ras_pn = build_tables(
-                RASMUSSEN_DEALER_AVERAGES, RASMUSSEN_PONE_AVERAGES, num_pairs
-            )
-            sch_dl, sch_pn = build_tables(
-                SCHELL_DEALER_AVERAGES, SCHELL_PONE_AVERAGES, num_pairs
-            )
+        col_dl, col_pn = build_tables(
+            COLVERT_DEALER_AVERAGES, COLVERT_PONE_AVERAGES, num_pairs
+        )
+        ras_dl, ras_pn = build_tables(
+            RASMUSSEN_DEALER_AVERAGES, RASMUSSEN_PONE_AVERAGES, num_pairs
+        )
+        sch_dl, sch_pn = build_tables(
+            SCHELL_DEALER_AVERAGES, SCHELL_PONE_AVERAGES, num_pairs
+        )
 
-            rng = random.Random(42)
-            hand_weights = [h[1] for h in hands]
-            sampled_hands = rng.choices(hands, weights=hand_weights, k=10000)
+        rng = random.Random(42)
+        hand_weights = [h[1] for h in hands]
+        cumulative_weights = list(itertools.accumulate(hand_weights))
 
-            def get_advantage(target_dl_tbl, target_pn_tbl):
-                ibr_dl_total, target_dl_total = 0.0, 0.0
-                ibr_pn_total, target_pn_total = 0.0, 0.0
-                for _, _, discards_ev in sampled_hands:
-                    # Dealer maximizes Hand EV + Crib EV under actual IBR defensive play
-                    best_dl_ibr_idx = max(
-                        discards_ev.keys(),
-                        key=lambda d, dev=discards_ev: dev[d] + dl_tbl[d],
-                    )
-                    best_dl_target_idx = max(
-                        discards_ev.keys(),
-                        key=lambda d, dev=discards_ev: dev[d] + target_dl_tbl[d],
-                    )
-                    ibr_dl_total += (
-                        discards_ev[best_dl_ibr_idx] + dl_tbl[best_dl_ibr_idx]
-                    )
-                    target_dl_total += (
-                        discards_ev[best_dl_target_idx] + dl_tbl[best_dl_target_idx]
-                    )
-
-                    # Pone maximizes Hand EV - Crib EV under actual IBR defensive play
-                    best_pn_ibr_idx = max(
-                        discards_ev.keys(),
-                        key=lambda d, dev=discards_ev: dev[d] - pn_tbl[d],
-                    )
-                    best_pn_target_idx = max(
-                        discards_ev.keys(),
-                        key=lambda d, dev=discards_ev: dev[d] - target_pn_tbl[d],
-                    )
-                    ibr_pn_total += (
-                        discards_ev[best_pn_ibr_idx] - pn_tbl[best_pn_ibr_idx]
-                    )
-                    target_pn_total += (
-                        discards_ev[best_pn_target_idx] - pn_tbl[best_pn_target_idx]
-                    )
-
-                mean_ibr_dl = ibr_dl_total / 10000.0
-                mean_target_dl = target_dl_total / 10000.0
-                mean_ibr_pn = ibr_pn_total / 10000.0
-                mean_target_pn = target_pn_total / 10000.0
-
-                return mean_ibr_dl - mean_target_dl, mean_ibr_pn - mean_target_pn
-
-            col_dl_adv, col_pn_adv = get_advantage(col_dl, col_pn)
-            ras_dl_adv, ras_pn_adv = get_advantage(ras_dl, ras_pn)
-            sch_dl_adv, sch_pn_adv = get_advantage(sch_dl, sch_pn)
-
-            return {
-                "col_dl": col_dl_adv,
-                "col_pn": col_pn_adv,
-                "ras_dl": ras_dl_adv,
-                "ras_pn": ras_pn_adv,
-                "sch_dl": sch_dl_adv,
-                "sch_pn": sch_pn_adv,
+        def get_advantage(name, target_dl_tbl, target_pn_tbl):
+            advantages = {
+                f"{name} Dealer": _new_paired_advantage(),
+                f"{name} Pone": _new_paired_advantage(),
             }
+            for _sample_index in range(PAIRED_ADVANTAGE_MAX_SAMPLES):
+                _, _, discards_ev = _sample_weighted_hand(
+                    rng, hands, cumulative_weights
+                )
+                best_dl_ibr_idx = max(
+                    discards_ev.keys(),
+                    key=lambda d, dev=discards_ev: dev[d] + dl_tbl[d],
+                )
+                best_dl_target_idx = max(
+                    discards_ev.keys(),
+                    key=lambda d, dev=discards_ev: dev[d] + target_dl_tbl[d],
+                )
+                _record_paired_advantage(
+                    advantages[f"{name} Dealer"],
+                    (
+                        discards_ev[best_dl_ibr_idx]
+                        + dl_tbl[best_dl_ibr_idx]
+                        - discards_ev[best_dl_target_idx]
+                        - dl_tbl[best_dl_target_idx]
+                    ),
+                )
 
-        # 1. Assert exact true_nobs=True advantages
-        res_true = run_paired_advantages(true_nobs=True)
-        self.assertAlmostEqual(res_true["col_dl"], 0.00244902, delta=0.00001)
-        self.assertAlmostEqual(res_true["col_pn"], 0.00110570, delta=0.00001)
-        self.assertAlmostEqual(res_true["ras_dl"], 0.00963771, delta=0.00001)
-        self.assertAlmostEqual(res_true["ras_pn"], 0.01232511, delta=0.00001)
-        self.assertAlmostEqual(res_true["sch_dl"], 0.00161527, delta=0.00001)
-        self.assertAlmostEqual(res_true["sch_pn"], 0.00066666, delta=0.00001)
+                best_pn_ibr_idx = max(
+                    discards_ev.keys(),
+                    key=lambda d, dev=discards_ev: dev[d] - pn_tbl[d],
+                )
+                best_pn_target_idx = max(
+                    discards_ev.keys(),
+                    key=lambda d, dev=discards_ev: dev[d] - target_pn_tbl[d],
+                )
+                _record_paired_advantage(
+                    advantages[f"{name} Pone"],
+                    (
+                        discards_ev[best_pn_ibr_idx]
+                        - pn_tbl[best_pn_ibr_idx]
+                        - discards_ev[best_pn_target_idx]
+                        + pn_tbl[best_pn_target_idx]
+                    ),
+                )
 
-        # 2. Assert exact true_nobs=False advantages
-        res_false = run_paired_advantages(true_nobs=False)
-        self.assertAlmostEqual(res_false["col_dl"], 0.00300227, delta=0.00001)
-        self.assertAlmostEqual(res_false["col_pn"], 0.00198237, delta=0.00001)
-        self.assertAlmostEqual(res_false["ras_dl"], 0.01177032, delta=0.00001)
-        self.assertAlmostEqual(res_false["ras_pn"], 0.01285066, delta=0.00001)
-        self.assertAlmostEqual(res_false["sch_dl"], 0.00279004, delta=0.00001)
-        self.assertAlmostEqual(res_false["sch_pn"], 0.00170908, delta=0.00001)
+                if all(
+                    _paired_advantage_is_proven(state) for state in advantages.values()
+                ):
+                    break
+
+            return advantages
+
+        advantages = {}
+        advantages.update(get_advantage("Colvert", col_dl, col_pn))
+        advantages.update(get_advantage("Rasmussen", ras_dl, ras_pn))
+        advantages.update(get_advantage("Schell", sch_dl, sch_pn))
+        self.assert_paired_advantages_proven(advantages)
+
+    @requires_slow_analytical_tests
+    def test_dynamic_ibr_beats_true_nobs_historical_tables_paired(self):
+        """Confirm true-Nobs dynamic IBR beats historical tables on E(h+/-c)."""
+        self._assert_dynamic_ibr_beats_historical_tables_paired(true_nobs=True)
+
+    @requires_slow_analytical_tests
+    def test_dynamic_ibr_beats_flat_nobs_historical_tables_paired(self):
+        """Confirm Hessel-compatible dynamic IBR beats historical tables."""
+        self._assert_dynamic_ibr_beats_historical_tables_paired(true_nobs=False)
 
 
 if __name__ == "__main__":

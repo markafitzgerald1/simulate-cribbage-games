@@ -61,8 +61,11 @@ jobs:
         python-version: ["3.9.20"]
         group:
           - hessel-compat
-          - support
-          - historical-compat
+          - zero-weights-coverage
+          - support-main
+          - support-dynamic-hessel
+          - historical-true-nobs
+          - historical-flat-nobs
 
     steps:
       - uses: actions/checkout@v3
@@ -110,7 +113,7 @@ jobs:
           merge-multiple: true
       - name: Check artifact pipeline coverage
         run: |
-          coverage combine .coverage.fast .coverage.slow-hessel-compat .coverage.slow-support .coverage.slow-historical-compat
+          coverage combine .coverage.fast .coverage.slow-hessel-compat .coverage.slow-zero-weights-coverage .coverage.slow-support-main .coverage.slow-support-dynamic-hessel .coverage.slow-historical-true-nobs .coverage.slow-historical-flat-nobs
           coverage report --fail-under=100 -m --include="artifact_pipeline/*"
 
   lint-and-typecheck:

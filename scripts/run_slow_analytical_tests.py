@@ -16,13 +16,20 @@ SLOW_TEST_GROUPS = {
     "hessel-compat": [
         TEST_PREFIX + "test_analytical_solver_hessel_compat",
     ],
-    "support": [
+    "zero-weights-coverage": [
         TEST_PREFIX + "test_analytical_solver_zero_weights_coverage",
+    ],
+    "support-main": [
         TEST_PREFIX + "test_analytical_solver_main",
+    ],
+    "support-dynamic-hessel": [
         TEST_PREFIX + "test_dynamic_ibr_beats_hessel_paired",
     ],
-    "historical-compat": [
-        TEST_PREFIX + "test_dynamic_ibr_beats_historical_tables_paired",
+    "historical-true-nobs": [
+        TEST_PREFIX + "test_dynamic_ibr_beats_true_nobs_historical_tables_paired",
+    ],
+    "historical-flat-nobs": [
+        TEST_PREFIX + "test_dynamic_ibr_beats_flat_nobs_historical_tables_paired",
     ],
 }
 

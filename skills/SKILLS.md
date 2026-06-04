@@ -73,9 +73,11 @@ they solve full discard-policy equilibria and are too slow for routine
 pre-push. Run them before marking analytical math changes ready, and in CI,
 with `coverage run --append scripts/run_slow_analytical_tests.py` after the
 fast artifact test run, followed by `coverage report --fail-under=100 -m
---include='artifact_pipeline/*'`. CI may run named slow-test groups in parallel
-and combine their coverage data with the fast artifact coverage file before the
-100% artifact-pipeline coverage report.
+--include='artifact_pipeline/*'`. CI may run named slow-test groups such as
+`zero-weights-coverage`, `support-main`, `support-dynamic-hessel`,
+`historical-true-nobs`, and `historical-flat-nobs` in parallel and combine their
+coverage data with the fast artifact coverage file before the 100%
+artifact-pipeline coverage report.
 
 Exact analytical test coverage should be as small as the behavior under review
 allows. Full convergence is appropriate for published artifact generation and
