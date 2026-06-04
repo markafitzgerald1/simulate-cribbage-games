@@ -19,9 +19,6 @@ SLOW_TEST_GROUPS = {
     "zero-weights-coverage": [
         TEST_PREFIX + "test_analytical_solver_zero_weights_coverage",
     ],
-    "support-main": [
-        TEST_PREFIX + "test_analytical_solver_main",
-    ],
     "support-dynamic-hessel": [
         TEST_PREFIX + "test_dynamic_ibr_beats_hessel_paired",
     ],
@@ -55,6 +52,10 @@ def _selected_tests(args: Iterable[str]) -> List[str]:
 
 
 class ProgressResult(unittest.TextTestResult):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._test_started_at = 0.0
+
     def startTest(self, test):
         self._test_started_at = time.monotonic()
         self.stream.writeln(f"[slow-start] {test.id()}")

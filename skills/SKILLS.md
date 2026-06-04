@@ -74,7 +74,7 @@ pre-push. Run them before marking analytical math changes ready, and in CI,
 with `coverage run --append scripts/run_slow_analytical_tests.py` after the
 fast artifact test run, followed by `coverage report --fail-under=100 -m
 --include='artifact_pipeline/*'`. CI may run named slow-test groups such as
-`zero-weights-coverage`, `support-main`, `support-dynamic-hessel`,
+`hessel-compat`, `zero-weights-coverage`, `support-dynamic-hessel`,
 `historical-true-nobs`, and `historical-flat-nobs` in parallel and combine their
 coverage data with the fast artifact coverage file before the 100%
 artifact-pipeline coverage report.

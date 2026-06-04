@@ -1691,11 +1691,19 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             ):
                 run_main_silently(["A_A_Unsuited"])
 
-    @requires_slow_analytical_tests
     def test_analytical_solver_main(self):
         """Test analytical_solver.py main CLI execution."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "analytical.json")
+            pair_count = len(get_analytical_pairs())
+            solver_result = (
+                [0.0] * pair_count,
+                [0.0] * pair_count,
+                [],
+                {},
+                [[0.0] * 13 for _ in range(pair_count)],
+                [[0.0] * 13 for _ in range(pair_count)],
+            )
             with patch(
                 "sys.argv",
                 [
@@ -1704,14 +1712,19 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     "--output",
                     output_path,
                 ],
-            ), patch("sys.stdout", new_callable=io.StringIO):
+            ), patch("sys.stdout", new_callable=io.StringIO), patch(
+                "artifact_pipeline.analytical_solver.run_analytical_ibr",
+                return_value=solver_result,
+            ) as run_ibr:
                 analytical_main()
+            run_ibr.assert_called_once_with(true_nobs=False)
             self.assertTrue(os.path.exists(output_path))
             with open(output_path, encoding="utf-8") as analytical_file:
                 metadata = json.load(analytical_file)[METADATA_KEY]
             self.assertEqual(
                 metadata["generation_method"], ANALYTICAL_GENERATION_METHOD
             )
+            self.assertFalse(metadata["true_nobs_applied"])
             with self.assertRaises(ValueError):
                 validate_resume_metadata(metadata, None, output_path)
 

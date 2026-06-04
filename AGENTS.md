@@ -123,9 +123,9 @@ required before marking artifact-pipeline math changes ready and in CI, but they
 are too slow for the local pre-push hook. Run them explicitly with
 `coverage run --append scripts/run_slow_analytical_tests.py` as shown above.
 CI may shard these exact tests by passing group names such as `hessel-compat`,
-`zero-weights-coverage`, `support-main`, `support-dynamic-hessel`,
-`historical-true-nobs`, and `historical-flat-nobs`, then combine coverage data
-before enforcing 100% artifact-pipeline coverage.
+`zero-weights-coverage`, `support-dynamic-hessel`, `historical-true-nobs`, and
+`historical-flat-nobs`, then combine coverage data before enforcing 100%
+artifact-pipeline coverage.
 
 Exact analytical tests do not always need to prove full production-artifact
 convergence. For test coverage, prefer the smallest deterministic or
