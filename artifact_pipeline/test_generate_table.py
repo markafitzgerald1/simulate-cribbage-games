@@ -450,7 +450,11 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     output_path,
                 ],
             ):
-                run_main_silently(["A_A_Unsuited"])
+                with patch("artifact_pipeline.generate_table.print") as mock_print:
+                    run_main_silently(["A_A_Unsuited"])
+                    mock_print.assert_any_call(
+                        "Generation 0 complete; no convergence threshold requested."
+                    )
 
             self.assertTrue(os.path.exists(output_path))
 

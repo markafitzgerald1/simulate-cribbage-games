@@ -1,5 +1,6 @@
 import argparse
 import csv
+from dataclasses import dataclass
 import json
 import math
 import sys
@@ -15,6 +16,15 @@ StatsByCut = Mapping[str, Mapping[str, float]]
 RoleData = Mapping[str, StatsByCut]
 TableData = Mapping[str, RoleData]
 Estimate = Mapping[str, float]
+
+
+@dataclass(frozen=True)
+class RenderOptions:
+    statistic: str
+    precision: int
+    show_se: bool
+    suit_weighting: str
+    round_to: Optional[float]
 
 
 def mean(values: Iterable[float]) -> Optional[float]:
@@ -256,9 +266,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--role",
-        choices=("Dealer", "Pone"),
+        choices=("Dealer", "Pone", "both"),
         required=True,
-        help="Dealer means discarding to your crib; Pone means discarding to opponent's crib.",
+        help=(
+            "Dealer means discarding to your crib; Pone means discarding to "
+            "opponent's crib; both prints both roles."
+        ),
     )
     parser.add_argument(
         "--statistic",
@@ -301,19 +314,94 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def roles_from_arg(role: str) -> Sequence[str]:
+    if role == "both":
+        return ("Dealer", "Pone")
+    return (role,)
+
+
+def print_markdown_tables(
+    data: TableData,
+    roles: Sequence[str],
+    options: RenderOptions,
+) -> None:
+    for index, role in enumerate(roles):
+        if len(roles) > 1:
+            if index:
+                print()
+            print(f"## {role}")
+            print()
+        print_markdown_table(
+            build_table(data, role, options.suit_weighting),
+            options.statistic,
+            options.precision,
+            options.show_se,
+            options.round_to,
+        )
+
+
+def print_csv_tables(
+    data: TableData,
+    roles: Sequence[str],
+    options: RenderOptions,
+) -> None:
+    writer = csv.writer(sys.stdout)
+    if len(roles) == 1:
+        print_csv_table(
+            build_table(data, roles[0], options.suit_weighting),
+            options.statistic,
+            options.precision,
+            options.show_se,
+            options.round_to,
+        )
+        return
+
+    writer.writerow(["role", "", *RANKS])
+    for role in roles:
+        table = build_table(data, role, options.suit_weighting)
+        for rank, row in zip(RANKS, table):
+            writer.writerow(
+                [
+                    role,
+                    rank,
+                    *[
+                        format_value(
+                            value,
+                            options.statistic,
+                            options.precision,
+                            options.show_se,
+                            options.round_to,
+                        )
+                        for value in row
+                    ],
+                ]
+            )
+
+
 def main() -> None:
     args = parse_args()
     with open(args.path, "r", encoding="utf-8") as table_file:
         data = json.load(table_file)
 
-    table = build_table(data, args.role, args.suit_weighting)
+    roles = roles_from_arg(args.role)
+    options = RenderOptions(
+        args.statistic,
+        args.precision,
+        args.show_se,
+        args.suit_weighting,
+        args.round_to,
+    )
     if args.format == "csv":
-        print_csv_table(
-            table, args.statistic, args.precision, args.show_se, args.round_to
+        print_csv_tables(
+            data,
+            roles,
+            options,
         )
     else:
-        print_markdown_table(
-            table, args.statistic, args.precision, args.show_se, args.round_to
+        print_markdown_tables(
+            data,
+            roles,
+            options,
         )
 
 

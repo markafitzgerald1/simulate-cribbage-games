@@ -144,7 +144,9 @@ the default `--true-nobs` mode applies rank-conditional Jack/Nobs expected value
 with card-removal effects.
 
 Use an analytical table as an explicit generation-zero bootstrap for Monte
-Carlo table generation:
+Carlo table generation. This finite command samples one Monte Carlo generation
+from the analytical bootstrap policy; it does not run a convergence loop unless
+`--convergence-threshold` is also supplied:
 
 ```sh
 python artifact_pipeline/generate_table.py \
@@ -153,6 +155,24 @@ python artifact_pipeline/generate_table.py \
   --seed 42 \
   --output expected_crib_points.json
 ```
+
+Run a bounded convergence loop by adding both a convergence threshold and a
+generation cap:
+
+```sh
+python artifact_pipeline/generate_table.py \
+  --bootstrap expected_crib_points.analytical.json \
+  --samples 1000 \
+  --seed 42 \
+  --output expected_crib_points.json \
+  --convergence-threshold 0.01 \
+  --max-generations 5
+```
+
+Convergence is measured between policy generations. Generation 0 uses the
+bootstrap policy to drive opponent discards, so the first finite convergence
+check can only occur after generation 1 has been sampled and compared with the
+next dampened policy table.
 
 The generator records honest measured statistics as `n`, `mu`, and `se`.
 Dampened policy values are stored separately as `policy_mu` and `policy_se` and
@@ -165,6 +185,7 @@ Summarize a generated table:
 ```sh
 python artifact_pipeline/summarize_table.py expected_crib_points.json --role Dealer
 python artifact_pipeline/summarize_table.py expected_crib_points.json --role Pone --show-se
+python artifact_pipeline/summarize_table.py expected_crib_points.json --role both
 ```
 
 Compare a generated table against Hessel's averages:
