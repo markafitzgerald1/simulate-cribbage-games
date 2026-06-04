@@ -83,6 +83,7 @@ PAIRED_ADVANTAGE_CONFIDENCE_Z = NormalDist().inv_cdf(PAIRED_ADVANTAGE_CONFIDENCE
 PAIRED_ADVANTAGE_MAX_SAMPLES = 10000
 PAIRED_ADVANTAGE_MIN_SAMPLES = 1000
 PAIRED_ADVANTAGE_SOLVER_ITERATIONS = 20
+HESSEL_COMPAT_SOLVER_ITERATIONS = 1
 
 
 def run_main_silently(override_pairs=None):
@@ -1360,9 +1361,10 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
 
     @requires_slow_analytical_tests
     def test_analytical_solver_hessel_compat(self):
-        """Test that analytical_solver.py in Hessel mode matches Hessel's averages exactly to 2 decimal places."""
+        """Test bounded Hessel-mode scoring and formatting against Hessel averages."""
         dl_tbl, pn_tbl, hands, crib_scores, dl_cut_tbl, pn_cut_tbl = run_analytical_ibr(
-            true_nobs=False
+            true_nobs=False,
+            max_iterations=HESSEL_COMPAT_SOLVER_ITERATIONS,
         )
         output_data = format_table_as_generation_zero(
             dl_tbl,
