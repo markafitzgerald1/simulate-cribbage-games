@@ -827,7 +827,7 @@ def main(override_pairs=None):
                         print(
                             f"Warning: Hardcap reached at generation {next_generation}."
                         )
-                    elif args.convergence_threshold is None:
+                    else:
                         print(
                             f"Generation {generation} complete; no convergence "
                             "threshold requested."
