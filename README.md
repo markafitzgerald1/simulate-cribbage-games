@@ -130,6 +130,50 @@ seeded resumed run produces the same table as a fresh seeded run to the same
 sample target. If the original run did not specify `--seed`, resume without
 `--seed`; use `--no-resume` to start a new seeded table.
 
+Generate the analytical rank/suit-free expected crib points table:
+
+```sh
+python artifact_pipeline/analytical_solver.py --output expected_crib_points.analytical.json
+```
+
+The analytical solver uses deterministic enumeration inside its stated
+rank/suit-free model. It is not a Monte Carlo run, but it still uses iterative
+best response to converge a two-sided discard policy table and can take minutes
+locally. Use `--no-true-nobs` only for Hessel-compatible historical comparisons;
+the default `--true-nobs` mode applies rank-conditional Jack/Nobs expected value
+with card-removal effects.
+
+Use an analytical table as an explicit generation-zero bootstrap for Monte
+Carlo table generation:
+
+```sh
+python artifact_pipeline/generate_table.py \
+  --bootstrap expected_crib_points.analytical.json \
+  --samples 1000 \
+  --seed 42 \
+  --output expected_crib_points.json
+```
+
+The generator records honest measured statistics as `n`, `mu`, and `se`.
+Dampened policy values are stored separately as `policy_mu` and `policy_se` and
+are used for the next generation's discard policy. Reporting and table
+summaries should prefer the measured statistics unless they are intentionally
+inspecting policy-transition state.
+
+Summarize a generated table:
+
+```sh
+python artifact_pipeline/summarize_table.py expected_crib_points.json --role Dealer
+python artifact_pipeline/summarize_table.py expected_crib_points.json --role Pone --show-se
+```
+
+Compare a generated table against Hessel's averages:
+
+```sh
+python artifact_pipeline/compare_hessel.py expected_crib_points.json --role both
+python artifact_pipeline/compare_hessel.py expected_crib_points.json --role Dealer --view table
+```
+
 ## Smoke Tests and Usage Examples
 
 All of the following should exit with status code 0 and no raised exception:

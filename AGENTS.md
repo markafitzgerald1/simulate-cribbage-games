@@ -126,6 +126,15 @@ CI may shard these exact tests by passing group names such as `hessel-compat`,
 `support`, and `historical-compat`, then combine coverage data before enforcing
 100% artifact-pipeline coverage.
 
+Exact analytical tests do not always need to prove full production-artifact
+convergence. For test coverage, prefer the smallest deterministic or
+statistically justified check that proves the changed behavior. If a test
+asserts that one table or strategy beats another by simulation, use paired
+comparisons where practical, require a meaningful minimum sample count before
+early stopping, and make the confidence criterion explicit. Reserve full
+long-running convergence for published artifact generation or CI gates that are
+clearly documented as expensive.
+
 Maintain or improve test coverage for changed Python behavior. Bug fixes require
 a regression test unless the fix is documentation-only or the behavior is
 impractical to exercise in the current test harness. New simulator options,
@@ -172,6 +181,11 @@ Near the end of this section, observe these boundaries: agents must never
 attempt to format, lint, refactor, reorganize, modernize, or mechanically clean
 up `simulate_cribbage_games.py`. Do not run auto-formatters or bulk lint fixes
 over that file.
+
+When artifact-pipeline comparisons call into `simulate_cribbage_games.py`, first
+add focused coverage for every legacy function, class, constant, and execution
+path used by that comparison. Do not use full-game comparison harnesses as a
+shortcut around the immutable-dependency coverage requirement.
 
 ## Code Style And Documentation
 
@@ -236,6 +250,26 @@ or within a small stated tolerance as rough agreement, and document known
 methodology differences such as suited handling, crib flushes, opponent discard
 policy, or static versus iterative discard selection.
 
+For analytical crib-table work, distinguish exact deterministic enumeration
+inside a stated model from a closed-form global optimum. Iterative best response
+is deterministic and can converge to a stable policy for the modeled table, but
+it is still an iterative policy process. If dampening is used, keep measured
+sample statistics (`n`, `mu`, `se`) separate from policy-transition values
+(`policy_mu`, `policy_se`). Reports and summaries should use measured
+statistics; policy selection and convergence checks may use dampened policy
+values when that is the policy that will actually drive the next generation.
+
+Convergence checks must not ignore missing conditional buckets. If a generated
+table is expected to compare every discard pair, player role, and starter rank,
+missing measured cut-rank data should prevent a finite convergence claim rather
+than silently counting as zero shift.
+
+Historical crib tables should be named with enough attribution and methodology
+context to avoid overstating provenance. If a table is believed to be
+Colvert/Bowman, Rasmussen, Schell, Hessel, or another source, document the
+source and uncertainty instead of implying stronger provenance than the project
+has verified.
+
 Near the end of this section, observe these boundaries: do not summarize
 Monte Carlo output without the sample counts needed to compute the displayed
 uncertainty. Do not claim exact agreement with external tables when the
@@ -270,6 +304,16 @@ Before resolving a pull request review thread, add a reply that explains why
 the thread is considered resolved. Reference the code, documentation, test, or
 reasoned no-change decision that addresses the feedback, and identify the agent
 or human who made that assessment.
+
+After review comments exist, avoid force-pushing a pull request branch because it
+can destabilize GitHub review anchors and make human review harder. Use additive
+commits unless a human maintainer explicitly asks for history rewriting.
+
+When an AI agent posts or edits pull request prose, comments, summaries, or
+resolution notes, attribute the prose to the agent, for example "OpenAI Codex /
+me". Prefer natural Markdown paragraphs for GitHub-rendered PR prose; do not
+hard-wrap prose in PR descriptions or comments when GitHub's renderer will wrap
+it for the viewer.
 
 Near the end of this section, observe these boundaries: do not claim an issue is
 complete until requested files are updated, required constraints are represented

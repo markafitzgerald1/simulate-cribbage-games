@@ -77,6 +77,34 @@ fast artifact test run, followed by `coverage report --fail-under=100 -m
 and combine their coverage data with the fast artifact coverage file before the
 100% artifact-pipeline coverage report.
 
+Exact analytical test coverage should be as small as the behavior under review
+allows. Full convergence is appropriate for published artifact generation and
+for explicitly expensive CI gates, but regression tests can often use smaller
+deterministic cases or paired statistical comparisons with a documented minimum
+sample count and confidence threshold. If a comparison uses
+`simulate_cribbage_games.py`, first cover every used legacy path as required by
+`AGENTS.md`.
+
+For analytical crib-table work, keep model claims precise. Deterministic
+enumeration inside the rank/suit-free analytical model is exact for that model,
+but iterative best response remains an iterative policy convergence process,
+not a closed-form global proof. When dampening is used, preserve honest
+measured statistics (`n`, `mu`, `se`) separately from policy values
+(`policy_mu`, `policy_se`): reports should use measured values, while policy
+selection and convergence checks may use dampened policy values when those are
+the values that drive the next generation.
+
+Convergence checks must require the expected conditional coverage. Missing
+discard pair, player role, or starter-rank buckets should block finite
+convergence claims unless the test or artifact explicitly documents a smaller
+coverage surface.
+
+Generated crib artifacts intended for browser-hosted TypeScript consumers, such
+as `cribbage-trainer`, should be treated as the dependency boundary. Browser
+code cannot call the Python solver directly, so either encode needed
+conditional values in the artifact or reimplement runtime adjustments in
+TypeScript with Python-generated golden tests.
+
 Coverage must not decrease as a result of code changes. New simulator behavior
 must include focused tests, especially for cribbage scoring, discard selection,
 play selection, game-state transitions, and command-line options.
@@ -93,6 +121,11 @@ human sanity check of the resulting output.
 Artifact pipeline changes that produce statistical tables should include
 focused tests for resume behavior, seeded reproducibility, checkpoint output,
 summary-table formatting, and impossible card states such as suited pairs.
+
+When publishing or updating a pull request, avoid force-pushing once review
+comments exist unless a human maintainer explicitly requests rewritten history.
+Attribute AI-written PR prose and comments to the agent, and avoid manual
+hard-wrapping in GitHub-rendered PR descriptions or comments.
 
 Near the end of this section, observe these boundaries: do not lower coverage
 requirements, remove quality checks, add broad ignore comments, or refactor the
