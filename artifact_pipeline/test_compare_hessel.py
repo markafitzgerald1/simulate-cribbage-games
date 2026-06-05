@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from artifact_pipeline.compare_hessel import (
     compare_to_hessel,
+    expected_table_keys,
     has_complete_cut_rank_coverage,
     iter_rank_pairs,
     main,
@@ -128,6 +129,12 @@ class TestCompareHessel(unittest.TestCase):
         self.assertEqual(roles_from_arg("Dealer"), ("Dealer",))
         self.assertEqual(roles_from_arg("Pone"), ("Pone",))
         self.assertEqual(roles_from_arg("both"), ("Dealer", "Pone"))
+
+    def test_expected_table_keys_for_actual_suit_weighting(self):
+        self.assertEqual(
+            expected_table_keys("A2", "actual"),
+            ("A_2_Suited", "A_2_Unsuited"),
+        )
 
     def test_threshold_failed(self):
         summary = {"max_abs_delta": 0.2, "max_z_score": 3.0, "count": 91}
@@ -276,6 +283,36 @@ class TestCompareHessel(unittest.TestCase):
                     "unsuited-only",
                     "--max-abs-delta",
                     "0.0",
+                    output_path,
+                ],
+            ), patch("sys.stdout", new_callable=io.StringIO):
+                with self.assertRaises(SystemExit) as context:
+                    main()
+
+        self.assertEqual(context.exception.code, 1)
+
+    def test_main_threshold_fails_complete_table_over_delta(self):
+        data = {}
+        for pair in iter_rank_pairs():
+            data[f"{pair[0]}_{pair[1]}_Unsuited"] = {
+                "Dealer": cut_stats(HESSEL_AVERAGES[pair]["Dealer"] + 1.0)
+            }
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+            with open(output_path, "w", encoding="utf-8") as output_file:
+                json.dump(data, output_file)
+
+            with patch(
+                "sys.argv",
+                [
+                    "compare_hessel.py",
+                    "--role",
+                    "Dealer",
+                    "--suit-weighting",
+                    "unsuited-only",
+                    "--max-abs-delta",
+                    "0.5",
                     output_path,
                 ],
             ), patch("sys.stdout", new_callable=io.StringIO):
