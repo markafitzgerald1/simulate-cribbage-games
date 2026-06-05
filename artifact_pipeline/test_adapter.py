@@ -5,6 +5,7 @@ from artifact_pipeline.adapter import (
     Index,
     DECK_SET,
     score_hand_and_starter,
+    cached_pairs_runs_and_fifteens_points,
     BEST_STATIC_SELECT_PONE_KEPT_CARDS,
     BEST_STATIC_SELECT_DEALER_KEPT_CARDS,
 )
@@ -17,6 +18,7 @@ class TestAdapter(unittest.TestCase):
         self.assertIsNotNone(Index)
         self.assertIsNotNone(DECK_SET)
         self.assertIsNotNone(score_hand_and_starter)
+        self.assertIsNotNone(cached_pairs_runs_and_fifteens_points)
         self.assertIsNotNone(BEST_STATIC_SELECT_PONE_KEPT_CARDS)
         self.assertIsNotNone(BEST_STATIC_SELECT_DEALER_KEPT_CARDS)
 

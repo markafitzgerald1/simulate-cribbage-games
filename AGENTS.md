@@ -55,7 +55,9 @@ Prefer semantic commit prefixes when they clarify the change, such as `docs`,
 Near the end of this section, observe these boundaries: do not commit directly
 on `main`, do not push directly to `main`, do not combine unrelated changes into
 one commit, and do not bypass review by treating local validation as a
-substitute for a pull request.
+substitute for a pull request. AI agents are permitted to commit using the
+`--no-gpg-sign` flag when committing in sandboxed environments where local GPG
+private keys are unavailable.
 
 ## Agent Skills And Repository Instructions
 
@@ -105,12 +107,34 @@ Python validation set before marking work ready for review:
 coverage run
 coverage xml
 coverage report
+coverage run -m unittest discover artifact_pipeline
+coverage run --append scripts/run_slow_analytical_tests.py
+coverage report --fail-under=100 -m --include='artifact_pipeline/*'
 mypy simulate_cribbage_games.py
-pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive
 pylint simulate_cribbage_games.py
+pylint --persistent=n --disable=all --enable=duplicate-code simulate_cribbage_games.py
 pylint --persistent=n artifact_pipeline
 flake8
 ```
+
+The default unittest discovery path intentionally skips exact analytical
+integration tests that solve full discard-policy equilibria. Those tests are
+required before marking artifact-pipeline math changes ready and in CI, but they
+are too slow for the local pre-push hook. Run them explicitly with
+`coverage run --append scripts/run_slow_analytical_tests.py` as shown above.
+CI may shard these exact tests by passing group names such as `hessel-compat`,
+`zero-weights-coverage`, `support-dynamic-hessel`, `historical-true-nobs`, and
+`historical-flat-nobs`, then combine coverage data before enforcing 100%
+artifact-pipeline coverage.
+
+Exact analytical tests do not always need to prove full production-artifact
+convergence. For test coverage, prefer the smallest deterministic or
+statistically justified check that proves the changed behavior. If a test
+asserts that one table or strategy beats another by simulation, use paired
+comparisons where practical, require a meaningful minimum sample count before
+early stopping, and make the confidence criterion explicit. Reserve full
+long-running convergence for published artifact generation or CI gates that are
+clearly documented as expensive.
 
 Maintain or improve test coverage for changed Python behavior. Bug fixes require
 a regression test unless the fix is documentation-only or the behavior is
@@ -139,7 +163,9 @@ loosen quality gates, delete tests, or mark code work ready when required checks
 are failing. Do not use ignore comments or configuration changes to hide
 duplication, type, lint, formatting, or acceptance-test problems unless the pull
 request clearly justifies the exception. Do not rely on untested legacy code
-paths from `simulate_cribbage_games.py` in new code.
+paths from `simulate_cribbage_games.py` in new code. Agents must never modify,
+bypass, or disable local pre-commit hooks, CI configuration gates, or coverage
+validation rules without explicit human maintainer consent.
 
 ## Immutable External Dependency
 
@@ -156,6 +182,11 @@ Near the end of this section, observe these boundaries: agents must never
 attempt to format, lint, refactor, reorganize, modernize, or mechanically clean
 up `simulate_cribbage_games.py`. Do not run auto-formatters or bulk lint fixes
 over that file.
+
+When artifact-pipeline comparisons call into `simulate_cribbage_games.py`, first
+add focused coverage for every legacy function, class, constant, and execution
+path used by that comparison. Do not use full-game comparison harnesses as a
+shortcut around the immutable-dependency coverage requirement.
 
 ## Code Style And Documentation
 
@@ -220,6 +251,26 @@ or within a small stated tolerance as rough agreement, and document known
 methodology differences such as suited handling, crib flushes, opponent discard
 policy, or static versus iterative discard selection.
 
+For analytical crib-table work, distinguish exact deterministic enumeration
+inside a stated model from a closed-form global optimum. Iterative best response
+is deterministic and can converge to a stable policy for the modeled table, but
+it is still an iterative policy process. If dampening is used, keep measured
+sample statistics (`n`, `mu`, `se`) separate from policy-transition values
+(`policy_mu`, `policy_se`). Reports and summaries should use measured
+statistics; policy selection and convergence checks may use dampened policy
+values when that is the policy that will actually drive the next generation.
+
+Convergence checks must not ignore missing conditional buckets. If a generated
+table is expected to compare every discard pair, player role, and starter rank,
+missing measured cut-rank data should prevent a finite convergence claim rather
+than silently counting as zero shift.
+
+Historical crib tables should be named with enough attribution and methodology
+context to avoid overstating provenance. If a table is believed to be
+Colvert/Bowman, Rasmussen, Schell, Hessel, or another source, document the
+source and uncertainty instead of implying stronger provenance than the project
+has verified.
+
 Near the end of this section, observe these boundaries: do not summarize
 Monte Carlo output without the sample counts needed to compute the displayed
 uncertainty. Do not claim exact agreement with external tables when the
@@ -254,6 +305,16 @@ Before resolving a pull request review thread, add a reply that explains why
 the thread is considered resolved. Reference the code, documentation, test, or
 reasoned no-change decision that addresses the feedback, and identify the agent
 or human who made that assessment.
+
+After review comments exist, avoid force-pushing a pull request branch because it
+can destabilize GitHub review anchors and make human review harder. Use additive
+commits unless a human maintainer explicitly asks for history rewriting.
+
+When an AI agent posts or edits pull request prose, comments, summaries, or
+resolution notes, attribute the prose to the agent, for example "OpenAI Codex /
+me". Prefer natural Markdown paragraphs for GitHub-rendered PR prose; do not
+hard-wrap prose in PR descriptions or comments when GitHub's renderer will wrap
+it for the viewer.
 
 Near the end of this section, observe these boundaries: do not claim an issue is
 complete until requested files are updated, required constraints are represented

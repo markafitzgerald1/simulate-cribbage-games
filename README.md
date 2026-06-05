@@ -45,16 +45,24 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 - Run pre-commit hooks: `pre-commit run --all-files`
 - Check for type errors: `mypy simulate_cribbage_games.py`
 - Run unit tests, generate machine parseable test coverage info (can be used in the Visual Studio Code Coverage Gutters extension, for example) and ensure that the unit test code coverage percentage has not decreased: `coverage run && coverage xml && coverage report`
+- Run exact analytical artifact-pipeline integration tests when changing
+  analytical discard-policy math: `coverage run -m unittest discover
+  artifact_pipeline && coverage run --append
+  scripts/run_slow_analytical_tests.py && coverage report --fail-under=100 -m
+  --include='artifact_pipeline/*'`. CI shards those exact tests into named
+  groups and combines coverage data before enforcing the same 100% artifact
+  coverage gate.
 - New code that imports or relies on parts of `simulate_cribbage_games.py` must
   first prove the used legacy surface with 100% unit test coverage and related
   automated acceptance test coverage.
 - Before code changes are pushed or marked ready for review, run at least one
   smoke test or usage example from this README and sanity-check the output.
   Automate that acceptance test when practical.
-- Ensure no code duplications of size 59 tokens or larger: `pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive`
-- Check for pylint flagged code issues in the legacy simulator:
+- Check for pylint flagged code issues (including code duplication and similarities) in the legacy simulator:
   `pylint simulate_cribbage_games.py`
-- Check for pylint flagged code issues in the artifact pipeline:
+- Run the pre-push duplicate-code gate for the immutable legacy simulator:
+  `pylint --persistent=n --disable=all --enable=duplicate-code simulate_cribbage_games.py`
+- Check for pylint flagged code issues and similarities in the artifact pipeline:
   `pylint --persistent=n artifact_pipeline`
 - Check for flake8 flagged code issues: `flake8`
 - _Optional:_ Build the start of hand position + current dealer wins, losses and game points database to improve positional play of simulation-based play and discard strategies' (takes about 30 minutes on my laptop): `python simulate_cribbage_games.py --unlimited-hands-per-game --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions --games-per-update 2000 --tally-start-of-hand-position-results --game-count 1000000 --show-calc-cache-usage-stats`. Can be run longer (`--infinite-game-count` then Control+C to stop) for likely better results - exact point of diminishing returns currently hard to measure for performance and open bug reasons and not yet established.
@@ -122,6 +130,71 @@ seeded resumed run produces the same table as a fresh seeded run to the same
 sample target. If the original run did not specify `--seed`, resume without
 `--seed`; use `--no-resume` to start a new seeded table.
 
+Generate the analytical rank/suit-free expected crib points table:
+
+```sh
+python artifact_pipeline/analytical_solver.py --output expected_crib_points.analytical.json
+```
+
+The analytical solver uses deterministic enumeration inside its stated
+rank/suit-free model. It is not a Monte Carlo run, but it still uses iterative
+best response to converge a two-sided discard policy table and can take minutes
+locally. Use `--no-true-nobs` only for Hessel-compatible historical comparisons;
+the default `--true-nobs` mode applies rank-conditional Jack/Nobs expected value
+with card-removal effects.
+
+Use an analytical table as an explicit generation-zero bootstrap for Monte
+Carlo table generation. This finite command samples one Monte Carlo generation
+from the analytical bootstrap policy; it does not run a convergence loop unless
+`--convergence-threshold` is also supplied:
+
+```sh
+python artifact_pipeline/generate_table.py \
+  --bootstrap expected_crib_points.analytical.json \
+  --samples 1000 \
+  --seed 42 \
+  --output expected_crib_points.json
+```
+
+Run a bounded convergence loop by adding both a convergence threshold and a
+generation cap:
+
+```sh
+python artifact_pipeline/generate_table.py \
+  --bootstrap expected_crib_points.analytical.json \
+  --samples 1000 \
+  --seed 42 \
+  --output expected_crib_points.json \
+  --convergence-threshold 0.01 \
+  --max-generations 5
+```
+
+Convergence is measured between policy generations. Generation 0 uses the
+bootstrap policy to drive opponent discards, so the first finite convergence
+check can only occur after generation 1 has been sampled and compared with the
+next dampened policy table.
+
+The generator records honest measured statistics as `n`, `mu`, and `se`.
+Dampened policy values are stored separately as `policy_mu` and `policy_se` and
+are used for the next generation's discard policy. Reporting and table
+summaries should prefer the measured statistics unless they are intentionally
+inspecting policy-transition state.
+
+Summarize a generated table:
+
+```sh
+python artifact_pipeline/summarize_table.py expected_crib_points.json --role Dealer
+python artifact_pipeline/summarize_table.py expected_crib_points.json --role Pone --show-se
+python artifact_pipeline/summarize_table.py expected_crib_points.json --role both
+```
+
+Compare a generated table against Hessel's averages:
+
+```sh
+python artifact_pipeline/compare_hessel.py expected_crib_points.json --role both
+python artifact_pipeline/compare_hessel.py expected_crib_points.json --role Dealer --view table
+```
+
 ## Smoke Tests and Usage Examples
 
 All of the following should exit with status code 0 and no raised exception:
@@ -179,13 +252,13 @@ All of the following should exit with status code 0 and no raised exception:
     - reduce `flake8` and `pylint` maximum line lengths to 88,
     - restore `C0302` (too-many-lines) `pylint` rule,
     - restore `W0511` (fixme) `pylint` rule,
-    - reduce the maximum code duplication size allowed by `pmd cpd` to the lowest amount that that maximizes overall code quality,
+    - reduce the maximum code duplication size allowed by pylint's similarities checker to the lowest amount that maximizes overall code quality,
     - add code type annotations everywhere they can be added and update the corresponding pre-commit hook;
   - add missing pre-commit hooks:
     - Markdown lint;
   - add missing GitHub WorkFlow checks:
     - Markdown lint;
-  - factor out the `pmd cpd --language python --minimum-tokens 59 --dir . --non-recursive` duplication between `README.md` and `.pre-commit-config.yaml`; and
+  - factor out the duplication checker between `README.md` and `.pre-commit-config.yaml` using native Python lints; and
   - update all third party dependencies:
     - `python` -> ~= 3.11
     - everything in `requirements.txt` (e.g. `mypy`).

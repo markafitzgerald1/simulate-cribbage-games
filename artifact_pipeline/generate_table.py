@@ -1,3 +1,19 @@
+"""Monte Carlo Expected Crib Points Table Generator.
+
+This script executes multi-process Monte Carlo simulations to evaluate expected
+crib points for the 169 canonical suited/unsuited discard pairs. It simulates
+suit-ful deal distributions, accounting for crib flush rules and card-removal
+effects.
+
+Relationship to the Analytical Solver:
+- While analytical_solver.py evaluates expected crib values algebraically using a
+  suit-free rank model (converging in seconds), this script performs suited Monte
+  Carlo simulations (modeling flush math and strategy variance).
+- This script can be bootstrapped via the `--bootstrap` option using the
+  analytical solver's converged expected_crib_points.analytical.json as the
+  Generation 0 policy baseline, allowing dynamic play from the first sample.
+"""
+
 import argparse
 import itertools
 import json
@@ -18,6 +34,7 @@ from artifact_pipeline.adapter import (  # noqa: E402
     score_hand_and_starter,
     BEST_STATIC_SELECT_PONE_KEPT_CARDS,
     BEST_STATIC_SELECT_DEALER_KEPT_CARDS,
+    get_canonical_pairs,
 )
 
 
@@ -25,32 +42,6 @@ DEFAULT_OUTPUT_PATH = "expected_crib_points.json"
 DEFAULT_CHECKPOINT_FREQUENCY = 100
 METADATA_KEY = "__metadata__"
 GENERATION_METHOD = "artifact_pipeline.generate_table.v1"
-
-
-def get_canonical_pairs():
-    """
-    Generate the 169 canonical discard pairs.
-    Format: [Rank1]_[Rank2]_[SuitStatus]
-    Rank1 and Rank2 are from Index.indices (A, 2, ..., K).
-    Rank1 is always less than or equal to Rank2 in value.
-    SuitStatus is 'Suited' or 'Unsuited'.
-    Pairs of the same rank (e.g., A_A) can only be 'Unsuited'.
-    """
-    pairs = []
-    num_indices = len(Index.indices)
-    for rank1_index in range(num_indices):
-        for rank2_index in range(rank1_index, num_indices):
-            rank1 = Index.indices[rank1_index]
-            rank2 = Index.indices[rank2_index]
-
-            # Same rank -> can only be unsuited
-            if rank1_index == rank2_index:
-                pairs.append(f"{rank1}_{rank2}_Unsuited")
-            else:
-                pairs.append(f"{rank1}_{rank2}_Suited")
-                pairs.append(f"{rank1}_{rank2}_Unsuited")
-
-    return pairs
 
 
 def canonical_to_cards(canonical_pair):
@@ -109,7 +100,7 @@ def cards_to_canonical(card_1, card_2):
 
 
 def select_opponent_kept_cards_dynamic(
-    player, opponent_dealt, generation_accumulators=None, player_discard_cards=None
+    player, opponent_dealt, generation_accumulators=None
 ):
     # pylint: disable=too-many-locals
     if generation_accumulators is None:
@@ -123,11 +114,7 @@ def select_opponent_kept_cards_dynamic(
     max_score = None
     best_kept = None
 
-    if player_discard_cards:
-        deck_set_to_use = set(c for c in DECK_SET if c not in player_discard_cards)
-    else:
-        deck_set_to_use = DECK_SET
-
+    deck_set_to_use = DECK_SET
     starters = [card for card in deck_set_to_use if card not in opponent_dealt]
 
     for kept_combination in itertools.combinations(opponent_dealt, 4):
@@ -152,7 +139,7 @@ def select_opponent_kept_cards_dynamic(
             )
             if acc:
                 stats = accumulator_to_statistics(acc)
-                mu = stats["mu"] if stats is not None else 0.0
+                mu = policy_mean(stats) if stats is not None else 0.0
             else:
                 mu = 0.0
             total_crib_score += mu
@@ -227,15 +214,35 @@ def update_accumulator(accumulator, value):
 def accumulator_to_statistics(accumulator):
     n = accumulator["n"]
     if n == 0:
+        if "mu" in accumulator:
+            statistics = {
+                "n": 0,
+                "mu": accumulator["mu"],
+                "se": accumulator.get("se", 0.0),
+            }
+            if "policy_mu" in accumulator:
+                statistics["policy_mu"] = accumulator["policy_mu"]
+                statistics["policy_se"] = accumulator.get("policy_se", 0.0)
+            return statistics
         return None
 
     mu = accumulator["sum"] / n
     if n == 1:
-        return {"n": n, "mu": mu, "se": 0.0}
+        statistics = {"n": n, "mu": mu, "se": 0.0}
+    else:
+        variance = (accumulator["sum_squares"] - n * mu * mu) / (n - 1)
+        se = math.sqrt(max(variance, 0.0)) / math.sqrt(n)
+        statistics = {"n": n, "mu": mu, "se": se}
 
-    variance = (accumulator["sum_squares"] - n * mu * mu) / (n - 1)
-    se = math.sqrt(max(variance, 0.0)) / math.sqrt(n)
-    return {"n": n, "mu": mu, "se": se}
+    if "policy_mu" in accumulator:
+        statistics["policy_mu"] = accumulator["policy_mu"]
+        statistics["policy_se"] = accumulator.get("policy_se", 0.0)
+    return statistics
+
+
+def policy_mean(statistics):
+    """Return the EV used for policy decisions from serialized statistics."""
+    return statistics.get("policy_mu", statistics["mu"])
 
 
 def statistics_to_accumulator(statistics):
@@ -247,14 +254,57 @@ def statistics_to_accumulator(statistics):
     n = int(statistics["n"])
     mu = statistics["mu"]
     se = statistics.get("se", 0.0)
-    if n <= 1:
-        return {"n": n, "sum": mu * n, "sum_squares": mu * mu * n}
+    if n == 0:
+        accumulator = {"n": 0, "sum": 0.0, "sum_squares": 0.0, "mu": mu, "se": se}
+    elif n <= 1:
+        accumulator = {"n": n, "sum": mu * n, "sum_squares": mu * mu * n}
+    else:
+        variance = se * se * n
+        accumulator = {
+            "n": n,
+            "sum": mu * n,
+            "sum_squares": (n - 1) * variance + n * mu * mu,
+        }
 
-    variance = se * se * n
+    if "policy_mu" in statistics:
+        accumulator["policy_mu"] = statistics["policy_mu"]
+        accumulator["policy_se"] = statistics.get("policy_se", 0.0)
+    return accumulator
+
+
+def blend_policy_accumulators(prior_accumulator, measured_accumulator, dampening):
+    """Blend policy EV while retaining honest pooled measurement statistics."""
+    if measured_accumulator is None:
+        return (
+            dict(prior_accumulator)
+            if prior_accumulator is not None
+            else empty_accumulator()
+        )
+    if prior_accumulator is None:
+        return dict(measured_accumulator)
+
+    prior_stats = accumulator_to_statistics(prior_accumulator)
+    measured_stats = accumulator_to_statistics(measured_accumulator)
+    if prior_stats is None:
+        return dict(measured_accumulator)
+    if measured_stats is None:
+        return dict(prior_accumulator)
+
+    prior_policy_mu = prior_stats.get("policy_mu", prior_stats["mu"])
+    prior_policy_se = prior_stats.get("policy_se", prior_stats["se"])
+    policy_mu = prior_policy_mu + dampening * (measured_stats["mu"] - prior_policy_mu)
+    policy_se = math.sqrt(
+        (1.0 - dampening) ** 2 * prior_policy_se**2
+        + dampening**2 * measured_stats["se"] ** 2
+    )
     return {
-        "n": n,
-        "sum": mu * n,
-        "sum_squares": (n - 1) * variance + n * mu * mu,
+        "n": prior_accumulator["n"] + measured_accumulator["n"],
+        "sum": prior_accumulator["sum"] + measured_accumulator["sum"],
+        "sum_squares": (
+            prior_accumulator["sum_squares"] + measured_accumulator["sum_squares"]
+        ),
+        "policy_mu": policy_mu,
+        "policy_se": policy_se,
     }
 
 
@@ -349,12 +399,28 @@ def validate_resume_metadata(metadata, seed, output_path):
         )
 
 
-def load_or_initialize_accumulators(output_path, no_resume, seed):
+def load_or_initialize_accumulators(
+    output_path, no_resume, seed, bootstrap_path=None, require_bootstrap=False
+):
     if no_resume:
-        return {}, None
-    accumulators, metadata = load_output(output_path)
-    if metadata is not None or has_samples(accumulators):
-        validate_resume_metadata(metadata, seed, output_path)
+        accumulators, metadata = {}, None
+    else:
+        accumulators, metadata = load_output(output_path)
+        if metadata is not None or has_samples(accumulators):
+            validate_resume_metadata(metadata, seed, output_path)
+            return accumulators, metadata
+
+    # Fresh run (not resuming) - check if we should bootstrap
+    if bootstrap_path and os.path.exists(bootstrap_path):
+        bootstrap_accumulators, _ = load_output(bootstrap_path)
+        metadata = {
+            "generation": 0,
+            "generation_accumulators": serialize_accumulators(bootstrap_accumulators),
+        }
+        return {}, metadata
+    if bootstrap_path and require_bootstrap:
+        raise FileNotFoundError(f"Bootstrap file not found: {bootstrap_path}")
+
     return accumulators, metadata
 
 
@@ -382,7 +448,7 @@ def score_crib_sample(
 ):
     opponent_dealt = sample_rng.sample(remaining_deck, 6)
     kept = select_opponent_kept_cards_dynamic(
-        player, opponent_dealt, generation_accumulators, discarded_cards
+        player, opponent_dealt, generation_accumulators
     )
     opponent_discards = [card for card in opponent_dealt if card not in kept]
     remaining_after_deal = [
@@ -542,21 +608,57 @@ def reached_target_sample_count(accumulators, pairs, target_samples):
     )
 
 
-def calculate_max_ev_shift(prev_accumulators, current_accumulators, pairs):
+def build_generation_accumulators(
+    prev_accumulators, measured_accumulators, pairs, dampening
+):
+    """Build the next policy table from prior policy and measured samples."""
+    generation_accumulators = {}
+    for pair in pairs:
+        if pair == METADATA_KEY:  # pragma: no cover
+            continue
+        generation_accumulators[pair] = {}
+        for player in ["Dealer", "Pone"]:
+            generation_accumulators[pair][player] = {}
+            prior_player_data = (
+                prev_accumulators.get(pair, {}).get(player, {})
+                if prev_accumulators
+                else {}
+            )
+            measured_player_data = measured_accumulators.get(pair, {}).get(player, {})
+            for cut in Index.indices:
+                prior_acc = prior_player_data.get(cut)
+                measured_acc = measured_player_data.get(cut)
+                generation_accumulators[pair][player][cut] = blend_policy_accumulators(
+                    prior_acc, measured_acc, dampening
+                )
+    return generation_accumulators
+
+
+def calculate_max_ev_shift(
+    prev_accumulators, current_accumulators, pairs, measured_accumulators=None
+):  # pylint: disable=too-many-locals
     max_shift = 0.0
     for pair in pairs:
         for player in ["Dealer", "Pone"]:
             prev_data = prev_accumulators.get(pair, {}).get(player, {})
             curr_data = current_accumulators.get(pair, {}).get(player, {})
+            measured_data = (
+                measured_accumulators.get(pair, {}).get(player, {})
+                if measured_accumulators is not None
+                else curr_data
+            )
             for cut_card in Index.indices:
                 prev_acc = prev_data.get(cut_card, empty_accumulator())
                 curr_acc = curr_data.get(cut_card, empty_accumulator())
+                measured_acc = measured_data.get(cut_card, empty_accumulator())
                 prev_stats = accumulator_to_statistics(prev_acc)
                 curr_stats = accumulator_to_statistics(curr_acc)
-                if curr_stats is not None:
-                    prev_mu = prev_stats["mu"] if prev_stats is not None else 0.0
-                    shift = abs(curr_stats["mu"] - prev_mu)
-                    max_shift = max(max_shift, shift)
+                measured_stats = accumulator_to_statistics(measured_acc)
+                if measured_stats is None or curr_stats is None:
+                    return math.inf
+                prev_mu = policy_mean(prev_stats) if prev_stats is not None else 0.0
+                shift = abs(policy_mean(curr_stats) - prev_mu)
+                max_shift = max(max_shift, shift)
     return max_shift
 
 
@@ -616,6 +718,17 @@ def main(override_pairs=None):
         type=int,
         help="Optional RNG seed for reproducible generation.",
     )
+    parser.add_argument(
+        "--bootstrap",
+        default=None,
+        help="Optional JSON path to bootstrap baseline Generation 0 policy.",
+    )
+    parser.add_argument(
+        "--dampening",
+        type=float,
+        default=0.50,
+        help="Policy update dampening factor (default: 0.50).",
+    )
     args = parser.parse_args()
 
     if not args.infinite and args.samples is None:
@@ -633,6 +746,9 @@ def main(override_pairs=None):
     if args.convergence_threshold is not None and args.convergence_threshold < 0:
         parser.error("--convergence-threshold must be non-negative")
 
+    if args.dampening <= 0.0 or args.dampening > 1.0:
+        parser.error("--dampening must be in range (0.0, 1.0]")
+
     if args.seed is not None:
         rng = random.Random(args.seed)
     else:
@@ -640,7 +756,11 @@ def main(override_pairs=None):
 
     pairs = override_pairs if override_pairs is not None else get_canonical_pairs()
     accumulators, metadata = load_or_initialize_accumulators(
-        args.output, args.no_resume, args.seed
+        args.output,
+        args.no_resume,
+        args.seed,
+        args.bootstrap,
+        require_bootstrap=args.bootstrap is not None,
     )
 
     generation = 0
@@ -661,6 +781,7 @@ def main(override_pairs=None):
             generation_accumulators,
         )
 
+    # pylint: disable=too-many-nested-blocks
     try:
         while True:
             if args.max_generations is not None and generation >= args.max_generations:
@@ -673,10 +794,16 @@ def main(override_pairs=None):
             if args.samples is not None and reached_target_sample_count(
                 accumulators, pairs, args.samples
             ):
+                next_generation_accumulators = build_generation_accumulators(
+                    generation_accumulators, accumulators, pairs, args.dampening
+                )
                 # 1. Perform convergence check if convergence threshold is specified and generation > 0
                 if args.convergence_threshold is not None and generation > 0:
                     max_shift = calculate_max_ev_shift(
-                        generation_accumulators, accumulators, pairs
+                        generation_accumulators,
+                        next_generation_accumulators,
+                        pairs,
+                        measured_accumulators=accumulators,
                     )
                     if max_shift <= args.convergence_threshold:
                         print(
@@ -700,6 +827,11 @@ def main(override_pairs=None):
                         print(
                             f"Warning: Hardcap reached at generation {next_generation}."
                         )
+                    else:
+                        print(
+                            f"Generation {generation} complete; no convergence "
+                            "threshold requested."
+                        )
                     checkpoint()
                     break
 
@@ -707,14 +839,7 @@ def main(override_pairs=None):
                 print(
                     f"Generation {generation} complete. Transitioning to Generation {next_generation}..."
                 )
-                generation_accumulators = {
-                    pair: {
-                        player: {cut: dict(acc) for cut, acc in player_data.items()}
-                        for player, player_data in pair_data.items()
-                    }
-                    for pair, pair_data in accumulators.items()
-                    if pair != METADATA_KEY
-                }
+                generation_accumulators = next_generation_accumulators
                 accumulators = {}
                 generation = next_generation
                 checkpoint()

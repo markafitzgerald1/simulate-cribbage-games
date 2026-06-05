@@ -1,5 +1,6 @@
 import argparse
 import csv
+from dataclasses import dataclass
 import json
 import math
 import sys
@@ -15,6 +16,15 @@ StatsByCut = Mapping[str, Mapping[str, float]]
 RoleData = Mapping[str, StatsByCut]
 TableData = Mapping[str, RoleData]
 Estimate = Mapping[str, float]
+
+
+@dataclass(frozen=True)
+class RenderOptions:
+    statistic: str
+    precision: int
+    show_se: bool
+    suit_weighting: str
+    round_to: Optional[float]
 
 
 def mean(values: Iterable[float]) -> Optional[float]:
@@ -35,29 +45,40 @@ def pool_cut_estimate(cut_stats: StatsByCut) -> Optional[Estimate]:
 
     if all("n" in stats for stats in stats_with_mu):
         total_n = sum(int(stats["n"]) for stats in stats_with_mu)
-        total = sum(stats["mu"] * stats["n"] for stats in stats_with_mu)
-        sum_squares = 0.0
-        for stats in stats_with_mu:
-            n = int(stats["n"])
-            mu = stats["mu"]
-            se = stats.get("se", 0.0)
-            sample_variance = se * se * n
-            sum_squares += (n - 1) * sample_variance + n * mu * mu
+        if total_n > 0:
+            total = sum(stats["mu"] * stats["n"] for stats in stats_with_mu)
+            sum_squares = 0.0
+            for stats in stats_with_mu:
+                n = int(stats["n"])
+                mu = stats["mu"]
+                se = stats.get("se", 0.0)
+                sample_variance = se * se * n
+                sum_squares += (n - 1) * sample_variance + n * mu * mu
 
-        mu = total / total_n
-        if total_n == 1:
-            se = 0.0
-        else:
-            variance = (sum_squares - total_n * mu * mu) / (total_n - 1)
-            se = math.sqrt(max(variance, 0.0)) / math.sqrt(total_n)
-        return {"n": total_n, "mu": mu, "se": se}
+            mu = total / total_n
+            if total_n == 1:
+                se = 0.0
+            else:
+                variance = (sum_squares - total_n * mu * mu) / (total_n - 1)
+                se = math.sqrt(max(variance, 0.0)) / math.sqrt(total_n)
+            return {"n": total_n, "mu": mu, "se": se}
 
-    mu_values = [stats["mu"] for stats in stats_with_mu]
-    se_values = [stats.get("se", 0.0) for stats in stats_with_mu]
+    weights = [stats.get("weight", 1.0) for stats in stats_with_mu]
+    weight_total = sum(weights)
+    normalized_weights = [weight / weight_total for weight in weights]
+    has_n_zero = all("n" in stats and int(stats["n"]) == 0 for stats in stats_with_mu)
     return {
-        "n": len(stats_with_mu),
-        "mu": sum(mu_values) / len(mu_values),
-        "se": math.sqrt(sum(se * se for se in se_values)) / len(se_values),
+        "n": 0 if has_n_zero else len(stats_with_mu),
+        "mu": sum(
+            weight * stats["mu"]
+            for weight, stats in zip(normalized_weights, stats_with_mu)
+        ),
+        "se": math.sqrt(
+            sum(
+                (weight * stats.get("se", 0.0)) ** 2
+                for weight, stats in zip(normalized_weights, stats_with_mu)
+            )
+        ),
     }
 
 
@@ -163,11 +184,17 @@ def build_table(
 
 
 def format_value(
-    estimate: Optional[Estimate], statistic: str, precision: int, show_se: bool
+    estimate: Optional[Estimate],
+    statistic: str,
+    precision: int,
+    show_se: bool,
+    round_to: Optional[float] = None,
 ) -> str:
     if not estimate or statistic not in estimate:
         return ""
     value = estimate[statistic]
+    if round_to is not None and round_to > 0:
+        value = round(value / round_to) * round_to
     if show_se and statistic == "mu":
         return f"{value:.{precision}f} +/- {estimate['se']:.{precision}f}"
     if statistic == "n":
@@ -180,9 +207,10 @@ def print_markdown_table(
     statistic: str,
     precision: int,
     show_se: bool,
+    round_to: Optional[float] = None,
 ) -> None:
     formatted_rows = [
-        [format_value(value, statistic, precision, show_se) for value in row]
+        [format_value(value, statistic, precision, show_se, round_to) for value in row]
         for row in table
     ]
     headers = ["", *RANKS]
@@ -210,6 +238,7 @@ def print_csv_table(
     statistic: str,
     precision: int,
     show_se: bool,
+    round_to: Optional[float] = None,
 ) -> None:
     writer = csv.writer(sys.stdout)
     writer.writerow(["", *RANKS])
@@ -217,7 +246,10 @@ def print_csv_table(
         writer.writerow(
             [
                 rank,
-                *[format_value(value, statistic, precision, show_se) for value in row],
+                *[
+                    format_value(value, statistic, precision, show_se, round_to)
+                    for value in row
+                ],
             ]
         )
 
@@ -234,9 +266,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--role",
-        choices=("Dealer", "Pone"),
-        default="Dealer",
-        help="Dealer means discarding to your crib; Pone means discarding to opponent's crib.",
+        choices=("Dealer", "Pone", "both"),
+        required=True,
+        help=(
+            "Dealer means discarding to your crib; Pone means discarding to "
+            "opponent's crib; both prints both roles."
+        ),
     )
     parser.add_argument(
         "--statistic",
@@ -270,7 +305,77 @@ def parse_args() -> argparse.Namespace:
             "actual uses 25%% suited and 75%% unsuited."
         ),
     )
+    parser.add_argument(
+        "--round-to",
+        type=float,
+        default=None,
+        help="Round values to the nearest multiple of this number (e.g. 0.25).",
+    )
     return parser.parse_args()
+
+
+def roles_from_arg(role: str) -> Sequence[str]:
+    if role == "both":
+        return ("Dealer", "Pone")
+    return (role,)
+
+
+def print_markdown_tables(
+    data: TableData,
+    roles: Sequence[str],
+    options: RenderOptions,
+) -> None:
+    for index, role in enumerate(roles):
+        if len(roles) > 1:
+            if index:
+                print()
+            print(f"## {role}")
+            print()
+        print_markdown_table(
+            build_table(data, role, options.suit_weighting),
+            options.statistic,
+            options.precision,
+            options.show_se,
+            options.round_to,
+        )
+
+
+def print_csv_tables(
+    data: TableData,
+    roles: Sequence[str],
+    options: RenderOptions,
+) -> None:
+    writer = csv.writer(sys.stdout)
+    if len(roles) == 1:
+        print_csv_table(
+            build_table(data, roles[0], options.suit_weighting),
+            options.statistic,
+            options.precision,
+            options.show_se,
+            options.round_to,
+        )
+        return
+
+    writer.writerow(["role", "", *RANKS])
+    for role in roles:
+        table = build_table(data, role, options.suit_weighting)
+        for rank, row in zip(RANKS, table):
+            writer.writerow(
+                [
+                    role,
+                    rank,
+                    *[
+                        format_value(
+                            value,
+                            options.statistic,
+                            options.precision,
+                            options.show_se,
+                            options.round_to,
+                        )
+                        for value in row
+                    ],
+                ]
+            )
 
 
 def main() -> None:
@@ -278,11 +383,26 @@ def main() -> None:
     with open(args.path, "r", encoding="utf-8") as table_file:
         data = json.load(table_file)
 
-    table = build_table(data, args.role, args.suit_weighting)
+    roles = roles_from_arg(args.role)
+    options = RenderOptions(
+        args.statistic,
+        args.precision,
+        args.show_se,
+        args.suit_weighting,
+        args.round_to,
+    )
     if args.format == "csv":
-        print_csv_table(table, args.statistic, args.precision, args.show_se)
+        print_csv_tables(
+            data,
+            roles,
+            options,
+        )
     else:
-        print_markdown_table(table, args.statistic, args.precision, args.show_se)
+        print_markdown_tables(
+            data,
+            roles,
+            options,
+        )
 
 
 if __name__ == "__main__":  # pragma: no cover

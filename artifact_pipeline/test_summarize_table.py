@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from artifact_pipeline.summarize_table import (
+    RenderOptions,
     build_table,
     combine_estimates,
     combine_suit_estimates,
@@ -18,11 +19,19 @@ from artifact_pipeline.summarize_table import (
     parse_args,
     pool_cut_estimate,
     print_csv_table,
+    print_csv_tables,
+    print_markdown_tables,
     print_markdown_table,
+    roles_from_arg,
 )
 
 
 class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-methods
+    def render_options(
+        self, statistic="mu", precision=2, show_se=False, suit_weighting="actual"
+    ):
+        return RenderOptions(statistic, precision, show_se, suit_weighting, None)
+
     def test_mean(self):
         self.assertIsNone(mean([]))
         self.assertEqual(mean([2.0, 4.0]), 3.0)
@@ -62,6 +71,17 @@ class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-
         self.assertEqual(estimate["n"], 2)
         self.assertEqual(estimate["mu"], 5.0)
         self.assertAlmostEqual(estimate["se"], 0.5**0.5)
+
+    def test_pool_cut_estimate_with_analytical_weights(self):
+        cut_stats = {
+            "A": {"n": 0, "mu": 3.0, "se": 0.0, "weight": 2},
+            "2": {"n": 0, "mu": 9.0, "se": 0.0, "weight": 4},
+        }
+
+        estimate = pool_cut_estimate(cut_stats)
+
+        self.assertEqual(estimate["n"], 0)
+        self.assertEqual(estimate["mu"], 7.0)
 
     def test_combine_estimates(self):
         combined = combine_estimates(
@@ -167,6 +187,12 @@ class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-
             "1.23 +/- 0.57",
         )
         self.assertEqual(format_value({"n": 12.5}, "n", 2, False), "12")
+        self.assertEqual(
+            format_value({"mu": 1.13}, "mu", 2, False, round_to=0.25), "1.25"
+        )
+        self.assertEqual(
+            format_value({"mu": 1.12}, "mu", 2, False, round_to=0.25), "1.00"
+        )
 
     def test_print_markdown_table(self):
         table = [[{"mu": 1.0, "se": 0.25}]]
@@ -187,7 +213,7 @@ class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-
         self.assertTrue(output.startswith(",A,2,3,4,5,6,7,8,9,T,J,Q,K"))
         self.assertTrue("A,1.00" in output)
 
-    @patch("sys.argv", ["summarize_table.py"])
+    @patch("sys.argv", ["summarize_table.py", "--role", "Dealer"])
     def test_parse_args_defaults(self):
         args = parse_args()
 
@@ -198,6 +224,45 @@ class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-
         self.assertEqual(args.precision, 2)
         self.assertEqual(args.suit_weighting, "actual")
         self.assertFalse(args.show_se)
+        self.assertIsNone(args.round_to)
+
+    def test_roles_from_arg(self):
+        self.assertEqual(roles_from_arg("Dealer"), ("Dealer",))
+        self.assertEqual(roles_from_arg("Pone"), ("Pone",))
+        self.assertEqual(roles_from_arg("both"), ("Dealer", "Pone"))
+
+    def test_print_markdown_tables_both_roles(self):
+        data = {
+            "A_A_Unsuited": {
+                "Dealer": {"A": {"n": 1, "mu": 5.0}},
+                "Pone": {"A": {"n": 1, "mu": 4.0}},
+            }
+        }
+
+        with patch("sys.stdout", new_callable=io.StringIO) as stdout:
+            print_markdown_tables(data, ("Dealer", "Pone"), self.render_options())
+
+        output = stdout.getvalue()
+        self.assertTrue("## Dealer" in output)
+        self.assertTrue("## Pone" in output)
+        self.assertTrue("5.00" in output)
+        self.assertTrue("4.00" in output)
+
+    def test_print_csv_tables_both_roles(self):
+        data = {
+            "A_A_Unsuited": {
+                "Dealer": {"A": {"n": 1, "mu": 5.0}},
+                "Pone": {"A": {"n": 1, "mu": 4.0}},
+            }
+        }
+
+        with patch("sys.stdout", new_callable=io.StringIO) as stdout:
+            print_csv_tables(data, ("Dealer", "Pone"), self.render_options())
+
+        output = stdout.getvalue()
+        self.assertTrue(output.startswith("role,,A,2,3,4,5,6,7,8,9,T,J,Q,K"))
+        self.assertTrue("Dealer,A,5.00" in output)
+        self.assertTrue("Pone,A,4.00" in output)
 
     def test_main_prints_markdown(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -216,6 +281,30 @@ class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-
 
         self.assertTrue("5.00" in stdout.getvalue())
 
+    def test_main_prints_both_roles_markdown(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+            with open(output_path, "w", encoding="utf-8") as output_file:
+                json.dump(
+                    {
+                        "A_A_Unsuited": {
+                            "Dealer": {"A": {"n": 1, "mu": 5.0}},
+                            "Pone": {"A": {"n": 1, "mu": 4.0}},
+                        }
+                    },
+                    output_file,
+                )
+
+            with patch(
+                "sys.argv",
+                ["summarize_table.py", "--role", "both", output_path],
+            ), patch("sys.stdout", new_callable=io.StringIO) as stdout:
+                main()
+
+        output = stdout.getvalue()
+        self.assertTrue("## Dealer" in output)
+        self.assertTrue("## Pone" in output)
+
     def test_main_prints_csv(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "expected_crib_points.json")
@@ -227,7 +316,14 @@ class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-
 
             with patch(
                 "sys.argv",
-                ["summarize_table.py", "--format", "csv", output_path],
+                [
+                    "summarize_table.py",
+                    "--role",
+                    "Dealer",
+                    "--format",
+                    "csv",
+                    output_path,
+                ],
             ), patch("sys.stdout", new_callable=io.StringIO) as stdout:
                 main()
 
