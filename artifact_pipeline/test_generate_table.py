@@ -1366,8 +1366,8 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
     @requires_slow_analytical_tests
     def test_analytical_solver_hessel_compat(self):
         """Test bounded Hessel-mode scoring and formatting against Hessel averages."""
-        dl_tbl, pn_tbl, hands, crib_scores, _dl_cut_tbl, _pn_cut_tbl = (
-            run_analytical_ibr(
+        dl_tbl, pn_tbl, hands, crib_scores, _dealer_cut_table, _pone_cut_table = (
+            _run_analytical_ibr(
                 true_nobs=False,
                 max_iterations=HESSEL_COMPAT_SOLVER_ITERATIONS,
                 condition_policy_on_full_hand=False,
@@ -1650,15 +1650,15 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
 
     def test_analytical_selection_weights_available_starters(self):
         hand_kept_evs = [((4, 4, 4, 4, 0, 1), 1, {0: 0.0, 1: 0.0})]
-        dl_cut_tbl = [[0.0] * 13 for _ in range(2)]
-        pn_cut_tbl = [[0.0] * 13 for _ in range(2)]
-        dl_cut_tbl[0][4] = 100.0
-        dl_cut_tbl[1][0] = 1.0
-        pn_cut_tbl[0][4] = 100.0
-        pn_cut_tbl[1][0] = 1.0
+        dealer_cut_table = [[0.0] * 13 for _ in range(2)]
+        pone_cut_table = [[0.0] * 13 for _ in range(2)]
+        dealer_cut_table[0][4] = 100.0
+        dealer_cut_table[1][0] = 1.0
+        pone_cut_table[0][4] = 100.0
+        pone_cut_table[1][0] = 1.0
 
         selected = _select_discard_indices(
-            hand_kept_evs, [0.0, 0.0], [0.0, 0.0], dl_cut_tbl, pn_cut_tbl
+            hand_kept_evs, [0.0, 0.0], [0.0, 0.0], dealer_cut_table, pone_cut_table
         )
 
         self.assertEqual(selected, [((4, 4, 4, 4, 0, 1), 1, 0)])
@@ -1771,14 +1771,14 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             "artifact_pipeline.analytical_solver.get_hand_combinations_with_weights",
             return_value=[((0, 0, 1, 1, 2, 2), 1)],
         ):
-            dl_tbl, pn_tbl, _hands, _crib_scores, dl_cut_tbl, pn_cut_tbl = (
+            dl_tbl, pn_tbl, _hands, _crib_scores, dealer_cut_table, pone_cut_table = (
                 _run_analytical_ibr(max_iterations=0)
             )
 
         self.assertEqual(len(dl_tbl), 91)
         self.assertEqual(len(pn_tbl), 91)
-        self.assertEqual(len(dl_cut_tbl), 91)
-        self.assertEqual(len(pn_cut_tbl), 91)
+        self.assertEqual(len(dealer_cut_table), 91)
+        self.assertEqual(len(pone_cut_table), 91)
 
     def test_run_analytical_ibr_returns_fresh_cached_tables(self):
         _cached_analytical_ibr.cache_clear()
@@ -1934,8 +1934,8 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         # A regression test does not need publication-grade IBR convergence.
         # It only needs enough dynamic policy iteration to prove paired
         # advantage over the baseline with an explicit confidence threshold.
-        dl_tbl, pn_tbl, hands, crib_scores, _dl_cut_tbl, _pn_cut_tbl = (
-            run_analytical_ibr(
+        dl_tbl, pn_tbl, hands, crib_scores, _dealer_cut_table, _pone_cut_table = (
+            _run_analytical_ibr(
                 true_nobs=False,
                 max_iterations=PAIRED_ADVANTAGE_SOLVER_ITERATIONS,
                 condition_policy_on_full_hand=False,
@@ -2065,8 +2065,8 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 pn_list[idx] = pn_dict[pair_str]
             return dl_list, pn_list
 
-        dl_tbl, pn_tbl, hands, _crib_scores, _dl_cut_tbl, _pn_cut_tbl = (
-            run_analytical_ibr(
+        dl_tbl, pn_tbl, hands, _crib_scores, _dealer_cut_table, _pone_cut_table = (
+            _run_analytical_ibr(
                 true_nobs=true_nobs,
                 max_iterations=PAIRED_ADVANTAGE_SOLVER_ITERATIONS,
                 condition_policy_on_full_hand=False,

@@ -243,8 +243,8 @@ def _select_discard_indices(
     hand_kept_evs,
     dl_tbl,
     pn_tbl,
-    dl_cut_tbl=None,
-    pn_cut_tbl=None,
+    dealer_cut_table=None,
+    pone_cut_table=None,
     opponent_selected_discards=None,
     analytical_pairs=None,
     crib_scores=None,
@@ -275,13 +275,13 @@ def _select_discard_indices(
                 pn_policy_ev = pn_candidate_evs[idx]
             else:
                 dl_policy_ev = (
-                    _hand_conditioned_policy_ev(hand, dl_cut_tbl[idx])
-                    if dl_cut_tbl is not None
+                    _hand_conditioned_policy_ev(hand, dealer_cut_table[idx])
+                    if dealer_cut_table is not None
                     else dl_tbl[idx]
                 )
                 pn_policy_ev = (
-                    _hand_conditioned_policy_ev(hand, pn_cut_tbl[idx])
-                    if pn_cut_tbl is not None
+                    _hand_conditioned_policy_ev(hand, pone_cut_table[idx])
+                    if pone_cut_table is not None
                     else pn_tbl[idx]
                 )
             dl_score = hand_ev + dl_policy_ev
@@ -401,6 +401,10 @@ def _run_analytical_ibr(
     """
     Execute the Iterated Best Response loop sequentially to solve
     for Dealer and Pone expected crib tables.
+    condition_policy_on_full_hand=False is retained only for bounded historical
+    comparison tests of the older pair-conditioned approximation. The command
+    line and public solver API always use full-hand-conditioned policy
+    selection.
     Returns:
       DlTbl: Expected crib value Dealer gets when Dealer discards d
       PnTbl: Expected crib value Dealer gets when Pone discards p
@@ -463,8 +467,8 @@ def _run_analytical_ibr(
     # 3. IBR Convergence Loop
     dl_tbl = [0.0] * num_pairs
     pn_tbl = [0.0] * num_pairs
-    dl_cut_tbl = [[0.0] * 13 for _ in range(num_pairs)]
-    pn_cut_tbl = [[0.0] * 13 for _ in range(num_pairs)]
+    dealer_cut_table = [[0.0] * 13 for _ in range(num_pairs)]
+    pone_cut_table = [[0.0] * 13 for _ in range(num_pairs)]
     dampening = 0.50
     iteration = 0
     while iteration < max_iterations:
@@ -472,8 +476,8 @@ def _run_analytical_ibr(
             hand_kept_evs,
             dl_tbl,
             pn_tbl,
-            dl_cut_tbl,
-            pn_cut_tbl,
+            dealer_cut_table,
+            pone_cut_table,
         )
         dl_next, pn_next = _expected_crib_tables(
             selected_discards,
@@ -482,7 +486,7 @@ def _run_analytical_ibr(
             conditioned_hand_weights,
             hand_rank_counts,
         )
-        dl_cut_next, pn_cut_next = _expected_crib_cut_tables(
+        dealer_cut_next, pone_cut_next = _expected_crib_cut_tables(
             selected_discards,
             analytical_pairs,
             crib_scores,
@@ -500,15 +504,15 @@ def _run_analytical_ibr(
             dl_tbl[i] += dl_shift
             pn_tbl[i] += pn_shift
             for starter in range(13):
-                dl_cut_shift = dampening * (
-                    dl_cut_next[i][starter] - dl_cut_tbl[i][starter]
+                dealer_cut_shift = dampening * (
+                    dealer_cut_next[i][starter] - dealer_cut_table[i][starter]
                 )
-                pn_cut_shift = dampening * (
-                    pn_cut_next[i][starter] - pn_cut_tbl[i][starter]
+                pone_cut_shift = dampening * (
+                    pone_cut_next[i][starter] - pone_cut_table[i][starter]
                 )
-                max_shift = max(max_shift, abs(dl_cut_shift), abs(pn_cut_shift))
-                dl_cut_tbl[i][starter] += dl_cut_shift
-                pn_cut_tbl[i][starter] += pn_cut_shift
+                max_shift = max(max_shift, abs(dealer_cut_shift), abs(pone_cut_shift))
+                dealer_cut_table[i][starter] += dealer_cut_shift
+                pone_cut_table[i][starter] += pone_cut_shift
 
         if max_shift < convergence_threshold:  # pragma: no cover
             print(f"IBR converged successfully in {iteration + 1} iterations.")
@@ -518,14 +522,14 @@ def _run_analytical_ibr(
 
     if condition_policy_on_full_hand:
         pair_conditioned_discards = _select_discard_indices(
-            hand_kept_evs, dl_tbl, pn_tbl, dl_cut_tbl, pn_cut_tbl
+            hand_kept_evs, dl_tbl, pn_tbl, dealer_cut_table, pone_cut_table
         )
         selected_discards = _select_discard_indices(
             hand_kept_evs,
             dl_tbl,
             pn_tbl,
-            dl_cut_tbl,
-            pn_cut_tbl,
+            dealer_cut_table,
+            pone_cut_table,
             pair_conditioned_discards,
             analytical_pairs,
             crib_scores,
@@ -538,7 +542,7 @@ def _run_analytical_ibr(
             conditioned_hand_weights,
             hand_rank_counts,
         )
-        dl_cut_tbl, pn_cut_tbl = _expected_crib_cut_tables(
+        dealer_cut_table, pone_cut_table = _expected_crib_cut_tables(
             selected_discards,
             analytical_pairs,
             crib_scores,
@@ -546,7 +550,7 @@ def _run_analytical_ibr(
             hand_rank_counts,
         )
 
-    return dl_tbl, pn_tbl, hand_kept_evs, crib_scores, dl_cut_tbl, pn_cut_tbl
+    return dl_tbl, pn_tbl, hand_kept_evs, crib_scores, dealer_cut_table, pone_cut_table
 
 
 @lru_cache(maxsize=8)
@@ -554,18 +558,18 @@ def _cached_analytical_ibr(
     true_nobs,
     max_iterations,
     convergence_threshold,
-    condition_policy_on_full_hand,
 ):
     return _run_analytical_ibr(
         true_nobs=true_nobs,
         max_iterations=max_iterations,
         convergence_threshold=convergence_threshold,
-        condition_policy_on_full_hand=condition_policy_on_full_hand,
     )
 
 
 def _copy_analytical_ibr_result(result):
-    dl_tbl, pn_tbl, hand_kept_evs, crib_scores, dl_cut_tbl, pn_cut_tbl = result
+    dl_tbl, pn_tbl, hand_kept_evs, crib_scores, dealer_cut_table, pone_cut_table = (
+        result
+    )
     return (
         list(dl_tbl),
         list(pn_tbl),
@@ -574,8 +578,8 @@ def _copy_analytical_ibr_result(result):
             for hand, weight, discards_ev in hand_kept_evs
         ],
         {key: dict(scores) for key, scores in crib_scores.items()},
-        [list(row) for row in dl_cut_tbl],
-        [list(row) for row in pn_cut_tbl],
+        [list(row) for row in dealer_cut_table],
+        [list(row) for row in pone_cut_table],
     )
 
 
@@ -583,7 +587,6 @@ def run_analytical_ibr(
     true_nobs=True,
     max_iterations=DEFAULT_IBR_MAX_ITERATIONS,
     convergence_threshold=DEFAULT_IBR_CONVERGENCE_THRESHOLD,
-    condition_policy_on_full_hand=True,
 ):
     """Return the rank-conditional analytical table for the requested Nobs mode."""
     return _copy_analytical_ibr_result(
@@ -591,7 +594,6 @@ def run_analytical_ibr(
             true_nobs,
             max_iterations,
             convergence_threshold,
-            condition_policy_on_full_hand,
         )
     )
 
@@ -665,7 +667,13 @@ def _evaluate_conditioned_crib_expected_cuts(  # pylint: disable=too-many-locals
 
 # pylint: disable=too-many-locals
 def format_table_as_generation_zero(
-    dl_tbl, pn_tbl, hands, crib_scores, true_nobs, dl_cut_tbl=None, pn_cut_tbl=None
+    dl_tbl,
+    pn_tbl,
+    hands,
+    crib_scores,
+    true_nobs,
+    dealer_cut_table=None,
+    pone_cut_table=None,
 ):
     """
     Format the 91-pair analytical tables into the exact 169 canonical
@@ -677,10 +685,10 @@ def format_table_as_generation_zero(
     analytical_pairs = get_analytical_pairs()
     canonical_pairs = get_canonical_pairs()
 
-    if dl_cut_tbl is not None and pn_cut_tbl is not None:
+    if dealer_cut_table is not None and pone_cut_table is not None:
         conditioned_cut_values = [
             {"Dealer": list(dealer_values), "Pone": list(pone_values)}
-            for dealer_values, pone_values in zip(dl_cut_tbl, pn_cut_tbl)
+            for dealer_values, pone_values in zip(dealer_cut_table, pone_cut_table)
         ]
     else:
         selected_discards = _select_discard_indices(hands, dl_tbl, pn_tbl)
@@ -787,12 +795,18 @@ def main():
         f"Starting generic suit-free analytical solver "
         f"(true-nobs={args.true_nobs})..."
     )
-    dl_tbl, pn_tbl, hands, crib_scores, dl_cut_tbl, pn_cut_tbl = run_analytical_ibr(
-        true_nobs=args.true_nobs
+    dl_tbl, pn_tbl, hands, crib_scores, dealer_cut_table, pone_cut_table = (
+        run_analytical_ibr(true_nobs=args.true_nobs)
     )
 
     output_data = format_table_as_generation_zero(
-        dl_tbl, pn_tbl, hands, crib_scores, args.true_nobs, dl_cut_tbl, pn_cut_tbl
+        dl_tbl,
+        pn_tbl,
+        hands,
+        crib_scores,
+        args.true_nobs,
+        dealer_cut_table,
+        pone_cut_table,
     )
 
     with open(args.output, "w", encoding="utf-8") as output_file:
