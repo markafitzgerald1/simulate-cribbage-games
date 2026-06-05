@@ -66,8 +66,10 @@ from artifact_pipeline.analytical_solver import (
     get_hand_combinations_with_weights,
     main as analytical_main,
     _expected_crib_tables,
+    _evaluate_conditioned_crib_expected_cuts,
     _hand_conditioned_policy_ev,
     _select_discard_indices,
+    _candidate_policy_crib_evs,
     get_analytical_pairs,
     get_card_removal_weight,
     GENERATION_METHOD as ANALYTICAL_GENERATION_METHOD,
@@ -1364,9 +1366,12 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
     @requires_slow_analytical_tests
     def test_analytical_solver_hessel_compat(self):
         """Test bounded Hessel-mode scoring and formatting against Hessel averages."""
-        dl_tbl, pn_tbl, hands, crib_scores, dl_cut_tbl, pn_cut_tbl = run_analytical_ibr(
-            true_nobs=False,
-            max_iterations=HESSEL_COMPAT_SOLVER_ITERATIONS,
+        dl_tbl, pn_tbl, hands, crib_scores, _dl_cut_tbl, _pn_cut_tbl = (
+            run_analytical_ibr(
+                true_nobs=False,
+                max_iterations=HESSEL_COMPAT_SOLVER_ITERATIONS,
+                condition_policy_on_full_hand=False,
+            )
         )
         output_data = format_table_as_generation_zero(
             dl_tbl,
@@ -1374,8 +1379,6 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             hands,
             crib_scores,
             true_nobs=False,
-            dl_cut_tbl=dl_cut_tbl,
-            pn_cut_tbl=pn_cut_tbl,
         )
 
         hessel_expected_averages = {
@@ -1660,6 +1663,123 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
 
         self.assertEqual(selected, [((4, 4, 4, 4, 0, 1), 1, 0)])
 
+    def test_analytical_candidate_crib_ev_removes_full_hand_ranks(self):
+        analytical_pairs = [(0, 1), (2, 3), (4, 4)]
+        crib_scores = {
+            (dealer_idx, pone_idx): {rank: 0.0 for rank in range(13)}
+            for dealer_idx in range(len(analytical_pairs))
+            for pone_idx in range(len(analytical_pairs))
+        }
+        crib_scores[(0, 1)] = {rank: 1.0 for rank in range(13)}
+        crib_scores[(1, 0)] = {rank: 1.0 for rank in range(13)}
+        crib_scores[(0, 2)] = {rank: 100.0 for rank in range(13)}
+        crib_scores[(2, 0)] = {rank: 100.0 for rank in range(13)}
+
+        known_hand = (0, 1, 4, 4, 4, 4)
+        impossible_fives_hand = (2, 3, 4, 4, 5, 6)
+        compatible_hand = (2, 3, 5, 6, 7, 8)
+        selected_discards = [
+            (impossible_fives_hand, 2, 2),
+            (compatible_hand, 1, 1),
+        ]
+        hand_rank_counts = [
+            tuple((rank, hand.count(rank)) for rank in set(hand))
+            for hand, _dealer_idx, _pone_idx in selected_discards
+        ]
+
+        dealer_evs, pone_evs = _candidate_policy_crib_evs(
+            known_hand,
+            selected_discards,
+            analytical_pairs,
+            crib_scores,
+            hand_rank_counts,
+        )
+
+        self.assertAlmostEqual(dealer_evs[0], 1.0)
+        self.assertAlmostEqual(pone_evs[0], 1.0)
+
+        conditioned_hand_weights = [
+            [
+                get_card_removal_weight(pair, hand)
+                for hand, _dealer_idx, _pone_idx in selected_discards
+            ]
+            for pair in analytical_pairs
+        ]
+        pair_conditioned = _evaluate_conditioned_crib_expected_cuts(
+            0,
+            selected_discards,
+            analytical_pairs,
+            crib_scores,
+            conditioned_hand_weights,
+            hand_rank_counts,
+        )
+        pair_conditioned_ev = _hand_conditioned_policy_ev(
+            known_hand, pair_conditioned["Dealer"]
+        )
+
+        self.assertGreater(pair_conditioned_ev, dealer_evs[0] + 10.0)
+
+    def test_analytical_selection_uses_full_hand_conditioned_crib_ev(self):
+        analytical_pairs = [(0, 1), (2, 3), (4, 4)]
+        crib_scores = {
+            (dealer_idx, pone_idx): {rank: 0.0 for rank in range(13)}
+            for dealer_idx in range(len(analytical_pairs))
+            for pone_idx in range(len(analytical_pairs))
+        }
+        crib_scores[(0, 1)] = {rank: 1.0 for rank in range(13)}
+        crib_scores[(0, 2)] = {rank: 100.0 for rank in range(13)}
+
+        known_hand = (0, 1, 4, 4, 4, 4)
+        selected_discards = [
+            ((2, 3, 4, 4, 5, 6), 2, 2),
+            ((2, 3, 5, 6, 7, 8), 1, 1),
+        ]
+        hand_rank_counts = [
+            tuple((rank, hand.count(rank)) for rank in set(hand))
+            for hand, _dealer_idx, _pone_idx in selected_discards
+        ]
+        hand_kept_evs = [(known_hand, 1, {0: 0.0, 1: 2.0})]
+
+        selected = _select_discard_indices(
+            hand_kept_evs,
+            [0.0] * len(analytical_pairs),
+            [0.0] * len(analytical_pairs),
+            opponent_selected_discards=selected_discards,
+            analytical_pairs=analytical_pairs,
+            crib_scores=crib_scores,
+            hand_rank_counts=hand_rank_counts,
+        )
+
+        self.assertEqual(selected, [(known_hand, 1, 1)])
+
+    def test_analytical_candidate_crib_ev_handles_no_compatible_hands(self):
+        analytical_pairs = [(0, 0)]
+        crib_scores = {(0, 0): {rank: 0.0 for rank in range(13)}}
+        dealer_evs, pone_evs = _candidate_policy_crib_evs(
+            (0, 0, 0, 0, 1, 1),
+            [((0, 1, 2, 3, 4, 5), 0, 0)],
+            analytical_pairs,
+            crib_scores,
+            [((0, 1), (1, 1), (2, 1), (3, 1), (4, 1), (5, 1))],
+        )
+
+        self.assertEqual(dealer_evs, [0.0])
+        self.assertEqual(pone_evs, [0.0])
+
+    def test_analytical_ibr_full_hand_refinement_with_tiny_fixture(self):
+        with patch(
+            "artifact_pipeline.analytical_solver.get_hand_combinations_with_weights",
+            return_value=[((0, 0, 1, 1, 2, 2), 1)],
+        ):
+            dl_tbl, pn_tbl, _hands, _crib_scores, dl_cut_tbl, pn_cut_tbl = (
+                _run_analytical_ibr(max_iterations=0)
+            )
+
+        self.assertEqual(len(dl_tbl), 91)
+        self.assertEqual(len(pn_tbl), 91)
+        self.assertEqual(len(dl_cut_tbl), 91)
+        self.assertEqual(len(pn_cut_tbl), 91)
+
     def test_run_analytical_ibr_returns_fresh_cached_tables(self):
         _cached_analytical_ibr.cache_clear()
         solver_result = (
@@ -1712,7 +1832,9 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             "artifact_pipeline.analytical_solver.get_hand_combinations_with_weights",
             return_value=single_hand,
         ):
-            dl_tbl, pn_tbl, _, _, _, _ = _run_analytical_ibr()
+            dl_tbl, pn_tbl, _, _, _, _ = _run_analytical_ibr(
+                condition_policy_on_full_hand=False
+            )
             self.assertEqual(len(dl_tbl), 91)
             self.assertEqual(len(pn_tbl), 91)
 
@@ -1816,6 +1938,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             run_analytical_ibr(
                 true_nobs=False,
                 max_iterations=PAIRED_ADVANTAGE_SOLVER_ITERATIONS,
+                condition_policy_on_full_hand=False,
             )
         )
 
@@ -1946,6 +2069,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             run_analytical_ibr(
                 true_nobs=true_nobs,
                 max_iterations=PAIRED_ADVANTAGE_SOLVER_ITERATIONS,
+                condition_policy_on_full_hand=False,
             )
         )
         num_pairs = len(dl_tbl)
