@@ -73,7 +73,8 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 
 ### Node.js
 
-- Install [Node.js](https://nodejs.org/en/) 16.8.0
+- Install [Node.js](https://nodejs.org/en/) 18 or newer. The spellcheck
+  validation uses cspell, which requires Node.js 18+.
 - Install dependencies, audit for known dependency vulnerabilities and report on any out of date dependencies: `npm install && npm outdated`
 
 #### Simulator

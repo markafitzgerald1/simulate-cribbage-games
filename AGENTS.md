@@ -90,6 +90,9 @@ Install pre-commit hooks for local development:
 pre-commit install
 ```
 
+Install Node.js 18 or newer before running npm-based checks such as
+`npm run spellcheck`.
+
 The Python simulator is currently packaged by `setup.py` and tested through
 `coverage run`, which discovers the existing unittest suite.
 

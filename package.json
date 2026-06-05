@@ -53,6 +53,9 @@
     "eslint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "spellcheck": "cspell --config cspell.json"
   },
+  "engines": {
+    "node": ">=18"
+  },
   "author": "Mark Fitzgerald <mark.a.fitzgerald1@gmail.com> (https://github.com/markafitzgerald1)",
   "license": "MPL-2.0"
 }

@@ -22,10 +22,10 @@ default skill for documentation and Python backend work.
    automated acceptance coverage before relying on it.
 6. Run at least one README smoke test or usage example for code changes, and
    sanity-check the output before review.
-7. Run `npm run spellcheck` for Python, script, Markdown, and repository
-   instruction changes. Add only real project/domain words to `cspell.json`;
-   rename opaque abbreviations or unpronounceable identifiers instead of
-   allowlisting them.
+7. Run `npm run spellcheck` with Node.js 18 or newer for Python, script,
+   Markdown, and repository instruction changes. Add only real project/domain
+   words to `cspell.json`; rename opaque abbreviations or unpronounceable
+   identifiers instead of allowlisting them.
 8. Run the required checks from `AGENTS.md`, or record why a check was skipped.
 9. For long-running Monte Carlo artifact generation, preserve resumability,
    checkpoint progress periodically, and keep sample counts with means and
