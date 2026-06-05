@@ -1254,7 +1254,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
 
         # 2. Test when generation_accumulators is provided
         # Set up mock stats for one pair to exercise accumulator lookup
-        mock_accs = {
+        mock_accumulators = {
             "2_3_Unsuited": {
                 "Dealer": {
                     0: {"n": 10, "sum": 20.0, "m2": 0.0},
@@ -1264,10 +1264,14 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 },
             }
         }
-        kept_dyn_dealer = select_opponent_kept_cards_dynamic("Dealer", dealt, mock_accs)
+        kept_dyn_dealer = select_opponent_kept_cards_dynamic(
+            "Dealer", dealt, mock_accumulators
+        )
         self.assertEqual(len(kept_dyn_dealer), 4)
 
-        kept_dyn_pone = select_opponent_kept_cards_dynamic("Pone", dealt, mock_accs)
+        kept_dyn_pone = select_opponent_kept_cards_dynamic(
+            "Pone", dealt, mock_accumulators
+        )
         self.assertEqual(len(kept_dyn_pone), 4)
 
     def test_main_negative_convergence_threshold(self):
@@ -1322,13 +1326,13 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             )
 
             # If we try to resume with a matching seed (42), it should succeed and return metadata.
-            accs, meta = load_or_initialize_accumulators(
+            accumulators, metadata = load_or_initialize_accumulators(
                 output_path=output_path,
                 no_resume=False,
                 seed=42,
             )
-            self.assertEqual(accs, {"A_A_Unsuited": {"Dealer": {}, "Pone": {}}})
-            self.assertEqual(meta["seed"], 42)
+            self.assertEqual(accumulators, {"A_A_Unsuited": {"Dealer": {}, "Pone": {}}})
+            self.assertEqual(metadata["seed"], 42)
 
             # If we try to resume with a non-matching seed (99), it should raise ValueError
             # because of the incompatible seed, even though current accumulators are empty.

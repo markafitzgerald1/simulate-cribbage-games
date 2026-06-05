@@ -1,0 +1,63 @@
+{
+  "version": "0.2",
+  "language": "en-US",
+  "useGitignore": true,
+  "ignorePaths": [
+    "node_modules",
+    "package-lock.json",
+    "coverage.xml",
+    "htmlcov",
+    "dist",
+    ".parcel-cache"
+  ],
+  "files": [
+    "artifact_pipeline/**/*.py",
+    "scripts/**/*.py",
+    "test_*.py",
+    "*.md",
+    "skills/**/*.md"
+  ],
+  "dictionaries": ["python", "softwareTerms"],
+  "words": [
+    "Colvert",
+    "Hessel",
+    "Rasmussen",
+    "Schell",
+    "TJQK",
+    "Wayback",
+    "checkpointed",
+    "cribbage",
+    "deque",
+    "discarder",
+    "discards",
+    "explainability",
+    "gdbm",
+    "Geocities",
+    "hardcap",
+    "handrank",
+    "MSYS",
+    "multisets",
+    "myclass",
+    "nobs",
+    "parseable",
+    "pone",
+    "pylintrc",
+    "reimplementation",
+    "resumability",
+    "rollup",
+    "rollups",
+    "runstats",
+    "sandboxed",
+    "seedable",
+    "simulatable",
+    "suitless",
+    "unseeded"
+  ],
+  "ignoreWords": [
+    "gcd",
+    "mypy",
+    "pylint",
+    "unreviewed",
+    "winpty"
+  ]
+}

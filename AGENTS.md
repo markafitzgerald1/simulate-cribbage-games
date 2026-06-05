@@ -111,6 +111,7 @@ coverage run -m unittest discover artifact_pipeline
 coverage run --append scripts/run_slow_analytical_tests.py
 coverage report --fail-under=100 -m --include='artifact_pipeline/*'
 mypy simulate_cribbage_games.py
+npm run spellcheck
 pylint simulate_cribbage_games.py
 pylint --persistent=n --disable=all --enable=duplicate-code simulate_cribbage_games.py
 pylint --persistent=n artifact_pipeline
@@ -198,6 +199,13 @@ Use clear names and tests to document behavior. Add comments only when they
 explain why the code does something non-obvious. Prefer long-form command flags
 in documentation when readability improves.
 
+Run `npm run spellcheck` after changing Python code, scripts, Markdown, or
+repository instructions. The cspell dictionary in `cspell.json` is intentionally
+repo-specific: add domain words only after confirming they are real cribbage,
+statistical, historical-table, tool, or project terms. Do not add opaque
+abbreviations merely to silence the checker; rename short or unpronounceable
+identifiers instead.
+
 When changing workflows, commands, validation expectations, or development
 policy, update `README.md`, `AGENTS.md`, and `skills/SKILLS.md` together when
 the change affects all three.
@@ -282,7 +290,9 @@ Do not assume lint rules are enforced unless they are present in local
 configuration or pre-commit output. The artifact pipeline is covered by local
 pre-commit and CI checks for both `pylint --persistent=n artifact_pipeline` and
 `flake8 artifact_pipeline`. The current pylint configuration does not enforce
-magic-number checks or unusually strict short-variable-name checks.
+magic-number checks or unusually strict short-variable-name checks. Use
+`npm run spellcheck` to catch misspellings and many opaque identifier fragments
+that pylint accepts as valid snake_case.
 
 ## Pull Request Readiness
 
