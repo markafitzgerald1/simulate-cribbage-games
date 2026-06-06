@@ -663,10 +663,10 @@ def calculate_max_ev_shift(
 
 
 def positive_int(value):
-    ivalue = int(value)
-    if ivalue <= 0:
+    parsed_value = int(value)
+    if parsed_value <= 0:
         raise argparse.ArgumentTypeError(f"{value} is an invalid positive int value")
-    return ivalue
+    return parsed_value
 
 
 def main(override_pairs=None):
