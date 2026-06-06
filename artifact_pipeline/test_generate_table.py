@@ -1850,6 +1850,37 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
 
         self.assertTrue("Full-hand policy converged successfully" in stdout.getvalue())
 
+    def test_analytical_ibr_reports_full_hand_non_convergence(self):
+        select_calls = [
+            [((0, 0, 1, 1, 2, 2), 0, 0)],  # Call 1: inside IBR loop
+            [((0, 0, 1, 1, 2, 2), 0, 0)],  # Call 2: before full-hand loop
+            [((0, 0, 1, 1, 2, 2), 1, 1)],  # Call 3: inside full-hand loop
+        ]
+
+        def mock_select(*_args, **_kwargs):
+            if select_calls:
+                return select_calls.pop(0)
+            return [((0, 0, 1, 1, 2, 2), 0, 0)]
+
+        with patch(
+            "artifact_pipeline.analytical_solver.get_hand_combinations_with_weights",
+            return_value=[((0, 0, 1, 1, 2, 2), 1)],
+        ), patch(
+            "artifact_pipeline.analytical_solver._select_discard_indices",
+            side_effect=mock_select,
+        ), patch(
+            "sys.stderr", new_callable=io.StringIO
+        ) as stderr:
+            _run_analytical_ibr(
+                max_iterations=1,
+                convergence_threshold=-1.0,
+                full_hand_policy_max_iterations=1,
+            )
+
+        self.assertTrue(
+            "Warning: Full-hand policy did not converge" in stderr.getvalue()
+        )
+
     def test_run_analytical_ibr_returns_fresh_cached_tables(self):
         _cached_analytical_ibr.cache_clear()
         solver_result = (

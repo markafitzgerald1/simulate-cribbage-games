@@ -166,8 +166,9 @@ def _hand_conditioned_policy_ev(hand, cut_values):
 
 def _iter_rank_count_subsets(rank_counts):
     """Yield sparse rank-count subsets and their physical subset multiplicity."""
+    sorted_rank_counts = sorted(rank_counts)
     subsets = [((), 0, 1)]
-    for rank, count in rank_counts:
+    for rank, count in sorted_rank_counts:
         next_subsets = []
         for prefix, subset_size, multiplicity in subsets:
             next_subsets.append((prefix, subset_size, multiplicity))
@@ -185,8 +186,9 @@ def _iter_rank_count_subsets(rank_counts):
 
 def _iter_containment_subset_weights(rank_counts):
     """Yield physical-hand containment weights for every subset of a rank hand."""
+    sorted_rank_counts = sorted(rank_counts)
     subsets = [((), 1)]
-    for rank, count in rank_counts:
+    for rank, count in sorted_rank_counts:
         next_subsets = []
         for prefix, weight in subsets:
             for selected_count in range(count + 1):
@@ -329,7 +331,7 @@ def _candidate_policy_crib_evs(
             crib_scores, len(analytical_pairs)
         )
     removed_rank_counts = tuple(
-        (rank, removed_cards.count(rank)) for rank in set(removed_cards)
+        (rank, removed_cards.count(rank)) for rank in sorted(set(removed_cards))
     )
     removed_count_by_rank = [0] * 13
     for rank, count in removed_rank_counts:
@@ -643,7 +645,7 @@ def _run_analytical_ibr(
         for pair in analytical_pairs
     ]
     hand_rank_counts = [
-        tuple((rank, hand.count(rank)) for rank in set(hand))
+        tuple((rank, hand.count(rank)) for rank in sorted(set(hand)))
         for hand, _weight, _evs in hand_kept_evs
     ]
 
@@ -759,6 +761,14 @@ def _run_analytical_ibr(
                     f"{full_hand_iteration + 1} iterations."
                 )
                 break
+        else:
+            print(
+                "Warning: Full-hand policy did not converge within "
+                f"{full_hand_iterations} iterations. "
+                f"Remaining changed discards: {changed_discards}, "
+                f"max shift: {max_shift:.6f}",
+                file=sys.stderr,
+            )
 
     return dl_tbl, pn_tbl, hand_kept_evs, crib_scores, dealer_cut_table, pone_cut_table
 
@@ -907,7 +917,7 @@ def format_table_as_generation_zero(
             for pair in analytical_pairs
         ]
         hand_rank_counts = [
-            tuple((rank, hand.count(rank)) for rank in set(hand))
+            tuple((rank, hand.count(rank)) for rank in sorted(set(hand)))
             for hand, _weight, _evs in hands
         ]
         conditioned_cut_values = [
