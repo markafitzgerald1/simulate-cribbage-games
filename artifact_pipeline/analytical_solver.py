@@ -3,16 +3,16 @@
 # which are kept inline to maintain standalone script usability without import complexity.
 """First-Principles Combinatorial expected value (EV) Solver.
 
-This script evaluates iterative best-response expected crib values under a
-suit-free rank model (91 rank pairs). By precomputing exact combinatorics and
-kept card probabilities, it deterministically enumerates the stated model for
-Dealer and Pone discard strategies.
+This script solves for the exact Iterated Best Response (IBR) expected crib values
+under the stated suit-free rank model (91 rank pairs). By precomputing exact
+combinatorics and kept card probabilities under this model, it deterministically
+enumerates Dealer and Pone discard strategies.
 
 Relationship to the Monte Carlo Generator:
 - While generate_table.py uses multi-process Monte Carlo simulations to model
   suited flushes and cards, this script evaluates expected values algebraically.
 - The output of this script (expected_crib_points.analytical.json) serves as the
-  deterministic Generation 0 policy bootstrap for the Monte Carlo table
+  ideal suit-free Generation 0 policy bootstrap for the Monte Carlo table
   generator, eliminating early-sample policy noise inside the stated rank model.
 """
 
@@ -23,6 +23,7 @@ import json
 import math
 import os
 import sys
+from typing import Iterable, List, Tuple
 
 if __package__ in (None, ""):  # pragma: no cover
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -38,6 +39,10 @@ DEFAULT_OUTPUT_PATH = "expected_crib_points.analytical.json"
 GENERATION_METHOD = "artifact_pipeline.analytical_solver.v1"
 DEFAULT_IBR_CONVERGENCE_THRESHOLD = 0.0001
 DEFAULT_IBR_MAX_ITERATIONS = 100
+# The full-hand policy loop converges very rapidly (typically in 1 or 2 iterations)
+# because the pair-conditioned tables provide an extremely close approximation.
+# A default cap of 3 ensures we reach stability/convergence while safely bounding
+# execution time in case of rare policy oscillations.
 DEFAULT_FULL_HAND_POLICY_MAX_ITERATIONS = 3
 _POLICY_SCORE_CACHE_KEY = ("__policy_score_cache__",)
 _POLICY_TOTAL_WEIGHT_CACHE_KEY = ("__policy_total_weight_cache__",)
@@ -164,10 +169,13 @@ def _hand_conditioned_policy_ev(hand, cut_values):
     return sum((4 - hand.count(rank)) * cut_values[rank] for rank in range(13)) / 46.0
 
 
-def _iter_rank_count_subsets(rank_counts):
+def _iter_rank_count_subsets(
+    rank_counts: Iterable[Tuple[int, int]]
+) -> List[Tuple[Tuple[Tuple[int, int], ...], int, int]]:
     """Yield sparse rank-count subsets and their physical subset multiplicity."""
     sorted_rank_counts = sorted(rank_counts)
-    subsets = [((), 0, 1)]
+    # list of (prefix, subset_size, multiplicity)
+    subsets: List[Tuple[Tuple[Tuple[int, int], ...], int, int]] = [((), 0, 1)]
     for rank, count in sorted_rank_counts:
         next_subsets = []
         for prefix, subset_size, multiplicity in subsets:
@@ -184,10 +192,13 @@ def _iter_rank_count_subsets(rank_counts):
     return subsets
 
 
-def _iter_containment_subset_weights(rank_counts):
+def _iter_containment_subset_weights(
+    rank_counts: Iterable[Tuple[int, int]]
+) -> List[Tuple[Tuple[Tuple[int, int], ...], int]]:
     """Yield physical-hand containment weights for every subset of a rank hand."""
     sorted_rank_counts = sorted(rank_counts)
-    subsets = [((), 1)]
+    # list of (prefix, weight)
+    subsets: List[Tuple[Tuple[Tuple[int, int], ...], int]] = [((), 1)]
     for rank, count in sorted_rank_counts:
         next_subsets = []
         for prefix, weight in subsets:

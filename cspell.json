@@ -37,10 +37,12 @@
     "handrank",
     "MSYS",
     "multisets",
+    "mypy",
     "myclass",
     "nobs",
     "parseable",
     "pone",
+    "pylint",
     "pylintrc",
     "reimplementation",
     "resumability",
@@ -51,13 +53,8 @@
     "seedable",
     "simulatable",
     "suitless",
-    "unseeded"
-  ],
-  "ignoreWords": [
-    "gcd",
-    "mypy",
-    "pylint",
     "unreviewed",
+    "unseeded",
     "winpty"
   ]
 }

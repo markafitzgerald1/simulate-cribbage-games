@@ -117,7 +117,7 @@ coverage report
 coverage run -m unittest discover artifact_pipeline
 coverage run --append scripts/run_slow_analytical_tests.py
 coverage report --fail-under=100 -m --include='artifact_pipeline/*'
-mypy simulate_cribbage_games.py
+mypy simulate_cribbage_games.py artifact_pipeline
 npm run spellcheck
 pylint simulate_cribbage_games.py
 pylint --persistent=n --disable=all --enable=duplicate-code simulate_cribbage_games.py
