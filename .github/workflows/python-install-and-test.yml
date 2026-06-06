@@ -14,9 +14,9 @@ jobs:
         python-version: ["3.14.4"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
@@ -34,9 +34,9 @@ jobs:
         python-version: ["3.14.4"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
@@ -47,7 +47,7 @@ jobs:
         run: |
           coverage run --data-file=.coverage.fast -m unittest discover artifact_pipeline
       - name: Upload fast artifact coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: artifact-coverage-fast-${{ matrix.python-version }}
           path: .coverage.fast
@@ -67,9 +67,9 @@ jobs:
           - historical-flat-nobs
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
@@ -80,7 +80,7 @@ jobs:
         run: |
           coverage run --data-file=.coverage.slow-${{ matrix.group }} scripts/run_slow_analytical_tests.py ${{ matrix.group }}
       - name: Upload slow artifact coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: artifact-coverage-slow-${{ matrix.group }}-${{ matrix.python-version }}
           path: .coverage.slow-${{ matrix.group }}
@@ -96,9 +96,9 @@ jobs:
         python-version: ["3.14.4"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
@@ -106,7 +106,7 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Download artifact coverage data
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: artifact-coverage-*-${{ matrix.python-version }}
           merge-multiple: true
@@ -122,13 +122,13 @@ jobs:
         python-version: ["3.14.4"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "18"
       - name: Install dependencies
