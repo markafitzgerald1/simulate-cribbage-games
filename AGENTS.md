@@ -84,14 +84,18 @@ dependencies with:
 pip install -r requirements.txt
 ```
 
+Install Node.js 18 or newer and npm development dependencies before installing
+pre-commit hooks, because the local cspell hook runs through npm:
+
+```sh
+npm ci --ignore-scripts
+```
+
 Install pre-commit hooks for local development:
 
 ```sh
 pre-commit install
 ```
-
-Install Node.js 18 or newer before running npm-based checks such as
-`npm run spellcheck`.
 
 The Python simulator is currently packaged by `setup.py` and tested through
 `coverage run`, which discovers the existing unittest suite.

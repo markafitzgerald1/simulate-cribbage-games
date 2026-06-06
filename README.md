@@ -55,7 +55,9 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 - Check spelling in Python, scripts, Markdown, and repository instructions:
   `npm run spellcheck`. Add real repo-specific domain words to `cspell.json`;
   prefer renaming opaque abbreviations or unpronounceable identifiers instead of
-  adding them to the dictionary.
+  adding them to the dictionary. Install Node.js 18 or newer and run
+  `npm ci --ignore-scripts` before installing pre-commit hooks so the local
+  cspell hook has its npm dependency available.
 - New code that imports or relies on parts of `simulate_cribbage_games.py` must
   first prove the used legacy surface with 100% unit test coverage and related
   automated acceptance test coverage.
@@ -75,7 +77,10 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 
 - Install [Node.js](https://nodejs.org/en/) 18 or newer. The spellcheck
   validation uses cspell, which requires Node.js 18+.
-- Install dependencies, audit for known dependency vulnerabilities and report on any out of date dependencies: `npm install && npm outdated`
+- Install dependencies without running package scripts for validation and
+  pre-commit spellcheck: `npm ci --ignore-scripts`
+- Optionally audit for known dependency vulnerabilities and report on any out of
+  date dependencies: `npm install && npm outdated`
 
 #### Simulator
 

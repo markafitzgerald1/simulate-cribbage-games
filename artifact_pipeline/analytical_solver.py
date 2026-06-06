@@ -38,6 +38,9 @@ DEFAULT_OUTPUT_PATH = "expected_crib_points.analytical.json"
 GENERATION_METHOD = "artifact_pipeline.analytical_solver.v1"
 DEFAULT_IBR_CONVERGENCE_THRESHOLD = 0.0001
 DEFAULT_IBR_MAX_ITERATIONS = 100
+DEFAULT_FULL_HAND_POLICY_MAX_ITERATIONS = 3
+_POLICY_SCORE_CACHE_KEY = ("__policy_score_cache__",)
+_POLICY_TOTAL_WEIGHT_CACHE_KEY = ("__policy_total_weight_cache__",)
 
 
 def get_analytical_pairs():
@@ -138,100 +141,252 @@ def precompute_exact_crib_scores(true_nobs=True):
     return crib_scores
 
 
+def _build_crib_score_matrices(crib_scores, num_pairs):
+    """Convert crib-score dictionaries into dense rank-score matrices."""
+    score_rows = []
+    score_totals = []
+    for dealer_idx in range(num_pairs):
+        row_values = []
+        row_totals = []
+        for pone_idx in range(num_pairs):
+            scores = tuple(
+                crib_scores[(dealer_idx, pone_idx)][rank] for rank in range(13)
+            )
+            row_values.append(scores)
+            row_totals.append(4.0 * sum(scores))
+        score_rows.append(row_values)
+        score_totals.append(row_totals)
+    return score_rows, score_totals
+
+
 def _hand_conditioned_policy_ev(hand, cut_values):
     """Average policy EV over starter ranks available after the six-card hand."""
     return sum((4 - hand.count(rank)) * cut_values[rank] for rank in range(13)) / 46.0
 
 
-def _candidate_policy_crib_evs(
-    removed_cards,
-    selected_discards,
-    analytical_pairs,
-    crib_scores,
-    hand_rank_counts,
-    candidate_indices=None,
-):  # pylint: disable=too-many-locals,too-many-arguments,too-many-positional-arguments
-    """Evaluate candidate crib EVs after removing all known cards."""
-    num_pairs = len(analytical_pairs)
-    evaluated_candidate_indices = (
-        range(num_pairs) if candidate_indices is None else candidate_indices
-    )
-    removed_rank_counts = [removed_cards.count(rank) for rank in range(13)]
-    removal_weights = [
-        [
-            (
-                math.comb(4 - removed_rank_counts[rank], count)
-                if count <= 4 - removed_rank_counts[rank]
-                else 0
-            )
-            for count in range(5)
-        ]
-        for rank in range(13)
-    ]
-    pone_discard_weights = [0.0] * num_pairs
-    dealer_discard_weights = [0.0] * num_pairs
-    pone_dealt_rank_weights = [[0.0] * 13 for _ in range(num_pairs)]
-    dealer_dealt_rank_weights = [[0.0] * 13 for _ in range(num_pairs)]
-    total_hand_weight = 0.0
+def _iter_rank_count_subsets(rank_counts):
+    """Yield sparse rank-count subsets and their physical subset multiplicity."""
+    subsets = [((), 0, 1)]
+    for rank, count in rank_counts:
+        next_subsets = []
+        for prefix, subset_size, multiplicity in subsets:
+            next_subsets.append((prefix, subset_size, multiplicity))
+            for selected_count in range(1, count + 1):
+                next_subsets.append(
+                    (
+                        prefix + ((rank, selected_count),),
+                        subset_size + selected_count,
+                        multiplicity * math.comb(count, selected_count),
+                    )
+                )
+        subsets = next_subsets
+    return subsets
 
+
+def _iter_containment_subset_weights(rank_counts):
+    """Yield physical-hand containment weights for every subset of a rank hand."""
+    subsets = [((), 1)]
+    for rank, count in rank_counts:
+        next_subsets = []
+        for prefix, weight in subsets:
+            for selected_count in range(count + 1):
+                key = prefix
+                if selected_count:
+                    key = prefix + ((rank, selected_count),)
+                next_subsets.append(
+                    (
+                        key,
+                        weight * math.comb(4 - selected_count, count - selected_count),
+                    )
+                )
+        subsets = next_subsets
+    return subsets
+
+
+def _add_policy_subset_entry(role_entries, discard_idx, rank_counts, weight):
+    """Accumulate one selected-policy hand into a subset aggregate."""
+    entry = role_entries.get(discard_idx)
+    if entry is None:
+        entry = [0.0, [0.0] * 13]
+        role_entries[discard_idx] = entry
+    entry[0] += weight
+    for rank, count in rank_counts:
+        entry[1][rank] += weight * count
+
+
+def _build_policy_subset_aggregates(selected_discards, hand_rank_counts):
+    """Build reusable selected-policy aggregates for full-hand conditioning."""
+    aggregates = {}
     for (
         (_hand, dealer_discard_idx, pone_discard_idx),
         rank_counts,
     ) in zip(selected_discards, hand_rank_counts):
-        hand_weight = 1
-        for rank, count in rank_counts:
-            rank_weight = removal_weights[rank][count]
-            if not rank_weight:
-                hand_weight = 0
-                break
-            hand_weight *= rank_weight
-        if not hand_weight:
+        for subset_key, weight in _iter_containment_subset_weights(rank_counts):
+            dealer_entries, pone_entries = aggregates.setdefault(subset_key, ({}, {}))
+            _add_policy_subset_entry(
+                dealer_entries, dealer_discard_idx, rank_counts, weight
+            )
+            _add_policy_subset_entry(
+                pone_entries, pone_discard_idx, rank_counts, weight
+            )
+
+    frozen_aggregates = {}
+    for subset_key, (dealer_entries, pone_entries) in aggregates.items():
+        frozen_aggregates[subset_key] = (
+            _freeze_policy_subset_entries(dealer_entries),
+            _freeze_policy_subset_entries(pone_entries),
+        )
+    frozen_aggregates[_POLICY_SCORE_CACHE_KEY] = {}
+    frozen_aggregates[_POLICY_TOTAL_WEIGHT_CACHE_KEY] = {}
+    return frozen_aggregates
+
+
+def _freeze_policy_subset_entries(role_entries):
+    """Freeze mutable aggregate entries into sparse rank-weight tuples."""
+    return {
+        discard_idx: (
+            weight,
+            tuple(
+                (rank, rank_weight)
+                for rank, rank_weight in enumerate(rank_weights)
+                if rank_weight
+            ),
+        )
+        for discard_idx, (weight, rank_weights) in role_entries.items()
+    }
+
+
+def _get_policy_subset_total_weight(policy_subset_aggregates, subset_key):
+    """Return the policy hand weight for one contained-card subset."""
+    total_weight_cache = policy_subset_aggregates[_POLICY_TOTAL_WEIGHT_CACHE_KEY]
+    if subset_key not in total_weight_cache:
+        _dealer_entries, pone_entries = policy_subset_aggregates[subset_key]
+        total_weight_cache[subset_key] = sum(
+            weight for weight, _rank_weights in pone_entries.values()
+        )
+    return total_weight_cache[subset_key]
+
+
+def _score_policy_subset_role(
+    entries, candidate_idx, score_rows, score_totals, candidate_is_dealer
+):
+    """Score one role's subset aggregate for a candidate discard."""
+    base_total = 0.0
+    removed_rank_totals = [0.0] * 13
+    for opponent_idx, (weight, rank_weights) in entries.items():
+        if candidate_is_dealer:
+            scores = score_rows[candidate_idx][opponent_idx]
+            total = score_totals[candidate_idx][opponent_idx]
+        else:
+            scores = score_rows[opponent_idx][candidate_idx]
+            total = score_totals[opponent_idx][candidate_idx]
+        base_total += weight * total - sum(
+            rank_weight * scores[rank] for rank, rank_weight in rank_weights
+        )
+        for rank in range(13):
+            removed_rank_totals[rank] += weight * scores[rank]
+    return base_total, tuple(removed_rank_totals)
+
+
+def _get_policy_subset_candidate_totals(
+    policy_subset_aggregates, subset_key, candidate_idx, crib_score_matrices
+):
+    """Return cached scoring totals for one subset and candidate discard."""
+    score_rows, score_totals = crib_score_matrices
+    score_cache = policy_subset_aggregates[_POLICY_SCORE_CACHE_KEY]
+    cache_key = (subset_key, candidate_idx)
+    if cache_key in score_cache:
+        return score_cache[cache_key]
+
+    dealer_entries, pone_entries = policy_subset_aggregates[subset_key]
+    dealer_totals = _score_policy_subset_role(
+        pone_entries, candidate_idx, score_rows, score_totals, True
+    )
+    pone_totals = _score_policy_subset_role(
+        dealer_entries, candidate_idx, score_rows, score_totals, False
+    )
+
+    score_cache[cache_key] = (
+        dealer_totals[0],
+        dealer_totals[1],
+        pone_totals[0],
+        pone_totals[1],
+    )
+    return score_cache[cache_key]
+
+
+def _candidate_policy_crib_evs(
+    removed_cards,
+    candidate_indices,
+    policy_subset_aggregates,
+    analytical_pairs,
+    crib_scores,
+    crib_score_matrices=None,
+):  # pylint: disable=too-many-locals,too-many-arguments,too-many-positional-arguments
+    """Evaluate candidate crib EVs using reusable selected-policy aggregates."""
+    if crib_score_matrices is None:
+        crib_score_matrices = _build_crib_score_matrices(
+            crib_scores, len(analytical_pairs)
+        )
+    removed_rank_counts = tuple(
+        (rank, removed_cards.count(rank)) for rank in set(removed_cards)
+    )
+    removed_count_by_rank = [0] * 13
+    for rank, count in removed_rank_counts:
+        removed_count_by_rank[rank] = count
+
+    subset_terms = _iter_rank_count_subsets(removed_rank_counts)
+    total_hand_weight = 0.0
+    for subset_key, subset_size, multiplicity in subset_terms:
+        if subset_key not in policy_subset_aggregates:
             continue
+        coefficient = -multiplicity if subset_size % 2 else multiplicity
+        total_hand_weight += coefficient * _get_policy_subset_total_weight(
+            policy_subset_aggregates, subset_key
+        )
 
-        total_hand_weight += hand_weight
-        pone_discard_weights[pone_discard_idx] += hand_weight
-        dealer_discard_weights[dealer_discard_idx] += hand_weight
-        for rank, count in rank_counts:
-            rank_weight = hand_weight * count
-            pone_dealt_rank_weights[pone_discard_idx][rank] += rank_weight
-            dealer_dealt_rank_weights[dealer_discard_idx][rank] += rank_weight
-
-    dealer_evs = [0.0] * num_pairs
-    pone_evs = [0.0] * num_pairs
     starter_denominator = 52.0 - len(removed_cards) - 6.0
     denominator = total_hand_weight * starter_denominator
+    dealer_evs = {}
+    pone_evs = {}
     if not denominator:
-        return dealer_evs, pone_evs
+        return (
+            {candidate_idx: 0.0 for candidate_idx in candidate_indices},
+            {candidate_idx: 0.0 for candidate_idx in candidate_indices},
+        )
 
-    for candidate_idx in evaluated_candidate_indices:
+    for candidate_idx in candidate_indices:
         dealer_total = 0.0
         pone_total = 0.0
-        for opponent_idx in range(num_pairs):
-            pone_weight = pone_discard_weights[opponent_idx]
-            if pone_weight:
-                scores = crib_scores[(candidate_idx, opponent_idx)]
-                available_score = sum(
-                    (4 - removed_rank_counts[rank]) * scores[rank] for rank in range(13)
+        for subset_key, subset_size, multiplicity in subset_terms:
+            if subset_key not in policy_subset_aggregates:
+                continue
+            coefficient = -multiplicity if subset_size % 2 else multiplicity
+            (
+                dealer_base_total,
+                dealer_removed_rank_totals,
+                pone_base_total,
+                pone_removed_rank_totals,
+            ) = _get_policy_subset_candidate_totals(
+                policy_subset_aggregates,
+                subset_key,
+                candidate_idx,
+                crib_score_matrices,
+            )
+            dealer_total += coefficient * (
+                dealer_base_total
+                - sum(
+                    removed_count_by_rank[rank] * dealer_removed_rank_totals[rank]
+                    for rank, _count in removed_rank_counts
                 )
-                dealer_total += pone_weight * available_score - sum(
-                    rank_weight * scores[rank]
-                    for rank, rank_weight in enumerate(
-                        pone_dealt_rank_weights[opponent_idx]
-                    )
+            )
+            pone_total += coefficient * (
+                pone_base_total
+                - sum(
+                    removed_count_by_rank[rank] * pone_removed_rank_totals[rank]
+                    for rank, _count in removed_rank_counts
                 )
-
-            dealer_weight = dealer_discard_weights[opponent_idx]
-            if dealer_weight:
-                scores = crib_scores[(opponent_idx, candidate_idx)]
-                available_score = sum(
-                    (4 - removed_rank_counts[rank]) * scores[rank] for rank in range(13)
-                )
-                pone_total += dealer_weight * available_score - sum(
-                    rank_weight * scores[rank]
-                    for rank, rank_weight in enumerate(
-                        dealer_dealt_rank_weights[opponent_idx]
-                    )
-                )
+            )
 
         dealer_evs[candidate_idx] = dealer_total / denominator
         pone_evs[candidate_idx] = pone_total / denominator
@@ -245,10 +400,10 @@ def _select_discard_indices(
     pn_tbl,
     dealer_cut_table=None,
     pone_cut_table=None,
-    opponent_selected_discards=None,
+    opponent_policy_aggregates=None,
     analytical_pairs=None,
     crib_scores=None,
-    hand_rank_counts=None,
+    crib_score_matrices=None,
 ):  # pylint: disable=too-many-locals,too-many-arguments,too-many-positional-arguments
     """Select Dealer and Pone discards for each possible six-card rank hand."""
     selected = []
@@ -257,14 +412,14 @@ def _select_discard_indices(
         best_dl_score = -math.inf
         best_pn_idx = None
         best_pn_score = -math.inf
-        if opponent_selected_discards is not None:
+        if opponent_policy_aggregates is not None:
             dl_candidate_evs, pn_candidate_evs = _candidate_policy_crib_evs(
                 hand,
-                opponent_selected_discards,
+                discards_ev.keys(),
+                opponent_policy_aggregates,
                 analytical_pairs,
                 crib_scores,
-                hand_rank_counts,
-                discards_ev.keys(),
+                crib_score_matrices,
             )
         else:
             dl_candidate_evs = None
@@ -392,11 +547,37 @@ def _expected_crib_tables(  # pylint: disable=too-many-locals
     return dl_next, pn_next
 
 
+def _max_policy_table_shift(current_tables, next_tables):
+    """Return the largest absolute table movement between two policies."""
+    dealer_table, pone_table, dealer_cut_table, pone_cut_table = current_tables
+    dealer_next, pone_next, dealer_cut_next, pone_cut_next = next_tables
+    max_shift = 0.0
+    for pair_idx, (dealer_value, pone_value) in enumerate(zip(dealer_next, pone_next)):
+        max_shift = max(
+            max_shift,
+            abs(dealer_value - dealer_table[pair_idx]),
+            abs(pone_value - pone_table[pair_idx]),
+        )
+        for starter in range(13):
+            max_shift = max(
+                max_shift,
+                abs(
+                    dealer_cut_next[pair_idx][starter]
+                    - dealer_cut_table[pair_idx][starter]
+                ),
+                abs(
+                    pone_cut_next[pair_idx][starter] - pone_cut_table[pair_idx][starter]
+                ),
+            )
+    return max_shift
+
+
 def _run_analytical_ibr(
     true_nobs=True,
     max_iterations=DEFAULT_IBR_MAX_ITERATIONS,
     convergence_threshold=DEFAULT_IBR_CONVERGENCE_THRESHOLD,
     condition_policy_on_full_hand=True,
+    full_hand_policy_max_iterations=DEFAULT_FULL_HAND_POLICY_MAX_ITERATIONS,
 ):
     """
     Execute the Iterated Best Response loop sequentially to solve
@@ -404,7 +585,8 @@ def _run_analytical_ibr(
     condition_policy_on_full_hand=False is retained only for bounded historical
     comparison tests of the older pair-conditioned approximation. The command
     line and public solver API always use full-hand-conditioned policy
-    selection.
+    selection. full_hand_policy_max_iterations bounds the expensive full-hand
+    stability loop separately from the pair-conditioned table iteration cap.
     Returns:
       DlTbl: Expected crib value Dealer gets when Dealer discards d
       PnTbl: Expected crib value Dealer gets when Pone discards p
@@ -419,6 +601,7 @@ def _run_analytical_ibr(
     # 1. Precompute static combinations and crib scores
     hands = get_hand_combinations_with_weights()
     crib_scores = precompute_exact_crib_scores(true_nobs=true_nobs)
+    crib_score_matrices = _build_crib_score_matrices(crib_scores, num_pairs)
 
     # 2. Precompute kept hand expected values for each of the 18,564 hands
     # Precomputing all unique 4-card kept rank combinations allows us to evaluate
@@ -521,34 +704,61 @@ def _run_analytical_ibr(
         iteration += 1
 
     if condition_policy_on_full_hand:
-        pair_conditioned_discards = _select_discard_indices(
+        selected_discards = _select_discard_indices(
             hand_kept_evs, dl_tbl, pn_tbl, dealer_cut_table, pone_cut_table
         )
-        selected_discards = _select_discard_indices(
-            hand_kept_evs,
-            dl_tbl,
-            pn_tbl,
-            dealer_cut_table,
-            pone_cut_table,
-            pair_conditioned_discards,
-            analytical_pairs,
-            crib_scores,
-            hand_rank_counts,
+        full_hand_iterations = max(
+            1, min(max_iterations, full_hand_policy_max_iterations)
         )
-        dl_tbl, pn_tbl = _expected_crib_tables(
-            selected_discards,
-            analytical_pairs,
-            crib_scores,
-            conditioned_hand_weights,
-            hand_rank_counts,
-        )
-        dealer_cut_table, pone_cut_table = _expected_crib_cut_tables(
-            selected_discards,
-            analytical_pairs,
-            crib_scores,
-            conditioned_hand_weights,
-            hand_rank_counts,
-        )
+        for full_hand_iteration in range(full_hand_iterations):
+            policy_subset_aggregates = _build_policy_subset_aggregates(
+                selected_discards, hand_rank_counts
+            )
+            next_selected_discards = _select_discard_indices(
+                hand_kept_evs,
+                dl_tbl,
+                pn_tbl,
+                opponent_policy_aggregates=policy_subset_aggregates,
+                analytical_pairs=analytical_pairs,
+                crib_scores=crib_scores,
+                crib_score_matrices=crib_score_matrices,
+            )
+            dealer_next, pone_next = _expected_crib_tables(
+                next_selected_discards,
+                analytical_pairs,
+                crib_scores,
+                conditioned_hand_weights,
+                hand_rank_counts,
+            )
+            dealer_cut_next, pone_cut_next = _expected_crib_cut_tables(
+                next_selected_discards,
+                analytical_pairs,
+                crib_scores,
+                conditioned_hand_weights,
+                hand_rank_counts,
+            )
+            max_shift = _max_policy_table_shift(
+                (dl_tbl, pn_tbl, dealer_cut_table, pone_cut_table),
+                (dealer_next, pone_next, dealer_cut_next, pone_cut_next),
+            )
+            changed_discards = sum(
+                (old_dealer_idx != new_dealer_idx or old_pone_idx != new_pone_idx)
+                for (
+                    (_old_hand, old_dealer_idx, old_pone_idx),
+                    (_new_hand, new_dealer_idx, new_pone_idx),
+                ) in zip(selected_discards, next_selected_discards)
+            )
+            selected_discards = next_selected_discards
+            dl_tbl = dealer_next
+            pn_tbl = pone_next
+            dealer_cut_table = dealer_cut_next
+            pone_cut_table = pone_cut_next
+            if not changed_discards or max_shift < convergence_threshold:
+                print(
+                    "Full-hand policy converged successfully in "
+                    f"{full_hand_iteration + 1} iterations."
+                )
+                break
 
     return dl_tbl, pn_tbl, hand_kept_evs, crib_scores, dealer_cut_table, pone_cut_table
 

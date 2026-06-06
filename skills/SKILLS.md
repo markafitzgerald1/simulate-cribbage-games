@@ -25,7 +25,9 @@ default skill for documentation and Python backend work.
 7. Run `npm run spellcheck` with Node.js 18 or newer for Python, script,
    Markdown, and repository instruction changes. Add only real project/domain
    words to `cspell.json`; rename opaque abbreviations or unpronounceable
-   identifiers instead of allowlisting them.
+   identifiers instead of allowlisting them. Run `npm ci --ignore-scripts`
+   before `pre-commit install` so the local cspell hook can find its npm
+   dependency.
 8. Run the required checks from `AGENTS.md`, or record why a check was skipped.
 9. For long-running Monte Carlo artifact generation, preserve resumability,
    checkpoint progress periodically, and keep sample counts with means and

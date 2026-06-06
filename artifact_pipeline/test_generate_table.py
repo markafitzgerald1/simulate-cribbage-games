@@ -70,6 +70,10 @@ from artifact_pipeline.analytical_solver import (
     _hand_conditioned_policy_ev,
     _select_discard_indices,
     _candidate_policy_crib_evs,
+    _build_policy_subset_aggregates,
+    _build_crib_score_matrices,
+    _get_policy_subset_total_weight,
+    _get_policy_subset_candidate_totals,
     get_analytical_pairs,
     get_card_removal_weight,
     GENERATION_METHOD as ANALYTICAL_GENERATION_METHOD,
@@ -1691,12 +1695,15 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             for hand, _dealer_idx, _pone_idx in selected_discards
         ]
 
+        policy_subset_aggregates = _build_policy_subset_aggregates(
+            selected_discards, hand_rank_counts
+        )
         dealer_evs, pone_evs = _candidate_policy_crib_evs(
             known_hand,
-            selected_discards,
+            range(len(analytical_pairs)),
+            policy_subset_aggregates,
             analytical_pairs,
             crib_scores,
-            hand_rank_counts,
         )
 
         self.assertAlmostEqual(dealer_evs[0], 1.0)
@@ -1744,14 +1751,16 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         ]
         hand_kept_evs = [(known_hand, 1, {0: 0.0, 1: 2.0})]
 
+        policy_subset_aggregates = _build_policy_subset_aggregates(
+            selected_discards, hand_rank_counts
+        )
         selected = _select_discard_indices(
             hand_kept_evs,
             [0.0] * len(analytical_pairs),
             [0.0] * len(analytical_pairs),
-            opponent_selected_discards=selected_discards,
+            opponent_policy_aggregates=policy_subset_aggregates,
             analytical_pairs=analytical_pairs,
             crib_scores=crib_scores,
-            hand_rank_counts=hand_rank_counts,
         )
 
         self.assertEqual(selected, [(known_hand, 1, 1)])
@@ -1759,30 +1768,87 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
     def test_analytical_candidate_crib_ev_handles_no_compatible_hands(self):
         analytical_pairs = [(0, 0)]
         crib_scores = {(0, 0): {rank: 0.0 for rank in range(13)}}
+        selected_discards = [((0, 1, 2, 3, 4, 5), 0, 0)]
+        hand_rank_counts = [((0, 1), (1, 1), (2, 1), (3, 1), (4, 1), (5, 1))]
+        policy_subset_aggregates = _build_policy_subset_aggregates(
+            selected_discards, hand_rank_counts
+        )
         dealer_evs, pone_evs = _candidate_policy_crib_evs(
             (0, 0, 0, 0, 1, 1),
-            [((0, 1, 2, 3, 4, 5), 0, 0)],
+            range(len(analytical_pairs)),
+            policy_subset_aggregates,
             analytical_pairs,
             crib_scores,
-            [((0, 1), (1, 1), (2, 1), (3, 1), (4, 1), (5, 1))],
         )
 
-        self.assertEqual(dealer_evs, [0.0])
-        self.assertEqual(pone_evs, [0.0])
+        self.assertEqual(dealer_evs, {0: 0.0})
+        self.assertEqual(pone_evs, {0: 0.0})
+
+    def test_analytical_policy_subset_aggregate_caches(self):
+        analytical_pairs = [(0, 0)]
+        crib_scores = {(0, 0): {rank: 1.0 for rank in range(13)}}
+        selected_discards = [
+            ((0, 1, 2, 3, 4, 5), 0, 0),
+            ((0, 1, 2, 3, 4, 5), 0, 0),
+        ]
+        hand_rank_counts = [
+            ((0, 1), (1, 1), (2, 1), (3, 1), (4, 1), (5, 1)),
+            ((0, 1), (1, 1), (2, 1), (3, 1), (4, 1), (5, 1)),
+        ]
+        policy_subset_aggregates = _build_policy_subset_aggregates(
+            selected_discards, hand_rank_counts
+        )
+        crib_score_matrices = _build_crib_score_matrices(
+            crib_scores, len(analytical_pairs)
+        )
+
+        self.assertEqual(
+            _get_policy_subset_total_weight(policy_subset_aggregates, ()), 8192
+        )
+        self.assertEqual(
+            _get_policy_subset_total_weight(policy_subset_aggregates, ()), 8192
+        )
+        first_totals = _get_policy_subset_candidate_totals(
+            policy_subset_aggregates, (), 0, crib_score_matrices
+        )
+        second_totals = _get_policy_subset_candidate_totals(
+            policy_subset_aggregates, (), 0, crib_score_matrices
+        )
+
+        self.assertIs(first_totals, second_totals)
 
     def test_analytical_ibr_full_hand_refinement_with_tiny_fixture(self):
+        aggregate_build_count = [0]
+
+        def count_aggregate_builds(*args, **kwargs):
+            aggregate_build_count[0] += 1
+            return _build_policy_subset_aggregates(*args, **kwargs)
+
         with patch(
             "artifact_pipeline.analytical_solver.get_hand_combinations_with_weights",
             return_value=[((0, 0, 1, 1, 2, 2), 1)],
+        ), patch(
+            "artifact_pipeline.analytical_solver._build_policy_subset_aggregates",
+            side_effect=count_aggregate_builds,
         ):
             dl_tbl, pn_tbl, _hands, _crib_scores, dealer_cut_table, pone_cut_table = (
-                _run_analytical_ibr(max_iterations=0)
+                _run_analytical_ibr(max_iterations=2)
             )
 
         self.assertEqual(len(dl_tbl), 91)
         self.assertEqual(len(pn_tbl), 91)
         self.assertEqual(len(dealer_cut_table), 91)
         self.assertEqual(len(pone_cut_table), 91)
+        self.assertEqual(aggregate_build_count[0], 2)
+
+    def test_analytical_ibr_reports_full_hand_convergence(self):
+        with patch(
+            "artifact_pipeline.analytical_solver.get_hand_combinations_with_weights",
+            return_value=[((0, 0, 1, 1, 2, 2), 1)],
+        ), patch("sys.stdout", new_callable=io.StringIO) as stdout:
+            _run_analytical_ibr(max_iterations=1, convergence_threshold=999.0)
+
+        self.assertTrue("Full-hand policy converged successfully" in stdout.getvalue())
 
     def test_run_analytical_ibr_returns_fresh_cached_tables(self):
         _cached_analytical_ibr.cache_clear()
