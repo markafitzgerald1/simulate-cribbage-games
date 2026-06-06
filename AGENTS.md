@@ -166,6 +166,21 @@ For Python or core dependency upgrades, run the regression checking script
 (passing the old and new Python binaries as arguments) to verify that simulated
 game outputs and generated tables match 100% identically.
 
+When validating upgrades or writing regression checkers, observe these rules:
+- **Isolate execution environments:** Run checks in isolated temporary directories
+  (configuring `cwd` and version-specific `PYTHONPATH`) to prevent SQLite cache
+  databases (`diskcache`) or tallies database files (`shelve`/`dbm` shelves) from
+  cross-contaminating runs or causing file access collisions.
+- **Initialize DB shelves:** Ensure empty tally shelves are created/opened with
+  write permissions (`flag="c"`) before running simulator checks, as read-only
+  opens (`flag="r"`) will fail on clean checkouts where shelf files do not
+  exist or are in an incompatible platform format.
+- **Normalize stdout/stderr:** Strip or normalize elapsed times, speed metrics,
+  or other runtime-dependent performance lines (using regex) before diffing.
+- **Compare stderr and file outputs:** Always check `stderr` as well as stdout
+  to capture deprecation warnings or diagnostics, and compare generated files
+  directly rather than relying solely on CLI print logs.
+
 For documentation-only changes, run a targeted review of the changed Markdown
 and skip expensive code validation when no executable behavior changed. State
 which checks were run in the pull request notes.
