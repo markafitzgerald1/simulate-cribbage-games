@@ -136,7 +136,8 @@ human sanity check of the resulting output. For Python or core dependency
 upgrades, run the regression checking script
 [scratch/verify_upgrade.py](scratch/verify_upgrade.py)
 (passing the old and new Python binaries as arguments) to verify that simulated
-game outputs and generated tables match 100% identically.
+game outputs and generated tables match 100% identically. (Note: Once full test
+automation is complete under issue #37, this script may be retired.)
 
 When validating upgrades or writing regression checkers, observe these rules:
 - **Isolate execution environments:** Run checks in isolated temporary directories

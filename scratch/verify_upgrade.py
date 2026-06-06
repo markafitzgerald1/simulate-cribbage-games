@@ -1,3 +1,20 @@
+"""Python Version / Core Dependency Upgrade Regression Checker.
+
+This script executes a suite of 10 representative test cases (covering both
+game simulations and artifact table generation) using two different Python
+interpreters, verifying that their exit codes, stdout, stderr, and generated
+json files match 100% identically (with elapsed performance stats normalized).
+
+Usage:
+    python3 scratch/verify_upgrade.py <old_python_bin> <new_python_bin>
+
+Note:
+    Once full test automation is achieved (such as issue #37, which seeks 100%
+    unit and acceptance test coverage across simulate_cribbage_games.py), this
+    script may no longer be necessary as unit and integration tests will
+    implicitly guarantee compatibility.
+"""
+
 import subprocess
 import sys
 import os
@@ -177,33 +194,33 @@ def run_cmd(python_bin, suffix, temp_dir, test_case):
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage: python3 verify_upgrade.py <python_3.9_bin> <python_3.14_bin>")
+        print("Usage: python3 verify_upgrade.py <old_python_bin> <new_python_bin>")
         sys.exit(1)
 
-    python_39 = os.path.abspath(shutil.which(sys.argv[1]) or sys.argv[1])
-    python_314 = os.path.abspath(shutil.which(sys.argv[2]) or sys.argv[2])
+    python_old = os.path.abspath(shutil.which(sys.argv[1]) or sys.argv[1])
+    python_new = os.path.abspath(shutil.which(sys.argv[2]) or sys.argv[2])
 
-    print(f"Using Python 3.9 binary: {python_39}")
-    print(f"Using Python 3.14 binary: {python_314}")
+    print(f"Using Old Python binary: {python_old}")
+    print(f"Using New Python binary: {python_new}")
 
     # Set up isolated scratch workspaces per interpreter to prevent shelf file issues
     # and warm/cold cache cross-contamination.
-    temp_dir_39 = tempfile.mkdtemp(prefix="verify_upgrade_39_")
-    temp_dir_314 = tempfile.mkdtemp(prefix="verify_upgrade_314_")
+    temp_dir_old = tempfile.mkdtemp(prefix="verify_upgrade_old_")
+    temp_dir_new = tempfile.mkdtemp(prefix="verify_upgrade_new_")
 
     try:
         # Copy legacy simulator file to isolated folders
         shutil.copy(
             "simulate_cribbage_games.py",
-            os.path.join(temp_dir_39, "simulate_cribbage_games.py"),
+            os.path.join(temp_dir_old, "simulate_cribbage_games.py"),
         )
         shutil.copy(
             "simulate_cribbage_games.py",
-            os.path.join(temp_dir_314, "simulate_cribbage_games.py"),
+            os.path.join(temp_dir_new, "simulate_cribbage_games.py"),
         )
 
         # Initialize empty shelves on current environment platforms
-        for temp_dir in [temp_dir_39, temp_dir_314]:
+        for temp_dir in [temp_dir_old, temp_dir_new]:
             shelf_path = os.path.join(
                 temp_dir, "start_of_hand_position_results_tallies_shelf"
             )
@@ -211,7 +228,7 @@ def main():
                 pass
 
         print(
-            f"Starting Python 3.9 vs 3.14 regression checks on {len(TEST_CASES)} cases..."
+            f"Starting Old vs New Python regression checks on {len(TEST_CASES)} cases..."
         )
         failed = False
 
@@ -222,58 +239,58 @@ def main():
                 flush=True,
             )
 
-            code_39, out_39, err_39 = run_cmd(python_39, "39", temp_dir_39, tc)
-            code_314, out_314, err_314 = run_cmd(python_314, "314", temp_dir_314, tc)
+            code_old, out_old, err_old = run_cmd(python_old, "old", temp_dir_old, tc)
+            code_new, out_new, err_new = run_cmd(python_new, "new", temp_dir_new, tc)
 
             # Standardize temporary file path differences in output if any
-            out_39 = out_39.replace("/tmp/crib_temp_39.json", "crib_temp.json").replace(
-                "/tmp/crib_temp.json", "crib_temp.json"
-            )
-            out_314 = out_314.replace(
-                "/tmp/crib_temp_314.json", "crib_temp.json"
+            out_old = out_old.replace(
+                "/tmp/crib_temp_old.json", "crib_temp.json"
             ).replace("/tmp/crib_temp.json", "crib_temp.json")
-            err_39 = err_39.replace("/tmp/crib_temp_39.json", "crib_temp.json").replace(
-                "/tmp/crib_temp.json", "crib_temp.json"
-            )
-            err_314 = err_314.replace(
-                "/tmp/crib_temp_314.json", "crib_temp.json"
+            out_new = out_new.replace(
+                "/tmp/crib_temp_new.json", "crib_temp.json"
+            ).replace("/tmp/crib_temp.json", "crib_temp.json")
+            err_old = err_old.replace(
+                "/tmp/crib_temp_old.json", "crib_temp.json"
+            ).replace("/tmp/crib_temp.json", "crib_temp.json")
+            err_new = err_new.replace(
+                "/tmp/crib_temp_new.json", "crib_temp.json"
             ).replace("/tmp/crib_temp.json", "crib_temp.json")
 
-            if code_39 != code_314:
+            if code_old != code_new:
                 print("FAILED (Exit Code mismatch)")
-                print(f"Python 3.9 exit: {code_39}, Python 3.14 exit: {code_314}")
-                print(f"Stderr 3.9:\n{err_39}")
-                print(f"Stderr 3.14:\n{err_314}")
+                print(f"Old Python exit: {code_old}, New Python exit: {code_new}")
+                print(f"Stderr Old:\n{err_old}")
+                print(f"Stderr New:\n{err_new}")
                 failed = True
                 continue
 
-            if code_39 != 0:
-                print(f"FAILED (Command failed under 3.9 with code {code_39})")
-                print(f"Stderr 3.9:\n{err_39}")
+            if code_old != 0:
+                print(f"FAILED (Command failed under Old Python with code {code_old})")
+                print(f"Stderr Old:\n{err_old}")
                 failed = True
                 continue
 
             # Diff stdout
-            if out_39 != out_314:
+            if out_old != out_new:
                 print("FAILED (Stdout mismatch)")
                 diff = difflib.unified_diff(
-                    out_39.splitlines(keepends=True),
-                    out_314.splitlines(keepends=True),
-                    fromfile="python_39_stdout",
-                    tofile="python_314_stdout",
+                    out_old.splitlines(keepends=True),
+                    out_new.splitlines(keepends=True),
+                    fromfile="old_python_stdout",
+                    tofile="new_python_stdout",
                 )
                 sys.stdout.writelines(diff)
                 failed = True
                 continue
 
             # Diff stderr (ensures warnings/deprecation notices are caught)
-            if err_39 != err_314:
+            if err_old != err_new:
                 print("FAILED (Stderr mismatch)")
                 diff = difflib.unified_diff(
-                    err_39.splitlines(keepends=True),
-                    err_314.splitlines(keepends=True),
-                    fromfile="python_39_stderr",
-                    tofile="python_314_stderr",
+                    err_old.splitlines(keepends=True),
+                    err_new.splitlines(keepends=True),
+                    fromfile="old_python_stderr",
+                    tofile="new_python_stderr",
                 )
                 sys.stdout.writelines(diff)
                 failed = True
@@ -281,20 +298,20 @@ def main():
 
             # For generate_table.py case, diff actual file contents
             if tc.get("cmd") and "generate_table.py" in tc["cmd"][0]:
-                file_39 = "/tmp/crib_temp_39.json"
-                file_314 = "/tmp/crib_temp_314.json"
-                if os.path.exists(file_39) and os.path.exists(file_314):
-                    with open(file_39, "r") as f:
-                        content_39 = f.read()
-                    with open(file_314, "r") as f:
-                        content_314 = f.read()
-                    if content_39 != content_314:
+                file_old = "/tmp/crib_temp_old.json"
+                file_new = "/tmp/crib_temp_new.json"
+                if os.path.exists(file_old) and os.path.exists(file_new):
+                    with open(file_old, "r") as f:
+                        content_old = f.read()
+                    with open(file_new, "r") as f:
+                        content_new = f.read()
+                    if content_old != content_new:
                         print("FAILED (Generated JSON mismatch)")
                         diff = difflib.unified_diff(
-                            content_39.splitlines(keepends=True),
-                            content_314.splitlines(keepends=True),
-                            fromfile="crib_temp_39.json",
-                            tofile="crib_temp_314.json",
+                            content_old.splitlines(keepends=True),
+                            content_new.splitlines(keepends=True),
+                            fromfile="crib_temp_old.json",
+                            tofile="crib_temp_new.json",
                         )
                         sys.stdout.writelines(diff)
                         failed = True
@@ -304,10 +321,10 @@ def main():
 
     finally:
         # Clean up isolated workspaces
-        shutil.rmtree(temp_dir_39, ignore_errors=True)
-        shutil.rmtree(temp_dir_314, ignore_errors=True)
+        shutil.rmtree(temp_dir_old, ignore_errors=True)
+        shutil.rmtree(temp_dir_new, ignore_errors=True)
         # Clean up temp output files
-        for suffix in ["39", "314"]:
+        for suffix in ["old", "new"]:
             path = f"/tmp/crib_temp_{suffix}.json"
             if os.path.exists(path):
                 os.remove(path)
