@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9.20"]
+        python-version: ["3.14.4"]
 
     steps:
       - uses: actions/checkout@v3
@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9.20"]
+        python-version: ["3.14.4"]
 
     steps:
       - uses: actions/checkout@v3
@@ -58,7 +58,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9.20"]
+        python-version: ["3.14.4"]
         group:
           - hessel-compat
           - zero-weights-coverage
@@ -93,7 +93,7 @@ jobs:
       - artifact-slow-tests
     strategy:
       matrix:
-        python-version: ["3.9.20"]
+        python-version: ["3.14.4"]
 
     steps:
       - uses: actions/checkout@v3
@@ -119,7 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9.20"]
+        python-version: ["3.14.4"]
 
     steps:
       - uses: actions/checkout@v3
@@ -162,7 +162,7 @@ jobs:
       - lint-and-typecheck
     strategy:
       matrix:
-        python-version: ["3.9.20"]
+        python-version: ["3.14.4"]
 
     steps:
       - name: Confirm split validation passed

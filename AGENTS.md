@@ -77,7 +77,7 @@ skills unless the work product shows it.
 
 ## Python Setup
 
-Use Python 3.9.20 unless a task updates the supported version. Install
+Use Python 3.14.4 unless a task updates the supported version. Install
 dependencies with:
 
 ```sh
