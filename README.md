@@ -449,7 +449,7 @@ All of the following should exit with status code 0 and no raised exception:
 
 #### Main implementation
 
-- Python 3.9.6
+- Python 3.14.4
 
 #### Backup, partial implementation
 

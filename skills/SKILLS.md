@@ -21,7 +21,11 @@ default skill for documentation and Python backend work.
    behavior, prove the used legacy surface with 100% unit coverage and related
    automated acceptance coverage before relying on it.
 6. Run at least one README smoke test or usage example for code changes, and
-   sanity-check the output before review.
+   sanity-check the output before review. For Python or core dependency
+   upgrades, run the regression checking script
+   [scratch/verify_upgrade.py](scratch/verify_upgrade.py)
+   (passing the old and new Python binaries as arguments) to verify that
+   simulated game outputs and generated tables match 100% identically.
 7. Run `npm run spellcheck` with Node.js 18 or newer for Python, script,
    Markdown, and repository instruction changes. Add only real project/domain
    words to `cspell.json`; rename opaque abbreviations or unpronounceable
@@ -128,7 +132,11 @@ and related automated acceptance coverage before the new code depends on it.
 
 Every code change should run at least one acceptance-style README command from
 the smoke tests or usage examples, ideally through automation, with a quick
-human sanity check of the resulting output.
+human sanity check of the resulting output. For Python or core dependency
+upgrades, run the regression checking script
+[scratch/verify_upgrade.py](scratch/verify_upgrade.py)
+(passing the old and new Python binaries as arguments) to verify that simulated
+game outputs and generated tables match 100% identically.
 
 Artifact pipeline changes that produce statistical tables should include
 focused tests for resume behavior, seeded reproducibility, checkpoint output,
