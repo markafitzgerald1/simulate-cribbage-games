@@ -1,4 +1,6 @@
 [flake8]
-exclude = .git,__pycache__,node_modules,.parcel-cache,dist,htmlcov,env,simulate_cribbage_games.py
+exclude = .git,__pycache__,node_modules,.parcel-cache,dist,htmlcov,env
 extend-ignore = E203
+per-file-ignores =
+    simulate_cribbage_games.py:E251
 max-line-length = 185

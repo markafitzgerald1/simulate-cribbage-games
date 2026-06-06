@@ -161,6 +161,10 @@ Before code changes are pushed or marked ready for review, run at least one
 README smoke test or usage example that exercises the program end to end. Prefer
 automating the selected acceptance test when practical, and perform a quick
 sanity check of the output for plausible cribbage behavior and no exceptions.
+For Python or core dependency upgrades, run the regression checking script
+[scratch/verify_upgrade.py](file:///Volumes/CaseSensitiveCode/personal/simulate-cribbage-games/scratch/verify_upgrade.py)
+(passing the old and new Python binaries as arguments) to verify that simulated
+game outputs and generated tables match 100% identically.
 
 For documentation-only changes, run a targeted review of the changed Markdown
 and skip expensive code validation when no executable behavior changed. State
