@@ -729,6 +729,11 @@ def main(override_pairs=None):
         default=0.50,
         help="Policy update dampening factor (default: 0.50).",
     )
+    parser.add_argument(
+        "--fail-on-non-convergence",
+        action="store_true",
+        help="Exit with a non-zero status code if the hardcap is reached without satisfying convergence.",
+    )
     args = parser.parse_args()
 
     if not args.infinite and args.samples is None:
@@ -745,6 +750,11 @@ def main(override_pairs=None):
 
     if args.convergence_threshold is not None and args.convergence_threshold < 0:
         parser.error("--convergence-threshold must be non-negative")
+
+    if args.fail_on_non_convergence and args.convergence_threshold is None:
+        parser.error(
+            "--fail-on-non-convergence requires --convergence-threshold to be set"
+        )
 
     if args.dampening <= 0.0 or args.dampening > 1.0:
         parser.error("--dampening must be in range (0.0, 1.0]")
@@ -785,7 +795,19 @@ def main(override_pairs=None):
     try:
         while True:
             if args.max_generations is not None and generation >= args.max_generations:
-                print(f"Warning: Hardcap reached at generation {generation}.")
+                if (
+                    args.convergence_threshold is not None
+                    and args.fail_on_non_convergence
+                ):
+                    print(
+                        f"Error: Hardcap reached at generation {generation} "
+                        f"before satisfying convergence threshold {args.convergence_threshold}.",
+                        file=sys.stderr,
+                    )
+                    checkpoint()
+                    sys.exit(1)
+                else:
+                    print(f"Warning: Hardcap reached at generation {generation}.")
                 checkpoint()
                 break
 
@@ -824,9 +846,21 @@ def main(override_pairs=None):
                     and next_generation >= max_generations_limit
                 ):
                     if max_generations_limit > 1 or args.max_generations is not None:
-                        print(
-                            f"Warning: Hardcap reached at generation {next_generation}."
-                        )
+                        if (
+                            args.convergence_threshold is not None
+                            and args.fail_on_non_convergence
+                        ):
+                            print(
+                                f"Error: Hardcap reached at generation {next_generation} "
+                                f"before satisfying convergence threshold {args.convergence_threshold}.",
+                                file=sys.stderr,
+                            )
+                            checkpoint()
+                            sys.exit(1)
+                        else:
+                            print(
+                                f"Warning: Hardcap reached at generation {next_generation}."
+                            )
                     else:
                         print(
                             f"Generation {generation} complete; no convergence "
