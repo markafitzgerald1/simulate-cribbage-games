@@ -4,12 +4,12 @@
   "description": "Play a cribbage hand between two opponents.",
   "dependencies": {
     "md5": "^2.3.0",
-    "parcel": "^2.0.0-nightly.634",
-    "postcss": "^8.2.9",
+    "parcel": "^2.16.4",
+    "postcss": "^8.5.15",
     "random-js": "^2.1.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "typed-css-modules": "^0.7.0",
+    "typed-css-modules": "^0.9.1",
     "yargs": "^17.0.1"
   },
   "devDependencies": {
@@ -26,7 +26,7 @@
     "eslint": "^7.32.0",
     "eslint-plugin-react": "^7.25.1",
     "http-server": "^13.0.1",
-    "jest": "^27.1.0",
+    "jest": "^30.4.2",
     "react-helmet": "^6.1.0",
     "ts-jest": "^27.0.5",
     "ts-node": "^10.1.0",
