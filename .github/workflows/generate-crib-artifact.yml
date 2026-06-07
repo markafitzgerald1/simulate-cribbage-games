@@ -37,6 +37,16 @@ jobs:
       # Runs Python in unbuffered mode (-u) so progress prints in real-time.
       # Limits max-generations to 1 for PRs; Generation 1 is ~700x slower due to
       # dynamic card combinations evaluation (690 hand score lookups per sample).
+      - name: Generate analytical bootstrap table (Fast for PRs)
+        if: github.event_name == 'pull_request'
+        run: |
+          python -u artifact_pipeline/analytical_solver.py --max-iterations=2 --full-hand-policy-max-iterations=1 --output expected_crib_points.analytical.json
+
+      - name: Generate analytical bootstrap table (Production)
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          python -u artifact_pipeline/analytical_solver.py --output expected_crib_points.analytical.json
+
       - name: Run fast PR table generation
         if: github.event_name == 'pull_request'
         run: |

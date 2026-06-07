@@ -2062,6 +2062,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 [[0.0] * 13 for _ in range(pair_count)],
                 [[0.0] * 13 for _ in range(pair_count)],
             )
+            # Test default values of new arguments
             with patch(
                 "sys.argv",
                 [
@@ -2075,7 +2076,12 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 return_value=solver_result,
             ) as run_ibr:
                 analytical_main()
-            run_ibr.assert_called_once_with(true_nobs=False)
+            run_ibr.assert_called_once_with(
+                true_nobs=False,
+                max_iterations=100,
+                convergence_threshold=0.0001,
+                full_hand_policy_max_iterations=3,
+            )
             self.assertTrue(os.path.exists(output_path))
             with open(output_path, encoding="utf-8") as analytical_file:
                 metadata = json.load(analytical_file)[METADATA_KEY]
@@ -2083,6 +2089,33 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 metadata["generation_method"], ANALYTICAL_GENERATION_METHOD
             )
             self.assertFalse(metadata["true_nobs_applied"])
+
+            # Test custom argument values
+            with patch(
+                "sys.argv",
+                [
+                    "analytical_solver.py",
+                    "--max-iterations",
+                    "5",
+                    "--convergence-threshold",
+                    "0.001",
+                    "--full-hand-policy-max-iterations",
+                    "2",
+                    "--output",
+                    output_path,
+                ],
+            ), patch("sys.stdout", new_callable=io.StringIO), patch(
+                "artifact_pipeline.analytical_solver.run_analytical_ibr",
+                return_value=solver_result,
+            ) as run_ibr_custom:
+                analytical_main()
+            run_ibr_custom.assert_called_once_with(
+                true_nobs=True,
+                max_iterations=5,
+                convergence_threshold=0.001,
+                full_hand_policy_max_iterations=2,
+            )
+
             with self.assertRaises(ValueError):
                 validate_resume_metadata(metadata, None, output_path)
 

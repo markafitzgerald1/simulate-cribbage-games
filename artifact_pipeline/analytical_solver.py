@@ -789,11 +789,13 @@ def _cached_analytical_ibr(
     true_nobs,
     max_iterations,
     convergence_threshold,
+    full_hand_policy_max_iterations,
 ):
     return _run_analytical_ibr(
         true_nobs=true_nobs,
         max_iterations=max_iterations,
         convergence_threshold=convergence_threshold,
+        full_hand_policy_max_iterations=full_hand_policy_max_iterations,
     )
 
 
@@ -818,6 +820,7 @@ def run_analytical_ibr(
     true_nobs=True,
     max_iterations=DEFAULT_IBR_MAX_ITERATIONS,
     convergence_threshold=DEFAULT_IBR_CONVERGENCE_THRESHOLD,
+    full_hand_policy_max_iterations=DEFAULT_FULL_HAND_POLICY_MAX_ITERATIONS,
 ):
     """Return the rank-conditional analytical table for the requested Nobs mode."""
     return _copy_analytical_ibr_result(
@@ -825,6 +828,7 @@ def run_analytical_ibr(
             true_nobs,
             max_iterations,
             convergence_threshold,
+            full_hand_policy_max_iterations,
         )
     )
 
@@ -1020,14 +1024,43 @@ def main():
         dest="true_nobs",
         help="Record historical compatibility metadata for Hessel comparisons.",
     )
+    parser.add_argument(
+        "--max-iterations",
+        type=int,
+        default=DEFAULT_IBR_MAX_ITERATIONS,
+        help=f"Max IBR iterations (default: {DEFAULT_IBR_MAX_ITERATIONS}).",
+    )
+    parser.add_argument(
+        "--convergence-threshold",
+        type=float,
+        default=DEFAULT_IBR_CONVERGENCE_THRESHOLD,
+        help=f"Convergence threshold (default: {DEFAULT_IBR_CONVERGENCE_THRESHOLD}).",
+    )
+    parser.add_argument(
+        "--full-hand-policy-max-iterations",
+        type=int,
+        default=DEFAULT_FULL_HAND_POLICY_MAX_ITERATIONS,
+        help=(
+            "Max iterations for full-hand policy loop "
+            f"(default: {DEFAULT_FULL_HAND_POLICY_MAX_ITERATIONS})."
+        ),
+    )
     args = parser.parse_args()
 
     print(
         f"Starting generic suit-free analytical solver "
-        f"(true-nobs={args.true_nobs})..."
+        f"(true-nobs={args.true_nobs}, "
+        f"max-iterations={args.max_iterations}, "
+        f"convergence-threshold={args.convergence_threshold}, "
+        f"full-hand-policy-max-iterations={args.full_hand_policy_max_iterations})..."
     )
     dl_tbl, pn_tbl, hands, crib_scores, dealer_cut_table, pone_cut_table = (
-        run_analytical_ibr(true_nobs=args.true_nobs)
+        run_analytical_ibr(
+            true_nobs=args.true_nobs,
+            max_iterations=args.max_iterations,
+            convergence_threshold=args.convergence_threshold,
+            full_hand_policy_max_iterations=args.full_hand_policy_max_iterations,
+        )
     )
 
     output_data = format_table_as_generation_zero(
