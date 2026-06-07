@@ -21,7 +21,11 @@ default skill for documentation and Python backend work.
    behavior, prove the used legacy surface with 100% unit coverage and related
    automated acceptance coverage before relying on it.
 6. Run at least one README smoke test or usage example for code changes, and
-   sanity-check the output before review.
+   sanity-check the output before review. For Python or core dependency
+   upgrades, run the regression checking script
+   [scratch/verify_upgrade.py](scratch/verify_upgrade.py)
+   (passing the old and new Python binaries as arguments) to verify that
+   simulated game outputs and generated tables match 100% identically.
 7. Run `npm run spellcheck` with Node.js 18 or newer for Python, script,
    Markdown, and repository instruction changes. Add only real project/domain
    words to `cspell.json`; rename opaque abbreviations or unpronounceable
@@ -128,7 +132,27 @@ and related automated acceptance coverage before the new code depends on it.
 
 Every code change should run at least one acceptance-style README command from
 the smoke tests or usage examples, ideally through automation, with a quick
-human sanity check of the resulting output.
+human sanity check of the resulting output. For Python or core dependency
+upgrades, run the regression checking script
+[scratch/verify_upgrade.py](scratch/verify_upgrade.py)
+(passing the old and new Python binaries as arguments) to verify that simulated
+game outputs and generated tables match 100% identically. (Note: Once full test
+automation is complete under issue #37, this script may be retired.)
+
+When validating upgrades or writing regression checkers, observe these rules:
+- **Isolate execution environments:** Run checks in isolated temporary directories
+  (configuring `cwd` and version-specific `PYTHONPATH`) to prevent SQLite cache
+  databases (`diskcache`) or tallies database files (`shelve`/`dbm` shelves) from
+  cross-contaminating runs or causing file access collisions.
+- **Initialize DB shelves:** Ensure empty tally shelves are created/opened with
+  write permissions (`flag="c"`) before running simulator checks, as read-only
+  opens (`flag="r"`) will fail on clean checkouts where shelf files do not
+  exist or are in an incompatible platform format.
+- **Normalize stdout/stderr:** Strip or normalize elapsed times, speed metrics,
+  or other runtime-dependent performance lines (using regex) before diffing.
+- **Compare stderr and file outputs:** Always check `stderr` as well as stdout
+  to capture deprecation warnings or diagnostics, and compare generated files
+  directly rather than relying solely on CLI print logs.
 
 Artifact pipeline changes that produce statistical tables should include
 focused tests for resume behavior, seeded reproducibility, checkpoint output,
