@@ -827,6 +827,10 @@ def main(override_pairs=None):
                         pairs,
                         measured_accumulators=accumulators,
                     )
+                    print(
+                        f"Generation {generation} convergence check: "
+                        f"max EV shift = {max_shift:.6f} (threshold = {args.convergence_threshold})"
+                    )
                     if max_shift <= args.convergence_threshold:
                         print(
                             f"Converged at generation {generation} with max EV shift {max_shift} <= {args.convergence_threshold}"
