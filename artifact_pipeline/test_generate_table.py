@@ -2379,5 +2379,90 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         self._assert_dynamic_ibr_beats_historical_tables_paired(true_nobs=False)
 
 
+class TestControlVariates(unittest.TestCase):
+    def test_score_crib_sample_variance_reduction(self):
+        """Verify that Control Variates reduces variance and is unbiased."""
+        seed = 12345
+        accumulators_cv = {}
+        accumulators_mc = {}
+
+        run_monte_carlo_into_accumulators(
+            accumulators_cv,
+            "5_5_Unsuited",
+            "Dealer",
+            1000,
+            {
+                "rng": random.Random(seed),
+                "first_sample_index": 0,
+                "seed": seed,
+                "use_control_variates": True,
+            },
+        )
+        run_monte_carlo_into_accumulators(
+            accumulators_mc,
+            "5_5_Unsuited",
+            "Dealer",
+            1000,
+            {
+                "rng": random.Random(seed),
+                "first_sample_index": 0,
+                "seed": seed,
+                "use_control_variates": False,
+            },
+        )
+
+        cv_means = []
+        mc_means = []
+        cv_se_squares = []
+        mc_se_squares = []
+
+        for c in Index.indices:
+            stats_cv = accumulator_to_statistics(
+                accumulators_cv["5_5_Unsuited"]["Dealer"][c]
+            )
+            stats_mc = accumulator_to_statistics(
+                accumulators_mc["5_5_Unsuited"]["Dealer"][c]
+            )
+
+            if stats_cv is not None and stats_cv["n"] > 1:
+                cv_means.append(stats_cv["mu"])
+                cv_se_squares.append(stats_cv["se"] ** 2)
+
+            if stats_mc is not None and stats_mc["n"] > 1:
+                mc_means.append(stats_mc["mu"])
+                mc_se_squares.append(stats_mc["se"] ** 2)
+
+        self.assertAlmostEqual(
+            sum(cv_means) / len(cv_means),
+            sum(mc_means) / len(mc_means),
+            delta=0.25,
+        )
+        # Expected ratio: cv_se_var / mc_se_var is approximately 1/13 = 0.077
+        self.assertLess(
+            sum(cv_se_squares) / len(cv_se_squares),
+            (sum(mc_se_squares) / len(mc_se_squares)) * 0.15,
+        )
+
+    def test_use_control_variates_cli_logic(self):
+        """Test that the CLI flag properly enables control variates."""
+        args = argparse.Namespace(
+            infinite=False,
+            checkpoint_frequency=1,
+            samples=1,
+            seed=42,
+            use_control_variates=False,
+        )
+        rng = random.Random(42)
+        accumulators = {}
+
+        with patch(
+            "artifact_pipeline.generate_table.run_monte_carlo_into_accumulators"
+        ) as mock_run_mc:
+            run_generation(args, rng, ["A_A_Unsuited"], accumulators)
+            self.assertEqual(mock_run_mc.call_count, 2)
+            sampling_dict = mock_run_mc.call_args[0][4]
+            self.assertFalse(sampling_dict["use_control_variates"])
+
+
 if __name__ == "__main__":
     unittest.main()

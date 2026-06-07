@@ -37,7 +37,6 @@ from artifact_pipeline.adapter import (  # noqa: E402
     get_canonical_pairs,
 )
 
-
 DEFAULT_OUTPUT_PATH = "expected_crib_points.json"
 DEFAULT_CHECKPOINT_FREQUENCY = 100
 METADATA_KEY = "__metadata__"
@@ -444,7 +443,11 @@ def sample_rng_for_index(rng, seed, canonical_pair, player, sample_index):
 
 
 def score_crib_sample(
-    discarded_cards, remaining_deck, player, sample_rng, generation_accumulators=None
+    discarded_cards,
+    remaining_deck,
+    player,
+    sample_rng,
+    generation_accumulators=None,
 ):
     opponent_dealt = sample_rng.sample(remaining_deck, 6)
     kept = select_opponent_kept_cards_dynamic(
@@ -458,6 +461,85 @@ def score_crib_sample(
     crib_hand = discarded_cards + opponent_discards
     score = score_hand_and_starter(crib_hand, cut_card, is_crib=True)
     return cut_card, score
+
+
+def score_crib_sample_ev(
+    discarded_cards,
+    remaining_deck,
+    player,
+    sample_rng,
+    generation_accumulators=None,
+):
+    opponent_dealt = sample_rng.sample(remaining_deck, 6)
+    kept = select_opponent_kept_cards_dynamic(
+        player, opponent_dealt, generation_accumulators
+    )
+    opponent_discards = [card for card in opponent_dealt if card not in kept]
+    remaining_after_deal = [
+        card for card in remaining_deck if card not in opponent_dealt
+    ]
+    crib_hand = discarded_cards + opponent_discards
+
+    results = []
+    for c in range(13):
+        starters = [card for card in remaining_after_deal if card.index == c]
+        if starters:
+            total_score = sum(
+                score_hand_and_starter(crib_hand, starter, is_crib=True)
+                for starter in starters
+            )
+            expected_score = total_score / len(starters)
+            results.append((c, expected_score))
+    return results
+
+
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+def _run_cv_sample(
+    accumulators,
+    canonical_pair,
+    player,
+    discarded_cards,
+    remaining_deck,
+    sample_rng,
+    generation_accumulators,
+):
+    results = score_crib_sample_ev(
+        discarded_cards,
+        remaining_deck,
+        player,
+        sample_rng,
+        generation_accumulators,
+    )
+    for c, expected_score in results:
+        update_accumulator(
+            get_cut_accumulator(accumulators, canonical_pair, player, Index.indices[c]),
+            expected_score,
+        )
+
+
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+def _run_mc_sample(
+    accumulators,
+    canonical_pair,
+    player,
+    discarded_cards,
+    remaining_deck,
+    sample_rng,
+    generation_accumulators,
+):
+    cut_card, score = score_crib_sample(
+        discarded_cards,
+        remaining_deck,
+        player,
+        sample_rng,
+        generation_accumulators,
+    )
+    update_accumulator(
+        get_cut_accumulator(
+            accumulators, canonical_pair, player, Index.indices[cut_card.index]
+        ),
+        score,
+    )
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -478,25 +560,35 @@ def run_monte_carlo_into_accumulators(
     discarded_cards = canonical_to_cards(canonical_pair)
     remaining_deck = [card for card in DECK_SET if card not in discarded_cards]
 
+    use_cv = sampling.get("use_control_variates", True)
     for sample_offset in range(num_samples):
-        sample_index = sampling["first_sample_index"] + sample_offset
         sample_rng = sample_rng_for_index(
-            sampling["rng"], sampling["seed"], canonical_pair, player, sample_index
-        )
-        cut_card, score = score_crib_sample(
-            discarded_cards,
-            remaining_deck,
+            sampling["rng"],
+            sampling["seed"],
+            canonical_pair,
             player,
-            sample_rng,
-            generation_accumulators,
+            sampling["first_sample_index"] + sample_offset,
         )
-        cut_card_rank_str = Index.indices[cut_card.index]
-        update_accumulator(
-            get_cut_accumulator(
-                accumulators, canonical_pair, player, cut_card_rank_str
-            ),
-            score,
-        )
+        if use_cv:
+            _run_cv_sample(
+                accumulators,
+                canonical_pair,
+                player,
+                discarded_cards,
+                remaining_deck,
+                sample_rng,
+                generation_accumulators,
+            )
+        else:
+            _run_mc_sample(
+                accumulators,
+                canonical_pair,
+                player,
+                discarded_cards,
+                remaining_deck,
+                sample_rng,
+                generation_accumulators,
+            )
 
 
 def compute_statistics(raw_scores):
@@ -583,6 +675,9 @@ def run_generation(
                         "rng": rng,
                         "first_sample_index": current_samples,
                         "seed": args.seed,
+                        "use_control_variates": getattr(
+                            args, "use_control_variates", False
+                        ),
                     },
                     generation_accumulators=generation_accumulators,
                 )
@@ -728,6 +823,11 @@ def main(override_pairs=None):
         type=float,
         default=0.50,
         help="Policy update dampening factor (default: 0.50).",
+    )
+    parser.add_argument(
+        "--use-control-variates",
+        action="store_true",
+        help="Enable control variates expected value scoring (variance reduction).",
     )
     parser.add_argument(
         "--fail-on-non-convergence",
