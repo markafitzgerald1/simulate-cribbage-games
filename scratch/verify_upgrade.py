@@ -1,12 +1,21 @@
 """Python Version / Core Dependency Upgrade Regression Checker.
 
-This script executes a suite of 10 representative test cases (covering both
+This script executes a suite of representative test cases (covering both
 game simulations and artifact table generation) using two different Python
-interpreters, verifying that their exit codes, stdout, stderr, and generated
-json files match 100% identically (with elapsed performance stats normalized).
+interpreters. It verifies that their exit codes, stdout, stderr, and generated
+JSON files match 100% identically (with elapsed performance stats normalized).
 
 Usage:
     python3 scratch/verify_upgrade.py <old_python_bin> <new_python_bin>
+
+Customizing / Genericizing for Future Upgrades:
+    - Test cases are configured in the `TEST_CASES` list. To check new features,
+      flags, or scripts added in future versions, simply add entries to `TEST_CASES`.
+    - If future database shelves use a name other than
+      'start_of_hand_position_results_tallies_shelf', update the shelf name inside the
+      database shelf initialization block in `main()`.
+    - Path isolation, stdout/stderr normalization, and exit code/diff checks are
+      fully generic and will work for any pair of Python interpreters and scripts.
 
 Note:
     Once full test automation is achieved (such as issue #37, which seeks 100%
@@ -31,6 +40,9 @@ SEED_PREFIX = (
     "import runpy; runpy.run_path({script_path}, run_name='__main__')"
 )
 
+# Test cases configured for regression verification.
+# All temporary file outputs (like 'crib_temp.json') use relative paths to run inside
+# isolated workspaces. No absolute paths to '/tmp' are needed.
 TEST_CASES = [
     # 1. Base simulator run (one hand)
     {"type": "simulator", "args": []},
@@ -119,7 +131,7 @@ TEST_CASES = [
             "--seed",
             "42",
             "--output",
-            "/tmp/crib_temp.json",
+            "crib_temp.json",
             "--no-resume",
         ],
     },
@@ -128,7 +140,7 @@ TEST_CASES = [
         "type": "pipeline",
         "cmd": [
             "artifact_pipeline/summarize_table.py",
-            "/tmp/crib_temp.json",
+            "crib_temp.json",
             "--role",
             "Dealer",
         ],
@@ -138,7 +150,7 @@ TEST_CASES = [
         "type": "pipeline",
         "cmd": [
             "artifact_pipeline/compare_hessel.py",
-            "/tmp/crib_temp.json",
+            "crib_temp.json",
             "--role",
             "Dealer",
             "--view",
@@ -149,7 +161,7 @@ TEST_CASES = [
 
 
 def sanitize_output(output):
-    # Strip timing-derived performance stats lines to ensure deterministic comparison
+    """Normalize elapsed times/speeds to ensure deterministic diffing."""
     lines = []
     for line in output.splitlines():
         line = re.sub(
@@ -161,7 +173,8 @@ def sanitize_output(output):
     return "\n".join(lines)
 
 
-def run_cmd(python_bin, suffix, temp_dir, test_case):
+def run_cmd(python_bin, temp_dir, test_case):
+    """Execute a single test case using the specified Python binary in an isolated workspace."""
     env = os.environ.copy()
     # Ensure import resolution checks the isolated temp directory first
     env["PYTHONPATH"] = temp_dir + os.pathsep + env.get("PYTHONPATH", "")
@@ -174,12 +187,9 @@ def run_cmd(python_bin, suffix, temp_dir, test_case):
         )
         cmd = [python_bin, "-c", code]
     else:
-        # Run pipeline script directly with absolute path and version-specific output JSON files
+        # Run pipeline script directly with absolute path
         script_path = os.path.abspath(test_case["cmd"][0])
-        cmd = [python_bin, script_path] + [
-            arg.replace("/tmp/crib_temp.json", f"/tmp/crib_temp_{suffix}.json")
-            for arg in test_case["cmd"][1:]
-        ]
+        cmd = [python_bin, script_path] + test_case["cmd"][1:]
 
     res = subprocess.run(
         cmd,
@@ -188,6 +198,7 @@ def run_cmd(python_bin, suffix, temp_dir, test_case):
         text=True,
         cwd=temp_dir,
         env=env,
+        check=False,
     )
     return res.returncode, sanitize_output(res.stdout), sanitize_output(res.stderr)
 
@@ -239,22 +250,8 @@ def main():
                 flush=True,
             )
 
-            code_old, out_old, err_old = run_cmd(python_old, "old", temp_dir_old, tc)
-            code_new, out_new, err_new = run_cmd(python_new, "new", temp_dir_new, tc)
-
-            # Standardize temporary file path differences in output if any
-            out_old = out_old.replace(
-                "/tmp/crib_temp_old.json", "crib_temp.json"
-            ).replace("/tmp/crib_temp.json", "crib_temp.json")
-            out_new = out_new.replace(
-                "/tmp/crib_temp_new.json", "crib_temp.json"
-            ).replace("/tmp/crib_temp.json", "crib_temp.json")
-            err_old = err_old.replace(
-                "/tmp/crib_temp_old.json", "crib_temp.json"
-            ).replace("/tmp/crib_temp.json", "crib_temp.json")
-            err_new = err_new.replace(
-                "/tmp/crib_temp_new.json", "crib_temp.json"
-            ).replace("/tmp/crib_temp.json", "crib_temp.json")
+            code_old, out_old, err_old = run_cmd(python_old, temp_dir_old, tc)
+            code_new, out_new, err_new = run_cmd(python_new, temp_dir_new, tc)
 
             if code_old != code_new:
                 print("FAILED (Exit Code mismatch)")
@@ -298,8 +295,8 @@ def main():
 
             # For generate_table.py case, diff actual file contents
             if tc.get("cmd") and "generate_table.py" in tc["cmd"][0]:
-                file_old = "/tmp/crib_temp_old.json"
-                file_new = "/tmp/crib_temp_new.json"
+                file_old = os.path.join(temp_dir_old, "crib_temp.json")
+                file_new = os.path.join(temp_dir_new, "crib_temp.json")
                 if os.path.exists(file_old) and os.path.exists(file_new):
                     with open(file_old, "r") as f:
                         content_old = f.read()
@@ -320,14 +317,9 @@ def main():
             print("PASSED")
 
     finally:
-        # Clean up isolated workspaces
+        # Clean up isolated workspaces (workspace-relative json files are cleaned up automatically here)
         shutil.rmtree(temp_dir_old, ignore_errors=True)
         shutil.rmtree(temp_dir_new, ignore_errors=True)
-        # Clean up temp output files
-        for suffix in ["old", "new"]:
-            path = f"/tmp/crib_temp_{suffix}.json"
-            if os.path.exists(path):
-                os.remove(path)
 
     if failed:
         print("\nRegression testing FAILED. There are output or behavior mismatches.")
