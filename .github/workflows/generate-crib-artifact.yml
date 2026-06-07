@@ -46,7 +46,7 @@ jobs:
       - name: Run production table generation
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
-          python -u artifact_pipeline/generate_table.py --samples=15000 --convergence-threshold=0.005 --max-generations=5 --output=expected_crib_points.json --no-resume --seed=42
+          python -u artifact_pipeline/generate_table.py --samples=15000 --convergence-threshold=0.005 --max-generations=5 --fail-on-non-convergence --output=expected_crib_points.json --no-resume --seed=42
 
       - name: Upload table artifact
         uses: actions/upload-artifact@v7
@@ -78,6 +78,6 @@ jobs:
 
             Triggered by: ${{ github.event_name }} on commit ${{ github.sha }}.
           files: expected_crib_points.json
-          make_latest: true
+          make_latest: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1003,6 +1003,49 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                         "Warning: Hardcap reached at generation 1."
                     )
 
+    def test_max_generations_hardcap_with_convergence_threshold_fails(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "out.json")
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--checkpoint-frequency",
+                    "1",
+                    "--max-generations",
+                    "1",
+                    "--convergence-threshold",
+                    "0.005",
+                    "--fail-on-non-convergence",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with patch("sys.stderr", new_callable=io.StringIO) as mock_stderr:
+                    with self.assertRaises(SystemExit) as ctx:
+                        main(["A_A_Unsuited"])
+                    self.assertEqual(ctx.exception.code, 1)
+                    self.assertTrue(
+                        "before satisfying convergence threshold"
+                        in mock_stderr.getvalue()
+                    )
+
+    def test_fail_on_non_convergence_requires_threshold(self):
+        with patch(
+            "sys.argv",
+            [
+                "generate_table.py",
+                "--samples",
+                "2",
+                "--fail-on-non-convergence",
+            ],
+        ):
+            with self.assertRaises(SystemExit):
+                with redirect_stderr(io.StringIO()):
+                    main(["A_A_Unsuited"])
+
     def test_convergence_threshold(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = os.path.join(temp_dir, "out.json")
@@ -1142,6 +1185,51 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                     run_main_silently(["A_A_Unsuited"])
                     mock_print.assert_any_call(
                         "Warning: Hardcap reached at generation 2."
+                    )
+
+    def test_main_hardcap_on_start_with_fail_on_non_convergence(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+            with open(output_path, "w", encoding="utf-8") as output_file:
+                json.dump(
+                    {
+                        "__metadata__": {
+                            "generation_method": "artifact_pipeline.generate_table.v1",
+                            "seed": 42,
+                            "generation": 2,
+                        },
+                        "A_A_Unsuited": {
+                            "Dealer": {"A": {"n": 1, "mu": 5.0, "se": 0.0}},
+                            "Pone": {},
+                        },
+                    },
+                    output_file,
+                )
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "2",
+                    "--seed",
+                    "42",
+                    "--max-generations",
+                    "2",
+                    "--convergence-threshold",
+                    "0.005",
+                    "--fail-on-non-convergence",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                with patch("sys.stderr", new_callable=io.StringIO) as mock_stderr:
+                    with self.assertRaises(SystemExit) as ctx:
+                        main(["A_A_Unsuited"])
+                    self.assertEqual(ctx.exception.code, 1)
+                    self.assertTrue(
+                        "before satisfying convergence threshold"
+                        in mock_stderr.getvalue()
                     )
 
     def test_main_no_progress_finite(self):
