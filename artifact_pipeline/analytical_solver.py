@@ -610,6 +610,7 @@ def _run_analytical_ibr(
     # and retain mathematical readability of the game-theoretic solver.
     analytical_pairs = get_analytical_pairs()
     num_pairs = len(analytical_pairs)
+    print(f"Precomputing hand combinations and crib scores ({num_pairs} pairs)...")
 
     # 1. Precompute static combinations and crib scores
     hands = get_hand_combinations_with_weights()
@@ -667,6 +668,7 @@ def _run_analytical_ibr(
     pone_cut_table = [[0.0] * 13 for _ in range(num_pairs)]
     dampening = 0.50
     iteration = 0
+    print(f"Starting pair-conditioned IBR loop (max {max_iterations} iterations)...")
     while iteration < max_iterations:
         selected_discards = _select_discard_indices(
             hand_kept_evs,
@@ -710,6 +712,10 @@ def _run_analytical_ibr(
                 dealer_cut_table[i][starter] += dealer_cut_shift
                 pone_cut_table[i][starter] += pone_cut_shift
 
+        print(
+            f"  Pair IBR iteration {iteration + 1}/{max_iterations}: "
+            f"max shift = {max_shift:.6f}"
+        )
         if max_shift < convergence_threshold:  # pragma: no cover
             print(f"IBR converged successfully in {iteration + 1} iterations.")
             break
@@ -722,6 +728,10 @@ def _run_analytical_ibr(
         )
         full_hand_iterations = max(
             1, min(max_iterations, full_hand_policy_max_iterations)
+        )
+        print(
+            f"Starting full-hand policy refinement "
+            f"(max {full_hand_iterations} iterations)..."
         )
         for full_hand_iteration in range(full_hand_iterations):
             policy_subset_aggregates = _build_policy_subset_aggregates(
@@ -766,6 +776,12 @@ def _run_analytical_ibr(
             pn_tbl = pone_next
             dealer_cut_table = dealer_cut_next
             pone_cut_table = pone_cut_next
+            print(
+                f"  Full-hand iteration {full_hand_iteration + 1}/"
+                f"{full_hand_iterations}: "
+                f"changed discards = {changed_discards}, "
+                f"max shift = {max_shift:.6f}"
+            )
             if not changed_discards or max_shift < convergence_threshold:
                 print(
                     "Full-hand policy converged successfully in "
