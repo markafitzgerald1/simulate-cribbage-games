@@ -40,7 +40,7 @@ jobs:
       - name: Run fast PR table generation
         if: github.event_name == 'pull_request'
         run: |
-          python -u artifact_pipeline/generate_table.py --samples=1500 --max-generations=1 --output=expected_crib_points.json --no-resume --seed=42
+          python -u artifact_pipeline/generate_table.py --samples=300 --max-generations=1 --output=expected_crib_points.json --no-resume --seed=42
 
       # Bounded with --max-generations=5 to prevent runner timeouts when convergence is slow
       - name: Run production table generation
