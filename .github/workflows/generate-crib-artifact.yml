@@ -14,12 +14,11 @@ concurrency:
   group: expected-crib-points-release-${{ github.ref_name }}
   cancel-in-progress: false
 
-permissions:
-  contents: write
-
 jobs:
   generate-table:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Check out repository
@@ -43,10 +42,11 @@ jobs:
         run: |
           python -u artifact_pipeline/generate_table.py --samples=1500 --max-generations=1 --output=expected_crib_points.json --no-resume --seed=42
 
+      # Bounded with --max-generations=5 to prevent runner timeouts when convergence is slow
       - name: Run production table generation
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
-          python -u artifact_pipeline/generate_table.py --samples=15000 --convergence-threshold=0.005 --output=expected_crib_points.json --no-resume --seed=42
+          python -u artifact_pipeline/generate_table.py --samples=15000 --convergence-threshold=0.005 --max-generations=5 --output=expected_crib_points.json --no-resume --seed=42
 
       - name: Upload table artifact
         uses: actions/upload-artifact@v7
@@ -59,6 +59,8 @@ jobs:
     # Limit releases exclusively to the main branch
     if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Download table artifact
