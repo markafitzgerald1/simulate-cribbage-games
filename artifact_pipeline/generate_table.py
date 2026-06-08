@@ -201,13 +201,15 @@ def run_monte_carlo(canonical_pair, player, num_samples, rng):
 
 
 def empty_accumulator():
-    return {"n": 0, "sum": 0.0, "sum_squares": 0.0}
+    return {"n": 0, "sum": 0.0, "sum_squares": 0.0, "sum_weights_squared": 0.0}
 
 
 def update_accumulator(accumulator, value, weight=1.0):
     accumulator["n"] += weight
     accumulator["sum"] += value * weight
     accumulator["sum_squares"] += value * value * weight
+    accumulator.setdefault("sum_weights_squared", 0.0)
+    accumulator["sum_weights_squared"] += weight * weight
 
 
 def accumulator_to_statistics(accumulator):
@@ -226,12 +228,22 @@ def accumulator_to_statistics(accumulator):
         return None
 
     mu = accumulator["sum"] / n
-    if n == 1:
+    if n <= 1:
         statistics = {"n": n, "mu": mu, "se": 0.0}
     else:
-        variance = (accumulator["sum_squares"] - n * mu * mu) / (n - 1)
+        sum_w2 = accumulator.get("sum_weights_squared", n)
+        denom = n - (sum_w2 / n)
+        if denom <= 0:
+            variance = 0.0
+        else:
+            variance = (accumulator["sum_squares"] - n * mu * mu) / denom
         se = math.sqrt(max(variance, 0.0)) / math.sqrt(n)
         statistics = {"n": n, "mu": mu, "se": se}
+        if (
+            "sum_weights_squared" in accumulator
+            and accumulator["sum_weights_squared"] != n
+        ):
+            statistics["sum_w2"] = accumulator["sum_weights_squared"]
 
     if "policy_mu" in accumulator:
         statistics["policy_mu"] = accumulator["policy_mu"]
@@ -260,11 +272,18 @@ def statistics_to_accumulator(statistics):
     elif n <= 1:
         accumulator = {"n": n, "sum": mu * n, "sum_squares": mu * mu * n}
     else:
+        sum_w2 = statistics.get("sum_w2", n)
+        denom = n - (sum_w2 / n)
         variance = se * se * n
+        if denom > 0:
+            sum_squares = variance * denom + n * mu * mu
+        else:
+            sum_squares = n * mu * mu
         accumulator = {
             "n": n,
             "sum": mu * n,
-            "sum_squares": (n - 1) * variance + n * mu * mu,
+            "sum_squares": sum_squares,
+            "sum_weights_squared": sum_w2,
         }
 
     if "policy_mu" in statistics:
@@ -686,55 +705,62 @@ def write_output(
     os.replace(temporary_output_path, output_path)
 
 
+def get_deal_count(accumulators, pair, player, use_cv=False):
+    total = get_total_sample_count(accumulators, pair, player)
+    if use_cv:
+        return total / 13.0
+    return total
+
+
 def run_generation(
     args, rng, pairs, accumulators, checkpoint=None, generation_accumulators=None
 ):
+    use_cv = getattr(args, "use_control_variates", False)
     made_progress = False
     for pair in pairs:
         for player in ["Dealer", "Pone"]:
-            current_samples = get_total_sample_count(accumulators, pair, player)
+            current_deals = get_deal_count(accumulators, pair, player, use_cv)
             if args.infinite and getattr(args, "samples", None) is None:
-                samples_to_run = args.checkpoint_frequency
+                deals_to_run = args.checkpoint_frequency
             else:
-                samples_to_run = min(
+                deals_to_run = min(
                     args.checkpoint_frequency,
-                    max(getattr(args, "samples", 0) - current_samples, 0),
+                    max(getattr(args, "samples", 0) - current_deals, 0),
                 )
 
-            if samples_to_run > 0:
-                samples_to_run_int = int(math.ceil(samples_to_run))
-                run_monte_carlo_into_accumulators(
-                    accumulators,
-                    pair,
-                    player,
-                    samples_to_run_int,
-                    {
-                        "rng": rng,
-                        "first_sample_index": int(math.ceil(current_samples)),
-                        "seed": args.seed,
-                        "use_control_variates": getattr(
-                            args, "use_control_variates", False
-                        ),
-                    },
-                    generation_accumulators=generation_accumulators,
-                )
-                made_progress = True
+            if deals_to_run > 0:
+                deals_to_run_int = int(round(deals_to_run))
+                if deals_to_run_int > 0:
+                    run_monte_carlo_into_accumulators(
+                        accumulators,
+                        pair,
+                        player,
+                        deals_to_run_int,
+                        {
+                            "rng": rng,
+                            "first_sample_index": int(round(current_deals)),
+                            "seed": args.seed,
+                            "use_control_variates": use_cv,
+                        },
+                        generation_accumulators=generation_accumulators,
+                    )
+                    made_progress = True
                 if checkpoint:
                     checkpoint()
     return made_progress
 
 
-def minimum_completed_sample_count(accumulators, pairs):
+def minimum_completed_sample_count(accumulators, pairs, use_cv=False):
     return min(
-        get_total_sample_count(accumulators, pair, player)
+        get_deal_count(accumulators, pair, player, use_cv)
         for pair in pairs
         for player in ["Dealer", "Pone"]
     )
 
 
-def reached_target_sample_count(accumulators, pairs, target_samples):
+def reached_target_sample_count(accumulators, pairs, target_samples, use_cv=False):
     return all(
-        get_total_sample_count(accumulators, pair, player) >= target_samples
+        get_deal_count(accumulators, pair, player, use_cv) >= target_samples
         for pair in pairs
         for player in ["Dealer", "Pone"]
     )
@@ -912,6 +938,7 @@ def main(override_pairs=None):
     )
 
     generation = 0
+    use_cv = getattr(args, "use_control_variates", False)
     generation_accumulators = None
     if metadata is not None:
         generation = metadata.get("generation", 0)
@@ -953,7 +980,7 @@ def main(override_pairs=None):
             # If we've reached the target sample count for this generation,
             # we check if we should continue to the next generation.
             if args.samples is not None and reached_target_sample_count(
-                accumulators, pairs, args.samples
+                accumulators, pairs, args.samples, use_cv=use_cv
             ):
                 next_generation_accumulators = build_generation_accumulators(
                     generation_accumulators, accumulators, pairs, args.dampening
@@ -1032,7 +1059,9 @@ def main(override_pairs=None):
             )
 
             if made_progress:
-                completed_samples = minimum_completed_sample_count(accumulators, pairs)
+                completed_samples = minimum_completed_sample_count(
+                    accumulators, pairs, use_cv=use_cv
+                )
                 print(
                     f"Generation {generation} Checkpoint written: {args.output} "
                     f"(n >= {completed_samples} samples per pair/player)"
@@ -1044,7 +1073,9 @@ def main(override_pairs=None):
                     break
     except KeyboardInterrupt as exc:
         checkpoint()
-        completed_samples = minimum_completed_sample_count(accumulators, pairs)
+        completed_samples = minimum_completed_sample_count(
+            accumulators, pairs, use_cv=use_cv
+        )
         print(
             f"\nInterrupted. Checkpoint written: {args.output} "
             f"(n >= {completed_samples} samples per pair/player)"
