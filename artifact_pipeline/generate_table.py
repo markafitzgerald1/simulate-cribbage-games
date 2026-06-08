@@ -250,7 +250,9 @@ def statistics_to_accumulator(statistics):
             "Existing output lacks n values. Regenerate it or rerun with --no-resume."
         )
 
-    n = int(statistics["n"])
+    n = float(statistics["n"])
+    if n.is_integer():
+        n = int(n)
     mu = statistics["mu"]
     se = statistics.get("se", 0.0)
     if n == 0:
@@ -700,14 +702,15 @@ def run_generation(
                 )
 
             if samples_to_run > 0:
+                samples_to_run_int = int(math.ceil(samples_to_run))
                 run_monte_carlo_into_accumulators(
                     accumulators,
                     pair,
                     player,
-                    samples_to_run,
+                    samples_to_run_int,
                     {
                         "rng": rng,
-                        "first_sample_index": current_samples,
+                        "first_sample_index": int(math.ceil(current_samples)),
                         "seed": args.seed,
                         "use_control_variates": getattr(
                             args, "use_control_variates", False

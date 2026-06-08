@@ -39,6 +39,8 @@ from artifact_pipeline.generate_table import (
     write_output,
     load_or_initialize_accumulators,
     select_opponent_kept_cards_dynamic,
+    GENERATION_METHOD,
+    get_cut_accumulator,
 )
 from artifact_pipeline.adapter import (
     Card,
@@ -2462,6 +2464,81 @@ class TestControlVariates(unittest.TestCase):
             self.assertEqual(mock_run_mc.call_count, 2)
             sampling_dict = mock_run_mc.call_args[0][4]
             self.assertFalse(sampling_dict["use_control_variates"])
+
+    def test_control_variates_resume_validation(self):
+        """Test that validate_resume_metadata rejects incompatible CV configurations."""
+        meta_cv = {
+            "generation_method": GENERATION_METHOD,
+            "seed": 42,
+            "use_control_variates": True,
+        }
+        meta_mc = {
+            "generation_method": GENERATION_METHOD,
+            "seed": 42,
+            "use_control_variates": False,
+        }
+
+        # 1. Matching CV should pass
+        validate_resume_metadata(
+            meta_cv, 42, "test_path.json", use_control_variates=True
+        )
+        validate_resume_metadata(
+            meta_mc, 42, "test_path.json", use_control_variates=False
+        )
+
+        # 2. Mismatched CV should raise ValueError
+        with self.assertRaises(ValueError) as ctx:
+            validate_resume_metadata(
+                meta_cv, 42, "test_path.json", use_control_variates=False
+            )
+        self.assertTrue("use_control_variates" in str(ctx.exception))
+
+        with self.assertRaises(ValueError) as ctx:
+            validate_resume_metadata(
+                meta_mc, 42, "test_path.json", use_control_variates=True
+            )
+        self.assertTrue("use_control_variates" in str(ctx.exception))
+
+    def test_statistics_to_accumulator_preserves_floats(self):
+        """Test that statistics_to_accumulator preserves fractional n values."""
+        stats = {"n": 77.23, "mu": 5.5, "se": 0.1}
+        acc = statistics_to_accumulator(stats)
+        self.assertEqual(acc["n"], 77.23)
+        self.assertAlmostEqual(acc["sum"], 5.5 * 77.23)
+
+        # Should convert to int if is_integer
+        stats_int = {"n": 80.0, "mu": 5.5, "se": 0.1}
+        acc_int = statistics_to_accumulator(stats_int)
+        self.assertEqual(acc_int["n"], 80)
+        self.assertIsInstance(acc_int["n"], int)
+
+    def test_run_generation_handles_float_samples_correctly(self):
+        """Test that run_generation handles fractional samples_to_run and first_sample_index."""
+        args = argparse.Namespace(
+            infinite=False,
+            checkpoint_frequency=100,
+            samples=135,
+            seed=42,
+            use_control_variates=True,
+        )
+        rng = random.Random(42)
+        accumulators = {}
+
+        # Fill accumulator with a float sample count
+        acc = get_cut_accumulator(accumulators, "A_A_Unsuited", "Dealer", "A")
+        acc["n"] = 80.5
+
+        with patch(
+            "artifact_pipeline.generate_table.run_monte_carlo_into_accumulators"
+        ) as mock_run_mc:
+            run_generation(args, rng, ["A_A_Unsuited"], accumulators)
+            self.assertEqual(mock_run_mc.call_count, 2)
+
+            call_args = mock_run_mc.call_args_list[0][0]
+            self.assertEqual(call_args[3], 55)
+            self.assertIsInstance(call_args[3], int)
+            self.assertEqual(call_args[4]["first_sample_index"], 81)
+            self.assertIsInstance(call_args[4]["first_sample_index"], int)
 
 
 if __name__ == "__main__":
