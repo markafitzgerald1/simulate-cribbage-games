@@ -204,10 +204,10 @@ def empty_accumulator():
     return {"n": 0, "sum": 0.0, "sum_squares": 0.0}
 
 
-def update_accumulator(accumulator, value):
-    accumulator["n"] += 1
-    accumulator["sum"] += value
-    accumulator["sum_squares"] += value * value
+def update_accumulator(accumulator, value, weight=1.0):
+    accumulator["n"] += weight
+    accumulator["sum"] += value * weight
+    accumulator["sum_squares"] += value * value * weight
 
 
 def accumulator_to_statistics(accumulator):
@@ -337,13 +337,16 @@ def deserialize_accumulators(serialized):
     return accumulators
 
 
-def build_metadata(seed, generation=0, generation_accumulators=None):
+def build_metadata(
+    seed, generation=0, generation_accumulators=None, use_control_variates=False
+):
     return {
         "generation_method": GENERATION_METHOD,
         "seed": seed,
         "seed_was_specified": seed is not None,
         "generation": generation,
         "generation_accumulators": serialize_accumulators(generation_accumulators),
+        "use_control_variates": use_control_variates,
     }
 
 
@@ -378,7 +381,7 @@ def has_samples(accumulators):
     )
 
 
-def validate_resume_metadata(metadata, seed, output_path):
+def validate_resume_metadata(metadata, seed, output_path, use_control_variates=False):
     if metadata is None:
         raise ValueError(
             f"Existing output {output_path} lacks resume metadata. "
@@ -396,17 +399,30 @@ def validate_resume_metadata(metadata, seed, output_path):
             f"{metadata_seed}, but this run requested {seed}. "
             "Use the same seed options as the original run or rerun with --no-resume."
         )
+    metadata_cv = metadata.get("use_control_variates", False)
+    if metadata_cv != use_control_variates:
+        raise ValueError(
+            f"Existing output {output_path} was generated with use_control_variates={metadata_cv}, "
+            f"but this run requested {use_control_variates}. "
+            "Use the same options as the original run or rerun with --no-resume."
+        )
 
 
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 def load_or_initialize_accumulators(
-    output_path, no_resume, seed, bootstrap_path=None, require_bootstrap=False
+    output_path,
+    no_resume,
+    seed,
+    bootstrap_path=None,
+    require_bootstrap=False,
+    use_control_variates=False,
 ):
     if no_resume:
         accumulators, metadata = {}, None
     else:
         accumulators, metadata = load_output(output_path)
         if metadata is not None or has_samples(accumulators):
-            validate_resume_metadata(metadata, seed, output_path)
+            validate_resume_metadata(metadata, seed, output_path, use_control_variates)
             return accumulators, metadata
 
     # Fresh run (not resuming) - check if we should bootstrap
@@ -415,6 +431,7 @@ def load_or_initialize_accumulators(
         metadata = {
             "generation": 0,
             "generation_accumulators": serialize_accumulators(bootstrap_accumulators),
+            "use_control_variates": use_control_variates,
         }
         return {}, metadata
     if bootstrap_path and require_bootstrap:
@@ -489,7 +506,7 @@ def score_crib_sample_ev(
                 for starter in starters
             )
             expected_score = total_score / len(starters)
-            results.append((c, expected_score))
+            results.append((c, expected_score, len(starters)))
     return results
 
 
@@ -510,10 +527,12 @@ def _run_cv_sample(
         sample_rng,
         generation_accumulators,
     )
-    for c, expected_score in results:
+    for c, expected_score, num_starters in results:
+        weight = 13.0 * num_starters / 44.0
         update_accumulator(
             get_cut_accumulator(accumulators, canonical_pair, player, Index.indices[c]),
             expected_score,
+            weight=weight,
         )
 
 
@@ -560,7 +579,7 @@ def run_monte_carlo_into_accumulators(
     discarded_cards = canonical_to_cards(canonical_pair)
     remaining_deck = [card for card in DECK_SET if card not in discarded_cards]
 
-    use_cv = sampling.get("use_control_variates", True)
+    use_cv = sampling.get("use_control_variates", False)
     for sample_offset in range(num_samples):
         sample_rng = sample_rng_for_index(
             sampling["rng"],
@@ -610,9 +629,18 @@ def compute_statistics(raw_scores):
 
 
 def accumulators_to_output(
-    accumulators, seed=None, pairs=None, generation=0, generation_accumulators=None
+    accumulators,
+    seed=None,
+    pairs=None,
+    generation=0,
+    generation_accumulators=None,
+    use_control_variates=False,
 ):
-    output = {METADATA_KEY: build_metadata(seed, generation, generation_accumulators)}
+    output = {
+        METADATA_KEY: build_metadata(
+            seed, generation, generation_accumulators, use_control_variates
+        )
+    }
     pairs_to_use = pairs if pairs is not None else get_canonical_pairs()
     for pair in pairs_to_use:
         pair_data = {}
@@ -636,12 +664,18 @@ def write_output(
     pairs=None,
     generation=0,
     generation_accumulators=None,
+    use_control_variates=False,
 ):
     temporary_output_path = f"{output_path}.tmp"
     with open(temporary_output_path, "w", encoding="utf-8") as output_file:
         json.dump(
             accumulators_to_output(
-                accumulators, seed, pairs, generation, generation_accumulators
+                accumulators,
+                seed,
+                pairs,
+                generation,
+                generation_accumulators,
+                use_control_variates,
             ),
             output_file,
             indent=2,
@@ -871,6 +905,7 @@ def main(override_pairs=None):
         args.seed,
         args.bootstrap,
         require_bootstrap=args.bootstrap is not None,
+        use_control_variates=getattr(args, "use_control_variates", False),
     )
 
     generation = 0
@@ -889,6 +924,7 @@ def main(override_pairs=None):
             pairs,
             generation,
             generation_accumulators,
+            use_control_variates=getattr(args, "use_control_variates", False),
         )
 
     # pylint: disable=too-many-nested-blocks
