@@ -230,6 +230,11 @@ def accumulator_to_statistics(accumulator):
     mu = accumulator["sum"] / n
     if n <= 1:
         statistics = {"n": n, "mu": mu, "se": 0.0}
+        if (
+            "sum_weights_squared" in accumulator
+            and accumulator["sum_weights_squared"] != n
+        ):
+            statistics["sum_w2"] = accumulator["sum_weights_squared"]
     else:
         sum_w2 = accumulator.get("sum_weights_squared", n)
         denom = n - (sum_w2 / n)
@@ -270,7 +275,13 @@ def statistics_to_accumulator(statistics):
     if n == 0:
         accumulator = {"n": 0, "sum": 0.0, "sum_squares": 0.0, "mu": mu, "se": se}
     elif n <= 1:
-        accumulator = {"n": n, "sum": mu * n, "sum_squares": mu * mu * n}
+        sum_w2 = statistics.get("sum_w2", n)
+        accumulator = {
+            "n": n,
+            "sum": mu * n,
+            "sum_squares": mu * mu * n,
+            "sum_weights_squared": sum_w2,
+        }
     else:
         sum_w2 = statistics.get("sum_w2", n)
         denom = n - (sum_w2 / n)
@@ -317,12 +328,17 @@ def blend_policy_accumulators(prior_accumulator, measured_accumulator, dampening
         (1.0 - dampening) ** 2 * prior_policy_se**2
         + dampening**2 * measured_stats["se"] ** 2
     )
+    sum_w2_prior = prior_accumulator.get("sum_weights_squared", prior_accumulator["n"])
+    sum_w2_measured = measured_accumulator.get(
+        "sum_weights_squared", measured_accumulator["n"]
+    )
     return {
         "n": prior_accumulator["n"] + measured_accumulator["n"],
         "sum": prior_accumulator["sum"] + measured_accumulator["sum"],
         "sum_squares": (
             prior_accumulator["sum_squares"] + measured_accumulator["sum_squares"]
         ),
+        "sum_weights_squared": sum_w2_prior + sum_w2_measured,
         "policy_mu": policy_mu,
         "policy_se": policy_se,
     }

@@ -2631,6 +2631,45 @@ class TestControlVariates(unittest.TestCase):
             # Should not call run_monte_carlo since deals_to_run_int is 0
             self.assertEqual(mock_run_mc.call_count, 0)
 
+    def test_weighted_variance_small_bucket_and_blending(self):
+        """Test preservation of sum_w2 for small buckets and carrying in blending."""
+        # 1. n <= 1 serialization of sum_w2
+        acc = {
+            "n": 0.8,
+            "sum": 4.0,
+            "sum_squares": 20.0,
+            "sum_weights_squared": 0.5,
+        }
+        stats = accumulator_to_statistics(acc)
+        self.assertEqual(stats["n"], 0.8)
+        self.assertEqual(stats["mu"], 5.0)
+        self.assertEqual(stats["se"], 0.0)
+        self.assertEqual(stats["sum_w2"], 0.5)
+
+        # Reconstruct
+        acc_reconstructed = statistics_to_accumulator(stats)
+        self.assertEqual(acc_reconstructed["n"], 0.8)
+        self.assertEqual(acc_reconstructed["sum_weights_squared"], 0.5)
+
+        # 2. test blend_policy_accumulators carries sum_weights_squared
+        prior = {
+            "n": 1.5,
+            "sum": 7.5,
+            "sum_squares": 37.5,
+            "sum_weights_squared": 2.25,
+            "policy_mu": 5.0,
+            "policy_se": 0.1,
+        }
+        measured = {
+            "n": 2.5,
+            "sum": 12.5,
+            "sum_squares": 62.5,
+            "sum_weights_squared": 6.25,
+        }
+        blended = blend_policy_accumulators(prior, measured, dampening=0.5)
+        self.assertEqual(blended["n"], 4.0)
+        self.assertEqual(blended["sum_weights_squared"], 8.5)
+
 
 if __name__ == "__main__":
     unittest.main()
