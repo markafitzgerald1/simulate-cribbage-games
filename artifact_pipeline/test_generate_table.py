@@ -27,6 +27,7 @@ from artifact_pipeline.generate_table import (
     statistics_to_accumulator,
     minimum_completed_sample_count,
     format_samples,
+    get_se_summary,
     policy_mean,
     empty_accumulator,
     reached_target_sample_count,
@@ -412,6 +413,29 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         self.assertEqual(format_samples(100.0000000001), "100")
         self.assertEqual(format_samples(100.25), "100.25")
         self.assertEqual(format_samples(99.9999999999), "100")
+
+    def test_get_se_summary(self):
+        """Test get_se_summary calculates mean and max SE correctly."""
+        # 1. Empty/missing accumulators
+        self.assertEqual(get_se_summary({}, ["A_A_Unsuited"]), (0.0, 0.0))
+
+        # 2. Accumulators with some data
+        accumulators = {}
+        acc1 = get_cut_accumulator(accumulators, "A_A_Unsuited", "Dealer", "A")
+        acc1.update(
+            {"n": 4, "sum": 20.0, "sum_squares": 103.0, "sum_weights_squared": 4.0}
+        )
+
+        acc2 = get_cut_accumulator(accumulators, "A_A_Unsuited", "Pone", "A")
+        acc2.update(
+            {"n": 9, "sum": 90.0, "sum_squares": 900.72, "sum_weights_squared": 9.0}
+        )
+
+        # Mean SE: (0.5 + 0.1) / 2 = 0.3
+        # Max SE: max(0.5, 0.1) = 0.5
+        typical_se, max_se = get_se_summary(accumulators, ["A_A_Unsuited"])
+        self.assertAlmostEqual(typical_se, 0.3, places=5)
+        self.assertAlmostEqual(max_se, 0.5, places=5)
 
     def test_main(self):
         """Test main integration generates file successfully."""

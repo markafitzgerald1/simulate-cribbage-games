@@ -778,6 +778,27 @@ def format_samples(n):
     return f"{int(round(n))}" if abs(n - round(n)) < 1e-9 else f"{n:.2f}"
 
 
+def get_se_summary(accumulators, pairs):
+    se_values = []
+    for pair in pairs:
+        pair_data = accumulators.get(pair)
+        if not pair_data:
+            continue
+        for player in ["Dealer", "Pone"]:
+            player_data = pair_data.get(player)
+            if not player_data:
+                continue
+            for cut_card in Index.indices:
+                acc = player_data.get(cut_card)
+                if acc:
+                    stats = accumulator_to_statistics(acc)
+                    if stats is not None and "se" in stats:
+                        se_values.append(stats["se"])
+    if not se_values:
+        return 0.0, 0.0
+    return sum(se_values) / len(se_values), max(se_values)
+
+
 def reached_target_sample_count(accumulators, pairs, target_samples, use_cv=False):
     return all(
         get_deal_count(accumulators, pair, player, use_cv) >= target_samples - 1e-9
@@ -1082,9 +1103,11 @@ def main(override_pairs=None):
                 completed_samples = minimum_completed_sample_count(
                     accumulators, pairs, use_cv=use_cv
                 )
+                typical_se, max_se = get_se_summary(accumulators, pairs)
                 print(
                     f"Generation {generation} Checkpoint written: {args.output} "
-                    f"(n >= {format_samples(completed_samples)} samples per pair/player)"
+                    f"(n >= {format_samples(completed_samples)} samples per pair/player, "
+                    f"typical SE: {typical_se:.3f}, max SE: {max_se:.3f})"
                 )
 
             if not args.infinite:
@@ -1096,9 +1119,11 @@ def main(override_pairs=None):
         completed_samples = minimum_completed_sample_count(
             accumulators, pairs, use_cv=use_cv
         )
+        typical_se, max_se = get_se_summary(accumulators, pairs)
         print(
             f"\nInterrupted. Checkpoint written: {args.output} "
-            f"(n >= {format_samples(completed_samples)} samples per pair/player)"
+            f"(n >= {format_samples(completed_samples)} samples per pair/player, "
+            f"typical SE: {typical_se:.3f}, max SE: {max_se:.3f})"
         )
         raise SystemExit(130) from exc
 
