@@ -51,9 +51,11 @@ def pool_cut_estimate(cut_stats: StatsByCut) -> Optional[Estimate]:
             for stats in stats_with_mu:
                 n = stats["n"]
                 mu = stats["mu"]
-                se = stats.get("se", 0.0)
-                sample_variance = se * se * n
-                sum_squares += (n - 1) * sample_variance + n * mu * mu
+                denom = n - (stats.get("sum_w2", n) / n) if n > 0.0 else 0.0
+                if denom <= 0.0:
+                    sum_squares += n * mu * mu
+                else:
+                    sum_squares += denom * (stats.get("se", 0.0) ** 2 * n) + n * mu * mu
 
             mu = total / total_n
             if total_n <= 1.0:
