@@ -437,6 +437,19 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         self.assertAlmostEqual(typical_se, 0.3, places=5)
         self.assertAlmostEqual(max_se, 0.5, places=5)
 
+        # 3. Trigger branch where player_data is missing/None
+        accumulators_missing_player = {"A_A_Unsuited": {"Dealer": None}}
+        self.assertEqual(
+            get_se_summary(accumulators_missing_player, ["A_A_Unsuited"]),
+            (0.0, 0.0),
+        )
+
+        # 4. Trigger branch where stats is None (empty accumulator)
+        get_cut_accumulator(accumulators, "A_A_Unsuited", "Dealer", "2")
+        typical_se, max_se = get_se_summary(accumulators, ["A_A_Unsuited"])
+        self.assertAlmostEqual(typical_se, 0.3, places=5)
+        self.assertAlmostEqual(max_se, 0.5, places=5)
+
     def test_main(self):
         """Test main integration generates file successfully."""
         with tempfile.TemporaryDirectory() as temp_dir:
