@@ -39,6 +39,9 @@ from artifact_pipeline.generate_table import (
     write_output,
     load_or_initialize_accumulators,
     select_opponent_kept_cards_dynamic,
+    GENERATION_METHOD,
+    get_cut_accumulator,
+    update_accumulator,
 )
 from artifact_pipeline.adapter import (
     Card,
@@ -2377,6 +2380,295 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
     def test_dynamic_ibr_beats_flat_nobs_historical_tables_paired(self):
         """Confirm Hessel-compatible dynamic IBR beats historical tables."""
         self._assert_dynamic_ibr_beats_historical_tables_paired(true_nobs=False)
+
+
+class TestControlVariates(unittest.TestCase):
+    def test_score_crib_sample_variance_reduction(self):
+        """Verify that Control Variates reduces variance and is unbiased."""
+        seed = 12345
+        accumulators_cv = {}
+        accumulators_mc = {}
+
+        run_monte_carlo_into_accumulators(
+            accumulators_cv,
+            "5_5_Unsuited",
+            "Dealer",
+            1000,
+            {
+                "rng": random.Random(seed),
+                "first_sample_index": 0,
+                "seed": seed,
+                "use_control_variates": True,
+            },
+        )
+        run_monte_carlo_into_accumulators(
+            accumulators_mc,
+            "5_5_Unsuited",
+            "Dealer",
+            1000,
+            {
+                "rng": random.Random(seed),
+                "first_sample_index": 0,
+                "seed": seed,
+                "use_control_variates": False,
+            },
+        )
+
+        cv_means = []
+        mc_means = []
+        cv_se_squares = []
+        mc_se_squares = []
+
+        for c in Index.indices:
+            stats_cv = accumulator_to_statistics(
+                accumulators_cv["5_5_Unsuited"]["Dealer"][c]
+            )
+            stats_mc = accumulator_to_statistics(
+                accumulators_mc["5_5_Unsuited"]["Dealer"][c]
+            )
+
+            if stats_cv is not None and stats_cv["n"] > 1:
+                cv_means.append(stats_cv["mu"])
+                cv_se_squares.append(stats_cv["se"] ** 2)
+
+            if stats_mc is not None and stats_mc["n"] > 1:
+                mc_means.append(stats_mc["mu"])
+                mc_se_squares.append(stats_mc["se"] ** 2)
+
+        self.assertAlmostEqual(
+            sum(cv_means) / len(cv_means),
+            sum(mc_means) / len(mc_means),
+            delta=0.25,
+        )
+        # Expected ratio: cv_se_var / mc_se_var is approximately 1/13 = 0.077
+        self.assertLess(
+            sum(cv_se_squares) / len(cv_se_squares),
+            (sum(mc_se_squares) / len(mc_se_squares)) * 0.15,
+        )
+
+    def test_use_control_variates_cli_logic(self):
+        """Test that the CLI flag properly enables control variates."""
+        args = argparse.Namespace(
+            infinite=False,
+            checkpoint_frequency=1,
+            samples=1,
+            seed=42,
+            use_control_variates=False,
+        )
+        rng = random.Random(42)
+        accumulators = {}
+
+        with patch(
+            "artifact_pipeline.generate_table.run_monte_carlo_into_accumulators"
+        ) as mock_run_mc:
+            run_generation(args, rng, ["A_A_Unsuited"], accumulators)
+            self.assertEqual(mock_run_mc.call_count, 2)
+            sampling_dict = mock_run_mc.call_args[0][4]
+            self.assertFalse(sampling_dict["use_control_variates"])
+
+    def test_control_variates_resume_validation(self):
+        """Test that validate_resume_metadata rejects incompatible CV configurations."""
+        meta_cv = {
+            "generation_method": GENERATION_METHOD,
+            "seed": 42,
+            "use_control_variates": True,
+        }
+        meta_mc = {
+            "generation_method": GENERATION_METHOD,
+            "seed": 42,
+            "use_control_variates": False,
+        }
+
+        # 1. Matching CV should pass
+        validate_resume_metadata(
+            meta_cv, 42, "test_path.json", use_control_variates=True
+        )
+        validate_resume_metadata(
+            meta_mc, 42, "test_path.json", use_control_variates=False
+        )
+
+        # 2. Mismatched CV should raise ValueError
+        with self.assertRaises(ValueError) as ctx:
+            validate_resume_metadata(
+                meta_cv, 42, "test_path.json", use_control_variates=False
+            )
+        self.assertTrue("use_control_variates" in str(ctx.exception))
+
+        with self.assertRaises(ValueError) as ctx:
+            validate_resume_metadata(
+                meta_mc, 42, "test_path.json", use_control_variates=True
+            )
+        self.assertTrue("use_control_variates" in str(ctx.exception))
+
+    def test_statistics_to_accumulator_preserves_floats(self):
+        """Test that statistics_to_accumulator preserves fractional n values."""
+        stats = {"n": 77.23, "mu": 5.5, "se": 0.1}
+        acc = statistics_to_accumulator(stats)
+        self.assertEqual(acc["n"], 77.23)
+        self.assertAlmostEqual(acc["sum"], 5.5 * 77.23)
+
+        # Should convert to int if is_integer
+        stats_int = {"n": 80.0, "mu": 5.5, "se": 0.1}
+        acc_int = statistics_to_accumulator(stats_int)
+        self.assertEqual(acc_int["n"], 80)
+        self.assertIsInstance(acc_int["n"], int)
+
+    def test_run_generation_handles_float_samples_correctly(self):
+        """Test that run_generation handles fractional samples_to_run and first_sample_index."""
+        args = argparse.Namespace(
+            infinite=False,
+            checkpoint_frequency=100,
+            samples=135,
+            seed=42,
+            use_control_variates=True,
+        )
+        rng = random.Random(42)
+        accumulators = {}
+
+        # Fill accumulator with a float sample count
+        acc = get_cut_accumulator(accumulators, "A_A_Unsuited", "Dealer", "A")
+        acc["n"] = 80.5
+
+        with patch(
+            "artifact_pipeline.generate_table.run_monte_carlo_into_accumulators"
+        ) as mock_run_mc:
+            run_generation(args, rng, ["A_A_Unsuited"], accumulators)
+            self.assertEqual(mock_run_mc.call_count, 2)
+
+            call_args = mock_run_mc.call_args_list[0][0]
+            self.assertEqual(call_args[3], 100)
+            self.assertIsInstance(call_args[3], int)
+            self.assertEqual(call_args[4]["first_sample_index"], 6)
+            self.assertIsInstance(call_args[4]["first_sample_index"], int)
+
+    def test_weighted_variance_calculations_and_round_trip(self):
+        """Test weighted variance calculation and sum_w2 round-trip serialization."""
+        # 1. Test update_accumulator with weights
+        acc = {"n": 0, "sum": 0.0, "sum_squares": 0.0, "sum_weights_squared": 0.0}
+        update_accumulator(acc, 5.0, weight=1.5)
+        self.assertEqual(acc["n"], 1.5)
+        self.assertEqual(acc["sum"], 7.5)
+        self.assertEqual(acc["sum_squares"], 37.5)
+        self.assertEqual(acc["sum_weights_squared"], 2.25)
+
+        update_accumulator(acc, 10.0, weight=2.5)
+        self.assertEqual(acc["n"], 4.0)
+        self.assertEqual(acc["sum"], 32.5)
+        self.assertEqual(acc["sum_squares"], 287.5)
+        self.assertEqual(acc["sum_weights_squared"], 8.5)
+
+        # 2. Test accumulator_to_statistics weighted variance calculation
+        # n = 4.0, sum = 32.5, sum_squares = 287.5, sum_weights_squared = 8.5
+        # mu = 32.5 / 4.0 = 8.125
+        # sum_w2 = 8.5
+        # denom = n - sum_w2 / n = 4.0 - 8.5 / 4.0 = 4.0 - 2.125 = 1.875
+        # variance = (sum_squares - n * mu**2) / denom
+        #          = (287.5 - 4.0 * 8.125**2) / 1.875
+        #          = (287.5 - 4.0 * 66.015625) / 1.875
+        #          = (287.5 - 264.0625) / 1.875
+        #          = 23.4375 / 1.875 = 12.5
+        # se = sqrt(12.5) / sqrt(4.0) = 3.5355339 / 2.0 = 1.76776695
+        stats = accumulator_to_statistics(acc)
+        self.assertEqual(stats["n"], 4.0)
+        self.assertEqual(stats["mu"], 8.125)
+        self.assertAlmostEqual(stats["se"], math.sqrt(12.5) / 2.0)
+        self.assertEqual(stats["sum_w2"], 8.5)
+
+        # 3. Test round-trip with statistics_to_accumulator
+        acc_reconstructed = statistics_to_accumulator(stats)
+        self.assertEqual(acc_reconstructed["n"], 4.0)
+        self.assertEqual(acc_reconstructed["sum"], 32.5)
+        self.assertAlmostEqual(acc_reconstructed["sum_squares"], 287.5)
+        self.assertEqual(acc_reconstructed["sum_weights_squared"], 8.5)
+
+    def test_accumulator_denom_less_than_zero(self):
+        """Test denominator <= 0 handling in statistics_to_accumulator and accumulator_to_statistics."""
+        # 1. Denom <= 0 in statistics_to_accumulator (line 278)
+        # We pass stats with sum_w2 >= n * n, e.g. n=2.0, sum_w2=5.0
+        stats = {"n": 2.0, "mu": 5.0, "se": 1.0, "sum_w2": 5.0}
+        acc = statistics_to_accumulator(stats)
+        # Denom is 2.0 - 5.0 / 2.0 = -0.5 <= 0
+        # So sum_squares = n * mu * mu = 2.0 * 25.0 = 50.0
+        self.assertEqual(acc["sum_squares"], 50.0)
+
+        # 2. Denom <= 0 in accumulator_to_statistics (line 237)
+        acc_test = {
+            "n": 2.0,
+            "sum": 10.0,
+            "sum_squares": 60.0,
+            "sum_weights_squared": 5.0,
+        }
+        stats_out = accumulator_to_statistics(acc_test)
+        # Denom is 2.0 - 5.0 / 2.0 = -0.5 <= 0
+        # So variance = 0.0, and se = 0.0
+        self.assertEqual(stats_out["se"], 0.0)
+
+    def test_run_generation_zero_deals_to_run(self):
+        """Test that run_generation does not call run_monte_carlo if deals_to_run_int rounds to 0."""
+        args = argparse.Namespace(
+            infinite=False,
+            checkpoint_frequency=100,
+            samples=100,
+            seed=42,
+            use_control_variates=True,
+        )
+        rng = random.Random(42)
+        accumulators = {}
+
+        # Set n close to target, e.g. 99.9 * 13 = 1298.7
+        # So get_deal_count = 1298.7 / 13 = 99.9
+        # deals_to_run = 100 - 99.9 = 0.1 > 0
+        # But deals_to_run_int = round(0.1) = 0
+        acc_dl = get_cut_accumulator(accumulators, "A_A_Unsuited", "Dealer", "A")
+        acc_dl["n"] = 1298.7
+        acc_pn = get_cut_accumulator(accumulators, "A_A_Unsuited", "Pone", "A")
+        acc_pn["n"] = 1298.7
+
+        with patch(
+            "artifact_pipeline.generate_table.run_monte_carlo_into_accumulators"
+        ) as mock_run_mc:
+            run_generation(args, rng, ["A_A_Unsuited"], accumulators)
+            # Should not call run_monte_carlo since deals_to_run_int is 0
+            self.assertEqual(mock_run_mc.call_count, 0)
+
+    def test_weighted_variance_small_bucket_and_blending(self):
+        """Test preservation of sum_w2 for small buckets and carrying in blending."""
+        # 1. n <= 1 serialization of sum_w2
+        acc = {
+            "n": 0.8,
+            "sum": 4.0,
+            "sum_squares": 20.0,
+            "sum_weights_squared": 0.5,
+        }
+        stats = accumulator_to_statistics(acc)
+        self.assertEqual(stats["n"], 0.8)
+        self.assertEqual(stats["mu"], 5.0)
+        self.assertEqual(stats["se"], 0.0)
+        self.assertEqual(stats["sum_w2"], 0.5)
+
+        # Reconstruct
+        acc_reconstructed = statistics_to_accumulator(stats)
+        self.assertEqual(acc_reconstructed["n"], 0.8)
+        self.assertEqual(acc_reconstructed["sum_weights_squared"], 0.5)
+
+        # 2. test blend_policy_accumulators carries sum_weights_squared
+        prior = {
+            "n": 1.5,
+            "sum": 7.5,
+            "sum_squares": 37.5,
+            "sum_weights_squared": 2.25,
+            "policy_mu": 5.0,
+            "policy_se": 0.1,
+        }
+        measured = {
+            "n": 2.5,
+            "sum": 12.5,
+            "sum_squares": 62.5,
+            "sum_weights_squared": 6.25,
+        }
+        blended = blend_policy_accumulators(prior, measured, dampening=0.5)
+        self.assertEqual(blended["n"], 4.0)
+        self.assertEqual(blended["sum_weights_squared"], 8.5)
 
 
 if __name__ == "__main__":

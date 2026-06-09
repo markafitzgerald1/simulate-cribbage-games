@@ -37,7 +37,6 @@ from artifact_pipeline.adapter import (  # noqa: E402
     get_canonical_pairs,
 )
 
-
 DEFAULT_OUTPUT_PATH = "expected_crib_points.json"
 DEFAULT_CHECKPOINT_FREQUENCY = 100
 METADATA_KEY = "__metadata__"
@@ -202,13 +201,15 @@ def run_monte_carlo(canonical_pair, player, num_samples, rng):
 
 
 def empty_accumulator():
-    return {"n": 0, "sum": 0.0, "sum_squares": 0.0}
+    return {"n": 0, "sum": 0.0, "sum_squares": 0.0, "sum_weights_squared": 0.0}
 
 
-def update_accumulator(accumulator, value):
-    accumulator["n"] += 1
-    accumulator["sum"] += value
-    accumulator["sum_squares"] += value * value
+def update_accumulator(accumulator, value, weight=1.0):
+    accumulator["n"] += weight
+    accumulator["sum"] += value * weight
+    accumulator["sum_squares"] += value * value * weight
+    accumulator.setdefault("sum_weights_squared", 0.0)
+    accumulator["sum_weights_squared"] += weight * weight
 
 
 def accumulator_to_statistics(accumulator):
@@ -227,12 +228,27 @@ def accumulator_to_statistics(accumulator):
         return None
 
     mu = accumulator["sum"] / n
-    if n == 1:
+    if n <= 1:
         statistics = {"n": n, "mu": mu, "se": 0.0}
+        if (
+            "sum_weights_squared" in accumulator
+            and accumulator["sum_weights_squared"] != n
+        ):
+            statistics["sum_w2"] = accumulator["sum_weights_squared"]
     else:
-        variance = (accumulator["sum_squares"] - n * mu * mu) / (n - 1)
+        sum_w2 = accumulator.get("sum_weights_squared", n)
+        denom = n - (sum_w2 / n)
+        if denom <= 0:
+            variance = 0.0
+        else:
+            variance = (accumulator["sum_squares"] - n * mu * mu) / denom
         se = math.sqrt(max(variance, 0.0)) / math.sqrt(n)
         statistics = {"n": n, "mu": mu, "se": se}
+        if (
+            "sum_weights_squared" in accumulator
+            and accumulator["sum_weights_squared"] != n
+        ):
+            statistics["sum_w2"] = accumulator["sum_weights_squared"]
 
     if "policy_mu" in accumulator:
         statistics["policy_mu"] = accumulator["policy_mu"]
@@ -251,19 +267,34 @@ def statistics_to_accumulator(statistics):
             "Existing output lacks n values. Regenerate it or rerun with --no-resume."
         )
 
-    n = int(statistics["n"])
+    n = float(statistics["n"])
+    if n.is_integer():
+        n = int(n)
     mu = statistics["mu"]
     se = statistics.get("se", 0.0)
     if n == 0:
         accumulator = {"n": 0, "sum": 0.0, "sum_squares": 0.0, "mu": mu, "se": se}
     elif n <= 1:
-        accumulator = {"n": n, "sum": mu * n, "sum_squares": mu * mu * n}
-    else:
-        variance = se * se * n
+        sum_w2 = statistics.get("sum_w2", n)
         accumulator = {
             "n": n,
             "sum": mu * n,
-            "sum_squares": (n - 1) * variance + n * mu * mu,
+            "sum_squares": mu * mu * n,
+            "sum_weights_squared": sum_w2,
+        }
+    else:
+        sum_w2 = statistics.get("sum_w2", n)
+        denom = n - (sum_w2 / n)
+        variance = se * se * n
+        if denom > 0:
+            sum_squares = variance * denom + n * mu * mu
+        else:
+            sum_squares = n * mu * mu
+        accumulator = {
+            "n": n,
+            "sum": mu * n,
+            "sum_squares": sum_squares,
+            "sum_weights_squared": sum_w2,
         }
 
     if "policy_mu" in statistics:
@@ -297,12 +328,17 @@ def blend_policy_accumulators(prior_accumulator, measured_accumulator, dampening
         (1.0 - dampening) ** 2 * prior_policy_se**2
         + dampening**2 * measured_stats["se"] ** 2
     )
+    sum_w2_prior = prior_accumulator.get("sum_weights_squared", prior_accumulator["n"])
+    sum_w2_measured = measured_accumulator.get(
+        "sum_weights_squared", measured_accumulator["n"]
+    )
     return {
         "n": prior_accumulator["n"] + measured_accumulator["n"],
         "sum": prior_accumulator["sum"] + measured_accumulator["sum"],
         "sum_squares": (
             prior_accumulator["sum_squares"] + measured_accumulator["sum_squares"]
         ),
+        "sum_weights_squared": sum_w2_prior + sum_w2_measured,
         "policy_mu": policy_mu,
         "policy_se": policy_se,
     }
@@ -338,13 +374,16 @@ def deserialize_accumulators(serialized):
     return accumulators
 
 
-def build_metadata(seed, generation=0, generation_accumulators=None):
+def build_metadata(
+    seed, generation=0, generation_accumulators=None, use_control_variates=False
+):
     return {
         "generation_method": GENERATION_METHOD,
         "seed": seed,
         "seed_was_specified": seed is not None,
         "generation": generation,
         "generation_accumulators": serialize_accumulators(generation_accumulators),
+        "use_control_variates": use_control_variates,
     }
 
 
@@ -379,7 +418,7 @@ def has_samples(accumulators):
     )
 
 
-def validate_resume_metadata(metadata, seed, output_path):
+def validate_resume_metadata(metadata, seed, output_path, use_control_variates=False):
     if metadata is None:
         raise ValueError(
             f"Existing output {output_path} lacks resume metadata. "
@@ -397,17 +436,30 @@ def validate_resume_metadata(metadata, seed, output_path):
             f"{metadata_seed}, but this run requested {seed}. "
             "Use the same seed options as the original run or rerun with --no-resume."
         )
+    metadata_cv = metadata.get("use_control_variates", False)
+    if metadata_cv != use_control_variates:
+        raise ValueError(
+            f"Existing output {output_path} was generated with use_control_variates={metadata_cv}, "
+            f"but this run requested {use_control_variates}. "
+            "Use the same options as the original run or rerun with --no-resume."
+        )
 
 
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 def load_or_initialize_accumulators(
-    output_path, no_resume, seed, bootstrap_path=None, require_bootstrap=False
+    output_path,
+    no_resume,
+    seed,
+    bootstrap_path=None,
+    require_bootstrap=False,
+    use_control_variates=False,
 ):
     if no_resume:
         accumulators, metadata = {}, None
     else:
         accumulators, metadata = load_output(output_path)
         if metadata is not None or has_samples(accumulators):
-            validate_resume_metadata(metadata, seed, output_path)
+            validate_resume_metadata(metadata, seed, output_path, use_control_variates)
             return accumulators, metadata
 
     # Fresh run (not resuming) - check if we should bootstrap
@@ -416,6 +468,7 @@ def load_or_initialize_accumulators(
         metadata = {
             "generation": 0,
             "generation_accumulators": serialize_accumulators(bootstrap_accumulators),
+            "use_control_variates": use_control_variates,
         }
         return {}, metadata
     if bootstrap_path and require_bootstrap:
@@ -444,7 +497,11 @@ def sample_rng_for_index(rng, seed, canonical_pair, player, sample_index):
 
 
 def score_crib_sample(
-    discarded_cards, remaining_deck, player, sample_rng, generation_accumulators=None
+    discarded_cards,
+    remaining_deck,
+    player,
+    sample_rng,
+    generation_accumulators=None,
 ):
     opponent_dealt = sample_rng.sample(remaining_deck, 6)
     kept = select_opponent_kept_cards_dynamic(
@@ -458,6 +515,87 @@ def score_crib_sample(
     crib_hand = discarded_cards + opponent_discards
     score = score_hand_and_starter(crib_hand, cut_card, is_crib=True)
     return cut_card, score
+
+
+def score_crib_sample_ev(
+    discarded_cards,
+    remaining_deck,
+    player,
+    sample_rng,
+    generation_accumulators=None,
+):
+    opponent_dealt = sample_rng.sample(remaining_deck, 6)
+    kept = select_opponent_kept_cards_dynamic(
+        player, opponent_dealt, generation_accumulators
+    )
+    opponent_discards = [card for card in opponent_dealt if card not in kept]
+    remaining_after_deal = [
+        card for card in remaining_deck if card not in opponent_dealt
+    ]
+    crib_hand = discarded_cards + opponent_discards
+
+    results = []
+    for c in range(13):
+        starters = [card for card in remaining_after_deal if card.index == c]
+        if starters:
+            total_score = sum(
+                score_hand_and_starter(crib_hand, starter, is_crib=True)
+                for starter in starters
+            )
+            expected_score = total_score / len(starters)
+            results.append((c, expected_score, len(starters)))
+    return results
+
+
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+def _run_cv_sample(
+    accumulators,
+    canonical_pair,
+    player,
+    discarded_cards,
+    remaining_deck,
+    sample_rng,
+    generation_accumulators,
+):
+    results = score_crib_sample_ev(
+        discarded_cards,
+        remaining_deck,
+        player,
+        sample_rng,
+        generation_accumulators,
+    )
+    for c, expected_score, num_starters in results:
+        weight = 13.0 * num_starters / 44.0
+        update_accumulator(
+            get_cut_accumulator(accumulators, canonical_pair, player, Index.indices[c]),
+            expected_score,
+            weight=weight,
+        )
+
+
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+def _run_mc_sample(
+    accumulators,
+    canonical_pair,
+    player,
+    discarded_cards,
+    remaining_deck,
+    sample_rng,
+    generation_accumulators,
+):
+    cut_card, score = score_crib_sample(
+        discarded_cards,
+        remaining_deck,
+        player,
+        sample_rng,
+        generation_accumulators,
+    )
+    update_accumulator(
+        get_cut_accumulator(
+            accumulators, canonical_pair, player, Index.indices[cut_card.index]
+        ),
+        score,
+    )
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -478,25 +616,35 @@ def run_monte_carlo_into_accumulators(
     discarded_cards = canonical_to_cards(canonical_pair)
     remaining_deck = [card for card in DECK_SET if card not in discarded_cards]
 
+    use_cv = sampling.get("use_control_variates", False)
     for sample_offset in range(num_samples):
-        sample_index = sampling["first_sample_index"] + sample_offset
         sample_rng = sample_rng_for_index(
-            sampling["rng"], sampling["seed"], canonical_pair, player, sample_index
-        )
-        cut_card, score = score_crib_sample(
-            discarded_cards,
-            remaining_deck,
+            sampling["rng"],
+            sampling["seed"],
+            canonical_pair,
             player,
-            sample_rng,
-            generation_accumulators,
+            sampling["first_sample_index"] + sample_offset,
         )
-        cut_card_rank_str = Index.indices[cut_card.index]
-        update_accumulator(
-            get_cut_accumulator(
-                accumulators, canonical_pair, player, cut_card_rank_str
-            ),
-            score,
-        )
+        if use_cv:
+            _run_cv_sample(
+                accumulators,
+                canonical_pair,
+                player,
+                discarded_cards,
+                remaining_deck,
+                sample_rng,
+                generation_accumulators,
+            )
+        else:
+            _run_mc_sample(
+                accumulators,
+                canonical_pair,
+                player,
+                discarded_cards,
+                remaining_deck,
+                sample_rng,
+                generation_accumulators,
+            )
 
 
 def compute_statistics(raw_scores):
@@ -518,9 +666,18 @@ def compute_statistics(raw_scores):
 
 
 def accumulators_to_output(
-    accumulators, seed=None, pairs=None, generation=0, generation_accumulators=None
+    accumulators,
+    seed=None,
+    pairs=None,
+    generation=0,
+    generation_accumulators=None,
+    use_control_variates=False,
 ):
-    output = {METADATA_KEY: build_metadata(seed, generation, generation_accumulators)}
+    output = {
+        METADATA_KEY: build_metadata(
+            seed, generation, generation_accumulators, use_control_variates
+        )
+    }
     pairs_to_use = pairs if pairs is not None else get_canonical_pairs()
     for pair in pairs_to_use:
         pair_data = {}
@@ -544,12 +701,18 @@ def write_output(
     pairs=None,
     generation=0,
     generation_accumulators=None,
+    use_control_variates=False,
 ):
     temporary_output_path = f"{output_path}.tmp"
     with open(temporary_output_path, "w", encoding="utf-8") as output_file:
         json.dump(
             accumulators_to_output(
-                accumulators, seed, pairs, generation, generation_accumulators
+                accumulators,
+                seed,
+                pairs,
+                generation,
+                generation_accumulators,
+                use_control_variates,
             ),
             output_file,
             indent=2,
@@ -558,51 +721,62 @@ def write_output(
     os.replace(temporary_output_path, output_path)
 
 
+def get_deal_count(accumulators, pair, player, use_cv=False):
+    total = get_total_sample_count(accumulators, pair, player)
+    if use_cv:
+        return total / 13.0
+    return total
+
+
 def run_generation(
     args, rng, pairs, accumulators, checkpoint=None, generation_accumulators=None
 ):
+    use_cv = getattr(args, "use_control_variates", False)
     made_progress = False
     for pair in pairs:
         for player in ["Dealer", "Pone"]:
-            current_samples = get_total_sample_count(accumulators, pair, player)
+            current_deals = get_deal_count(accumulators, pair, player, use_cv)
             if args.infinite and getattr(args, "samples", None) is None:
-                samples_to_run = args.checkpoint_frequency
+                deals_to_run = args.checkpoint_frequency
             else:
-                samples_to_run = min(
+                deals_to_run = min(
                     args.checkpoint_frequency,
-                    max(getattr(args, "samples", 0) - current_samples, 0),
+                    max(getattr(args, "samples", 0) - current_deals, 0),
                 )
 
-            if samples_to_run > 0:
-                run_monte_carlo_into_accumulators(
-                    accumulators,
-                    pair,
-                    player,
-                    samples_to_run,
-                    {
-                        "rng": rng,
-                        "first_sample_index": current_samples,
-                        "seed": args.seed,
-                    },
-                    generation_accumulators=generation_accumulators,
-                )
-                made_progress = True
+            if deals_to_run > 0:
+                deals_to_run_int = int(round(deals_to_run))
+                if deals_to_run_int > 0:
+                    run_monte_carlo_into_accumulators(
+                        accumulators,
+                        pair,
+                        player,
+                        deals_to_run_int,
+                        {
+                            "rng": rng,
+                            "first_sample_index": int(round(current_deals)),
+                            "seed": args.seed,
+                            "use_control_variates": use_cv,
+                        },
+                        generation_accumulators=generation_accumulators,
+                    )
+                    made_progress = True
                 if checkpoint:
                     checkpoint()
     return made_progress
 
 
-def minimum_completed_sample_count(accumulators, pairs):
+def minimum_completed_sample_count(accumulators, pairs, use_cv=False):
     return min(
-        get_total_sample_count(accumulators, pair, player)
+        get_deal_count(accumulators, pair, player, use_cv)
         for pair in pairs
         for player in ["Dealer", "Pone"]
     )
 
 
-def reached_target_sample_count(accumulators, pairs, target_samples):
+def reached_target_sample_count(accumulators, pairs, target_samples, use_cv=False):
     return all(
-        get_total_sample_count(accumulators, pair, player) >= target_samples
+        get_deal_count(accumulators, pair, player, use_cv) >= target_samples
         for pair in pairs
         for player in ["Dealer", "Pone"]
     )
@@ -730,6 +904,11 @@ def main(override_pairs=None):
         help="Policy update dampening factor (default: 0.50).",
     )
     parser.add_argument(
+        "--use-control-variates",
+        action="store_true",
+        help="Enable control variates expected value scoring (variance reduction).",
+    )
+    parser.add_argument(
         "--fail-on-non-convergence",
         action="store_true",
         help="Exit with a non-zero status code if the hardcap is reached without satisfying convergence.",
@@ -771,9 +950,11 @@ def main(override_pairs=None):
         args.seed,
         args.bootstrap,
         require_bootstrap=args.bootstrap is not None,
+        use_control_variates=getattr(args, "use_control_variates", False),
     )
 
     generation = 0
+    use_cv = getattr(args, "use_control_variates", False)
     generation_accumulators = None
     if metadata is not None:
         generation = metadata.get("generation", 0)
@@ -789,6 +970,7 @@ def main(override_pairs=None):
             pairs,
             generation,
             generation_accumulators,
+            use_control_variates=getattr(args, "use_control_variates", False),
         )
 
     # pylint: disable=too-many-nested-blocks
@@ -814,7 +996,7 @@ def main(override_pairs=None):
             # If we've reached the target sample count for this generation,
             # we check if we should continue to the next generation.
             if args.samples is not None and reached_target_sample_count(
-                accumulators, pairs, args.samples
+                accumulators, pairs, args.samples, use_cv=use_cv
             ):
                 next_generation_accumulators = build_generation_accumulators(
                     generation_accumulators, accumulators, pairs, args.dampening
@@ -893,7 +1075,9 @@ def main(override_pairs=None):
             )
 
             if made_progress:
-                completed_samples = minimum_completed_sample_count(accumulators, pairs)
+                completed_samples = minimum_completed_sample_count(
+                    accumulators, pairs, use_cv=use_cv
+                )
                 print(
                     f"Generation {generation} Checkpoint written: {args.output} "
                     f"(n >= {completed_samples} samples per pair/player)"
@@ -905,7 +1089,9 @@ def main(override_pairs=None):
                     break
     except KeyboardInterrupt as exc:
         checkpoint()
-        completed_samples = minimum_completed_sample_count(accumulators, pairs)
+        completed_samples = minimum_completed_sample_count(
+            accumulators, pairs, use_cv=use_cv
+        )
         print(
             f"\nInterrupted. Checkpoint written: {args.output} "
             f"(n >= {completed_samples} samples per pair/player)"
