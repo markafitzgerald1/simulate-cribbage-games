@@ -58,11 +58,16 @@ def pool_cut_estimate(cut_stats: StatsByCut) -> Optional[Estimate]:
                     sum_squares += denom * (stats.get("se", 0.0) ** 2 * n) + n * mu * mu
 
             mu = total / total_n
-            if total_n <= 1.0:
+            denom_pooled = total_n - (
+                sum(stats.get("sum_w2", stats["n"]) for stats in stats_with_mu)
+                / total_n
+            )
+            if denom_pooled <= 0.0:
                 se = 0.0
             else:
-                variance = (sum_squares - total_n * mu * mu) / (total_n - 1)
-                se = math.sqrt(max(variance, 0.0)) / math.sqrt(total_n)
+                se = math.sqrt(
+                    max((sum_squares - total_n * mu * mu) / denom_pooled, 0.0)
+                ) / math.sqrt(total_n)
             return {"n": total_n, "mu": mu, "se": se}
 
     weights = [stats.get("weight", 1.0) for stats in stats_with_mu]
