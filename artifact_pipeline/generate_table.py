@@ -774,6 +774,10 @@ def minimum_completed_sample_count(accumulators, pairs, use_cv=False):
     )
 
 
+def format_samples(n):
+    return f"{int(round(n))}" if abs(n - round(n)) < 1e-9 else f"{n:.2f}"
+
+
 def reached_target_sample_count(accumulators, pairs, target_samples, use_cv=False):
     return all(
         get_deal_count(accumulators, pair, player, use_cv) >= target_samples
@@ -1080,7 +1084,7 @@ def main(override_pairs=None):
                 )
                 print(
                     f"Generation {generation} Checkpoint written: {args.output} "
-                    f"(n >= {completed_samples} samples per pair/player)"
+                    f"(n >= {format_samples(completed_samples)} samples per pair/player)"
                 )
 
             if not args.infinite:
@@ -1094,7 +1098,7 @@ def main(override_pairs=None):
         )
         print(
             f"\nInterrupted. Checkpoint written: {args.output} "
-            f"(n >= {completed_samples} samples per pair/player)"
+            f"(n >= {format_samples(completed_samples)} samples per pair/player)"
         )
         raise SystemExit(130) from exc
 
