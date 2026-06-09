@@ -44,19 +44,19 @@ def pool_cut_estimate(cut_stats: StatsByCut) -> Optional[Estimate]:
         return None
 
     if all("n" in stats for stats in stats_with_mu):
-        total_n = sum(int(stats["n"]) for stats in stats_with_mu)
+        total_n = sum(stats["n"] for stats in stats_with_mu)
         if total_n > 0:
             total = sum(stats["mu"] * stats["n"] for stats in stats_with_mu)
             sum_squares = 0.0
             for stats in stats_with_mu:
-                n = int(stats["n"])
+                n = stats["n"]
                 mu = stats["mu"]
                 se = stats.get("se", 0.0)
                 sample_variance = se * se * n
                 sum_squares += (n - 1) * sample_variance + n * mu * mu
 
             mu = total / total_n
-            if total_n == 1:
+            if total_n <= 1.0:
                 se = 0.0
             else:
                 variance = (sum_squares - total_n * mu * mu) / (total_n - 1)
@@ -66,7 +66,7 @@ def pool_cut_estimate(cut_stats: StatsByCut) -> Optional[Estimate]:
     weights = [stats.get("weight", 1.0) for stats in stats_with_mu]
     weight_total = sum(weights)
     normalized_weights = [weight / weight_total for weight in weights]
-    has_n_zero = all("n" in stats and int(stats["n"]) == 0 for stats in stats_with_mu)
+    has_n_zero = all("n" in stats and stats["n"] == 0 for stats in stats_with_mu)
     return {
         "n": 0 if has_n_zero else len(stats_with_mu),
         "mu": sum(

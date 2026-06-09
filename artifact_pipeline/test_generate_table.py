@@ -26,6 +26,7 @@ from artifact_pipeline.generate_table import (
     run_generation,
     statistics_to_accumulator,
     minimum_completed_sample_count,
+    format_samples,
     policy_mean,
     empty_accumulator,
     reached_target_sample_count,
@@ -404,6 +405,13 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             positive_int("0")
         with self.assertRaises(argparse.ArgumentTypeError):
             positive_int("-1")
+
+    def test_format_samples(self):
+        """Test format_samples function with integer and float counts."""
+        self.assertEqual(format_samples(100.0), "100")
+        self.assertEqual(format_samples(100.0000000001), "100")
+        self.assertEqual(format_samples(100.25), "100.25")
+        self.assertEqual(format_samples(99.9999999999), "100")
 
     def test_main(self):
         """Test main integration generates file successfully."""
