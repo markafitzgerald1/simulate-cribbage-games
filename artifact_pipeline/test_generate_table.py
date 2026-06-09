@@ -415,39 +415,61 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         self.assertEqual(format_samples(99.9999999999), "100")
 
     def test_get_se_summary(self):
-        """Test get_se_summary calculates mean and max SE correctly."""
+        """Test get_se_summary calculates median and max SE correctly, ignoring n<=1."""
         # 1. Empty/missing accumulators
-        self.assertEqual(get_se_summary({}, ["A_A_Unsuited"]), (0.0, 0.0))
+        self.assertEqual(get_se_summary({}, ["A_A_Unsuited"]), (None, None))
 
         # 2. Accumulators with some data
         accumulators = {}
+        # standard error = 0.5 (var = 1.0, n = 4)
         acc1 = get_cut_accumulator(accumulators, "A_A_Unsuited", "Dealer", "A")
         acc1.update(
             {"n": 4, "sum": 20.0, "sum_squares": 103.0, "sum_weights_squared": 4.0}
         )
 
+        # standard error = 0.1 (var = 0.08, n = 9)
         acc2 = get_cut_accumulator(accumulators, "A_A_Unsuited", "Pone", "A")
         acc2.update(
             {"n": 9, "sum": 90.0, "sum_squares": 900.72, "sum_weights_squared": 9.0}
         )
 
-        # Mean SE: (0.5 + 0.1) / 2 = 0.3
-        # Max SE: max(0.5, 0.1) = 0.5
+        # 2.1 Test with two data points: median of [0.5, 0.1] is 0.3
         typical_se, max_se = get_se_summary(accumulators, ["A_A_Unsuited"])
         self.assertAlmostEqual(typical_se, 0.3, places=5)
+        self.assertAlmostEqual(max_se, 0.5, places=5)
+
+        # 2.2 Add a third bucket with n > 1 to test median specifically:
+        # values: [0.1, 0.2, 0.5] -> median = 0.2, mean = 0.2667
+        # standard error = 0.2 (var = 0.16, n = 5)
+        acc3 = get_cut_accumulator(accumulators, "A_A_Unsuited", "Dealer", "3")
+        acc3.update(
+            {"n": 5, "sum": 25.0, "sum_squares": 125.8, "sum_weights_squared": 5.0}
+        )
+        typical_se, max_se = get_se_summary(accumulators, ["A_A_Unsuited"])
+        self.assertAlmostEqual(typical_se, 0.2, places=5)
+        self.assertAlmostEqual(max_se, 0.5, places=5)
+
+        # 2.3 Add a bucket with n <= 1: standard error should be ignored
+        acc4 = get_cut_accumulator(accumulators, "A_A_Unsuited", "Pone", "3")
+        acc4.update(
+            {"n": 1, "sum": 5.0, "sum_squares": 25.0, "sum_weights_squared": 1.0}
+        )
+        typical_se, max_se = get_se_summary(accumulators, ["A_A_Unsuited"])
+        # Still median = 0.2, max = 0.5 (the n=1 bucket is skipped)
+        self.assertAlmostEqual(typical_se, 0.2, places=5)
         self.assertAlmostEqual(max_se, 0.5, places=5)
 
         # 3. Trigger branch where player_data is missing/None
         accumulators_missing_player = {"A_A_Unsuited": {"Dealer": None}}
         self.assertEqual(
             get_se_summary(accumulators_missing_player, ["A_A_Unsuited"]),
-            (0.0, 0.0),
+            (None, None),
         )
 
         # 4. Trigger branch where stats is None (empty accumulator)
-        get_cut_accumulator(accumulators, "A_A_Unsuited", "Dealer", "2")
+        get_cut_accumulator(accumulators, "A_A_Unsuited", "Dealer", "4")
         typical_se, max_se = get_se_summary(accumulators, ["A_A_Unsuited"])
-        self.assertAlmostEqual(typical_se, 0.3, places=5)
+        self.assertAlmostEqual(typical_se, 0.2, places=5)
         self.assertAlmostEqual(max_se, 0.5, places=5)
 
     def test_main(self):
