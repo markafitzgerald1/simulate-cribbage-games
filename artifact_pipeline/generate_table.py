@@ -780,7 +780,7 @@ def format_samples(n):
 
 def reached_target_sample_count(accumulators, pairs, target_samples, use_cv=False):
     return all(
-        get_deal_count(accumulators, pair, player, use_cv) >= target_samples
+        get_deal_count(accumulators, pair, player, use_cv) >= target_samples - 1e-9
         for pair in pairs
         for player in ["Dealer", "Pone"]
     )
