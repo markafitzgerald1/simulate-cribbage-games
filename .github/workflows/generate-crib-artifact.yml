@@ -45,7 +45,7 @@ jobs:
       - name: Generate analytical bootstrap table (Production)
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
-          python -u artifact_pipeline/analytical_solver.py --output expected_crib_points.analytical.json
+          python -u artifact_pipeline/analytical_solver.py --convergence-threshold=0.001 --output expected_crib_points.analytical.json
 
       - name: Run fast PR table generation
         if: github.event_name == 'pull_request'
