@@ -2678,6 +2678,32 @@ class TestControlVariates(unittest.TestCase):
         self.assertEqual(blended["n"], 4.0)
         self.assertEqual(blended["sum_weights_squared"], 8.5)
 
+    def test_reached_target_sample_count_floating_point_tolerance(self):
+        """Test that reached_target_sample_count handles float deal counts near target."""
+        accumulators = {}
+        # Target = 100
+        # If deal count is 99.9999999999 (under CV, sum of weights is 1299.9999999999)
+        # 99.9999999999 >= 100 - 1e-9 is True.
+        acc_dl = get_cut_accumulator(accumulators, "A_A_Unsuited", "Dealer", "A")
+        acc_dl["n"] = 1299.9999999999
+        acc_pn = get_cut_accumulator(accumulators, "A_A_Unsuited", "Pone", "A")
+        acc_pn["n"] = 1299.9999999999
+
+        self.assertTrue(
+            reached_target_sample_count(
+                accumulators, ["A_A_Unsuited"], 100, use_cv=True
+            )
+        )
+
+        # If it is slightly less than tolerance (e.g. 99.9), it should return False
+        acc_dl["n"] = 1298.7  # 99.9
+        acc_pn["n"] = 1298.7
+        self.assertFalse(
+            reached_target_sample_count(
+                accumulators, ["A_A_Unsuited"], 100, use_cv=True
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
