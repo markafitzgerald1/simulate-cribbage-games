@@ -459,6 +459,16 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         self.assertAlmostEqual(typical_se, 0.2, places=5)
         self.assertAlmostEqual(max_se, 0.5, places=5)
 
+        # 2.4 Add a degenerate CV bucket (n > 1 but denom <= 0): standard error should be ignored
+        acc5 = get_cut_accumulator(accumulators, "A_A_Unsuited", "Pone", "4")
+        acc5.update(
+            {"n": 1.18, "sum": 5.9, "sum_squares": 29.5, "sum_weights_squared": 1.3924}
+        )
+        typical_se, max_se = get_se_summary(accumulators, ["A_A_Unsuited"])
+        # Still median = 0.2, max = 0.5 (the degenerate CV bucket is skipped)
+        self.assertAlmostEqual(typical_se, 0.2, places=5)
+        self.assertAlmostEqual(max_se, 0.5, places=5)
+
         # 3. Trigger branch where player_data is missing/None
         accumulators_missing_player = {"A_A_Unsuited": {"Dealer": None}}
         self.assertEqual(

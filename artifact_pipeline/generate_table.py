@@ -791,10 +791,16 @@ def get_se_summary(accumulators, pairs):
                 continue
             for cut_card in Index.indices:
                 acc = player_data.get(cut_card)
-                if acc:
-                    stats = accumulator_to_statistics(acc)
-                    if stats is not None and "se" in stats and stats.get("n", 0) > 1:
-                        se_values.append(stats["se"])
+                if not acc:
+                    continue
+                stats = accumulator_to_statistics(acc)
+                if stats is None or "se" not in stats:
+                    continue
+                n = stats.get("n", 0)
+                sum_w2 = stats.get("sum_w2", n)
+                denom = n - (sum_w2 / n) if n > 0 else 0.0
+                if denom > 1e-9:
+                    se_values.append(stats["se"])
     if not se_values:
         return None, None
     return stats_lib.median(se_values), max(se_values)
@@ -1105,7 +1111,9 @@ def main(override_pairs=None):
                     accumulators, pairs, use_cv=use_cv
                 )
                 typical_se, max_se = get_se_summary(accumulators, pairs)
-                typical_se_str = f"{typical_se:.3f}" if typical_se is not None else "N/A"
+                typical_se_str = (
+                    f"{typical_se:.3f}" if typical_se is not None else "N/A"
+                )
                 max_se_str = f"{max_se:.3f}" if max_se is not None else "N/A"
                 print(
                     f"Generation {generation} Checkpoint written: {args.output} "
