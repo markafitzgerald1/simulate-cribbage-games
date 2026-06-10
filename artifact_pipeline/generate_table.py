@@ -20,6 +20,7 @@ import json
 import math
 import os
 import random
+import statistics as stats_lib
 import sys
 
 if __package__ in (None, ""):  # pragma: no cover
@@ -402,9 +403,9 @@ def load_output(output_path):
         accumulators[pair] = {}
         for player, player_data in pair_data.items():
             accumulators[pair][player] = {}
-            for cut_card, statistics in player_data.items():
+            for cut_card, stats_data in player_data.items():
                 accumulators[pair][player][cut_card] = statistics_to_accumulator(
-                    statistics
+                    stats_data
                 )
     return accumulators, metadata
 
@@ -778,6 +779,33 @@ def format_samples(n):
     return f"{int(round(n))}" if abs(n - round(n)) < 1e-9 else f"{n:.2f}"
 
 
+def get_se_summary(accumulators, pairs):
+    se_values = []
+    for pair in pairs:
+        pair_data = accumulators.get(pair)
+        if not pair_data:
+            continue
+        for player in ["Dealer", "Pone"]:
+            player_data = pair_data.get(player)
+            if not player_data:
+                continue
+            for cut_card in Index.indices:
+                acc = player_data.get(cut_card)
+                if not acc:
+                    continue
+                stats = accumulator_to_statistics(acc)
+                if stats is None or "se" not in stats:
+                    continue
+                n = stats.get("n", 0)
+                sum_w2 = stats.get("sum_w2", n)
+                denom = n - (sum_w2 / n) if n > 0 else 0.0
+                if denom > 1e-9:
+                    se_values.append(stats["se"])
+    if not se_values:
+        return None, None
+    return stats_lib.median(se_values), max(se_values)
+
+
 def reached_target_sample_count(accumulators, pairs, target_samples, use_cv=False):
     return all(
         get_deal_count(accumulators, pair, player, use_cv) >= target_samples - 1e-9
@@ -1082,9 +1110,15 @@ def main(override_pairs=None):
                 completed_samples = minimum_completed_sample_count(
                     accumulators, pairs, use_cv=use_cv
                 )
+                typical_se, max_se = get_se_summary(accumulators, pairs)
+                typical_se_str = (
+                    f"{typical_se:.3f}" if typical_se is not None else "N/A"
+                )
+                max_se_str = f"{max_se:.3f}" if max_se is not None else "N/A"
                 print(
                     f"Generation {generation} Checkpoint written: {args.output} "
-                    f"(n >= {format_samples(completed_samples)} samples per pair/player)"
+                    f"(n >= {format_samples(completed_samples)} samples per pair/player, "
+                    f"typical SE: {typical_se_str}, max SE: {max_se_str})"
                 )
 
             if not args.infinite:
@@ -1096,9 +1130,13 @@ def main(override_pairs=None):
         completed_samples = minimum_completed_sample_count(
             accumulators, pairs, use_cv=use_cv
         )
+        typical_se, max_se = get_se_summary(accumulators, pairs)
+        typical_se_str = f"{typical_se:.3f}" if typical_se is not None else "N/A"
+        max_se_str = f"{max_se:.3f}" if max_se is not None else "N/A"
         print(
             f"\nInterrupted. Checkpoint written: {args.output} "
-            f"(n >= {format_samples(completed_samples)} samples per pair/player)"
+            f"(n >= {format_samples(completed_samples)} samples per pair/player, "
+            f"typical SE: {typical_se_str}, max SE: {max_se_str})"
         )
         raise SystemExit(130) from exc
 
