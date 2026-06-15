@@ -8,6 +8,7 @@ from artifact_pipeline.adapter import (
     cached_pairs_runs_and_fifteens_points,
     BEST_STATIC_SELECT_PONE_KEPT_CARDS,
     BEST_STATIC_SELECT_DEALER_KEPT_CARDS,
+    score_hand_over_starters,
 )
 
 
@@ -21,6 +22,7 @@ class TestAdapter(unittest.TestCase):
         self.assertIsNotNone(cached_pairs_runs_and_fifteens_points)
         self.assertIsNotNone(BEST_STATIC_SELECT_PONE_KEPT_CARDS)
         self.assertIsNotNone(BEST_STATIC_SELECT_DEALER_KEPT_CARDS)
+        self.assertIsNotNone(score_hand_over_starters)
 
     def test_card_creation(self):
         """Test basic Card interaction via adapter."""
@@ -44,6 +46,18 @@ class TestAdapter(unittest.TestCase):
         starter = Card(4, 0)
         score = score_hand_and_starter(kept, starter, is_crib=True)
         self.assertTrue(isinstance(score, int))
+
+    def test_score_hand_over_starters(self):
+        """Test score_hand_over_starters matches score_hand_and_starter for all deck starters."""
+        kept = [Card(0, 0), Card(1, 0), Card(2, 0), Card(10, 0)]
+        starters = [card for card in DECK_SET if card not in kept]
+
+        scores = score_hand_over_starters(kept, starters)
+
+        self.assertEqual(len(scores), len(starters))
+        for starter in starters:
+            expected = score_hand_and_starter(kept, starter, is_crib=False)
+            self.assertEqual(scores[starter], expected)
 
 
 if __name__ == "__main__":

@@ -36,6 +36,7 @@ from artifact_pipeline.adapter import (  # noqa: E402
     BEST_STATIC_SELECT_PONE_KEPT_CARDS,
     BEST_STATIC_SELECT_DEALER_KEPT_CARDS,
     get_canonical_pairs,
+    score_hand_over_starters,
 )
 
 DEFAULT_OUTPUT_PATH = "expected_crib_points.json"
@@ -117,32 +118,39 @@ def select_opponent_kept_cards_dynamic(
     deck_set_to_use = DECK_SET
     starters = [card for card in deck_set_to_use if card not in opponent_dealt]
 
+    # Pre-build lookup table for policy EV by rank to avoid repeated dictionary and statistics logic.
+    # We only look up the canonical pairs that actually could be formed by discarding from opponent_dealt.
+    # Since there are only 15 combinations of 4 cards, there are 15 possible canonical pairs.
+    ev_lookups = {}
     for kept_combination in itertools.combinations(opponent_dealt, 4):
-        kept_hand = list(kept_combination)
-        # Calculate average hand score
-        total_hand_score = 0
-        for starter in starters:
-            total_hand_score += score_hand_and_starter(kept_hand, starter)
-        average_hand_score = total_hand_score / len(starters)
-
-        # Calculate average crib score using generation_accumulators
-        discarded = [c for c in opponent_dealt if c not in kept_hand]
+        discarded = [c for c in opponent_dealt if c not in kept_combination]
         canonical_pair = cards_to_canonical(discarded[0], discarded[1])
 
-        total_crib_score = 0.0
-        for starter in starters:
-            starter_rank = Index.indices[starter.index]
-            acc = (
-                generation_accumulators.get(canonical_pair, {})
-                .get(opp_role, {})
-                .get(starter_rank)
-            )
-            if acc:
-                stats = accumulator_to_statistics(acc)
-                mu = policy_mean(stats) if stats is not None else 0.0
-            else:
-                mu = 0.0
-            total_crib_score += mu
+        if canonical_pair not in ev_lookups:
+            ev_by_rank = [0.0] * 13
+            pair_data = generation_accumulators.get(canonical_pair) or {}
+            player_data = pair_data.get(opp_role) or {}
+            for r in range(13):
+                acc = player_data.get(Index.indices[r])
+                if acc:
+                    stats = accumulator_to_statistics(acc)
+                    ev_by_rank[r] = policy_mean(stats) if stats is not None else 0.0
+            ev_lookups[canonical_pair] = ev_by_rank
+
+    for kept_combination in itertools.combinations(opponent_dealt, 4):
+        kept_hand = list(kept_combination)
+
+        # 1. Calculate average hand score using our optimized batch scoring helper
+        hand_scores = score_hand_over_starters(kept_hand, starters)
+        total_hand_score = sum(hand_scores.values())
+        average_hand_score = total_hand_score / len(starters)
+
+        # 2. Calculate average crib score using the pre-computed policy EV table
+        discarded = [c for c in opponent_dealt if c not in kept_hand]
+        canonical_pair = cards_to_canonical(discarded[0], discarded[1])
+        ev_by_rank = ev_lookups[canonical_pair]
+
+        total_crib_score = sum(ev_by_rank[starter.index] for starter in starters)
         average_crib_score = total_crib_score / len(starters)
 
         if plus_crib:
@@ -762,8 +770,8 @@ def run_generation(
                         generation_accumulators=generation_accumulators,
                     )
                     made_progress = True
-                if checkpoint:
-                    checkpoint()
+    if made_progress and checkpoint:
+        checkpoint()
     return made_progress
 
 
