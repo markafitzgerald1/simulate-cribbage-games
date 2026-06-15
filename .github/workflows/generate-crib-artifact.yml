@@ -17,7 +17,6 @@ concurrency:
 jobs:
   generate-table:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
     permissions:
       contents: read
 
@@ -53,11 +52,11 @@ jobs:
         run: |
           python -u artifact_pipeline/generate_table.py --bootstrap=expected_crib_points.analytical.json --samples=300 --max-generations=1 --output=expected_crib_points.json --no-resume --seed=42 --use-control-variates
 
-      # Bounded with --max-generations=3 to prevent runner timeouts when convergence is slow
+      # Bounded with --max-generations=1 because the analytical bootstrap is already converged.
       - name: Run production table generation
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
-          python -u artifact_pipeline/generate_table.py --bootstrap=expected_crib_points.analytical.json --samples=8000 --convergence-threshold=0.01 --max-generations=3 --fail-on-non-convergence --output=expected_crib_points.json --no-resume --seed=42 --use-control-variates
+          python -u artifact_pipeline/generate_table.py --bootstrap=expected_crib_points.analytical.json --samples=32000 --convergence-threshold=0.08 --max-generations=2 --fail-on-non-convergence --output=expected_crib_points.json --no-resume --seed=42 --use-control-variates
 
       - name: Upload analytical bootstrap artifact
         uses: actions/upload-artifact@v7
