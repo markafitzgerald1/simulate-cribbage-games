@@ -25,69 +25,34 @@ export default (
   const totalScore: [Points, Points] = [0, 0];
   const startTimeNs: bigint = process.hrtime.bigint();
   const workerNumberPrefix = workerNumber ? `[worker ${workerNumber}] ` : "";
+  const logHand = (role: string, action: string, hand: Hand | Card[]) => {
+    const hide = role === "Pone" ? hidePoneHand : hideDealerHand;
+    if (hide) return;
+    const cards = hand instanceof Hand ? hand.cards : hand;
+    const cardsString = hand instanceof Hand ? hand.toString() : `[${hand}]`;
+    console.log(
+      `${workerNumberPrefix}${role.padEnd(7)}${action.padEnd(10)}${cardsString} (sorted: [${[...cards]
+        .sort(Card.compare)
+        .reverse()}])`
+    );
+  };
+
   [...Array(handCount)].forEach(() => {
     const dealtHands: AllHands = dealAllHands(mersenneTwisterEngine, DECK);
-    if (!hidePoneHand) {
-      console.log(
-        `${workerNumberPrefix}Pone   dealt     ${
-          dealtHands.poneHand
-        } (sorted: [${[...dealtHands.poneHand.cards]
-          .sort(Card.compare)
-          .reverse()}])`
-      );
-    }
-    if (!hideDealerHand) {
-      console.log(
-        `${workerNumberPrefix}Dealer dealt     ${
-          dealtHands.dealerHand
-        } (sorted: [${[...dealtHands.dealerHand.cards]
-          .sort(Card.compare)
-          .reverse()}])`
-      );
-    }
+    logHand("Pone", "dealt", dealtHands.poneHand);
+    logHand("Dealer", "dealt", dealtHands.dealerHand);
 
     const poneDiscardResult: DiscardResult = discard(dealtHands.poneHand);
     const dealerDiscardResult: DiscardResult = discard(dealtHands.dealerHand);
-    if (!hidePoneHand) {
-      console.log(
-        `${workerNumberPrefix}Pone   discarded [${
-          poneDiscardResult.discards
-        }] (sorted: [${[...poneDiscardResult.discards]
-          .sort(Card.compare)
-          .reverse()}])`
-      );
-    }
-    if (!hideDealerHand) {
-      console.log(
-        `${workerNumberPrefix}Dealer discarded [${
-          dealerDiscardResult.discards
-        }] (sorted: [${[...dealerDiscardResult.discards]
-          .sort(Card.compare)
-          .reverse()}])`
-      );
-    }
+    logHand("Pone", "discarded", poneDiscardResult.discards);
+    logHand("Dealer", "discarded", dealerDiscardResult.discards);
+
     const keptHands: AllHands = new AllHands(
       poneDiscardResult.hand,
       dealerDiscardResult.hand
     );
-    if (!hidePoneHand) {
-      console.log(
-        `${workerNumberPrefix}Pone   kept      ${
-          keptHands.poneHand
-        } (sorted: [${[...keptHands.poneHand.cards]
-          .sort(Card.compare)
-          .reverse()}])`
-      );
-    }
-    if (!hideDealerHand) {
-      console.log(
-        `${workerNumberPrefix}Dealer kept      ${
-          keptHands.dealerHand
-        } (sorted: [${[...keptHands.dealerHand.cards]
-          .sort(Card.compare)
-          .reverse()}])`
-      );
-    }
+    logHand("Pone", "kept", keptHands.poneHand);
+    logHand("Dealer", "kept", keptHands.dealerHand);
 
     let playHands: AllHands = keptHands;
     let thePlay: ThePlay = ThePlay.create();

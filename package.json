@@ -64,7 +64,7 @@
     "tsc-clean": "rm -f src/*.js src/cribbage/*.js src/components/*.js test/*.js",
     "clean": "rm -rf src/*.module.css.d.ts src/*/*.module.css.d.ts .parcel-cache/ dist/ index.html index.*.js index.*.js.map index.*.css index.*.css.map src/*.js src/cribbage/*.js src/components/*.js",
     "simulate": "node dist/src/simulateCribbageHands.js --hide-pone-hand --hide-dealer-hand --hide-play-actions",
-    "cpd": "pmd --version | grep -q 'PMD 7' && (find src test -type f -name \"*.ts\" > cpd-files.txt && pmd cpd --language typescript --minimum-tokens 22 --file-list cpd-files.txt --no-fail-on-violation && rm -f cpd-files.txt) || pmd cpd --language ecmascript --minimum-tokens 22 --files $(find src test -type f -name \"*.ts\")",
+    "cpd": "pmd --version | grep -q 'PMD 7' && (find src test -type f -name \"*.ts\" > cpd-files.txt && pmd cpd --language typescript --minimum-tokens 40 --file-list cpd-files.txt && rm -f cpd-files.txt) || pmd cpd --language ecmascript --minimum-tokens 22 --files $(find src test -type f -name \"*.ts\")",
     "eslint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "spellcheck": "cspell --config cspell.json"
   },
