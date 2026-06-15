@@ -56,7 +56,7 @@ jobs:
       - name: Run production table generation
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
-          python -u artifact_pipeline/generate_table.py --bootstrap=expected_crib_points.analytical.json --samples=8000 --convergence-threshold=0.15 --max-generations=3 --fail-on-non-convergence --output=expected_crib_points.json --no-resume --seed=42 --use-control-variates
+          python -u artifact_pipeline/generate_table.py --bootstrap=expected_crib_points.analytical.json --samples=32000 --convergence-threshold=0.08 --max-generations=2 --fail-on-non-convergence --output=expected_crib_points.json --no-resume --seed=42 --use-control-variates
 
       - name: Upload analytical bootstrap artifact
         uses: actions/upload-artifact@v7
