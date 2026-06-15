@@ -28,6 +28,7 @@ __all__ = [
     "BEST_STATIC_SELECT_PONE_KEPT_CARDS",
     "BEST_STATIC_SELECT_DEALER_KEPT_CARDS",
     "get_canonical_pairs",
+    "score_hand_over_starters",
 ]
 
 
@@ -55,3 +56,60 @@ def get_canonical_pairs():
                 pairs.append(f"{rank1}_{rank2}_Unsuited")
 
     return pairs
+
+
+JACK_INDEX = 10
+
+
+def insert_sorted(sorted_4, x):
+    """
+    Inserts value x into a sorted 4-element tuple to produce a sorted 5-element tuple.
+    Avoids overhead of sorting list of 5 elements.
+    """
+    if x <= sorted_4[0]:
+        return (x, sorted_4[0], sorted_4[1], sorted_4[2], sorted_4[3])
+    if x <= sorted_4[1]:
+        return (sorted_4[0], x, sorted_4[1], sorted_4[2], sorted_4[3])
+    if x <= sorted_4[2]:
+        return (sorted_4[0], sorted_4[1], x, sorted_4[2], sorted_4[3])
+    if x <= sorted_4[3]:
+        return (sorted_4[0], sorted_4[1], sorted_4[2], x, sorted_4[3])
+    return (sorted_4[0], sorted_4[1], sorted_4[2], sorted_4[3], x)
+
+
+def score_hand_over_starters(kept_hand, starters):
+    """
+    Score a kept hand of 4 cards against a list of starter cards.
+    Pre-computes hand-invariant properties to optimize performance.
+    """
+    sorted_kept_indices = sorted([c.index for c in kept_hand])
+
+    kept_hand_suits = [c.suit for c in kept_hand]
+    is_flush = (
+        kept_hand_suits[0]
+        == kept_hand_suits[1]
+        == kept_hand_suits[2]
+        == kept_hand_suits[3]
+    )
+    flush_suit = kept_hand_suits[0] if is_flush else -1
+
+    jack_suits = {c.suit for c in kept_hand if c.index == JACK_INDEX}
+
+    scores = {}
+    for starter in starters:
+        # 1. Pairs, runs, fifteens points (cached)
+        hand_combo = insert_sorted(sorted_kept_indices, starter.index)
+        pts = cached_pairs_runs_and_fifteens_points(hand_combo)
+
+        # 2. Flush points
+        # is_crib=False because we are scoring the opponent's kept hand, not a crib.
+        if is_flush:
+            pts += 5 if starter.suit == flush_suit else 4
+
+        # 3. Nobs points
+        if starter.suit in jack_suits:
+            pts += 1
+
+        scores[starter] = pts
+
+    return scores

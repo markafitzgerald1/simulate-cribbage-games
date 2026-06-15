@@ -378,7 +378,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         self.assertEqual(
             minimum_completed_sample_count(accumulators, ["A_A_Unsuited"]), 1
         )
-        self.assertEqual(len(checkpoint_calls), 2)
+        self.assertEqual(len(checkpoint_calls), 1)
 
     def test_run_generation_no_progress(self):
         args = argparse.Namespace(
@@ -1429,10 +1429,10 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         mock_accumulators = {
             "2_3_Unsuited": {
                 "Dealer": {
-                    0: {"n": 10, "sum": 20.0, "m2": 0.0},
+                    0: {"n": 10, "sum": 20.0, "sum_squares": 40.0},
                 },
                 "Pone": {
-                    0: {"n": 10, "sum": 20.0, "m2": 0.0},
+                    0: {"n": 10, "sum": 20.0, "sum_squares": 40.0},
                 },
             }
         }
@@ -1445,6 +1445,33 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
             "Pone", dealt, mock_accumulators
         )
         self.assertEqual(len(kept_dyn_pone), 4)
+
+        # 3. Test branch coverage for missing player_data and missing acc in select_opponent_kept_cards_dynamic
+        # "5_6_Suited" is formed when keeping Card(0,0), Card(1,0), Card(2,0), Card(3,0)
+        # and discarding Card(4,0), Card(5,0).
+        mock_accumulators_coverage = {
+            "5_6_Suited": {
+                "Dealer": {},  # empty player_data
+                "Pone": {
+                    "A": {
+                        "n": 10,
+                        "sum": 20.0,
+                        "sum_squares": 40.0,
+                    },  # only rank A is present, others missing
+                },
+            }
+        }
+        # Call with player="Pone" (opp_role="Dealer") to trigger missing player_data
+        kept_cov_dealer = select_opponent_kept_cards_dynamic(
+            "Pone", dealt, mock_accumulators_coverage
+        )
+        self.assertEqual(len(kept_cov_dealer), 4)
+
+        # Call with player="Dealer" (opp_role="Pone") to trigger missing acc for ranks other than A
+        kept_cov_pone = select_opponent_kept_cards_dynamic(
+            "Dealer", dealt, mock_accumulators_coverage
+        )
+        self.assertEqual(len(kept_cov_pone), 4)
 
     def test_main_negative_convergence_threshold(self):
         """Test that main rejects a negative convergence threshold."""

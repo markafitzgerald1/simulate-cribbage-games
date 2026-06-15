@@ -17,6 +17,7 @@ concurrency:
 jobs:
   generate-table:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     permissions:
       contents: read
 
