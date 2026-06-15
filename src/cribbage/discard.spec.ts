@@ -8,6 +8,6 @@ import discard from "./discard";
 
 it(`should throw for a hand containing less than ${Game.DEALT_HAND_SIZE} cards`, () => {
   expect(() => {
-    discard(createHandOfUniqueCards(Game.KEPT_HAND_SIZE - 1));
-  }).toThrow;
+    discard(createHandOfUniqueCards(Game.DEALT_HAND_SIZE - 1));
+  }).toThrow();
 });
