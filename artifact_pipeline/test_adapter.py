@@ -5,6 +5,7 @@ from artifact_pipeline.adapter import (
     Index,
     DECK_SET,
     score_hand_and_starter,
+    score_hand_and_starter_breakdown,
     cached_pairs_runs_and_fifteens_points,
     BEST_STATIC_SELECT_PONE_KEPT_CARDS,
     BEST_STATIC_SELECT_DEALER_KEPT_CARDS,
@@ -19,6 +20,7 @@ class TestAdapter(unittest.TestCase):
         self.assertIsNotNone(Index)
         self.assertIsNotNone(DECK_SET)
         self.assertIsNotNone(score_hand_and_starter)
+        self.assertIsNotNone(score_hand_and_starter_breakdown)
         self.assertIsNotNone(cached_pairs_runs_and_fifteens_points)
         self.assertIsNotNone(BEST_STATIC_SELECT_PONE_KEPT_CARDS)
         self.assertIsNotNone(BEST_STATIC_SELECT_DEALER_KEPT_CARDS)
@@ -46,6 +48,23 @@ class TestAdapter(unittest.TestCase):
         starter = Card(4, 0)
         score = score_hand_and_starter(kept, starter, is_crib=True)
         self.assertTrue(isinstance(score, int))
+
+    def test_score_hand_and_starter_breakdown(self):
+        """Test crib scoring categories are exposed without changing totals."""
+        kept = [Card(0, 0), Card(1, 0), Card(2, 0), Card(10, 0)]
+        starter = Card(3, 0)
+
+        breakdown = score_hand_and_starter_breakdown(kept, starter, is_crib=True)
+
+        self.assertEqual(breakdown["fifteens"], 4)
+        self.assertEqual(breakdown["pairs"], 0)
+        self.assertEqual(breakdown["runs"], 4)
+        self.assertEqual(breakdown["flushes"], 5)
+        self.assertEqual(breakdown["nobs"], 1)
+        self.assertEqual(breakdown["total"], 14)
+        self.assertEqual(
+            breakdown["total"], score_hand_and_starter(kept, starter, is_crib=True)
+        )
 
     def test_score_hand_over_starters(self):
         """Test score_hand_over_starters matches score_hand_and_starter for all deck starters."""

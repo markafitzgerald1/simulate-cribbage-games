@@ -33,6 +33,7 @@ from artifact_pipeline.adapter import (  # noqa: E402
     Card,
     DECK_SET,
     score_hand_and_starter,
+    score_hand_and_starter_breakdown,
     BEST_STATIC_SELECT_PONE_KEPT_CARDS,
     BEST_STATIC_SELECT_DEALER_KEPT_CARDS,
     get_canonical_pairs,
@@ -42,7 +43,20 @@ from artifact_pipeline.adapter import (  # noqa: E402
 DEFAULT_OUTPUT_PATH = "expected_crib_points.json"
 DEFAULT_CHECKPOINT_FREQUENCY = 100
 METADATA_KEY = "__metadata__"
-GENERATION_METHOD = "artifact_pipeline.generate_table.v1"
+GENERATION_METHOD = "artifact_pipeline.generate_table.v2"
+POINT_TYPES = ("total", "fifteens", "pairs", "runs", "flushes", "nobs")
+MATCHING_DISCARD_SUIT = "matching_discard_suit"
+NON_MATCHING_DISCARD_SUIT = "non_matching_discard_suit"
+ROOT_ACCUMULATOR_KEYS = (
+    "n",
+    "sum",
+    "sum_squares",
+    "sum_weights_squared",
+    "mu",
+    "se",
+    "policy_mu",
+    "policy_se",
+)
 
 
 def canonical_to_cards(canonical_pair):
@@ -221,7 +235,33 @@ def update_accumulator(accumulator, value, weight=1.0):
     accumulator["sum_weights_squared"] += weight * weight
 
 
-def accumulator_to_statistics(accumulator):
+def update_breakdown_accumulator(accumulator, breakdown, weight=1.0):
+    update_accumulator(accumulator, breakdown["total"], weight=weight)
+    points = accumulator.setdefault("points", {})
+    for point_type in POINT_TYPES:
+        update_accumulator(
+            points.setdefault(point_type, empty_accumulator()),
+            breakdown[point_type],
+            weight=weight,
+        )
+
+
+def update_relation_accumulator(accumulator, relation, breakdown, weight=1.0):
+    relation_accumulators = accumulator.setdefault("starter_suit_relation", {})
+    update_breakdown_accumulator(
+        relation_accumulators.setdefault(relation, empty_accumulator()),
+        breakdown,
+        weight=weight,
+    )
+
+
+def root_accumulator_copy(accumulator):
+    return {
+        key: value for key, value in accumulator.items() if key in ROOT_ACCUMULATOR_KEYS
+    }
+
+
+def _root_accumulator_to_statistics(accumulator):
     n = accumulator["n"]
     if n == 0:
         if "mu" in accumulator:
@@ -262,6 +302,34 @@ def accumulator_to_statistics(accumulator):
     if "policy_mu" in accumulator:
         statistics["policy_mu"] = accumulator["policy_mu"]
         statistics["policy_se"] = accumulator.get("policy_se", 0.0)
+    return statistics
+
+
+def accumulator_to_statistics(accumulator, include_nested=True):
+    statistics = _root_accumulator_to_statistics(accumulator)
+    if statistics is None:
+        return None
+    if not include_nested:
+        return statistics
+
+    points = {}
+    for point_type, point_accumulator in accumulator.get("points", {}).items():
+        point_statistics = accumulator_to_statistics(point_accumulator)
+        if point_statistics is not None:
+            points[point_type] = point_statistics
+    if points:
+        statistics["points"] = points
+
+    relation_statistics = {}
+    for relation, relation_accumulator in accumulator.get(
+        "starter_suit_relation", {}
+    ).items():
+        stats = accumulator_to_statistics(relation_accumulator)
+        if stats is not None:
+            relation_statistics[relation] = stats
+    if relation_statistics:
+        statistics["starter_suit_relation"] = relation_statistics
+
     return statistics
 
 
@@ -309,6 +377,16 @@ def statistics_to_accumulator(statistics):
     if "policy_mu" in statistics:
         accumulator["policy_mu"] = statistics["policy_mu"]
         accumulator["policy_se"] = statistics.get("policy_se", 0.0)
+    if "points" in statistics:
+        accumulator["points"] = {
+            point_type: statistics_to_accumulator(point_stats)
+            for point_type, point_stats in statistics["points"].items()
+        }
+    if "starter_suit_relation" in statistics:
+        accumulator["starter_suit_relation"] = {
+            relation: statistics_to_accumulator(relation_stats)
+            for relation, relation_stats in statistics["starter_suit_relation"].items()
+        }
     return accumulator
 
 
@@ -316,19 +394,19 @@ def blend_policy_accumulators(prior_accumulator, measured_accumulator, dampening
     """Blend policy EV while retaining honest pooled measurement statistics."""
     if measured_accumulator is None:
         return (
-            dict(prior_accumulator)
+            root_accumulator_copy(prior_accumulator)
             if prior_accumulator is not None
             else empty_accumulator()
         )
     if prior_accumulator is None:
-        return dict(measured_accumulator)
+        return root_accumulator_copy(measured_accumulator)
 
     prior_stats = accumulator_to_statistics(prior_accumulator)
     measured_stats = accumulator_to_statistics(measured_accumulator)
     if prior_stats is None:
-        return dict(measured_accumulator)
+        return root_accumulator_copy(measured_accumulator)
     if measured_stats is None:
-        return dict(prior_accumulator)
+        return root_accumulator_copy(prior_accumulator)
 
     prior_policy_mu = prior_stats.get("policy_mu", prior_stats["mu"])
     prior_policy_se = prior_stats.get("policy_se", prior_stats["se"])
@@ -353,7 +431,7 @@ def blend_policy_accumulators(prior_accumulator, measured_accumulator, dampening
     }
 
 
-def serialize_accumulators(accumulators):
+def serialize_accumulators(accumulators, include_nested=True):
     if accumulators is None:
         return None
     serialized = {}
@@ -364,7 +442,7 @@ def serialize_accumulators(accumulators):
         for player, player_data in pair_data.items():
             serialized[pair][player] = {}
             for cut_card, acc in player_data.items():
-                stats = accumulator_to_statistics(acc)
+                stats = accumulator_to_statistics(acc, include_nested=include_nested)
                 if stats is not None:
                     serialized[pair][player][cut_card] = stats
     return serialized
@@ -391,7 +469,9 @@ def build_metadata(
         "seed": seed,
         "seed_was_specified": seed is not None,
         "generation": generation,
-        "generation_accumulators": serialize_accumulators(generation_accumulators),
+        "generation_accumulators": serialize_accumulators(
+            generation_accumulators, include_nested=False
+        ),
         "use_control_variates": use_control_variates,
     }
 
@@ -476,7 +556,9 @@ def load_or_initialize_accumulators(
         bootstrap_accumulators, _ = load_output(bootstrap_path)
         metadata = {
             "generation": 0,
-            "generation_accumulators": serialize_accumulators(bootstrap_accumulators),
+            "generation_accumulators": serialize_accumulators(
+                bootstrap_accumulators, include_nested=False
+            ),
             "use_control_variates": use_control_variates,
         }
         return {}, metadata
@@ -505,7 +587,42 @@ def sample_rng_for_index(rng, seed, canonical_pair, player, sample_index):
     return random.Random(f"{seed}:{canonical_pair}:{player}:{sample_index}")
 
 
-def score_crib_sample(
+def average_breakdowns(breakdowns):
+    return {
+        point_type: sum(breakdown[point_type] for breakdown in breakdowns)
+        / len(breakdowns)
+        for point_type in POINT_TYPES
+    }
+
+
+def starter_suit_relation(canonical_pair, starter):
+    parts = canonical_pair.split("_")
+    if parts[0] == parts[1] or parts[2] != "Suited":
+        return None
+    return MATCHING_DISCARD_SUIT if starter.suit == 0 else NON_MATCHING_DISCARD_SUIT
+
+
+def average_starter_breakdowns(starter_breakdowns):
+    return average_breakdowns([breakdown for _starter, breakdown in starter_breakdowns])
+
+
+def relation_breakdowns_for_starters(canonical_pair, starter_breakdowns):
+    relation_breakdowns = {}
+    for relation in (MATCHING_DISCARD_SUIT, NON_MATCHING_DISCARD_SUIT):
+        breakdowns = [
+            breakdown
+            for starter, breakdown in starter_breakdowns
+            if starter_suit_relation(canonical_pair, starter) == relation
+        ]
+        if breakdowns:
+            relation_breakdowns[relation] = (
+                average_breakdowns(breakdowns),
+                len(breakdowns),
+            )
+    return relation_breakdowns
+
+
+def score_crib_sample_breakdown(
     discarded_cards,
     remaining_deck,
     player,
@@ -522,11 +639,28 @@ def score_crib_sample(
     ]
     cut_card = sample_rng.choice(remaining_after_deal)
     crib_hand = discarded_cards + opponent_discards
-    score = score_hand_and_starter(crib_hand, cut_card, is_crib=True)
-    return cut_card, score
+    breakdown = score_hand_and_starter_breakdown(crib_hand, cut_card, is_crib=True)
+    return cut_card, breakdown
 
 
-def score_crib_sample_ev(
+def score_crib_sample(
+    discarded_cards,
+    remaining_deck,
+    player,
+    sample_rng,
+    generation_accumulators=None,
+):
+    cut_card, breakdown = score_crib_sample_breakdown(
+        discarded_cards,
+        remaining_deck,
+        player,
+        sample_rng,
+        generation_accumulators,
+    )
+    return cut_card, breakdown["total"]
+
+
+def score_crib_sample_ev_breakdown(
     discarded_cards,
     remaining_deck,
     player,
@@ -542,18 +676,70 @@ def score_crib_sample_ev(
         card for card in remaining_deck if card not in opponent_dealt
     ]
     crib_hand = discarded_cards + opponent_discards
+    canonical_pair = cards_to_canonical(discarded_cards[0], discarded_cards[1])
 
     results = []
     for c in range(13):
         starters = [card for card in remaining_after_deal if card.index == c]
         if starters:
-            total_score = sum(
-                score_hand_and_starter(crib_hand, starter, is_crib=True)
+            starter_breakdowns = [
+                (
+                    starter,
+                    score_hand_and_starter_breakdown(crib_hand, starter, is_crib=True),
+                )
                 for starter in starters
+            ]
+            results.append(
+                (
+                    c,
+                    average_starter_breakdowns(starter_breakdowns),
+                    len(starters),
+                    relation_breakdowns_for_starters(
+                        canonical_pair, starter_breakdowns
+                    ),
+                )
             )
-            expected_score = total_score / len(starters)
-            results.append((c, expected_score, len(starters)))
     return results
+
+
+def score_crib_sample_ev(
+    discarded_cards,
+    remaining_deck,
+    player,
+    sample_rng,
+    generation_accumulators=None,
+):
+    results = score_crib_sample_ev_breakdown(
+        discarded_cards,
+        remaining_deck,
+        player,
+        sample_rng,
+        generation_accumulators,
+    )
+    return [
+        (rank, breakdown["total"], num_starters)
+        for rank, breakdown, num_starters, _relations in results
+    ]
+
+
+def update_cv_result_accumulators(accumulators, canonical_pair, player, result):
+    c, breakdown, num_starters, relation_breakdowns = result
+    weight = 13.0 * num_starters / 44.0
+    accumulator = get_cut_accumulator(
+        accumulators, canonical_pair, player, Index.indices[c]
+    )
+    update_breakdown_accumulator(accumulator, breakdown, weight=weight)
+    for relation, (
+        relation_breakdown,
+        relation_starters,
+    ) in relation_breakdowns.items():
+        relation_weight = 13.0 * relation_starters / 44.0
+        update_relation_accumulator(
+            accumulator,
+            relation,
+            relation_breakdown,
+            weight=relation_weight,
+        )
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -566,20 +752,15 @@ def _run_cv_sample(
     sample_rng,
     generation_accumulators,
 ):
-    results = score_crib_sample_ev(
+    results = score_crib_sample_ev_breakdown(
         discarded_cards,
         remaining_deck,
         player,
         sample_rng,
         generation_accumulators,
     )
-    for c, expected_score, num_starters in results:
-        weight = 13.0 * num_starters / 44.0
-        update_accumulator(
-            get_cut_accumulator(accumulators, canonical_pair, player, Index.indices[c]),
-            expected_score,
-            weight=weight,
-        )
+    for result in results:
+        update_cv_result_accumulators(accumulators, canonical_pair, player, result)
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -592,19 +773,20 @@ def _run_mc_sample(
     sample_rng,
     generation_accumulators,
 ):
-    cut_card, score = score_crib_sample(
+    cut_card, breakdown = score_crib_sample_breakdown(
         discarded_cards,
         remaining_deck,
         player,
         sample_rng,
         generation_accumulators,
     )
-    update_accumulator(
-        get_cut_accumulator(
-            accumulators, canonical_pair, player, Index.indices[cut_card.index]
-        ),
-        score,
+    accumulator = get_cut_accumulator(
+        accumulators, canonical_pair, player, Index.indices[cut_card.index]
     )
+    update_breakdown_accumulator(accumulator, breakdown)
+    relation = starter_suit_relation(canonical_pair, cut_card)
+    if relation is not None:
+        update_relation_accumulator(accumulator, relation, breakdown)
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments

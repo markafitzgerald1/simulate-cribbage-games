@@ -14,6 +14,11 @@ from simulate_cribbage_games import (  # noqa: E402
     Index,
     DECK_SET,
     score_hand_and_starter,
+    fifteens_points,
+    pairs_points,
+    runs_points,
+    flush_points,
+    nobs_points,
     cached_pairs_runs_and_fifteens_points,
     BEST_STATIC_SELECT_PONE_KEPT_CARDS,
     BEST_STATIC_SELECT_DEALER_KEPT_CARDS,
@@ -24,6 +29,7 @@ __all__ = [
     "Index",
     "DECK_SET",
     "score_hand_and_starter",
+    "score_hand_and_starter_breakdown",
     "cached_pairs_runs_and_fifteens_points",
     "BEST_STATIC_SELECT_PONE_KEPT_CARDS",
     "BEST_STATIC_SELECT_DEALER_KEPT_CARDS",
@@ -56,6 +62,26 @@ def get_canonical_pairs():
                 pairs.append(f"{rank1}_{rank2}_Unsuited")
 
     return pairs
+
+
+def score_hand_and_starter_breakdown(kept_hand, starter, is_crib=False):
+    """Score a hand and starter with cribbage-rule point categories."""
+    hand_plus_starter = [*kept_hand, starter]
+    sorted_indices = tuple(sorted(card.index for card in hand_plus_starter))
+    fifteens = fifteens_points(hand_plus_starter)
+    pairs = pairs_points(sorted_indices)
+    runs = runs_points(sorted_indices)
+    flushes = flush_points(kept_hand, starter, is_crib=is_crib)
+    nobs = nobs_points(kept_hand, starter)
+    total = fifteens + pairs + runs + flushes + nobs
+    return {
+        "total": total,
+        "fifteens": fifteens,
+        "pairs": pairs,
+        "runs": runs,
+        "flushes": flushes,
+        "nobs": nobs,
+    }
 
 
 JACK_INDEX = 10

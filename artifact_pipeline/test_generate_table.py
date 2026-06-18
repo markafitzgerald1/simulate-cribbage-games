@@ -21,6 +21,8 @@ from artifact_pipeline.generate_table import (
     get_canonical_pairs,
     canonical_to_cards,
     run_monte_carlo,
+    score_crib_sample,
+    score_crib_sample_ev,
     run_monte_carlo_into_accumulators,
     compute_statistics,
     run_generation,
@@ -44,6 +46,9 @@ from artifact_pipeline.generate_table import (
     GENERATION_METHOD,
     get_cut_accumulator,
     update_accumulator,
+    POINT_TYPES,
+    MATCHING_DISCARD_SUIT,
+    NON_MATCHING_DISCARD_SUIT,
 )
 from artifact_pipeline.adapter import (
     Card,
@@ -326,6 +331,181 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         self.assertEqual(output["A_A_Unsuited"]["Dealer"], {})
         self.assertEqual(output["__metadata__"], build_metadata(None))
 
+    def test_accumulators_to_output_includes_point_breakdown(self):
+        accumulators = {}
+        run_monte_carlo_into_accumulators(
+            accumulators,
+            "A_2_Unsuited",
+            "Dealer",
+            1,
+            {
+                "rng": random.Random(42),
+                "first_sample_index": 0,
+                "seed": 42,
+                "use_control_variates": False,
+            },
+        )
+
+        output = accumulators_to_output(accumulators, pairs=["A_2_Unsuited"])
+        dealer_buckets = output["A_2_Unsuited"]["Dealer"]
+
+        self.assertEqual(set(output) - {METADATA_KEY}, {"A_2_Unsuited"})
+        self.assertEqual(len(output) - 1, 1)
+        bucket = next(iter(dealer_buckets.values()))
+        self.assertEqual(set(bucket["points"]), set(POINT_TYPES))
+        self.assertAlmostEqual(bucket["points"]["total"]["mu"], bucket["mu"])
+        component_total = sum(
+            bucket["points"][point_type]["mu"]
+            for point_type in POINT_TYPES
+            if point_type != "total"
+        )
+        self.assertAlmostEqual(component_total, bucket["points"]["total"]["mu"])
+
+    def test_same_rank_pair_has_no_starter_suit_relation(self):
+        accumulators = {}
+        run_monte_carlo_into_accumulators(
+            accumulators,
+            "A_A_Unsuited",
+            "Dealer",
+            1,
+            {
+                "rng": random.Random(42),
+                "first_sample_index": 0,
+                "seed": 42,
+                "use_control_variates": True,
+            },
+        )
+
+        output = accumulators_to_output(accumulators, pairs=["A_A_Unsuited"])
+
+        self.assertNotIn("A_A_Suited", output)
+        for bucket in output["A_A_Unsuited"]["Dealer"].values():
+            self.assertNotIn("starter_suit_relation", bucket)
+
+    def test_suited_pair_has_matching_and_non_matching_starter_buckets(self):
+        accumulators = {}
+        run_monte_carlo_into_accumulators(
+            accumulators,
+            "A_2_Suited",
+            "Dealer",
+            1,
+            {
+                "rng": random.Random(42),
+                "first_sample_index": 0,
+                "seed": 42,
+                "use_control_variates": True,
+            },
+        )
+
+        output = accumulators_to_output(accumulators, pairs=["A_2_Suited"])
+        relation_sets = [
+            set(bucket.get("starter_suit_relation", {}))
+            for bucket in output["A_2_Suited"]["Dealer"].values()
+        ]
+
+        self.assertTrue(
+            {MATCHING_DISCARD_SUIT, NON_MATCHING_DISCARD_SUIT} in relation_sets
+        )
+        for bucket in output["A_2_Suited"]["Dealer"].values():
+            for relation_bucket in bucket.get("starter_suit_relation", {}).values():
+                self.assertEqual(set(relation_bucket["points"]), set(POINT_TYPES))
+                self.assertAlmostEqual(
+                    relation_bucket["points"]["total"]["mu"],
+                    relation_bucket["mu"],
+                )
+
+    def test_v2_statistics_round_trip_preserves_nested_details(self):
+        statistics = {
+            "n": 2,
+            "mu": 7.0,
+            "se": 1.0,
+            "points": {
+                "total": {"n": 2, "mu": 7.0, "se": 1.0},
+                "fifteens": {"n": 2, "mu": 4.0, "se": 0.0},
+            },
+            "starter_suit_relation": {
+                MATCHING_DISCARD_SUIT: {
+                    "n": 1,
+                    "mu": 9.0,
+                    "se": 0.0,
+                    "points": {"total": {"n": 1, "mu": 9.0, "se": 0.0}},
+                }
+            },
+        }
+
+        accumulator = statistics_to_accumulator(statistics)
+
+        self.assertEqual(accumulator_to_statistics(accumulator), statistics)
+
+    def test_v1_statistics_round_trip_stays_root_only(self):
+        statistics = {"n": 2, "mu": 7.0, "se": 1.0}
+
+        accumulator = statistics_to_accumulator(statistics)
+
+        self.assertEqual(accumulator_to_statistics(accumulator), statistics)
+
+    def test_generation_metadata_serializes_root_policy_only(self):
+        accumulator = statistics_to_accumulator(
+            {
+                "n": 2,
+                "mu": 7.0,
+                "se": 1.0,
+                "points": {"total": {"n": 2, "mu": 7.0, "se": 1.0}},
+                "starter_suit_relation": {
+                    MATCHING_DISCARD_SUIT: {"n": 1, "mu": 9.0, "se": 0.0}
+                },
+            }
+        )
+
+        metadata = build_metadata(
+            None,
+            generation_accumulators={
+                "A_2_Suited": {"Dealer": {"A": accumulator}, "Pone": {}}
+            },
+        )
+        serialized = metadata["generation_accumulators"]["A_2_Suited"]["Dealer"]["A"]
+
+        self.assertEqual(serialized, {"n": 2, "mu": 7.0, "se": 1.0})
+
+    def test_empty_nested_accumulators_are_skipped(self):
+        accumulator = {
+            "n": 1,
+            "sum": 5.0,
+            "sum_squares": 25.0,
+            "points": {"total": empty_accumulator()},
+            "starter_suit_relation": {MATCHING_DISCARD_SUIT: empty_accumulator()},
+        }
+
+        statistics = accumulator_to_statistics(accumulator)
+
+        self.assertNotIn("points", statistics)
+        self.assertNotIn("starter_suit_relation", statistics)
+
+    def test_score_crib_sample_compatibility_wrappers(self):
+        discarded_cards = canonical_to_cards("A_2_Suited")
+        remaining_deck = [card for card in DECK_SET if card not in discarded_cards]
+
+        cut_card, score = score_crib_sample(
+            discarded_cards,
+            remaining_deck,
+            "Dealer",
+            random.Random(42),
+        )
+        ev_results = score_crib_sample_ev(
+            discarded_cards,
+            remaining_deck,
+            "Dealer",
+            random.Random(42),
+        )
+
+        self.assertTrue(cut_card in DECK_SET)
+        self.assertTrue(isinstance(score, int))
+        self.assertEqual(len(ev_results), len(Index.indices))
+        rank, expected_score, num_starters = ev_results[0]
+        self.assertTrue(isinstance(rank, int))
+        self.assertTrue(isinstance(expected_score, float))
+        self.assertGreater(num_starters, 0)
+
     def test_canonical_to_cards_errors(self):
         """Test error conditions in canonical_to_cards."""
         with self.assertRaises(ValueError):
@@ -359,6 +539,18 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 1,
                 {"rng": rng, "first_sample_index": 0, "seed": None},
             )
+
+    def test_resume_rejects_v1_generation_method(self):
+        metadata = {
+            "generation_method": "artifact_pipeline.generate_table.v1",
+            "seed": 42,
+        }
+
+        with self.assertRaises(ValueError) as ctx:
+            validate_resume_metadata(metadata, 42, "expected_crib_points.json")
+
+        self.assertTrue("artifact_pipeline.generate_table.v1" in str(ctx.exception))
+        self.assertTrue(GENERATION_METHOD in str(ctx.exception))
 
     def test_run_generation_infinite(self):
         args = argparse.Namespace(infinite=True, checkpoint_frequency=1, seed=42)
@@ -1235,7 +1427,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 json.dump(
                     {
                         "__metadata__": {
-                            "generation_method": "artifact_pipeline.generate_table.v1",
+                            "generation_method": GENERATION_METHOD,
                             "seed": 42,
                             "generation": 2,
                         },
@@ -1274,7 +1466,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
                 json.dump(
                     {
                         "__metadata__": {
-                            "generation_method": "artifact_pipeline.generate_table.v1",
+                            "generation_method": GENERATION_METHOD,
                             "seed": 42,
                             "generation": 2,
                         },

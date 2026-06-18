@@ -190,6 +190,32 @@ are used for the next generation's discard policy. Reporting and table
 summaries should prefer the measured statistics unless they are intentionally
 inspecting policy-transition state.
 
+The Monte Carlo table preserves the 169 canonical top-level discard keys. Each
+discard key contains `Dealer` and `Pone` role entries, and each role contains
+starter-rank buckets keyed by `A,2,3,4,5,6,7,8,9,T,J,Q,K`. The root of each
+starter-rank bucket continues to expose `mu`, `se`, `n`, and optional support
+fields so existing consumers can keep reading
+`table[pairKey][role][starterRank].mu`.
+
+Newer generated tables also include a `points` object in each starter bucket.
+The point categories are `total`, `fifteens`, `pairs`, `runs`, `flushes`, and
+`nobs`; each category uses the same statistics shape as the root bucket. The
+root `mu` remains the total crib EV, and `points.total.mu` is the same value
+recorded explicitly for consumers that render point-type breakdowns.
+
+For suited different-rank discard keys, starter buckets may also include
+`starter_suit_relation`. Its possible keys are `matching_discard_suit` and
+`non_matching_discard_suit`, each containing the same total and point-type
+statistics shape. These buckets split starters of the same rank by whether the
+starter's suit matches the suited discard suit. Same-rank pairs are always
+unsuited, so same-rank buckets never use `starter_suit_relation` and same-rank
+`Suited` keys remain impossible.
+
+The v2 Monte Carlo artifact format intentionally rejects resuming v1 generator
+checkpoints, because v1 checkpoints do not contain point-type or starter-suit
+relation accumulators. Start v2 production runs with `--no-resume`, optionally
+using an analytical bootstrap as the policy baseline.
+
 Summarize a generated table:
 
 ```sh
