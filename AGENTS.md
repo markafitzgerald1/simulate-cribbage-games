@@ -334,6 +334,14 @@ request because of permissions, use another authenticated path such as the
 GitHub CLI or GitHub web UI rather than changing the branch or pushing to
 `main`.
 
+When an app or connector reports expired GitHub authentication, do not assume
+all GitHub access is unavailable. First run `gh auth status` to check whether
+the GitHub CLI still has a valid keyring token. If it does, use `gh pr view`
+for pull request status and `gh api graphql` for review-thread state before
+asking the human maintainer to reauthenticate the connector. If CLI
+authentication also fails, ask the maintainer to run `gh auth login` or
+`gh auth refresh` before continuing GitHub work.
+
 If GitHub review comments exist, inspect their current thread status and address
 unresolved comments before requesting review again. Reply clearly when an agent
 implemented a change on behalf of a human.
