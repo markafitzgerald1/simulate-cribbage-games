@@ -54,7 +54,7 @@ jobs:
 
       # Bounded because the analytical bootstrap is already converged. The
       # expanded artifact is about 1.56x slower locally; 16k samples keeps the
-      # production run comfortably below the 6h Actions limit (~3.4h runtime).
+      # production run comfortably below the 6h Actions limit (~5.2h runtime).
       - name: Run production table generation
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
