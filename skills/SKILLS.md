@@ -48,9 +48,14 @@ default skill for documentation and Python backend work.
 13. When publishing, verify the pushed branch and pull request URL. If a GitHub
    integration cannot create the PR, use another authenticated path instead of
    changing the branch or bypassing review.
-14. Before resolving a pull request review thread, reply with why the feedback is
+14. If a GitHub app or connector token expires, run `gh auth status` before
+   declaring GitHub work blocked. A valid CLI keyring token is enough to inspect
+   pull request status with `gh pr view` and review-thread state with
+   `gh api graphql`; ask for `gh auth login` or `gh auth refresh` only when CLI
+   authentication also fails.
+15. Before resolving a pull request review thread, reply with why the feedback is
    considered resolved and identify the agent or human making that assessment.
-15. Update `README.md`, `AGENTS.md`, and this file together when shared workflow
+16. Update `README.md`, `AGENTS.md`, and this file together when shared workflow
    guidance changes.
 
 ## Skill Authoring Rules
@@ -160,8 +165,17 @@ summary-table formatting, and impossible card states such as suited pairs.
 
 When publishing or updating a pull request, avoid force-pushing once review
 comments exist unless a human maintainer explicitly requests rewritten history.
-Attribute AI-written PR prose and comments to the agent, and avoid manual
-hard-wrapping in GitHub-rendered PR descriptions or comments.
+Attribute AI-written PR prose and comments to the agent alone when a human
+maintainer has not reviewed the wording. Do not use ambiguous shared
+attribution such as "OpenAI Codex / me" unless the human maintainer explicitly
+approved that wording. Avoid manual hard-wrapping in GitHub-rendered PR
+descriptions or comments.
+
+If a GitHub connector or app reports an expired token, check CLI authentication
+with `gh auth status` before stopping. When the CLI is authenticated, use
+`gh pr view` for current status and `gh api graphql` for review-thread details;
+only ask for a fresh sign-in when the CLI token is also invalid or lacks the
+required scope.
 
 Near the end of this section, observe these boundaries: do not lower coverage
 requirements, remove quality checks, add broad ignore comments, or refactor the

@@ -141,6 +141,28 @@ class TestSummarizeTable(unittest.TestCase):  # pylint: disable=too-many-public-
 
         self.assertEqual(get_pair_stat(data, ("A", "A"), "Dealer", "mu", "actual"), 6.0)
 
+    def test_get_pair_stat_ignores_nested_point_details(self):
+        data = {
+            "A_A_Unsuited": {
+                "Dealer": {
+                    "A": {
+                        "n": 1,
+                        "mu": 5.0,
+                        "points": {"total": {"n": 1, "mu": 5.0, "se": 0.0}},
+                    },
+                    "2": {
+                        "n": 1,
+                        "mu": 7.0,
+                        "starter_suit_relation": {
+                            "matching_discard_suit": {"n": 1, "mu": 7.0}
+                        },
+                    },
+                }
+            }
+        }
+
+        self.assertEqual(get_pair_stat(data, ("A", "A"), "Dealer", "mu", "actual"), 6.0)
+
     def test_get_pair_stat_same_rank_suited_only_is_impossible(self):
         data = {
             "A_A_Unsuited": {

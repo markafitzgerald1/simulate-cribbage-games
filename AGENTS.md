@@ -334,6 +334,14 @@ request because of permissions, use another authenticated path such as the
 GitHub CLI or GitHub web UI rather than changing the branch or pushing to
 `main`.
 
+When an app or connector reports expired GitHub authentication, do not assume
+all GitHub access is unavailable. First run `gh auth status` to check whether
+the GitHub CLI still has a valid keyring token. If it does, use `gh pr view`
+for pull request status and `gh api graphql` for review-thread state before
+asking the human maintainer to reauthenticate the connector. If CLI
+authentication also fails, ask the maintainer to run `gh auth login` or
+`gh auth refresh` before continuing GitHub work.
+
 If GitHub review comments exist, inspect their current thread status and address
 unresolved comments before requesting review again. Reply clearly when an agent
 implemented a change on behalf of a human.
@@ -348,10 +356,12 @@ can destabilize GitHub review anchors and make human review harder. Use additive
 commits unless a human maintainer explicitly asks for history rewriting.
 
 When an AI agent posts or edits pull request prose, comments, summaries, or
-resolution notes, attribute the prose to the agent, for example "OpenAI Codex /
-me". Prefer natural Markdown paragraphs for GitHub-rendered PR prose; do not
-hard-wrap prose in PR descriptions or comments when GitHub's renderer will wrap
-it for the viewer.
+resolution notes that a human maintainer has not reviewed, attribute the prose
+to the agent alone, for example "OpenAI Codex". Do not use ambiguous shared
+attribution such as "OpenAI Codex / me" unless the human maintainer explicitly
+approved that wording. Prefer natural Markdown paragraphs for GitHub-rendered
+PR prose; do not hard-wrap prose in PR descriptions or comments when GitHub's
+renderer will wrap it for the viewer.
 
 Near the end of this section, observe these boundaries: do not claim an issue is
 complete until requested files are updated, required constraints are represented
