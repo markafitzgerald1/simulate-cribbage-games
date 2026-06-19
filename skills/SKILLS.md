@@ -165,8 +165,11 @@ summary-table formatting, and impossible card states such as suited pairs.
 
 When publishing or updating a pull request, avoid force-pushing once review
 comments exist unless a human maintainer explicitly requests rewritten history.
-Attribute AI-written PR prose and comments to the agent, and avoid manual
-hard-wrapping in GitHub-rendered PR descriptions or comments.
+Attribute AI-written PR prose and comments to the agent alone when a human
+maintainer has not reviewed the wording. Do not use ambiguous shared
+attribution such as "OpenAI Codex / me" unless the human maintainer explicitly
+approved that wording. Avoid manual hard-wrapping in GitHub-rendered PR
+descriptions or comments.
 
 If a GitHub connector or app reports an expired token, check CLI authentication
 with `gh auth status` before stopping. When the CLI is authenticated, use

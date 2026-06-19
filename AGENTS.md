@@ -356,10 +356,12 @@ can destabilize GitHub review anchors and make human review harder. Use additive
 commits unless a human maintainer explicitly asks for history rewriting.
 
 When an AI agent posts or edits pull request prose, comments, summaries, or
-resolution notes, attribute the prose to the agent, for example "OpenAI Codex /
-me". Prefer natural Markdown paragraphs for GitHub-rendered PR prose; do not
-hard-wrap prose in PR descriptions or comments when GitHub's renderer will wrap
-it for the viewer.
+resolution notes that a human maintainer has not reviewed, attribute the prose
+to the agent alone, for example "OpenAI Codex". Do not use ambiguous shared
+attribution such as "OpenAI Codex / me" unless the human maintainer explicitly
+approved that wording. Prefer natural Markdown paragraphs for GitHub-rendered
+PR prose; do not hard-wrap prose in PR descriptions or comments when GitHub's
+renderer will wrap it for the viewer.
 
 Near the end of this section, observe these boundaries: do not claim an issue is
 complete until requested files are updated, required constraints are represented
