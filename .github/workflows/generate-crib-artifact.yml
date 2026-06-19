@@ -53,12 +53,12 @@ jobs:
           python -u artifact_pipeline/generate_table.py --bootstrap=expected_crib_points.analytical.json --samples=300 --max-generations=1 --output=expected_crib_points.json --no-resume --seed=42 --use-control-variates
 
       # Bounded because the analytical bootstrap is already converged. The
-      # expanded artifact is about 1.56x slower locally; 24k samples keeps the
-      # historical 4h43m production run comfortably below the 6h Actions limit.
+      # expanded artifact is about 1.56x slower locally; 16k samples keeps the
+      # production run comfortably below the 6h Actions limit (~5.2h runtime).
       - name: Run production table generation
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
-          python -u artifact_pipeline/generate_table.py --bootstrap=expected_crib_points.analytical.json --samples=24000 --convergence-threshold=0.10 --max-generations=2 --fail-on-non-convergence --output=expected_crib_points.json --no-resume --seed=42 --use-control-variates
+          python -u artifact_pipeline/generate_table.py --bootstrap=expected_crib_points.analytical.json --samples=16000 --convergence-threshold=0.10 --max-generations=2 --fail-on-non-convergence --output=expected_crib_points.json --no-resume --seed=42 --use-control-variates
 
       - name: Upload analytical bootstrap artifact
         uses: actions/upload-artifact@v7
