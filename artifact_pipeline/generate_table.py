@@ -722,7 +722,9 @@ def score_crib_sample_ev(
     ]
 
 
-def update_cv_result_accumulators(accumulators, canonical_pair, player, result):
+def update_control_variates_result_accumulators(
+    accumulators, canonical_pair, player, result
+):
     c, breakdown, num_starters, relation_breakdowns = result
     weight = 13.0 * num_starters / 44.0
     accumulator = get_cut_accumulator(
@@ -743,7 +745,7 @@ def update_cv_result_accumulators(accumulators, canonical_pair, player, result):
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments
-def _run_cv_sample(
+def _run_control_variates_sample(
     accumulators,
     canonical_pair,
     player,
@@ -760,7 +762,9 @@ def _run_cv_sample(
         generation_accumulators,
     )
     for result in results:
-        update_cv_result_accumulators(accumulators, canonical_pair, player, result)
+        update_control_variates_result_accumulators(
+            accumulators, canonical_pair, player, result
+        )
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -817,7 +821,7 @@ def run_monte_carlo_into_accumulators(
             sampling["first_sample_index"] + sample_offset,
         )
         if use_cv:
-            _run_cv_sample(
+            _run_control_variates_sample(
                 accumulators,
                 canonical_pair,
                 player,

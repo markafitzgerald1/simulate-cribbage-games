@@ -651,13 +651,13 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         self.assertAlmostEqual(typical_se, 0.2, places=5)
         self.assertAlmostEqual(max_se, 0.5, places=5)
 
-        # 2.4 Add a degenerate CV bucket (n > 1 but denom <= 0): standard error should be ignored
+        # 2.4 Add a degenerate control-variates bucket: standard error is ignored.
         acc5 = get_cut_accumulator(accumulators, "A_A_Unsuited", "Pone", "4")
         acc5.update(
             {"n": 1.18, "sum": 5.9, "sum_squares": 29.5, "sum_weights_squared": 1.3924}
         )
         typical_se, max_se = get_se_summary(accumulators, ["A_A_Unsuited"])
-        # Still median = 0.2, max = 0.5 (the degenerate CV bucket is skipped)
+        # Still median = 0.2, max = 0.5 (the degenerate bucket is skipped)
         self.assertAlmostEqual(typical_se, 0.2, places=5)
         self.assertAlmostEqual(max_se, 0.5, places=5)
 
@@ -2763,7 +2763,7 @@ class TestControlVariates(unittest.TestCase):
             self.assertFalse(sampling_dict["use_control_variates"])
 
     def test_control_variates_resume_validation(self):
-        """Test that validate_resume_metadata rejects incompatible CV configurations."""
+        """Test that validate_resume_metadata rejects control-variates mismatches."""
         meta_cv = {
             "generation_method": GENERATION_METHOD,
             "seed": 42,
@@ -2775,7 +2775,7 @@ class TestControlVariates(unittest.TestCase):
             "use_control_variates": False,
         }
 
-        # 1. Matching CV should pass
+        # 1. Matching control-variates settings should pass
         validate_resume_metadata(
             meta_cv, 42, "test_path.json", use_control_variates=True
         )
@@ -2783,7 +2783,7 @@ class TestControlVariates(unittest.TestCase):
             meta_mc, 42, "test_path.json", use_control_variates=False
         )
 
-        # 2. Mismatched CV should raise ValueError
+        # 2. Mismatched control-variates settings should raise ValueError
         with self.assertRaises(ValueError) as ctx:
             validate_resume_metadata(
                 meta_cv, 42, "test_path.json", use_control_variates=False
@@ -2970,7 +2970,7 @@ class TestControlVariates(unittest.TestCase):
         """Test that reached_target_sample_count handles float deal counts near target."""
         accumulators = {}
         # Target = 100
-        # If deal count is 99.9999999999 (under CV, sum of weights is 1299.9999999999)
+        # Under control variates, deal count 99.9999999999 weighs as 1299.9999999999.
         # 99.9999999999 >= 100 - 1e-9 is True.
         acc_dl = get_cut_accumulator(accumulators, "A_A_Unsuited", "Dealer", "A")
         acc_dl["n"] = 1299.9999999999
