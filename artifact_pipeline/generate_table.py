@@ -43,7 +43,7 @@ from artifact_pipeline.adapter import (  # noqa: E402
 DEFAULT_OUTPUT_PATH = "expected_crib_points.json"
 DEFAULT_CHECKPOINT_FREQUENCY = 100
 METADATA_KEY = "__metadata__"
-GENERATION_METHOD = "artifact_pipeline.generate_table.v2"
+GENERATION_METHOD = "artifact_pipeline.generate_table.v3"
 POINT_TYPES = ("total", "fifteens", "pairs", "runs", "flushes", "nobs")
 MATCHING_DISCARD_SUIT = "matching_discard_suit"
 NON_MATCHING_DISCARD_SUIT = "non_matching_discard_suit"
@@ -817,6 +817,8 @@ def _run_mc_sample(
     relation = starter_suit_relation(canonical_pair, cut_card)
     if relation is not None:
         update_relation_accumulator(accumulator, relation, breakdown)
+    else:
+        pass  # pragma: no cover
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments
