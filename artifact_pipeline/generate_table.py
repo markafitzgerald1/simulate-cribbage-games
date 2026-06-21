@@ -47,6 +47,8 @@ GENERATION_METHOD = "artifact_pipeline.generate_table.v2"
 POINT_TYPES = ("total", "fifteens", "pairs", "runs", "flushes", "nobs")
 MATCHING_DISCARD_SUIT = "matching_discard_suit"
 NON_MATCHING_DISCARD_SUIT = "non_matching_discard_suit"
+MATCHING_RANK_1_SUIT = "matching_rank_1_suit"
+MATCHING_RANK_2_SUIT = "matching_rank_2_suit"
 ROOT_ACCUMULATOR_KEYS = (
     "n",
     "sum",
@@ -597,9 +599,22 @@ def average_breakdowns(breakdowns):
 
 def starter_suit_relation(canonical_pair, starter):
     parts = canonical_pair.split("_")
-    if parts[0] == parts[1] or parts[2] != "Suited":
-        return None
-    return MATCHING_DISCARD_SUIT if starter.suit == 0 else NON_MATCHING_DISCARD_SUIT
+    if parts[2] == "Suited":
+        return MATCHING_DISCARD_SUIT if starter.suit == 0 else NON_MATCHING_DISCARD_SUIT
+
+    if parts[0] == parts[1]:
+        # Pair
+        return (
+            MATCHING_DISCARD_SUIT
+            if starter.suit in (0, 1)
+            else NON_MATCHING_DISCARD_SUIT
+        )
+
+    if starter.suit == 0:
+        return MATCHING_RANK_1_SUIT
+    if starter.suit == 1:
+        return MATCHING_RANK_2_SUIT
+    return NON_MATCHING_DISCARD_SUIT
 
 
 def average_starter_breakdowns(starter_breakdowns):
@@ -608,7 +623,18 @@ def average_starter_breakdowns(starter_breakdowns):
 
 def relation_breakdowns_for_starters(canonical_pair, starter_breakdowns):
     relation_breakdowns = {}
-    for relation in (MATCHING_DISCARD_SUIT, NON_MATCHING_DISCARD_SUIT):
+
+    parts = canonical_pair.split("_")
+    if parts[2] == "Suited" or parts[0] == parts[1]:
+        relations = (MATCHING_DISCARD_SUIT, NON_MATCHING_DISCARD_SUIT)
+    else:
+        relations = (
+            MATCHING_RANK_1_SUIT,
+            MATCHING_RANK_2_SUIT,
+            NON_MATCHING_DISCARD_SUIT,
+        )
+
+    for relation in relations:
         breakdowns = [
             breakdown
             for starter, breakdown in starter_breakdowns
