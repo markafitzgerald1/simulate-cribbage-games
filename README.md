@@ -203,18 +203,20 @@ The point categories are `total`, `fifteens`, `pairs`, `runs`, `flushes`, and
 root `mu` remains the total crib EV, and `points.total.mu` is the same value
 recorded explicitly for consumers that render point-type breakdowns.
 
-For suited different-rank discard keys, starter buckets may also include
-`starter_suit_relation`. Its possible keys are `matching_discard_suit` and
-`non_matching_discard_suit`, each containing the same total and point-type
-statistics shape. These buckets split starters of the same rank by whether the
-starter's suit matches the suited discard suit. Same-rank pairs are always
-unsuited, so same-rank buckets never use `starter_suit_relation` and same-rank
-`Suited` keys remain impossible.
+For any discard key, starter buckets may also include `starter_suit_relation`.
+For suited different-rank keys, the possible relations are `matching_discard_suit`
+and `non_matching_discard_suit`. For unsuited different-rank keys, the possible
+relations are `matching_rank_1_suit`, `matching_rank_2_suit`, and
+`non_matching_discard_suit`. Same-rank pairs always emit `matching_discard_suit`
+(if the starter matches either card's suit) and `non_matching_discard_suit`.
+Each relation contains the same total and point-type statistics shape. These
+buckets split starters of the same rank by whether the starter's suit matches
+the discard suit(s). Same-rank `Suited` keys remain impossible.
 
-The v2 Monte Carlo artifact format intentionally rejects resuming v1 generator
-checkpoints, because v1 checkpoints do not contain point-type or starter-suit
-relation accumulators. Start v2 production runs with `--no-resume`, optionally
-using an analytical bootstrap as the policy baseline.
+The v3 Monte Carlo artifact format intentionally rejects resuming v1 or v2
+generator checkpoints, because older checkpoints do not contain the expanded
+starter-suit relation accumulators. Start v3 production runs with `--no-resume`,
+optionally using an analytical bootstrap as the policy baseline.
 
 Summarize a generated table:
 

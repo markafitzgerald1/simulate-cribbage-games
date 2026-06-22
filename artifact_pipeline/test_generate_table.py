@@ -49,6 +49,8 @@ from artifact_pipeline.generate_table import (
     POINT_TYPES,
     MATCHING_DISCARD_SUIT,
     NON_MATCHING_DISCARD_SUIT,
+    MATCHING_RANK_1_SUIT,
+    MATCHING_RANK_2_SUIT,
 )
 from artifact_pipeline.adapter import (
     Card,
@@ -361,7 +363,7 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         )
         self.assertAlmostEqual(component_total, bucket["points"]["total"]["mu"])
 
-    def test_same_rank_pair_has_no_starter_suit_relation(self):
+    def test_same_rank_pair_has_starter_suit_relation(self):
         accumulators = {}
         run_monte_carlo_into_accumulators(
             accumulators,
@@ -379,8 +381,55 @@ class TestGenerateTable(unittest.TestCase):  # pylint: disable=too-many-public-m
         output = accumulators_to_output(accumulators, pairs=["A_A_Unsuited"])
 
         self.assertNotIn("A_A_Suited", output)
+        all_relations = set()
         for bucket in output["A_A_Unsuited"]["Dealer"].values():
-            self.assertNotIn("starter_suit_relation", bucket)
+            if "starter_suit_relation" in bucket:
+                bucket_relations = set(bucket["starter_suit_relation"].keys())
+                self.assertTrue(
+                    bucket_relations.issubset(
+                        {MATCHING_DISCARD_SUIT, NON_MATCHING_DISCARD_SUIT}
+                    )
+                )
+                all_relations.update(bucket_relations)
+        self.assertEqual(
+            all_relations, {MATCHING_DISCARD_SUIT, NON_MATCHING_DISCARD_SUIT}
+        )
+
+    def test_unsuited_discard_has_starter_suit_relation(self):
+        accumulators = {}
+        run_monte_carlo_into_accumulators(
+            accumulators,
+            "A_2_Unsuited",
+            "Dealer",
+            1,
+            {
+                "rng": random.Random(42),
+                "first_sample_index": 0,
+                "seed": 42,
+                "use_control_variates": True,
+            },
+        )
+
+        output = accumulators_to_output(accumulators, pairs=["A_2_Unsuited"])
+
+        all_relations = set()
+        for bucket in output["A_2_Unsuited"]["Dealer"].values():
+            if "starter_suit_relation" in bucket:
+                bucket_relations = set(bucket["starter_suit_relation"].keys())
+                self.assertTrue(
+                    bucket_relations.issubset(
+                        {
+                            MATCHING_RANK_1_SUIT,
+                            MATCHING_RANK_2_SUIT,
+                            NON_MATCHING_DISCARD_SUIT,
+                        }
+                    )
+                )
+                all_relations.update(bucket_relations)
+        self.assertEqual(
+            all_relations,
+            {MATCHING_RANK_1_SUIT, MATCHING_RANK_2_SUIT, NON_MATCHING_DISCARD_SUIT},
+        )
 
     def test_suited_pair_has_matching_and_non_matching_starter_buckets(self):
         accumulators = {}
