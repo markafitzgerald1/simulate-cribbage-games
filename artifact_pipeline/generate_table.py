@@ -43,10 +43,12 @@ from artifact_pipeline.adapter import (  # noqa: E402
 DEFAULT_OUTPUT_PATH = "expected_crib_points.json"
 DEFAULT_CHECKPOINT_FREQUENCY = 100
 METADATA_KEY = "__metadata__"
-GENERATION_METHOD = "artifact_pipeline.generate_table.v2"
+GENERATION_METHOD = "artifact_pipeline.generate_table.v3"
 POINT_TYPES = ("total", "fifteens", "pairs", "runs", "flushes", "nobs")
 MATCHING_DISCARD_SUIT = "matching_discard_suit"
 NON_MATCHING_DISCARD_SUIT = "non_matching_discard_suit"
+MATCHING_RANK_1_SUIT = "matching_rank_1_suit"
+MATCHING_RANK_2_SUIT = "matching_rank_2_suit"
 ROOT_ACCUMULATOR_KEYS = (
     "n",
     "sum",
@@ -597,9 +599,22 @@ def average_breakdowns(breakdowns):
 
 def starter_suit_relation(canonical_pair, starter):
     parts = canonical_pair.split("_")
-    if parts[0] == parts[1] or parts[2] != "Suited":
-        return None
-    return MATCHING_DISCARD_SUIT if starter.suit == 0 else NON_MATCHING_DISCARD_SUIT
+    if parts[2] == "Suited":
+        return MATCHING_DISCARD_SUIT if starter.suit == 0 else NON_MATCHING_DISCARD_SUIT
+
+    if parts[0] == parts[1]:
+        # Pair
+        return (
+            MATCHING_DISCARD_SUIT
+            if starter.suit in (0, 1)
+            else NON_MATCHING_DISCARD_SUIT
+        )
+
+    if starter.suit == 0:
+        return MATCHING_RANK_1_SUIT
+    if starter.suit == 1:
+        return MATCHING_RANK_2_SUIT
+    return NON_MATCHING_DISCARD_SUIT
 
 
 def average_starter_breakdowns(starter_breakdowns):
@@ -608,7 +623,18 @@ def average_starter_breakdowns(starter_breakdowns):
 
 def relation_breakdowns_for_starters(canonical_pair, starter_breakdowns):
     relation_breakdowns = {}
-    for relation in (MATCHING_DISCARD_SUIT, NON_MATCHING_DISCARD_SUIT):
+
+    parts = canonical_pair.split("_")
+    if parts[2] == "Suited" or parts[0] == parts[1]:
+        relations = (MATCHING_DISCARD_SUIT, NON_MATCHING_DISCARD_SUIT)
+    else:
+        relations = (
+            MATCHING_RANK_1_SUIT,
+            MATCHING_RANK_2_SUIT,
+            NON_MATCHING_DISCARD_SUIT,
+        )
+
+    for relation in relations:
         breakdowns = [
             breakdown
             for starter, breakdown in starter_breakdowns
@@ -791,6 +817,8 @@ def _run_mc_sample(
     relation = starter_suit_relation(canonical_pair, cut_card)
     if relation is not None:
         update_relation_accumulator(accumulator, relation, breakdown)
+    else:
+        pass  # pragma: no cover
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments
