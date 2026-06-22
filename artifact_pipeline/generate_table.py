@@ -815,10 +815,7 @@ def _run_mc_sample(
     )
     update_breakdown_accumulator(accumulator, breakdown)
     relation = starter_suit_relation(canonical_pair, cut_card)
-    if relation is not None:
-        update_relation_accumulator(accumulator, relation, breakdown)
-    else:
-        pass  # pragma: no cover
+    update_relation_accumulator(accumulator, relation, breakdown)
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments
