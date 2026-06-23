@@ -41,10 +41,16 @@ from artifact_pipeline.adapter import (  # noqa: E402
 )
 
 DEFAULT_OUTPUT_PATH = "expected_crib_points.json"
+DEFAULT_CLIENT_OUTPUT_PATH = "expected_crib_points.client.json"
 DEFAULT_CHECKPOINT_FREQUENCY = 100
 METADATA_KEY = "__metadata__"
+GENERATION_ACCUMULATORS_KEY = "generation_accumulators"
 GENERATION_METHOD = "artifact_pipeline.generate_table.v3"
 POINT_TYPES = ("total", "fifteens", "pairs", "runs", "flushes", "nobs")
+CLIENT_POINT_TYPES = ("fifteens", "flushes", "nobs", "pairs", "runs")
+CLIENT_MU_DECIMAL_PLACES = 4
+JACK_RANK = "J"
+SUITED_SUIT_GROUP = "Suited"
 MATCHING_DISCARD_SUIT = "matching_discard_suit"
 NON_MATCHING_DISCARD_SUIT = "non_matching_discard_suit"
 MATCHING_RANK_1_SUIT = "matching_rank_1_suit"
@@ -914,6 +920,79 @@ def accumulators_to_output(
     return output
 
 
+def derive_client_output_path(output_path):
+    root, extension = os.path.splitext(output_path)
+    return f"{root}.client{extension or '.json'}"
+
+
+def round_client_mu(mu):
+    rounded = round(mu, CLIENT_MU_DECIMAL_PLACES)
+    # Normalize -0.0 to 0.0 so the serialized artifact is stable and noise-free.
+    return 0.0 if rounded == 0 else rounded
+
+
+def client_point_breakdown(points):
+    breakdown = {}
+    for point_type in CLIENT_POINT_TYPES:
+        point = points.get(point_type)
+        if point is not None and "mu" in point:
+            breakdown[point_type] = {"mu": round_client_mu(point["mu"])}
+    return breakdown
+
+
+def client_bucket(bucket, keep_relations):
+    lean_bucket = {"mu": round_client_mu(bucket["mu"])}
+    points = bucket.get("points")
+    if points:
+        lean_bucket["points"] = client_point_breakdown(points)
+    relations = bucket.get("starter_suit_relation")
+    if keep_relations and relations:
+        # Relation buckets are leaf statistics; they never nest further.
+        lean_bucket["starter_suit_relation"] = {
+            relation: client_bucket(relation_bucket, keep_relations=False)
+            for relation, relation_bucket in relations.items()
+        }
+    return lean_bucket
+
+
+def starter_suit_affects_crib(pair_key):
+    """Crib EV depends on the starter suit only through flushes (possible only
+    for a suited discard) and his-nobs (a discarded Jack matching the starter).
+    For every other discard the starter_suit_relation buckets are sampling noise
+    and are omitted from the client artifact."""
+    rank_1, rank_2, suit_group = pair_key.split("_")
+    return suit_group == SUITED_SUIT_GROUP or rank_1 == JACK_RANK or rank_2 == JACK_RANK
+
+
+def build_client_table(output):
+    client_table = {}
+    for key, value in output.items():
+        if key == METADATA_KEY:
+            client_table[key] = {
+                metadata_key: metadata_value
+                for metadata_key, metadata_value in value.items()
+                if metadata_key != GENERATION_ACCUMULATORS_KEY
+            }
+            continue
+        keep_relations = starter_suit_affects_crib(key)
+        client_table[key] = {
+            player: {
+                cut_card: client_bucket(bucket, keep_relations)
+                for cut_card, bucket in player_data.items()
+            }
+            for player, player_data in value.items()
+        }
+    return client_table
+
+
+def write_client_output(output, client_output_path):
+    temporary_path = f"{client_output_path}.tmp"
+    with open(temporary_path, "w", encoding="utf-8") as client_file:
+        json.dump(build_client_table(output), client_file, separators=(",", ":"))
+        client_file.write("\n")
+    os.replace(temporary_path, client_output_path)
+
+
 def write_output(
     accumulators,
     output_path,
@@ -922,23 +1001,23 @@ def write_output(
     generation=0,
     generation_accumulators=None,
     use_control_variates=False,
+    client_output_path=None,
 ):
+    output = accumulators_to_output(
+        accumulators,
+        seed,
+        pairs,
+        generation,
+        generation_accumulators,
+        use_control_variates,
+    )
     temporary_output_path = f"{output_path}.tmp"
     with open(temporary_output_path, "w", encoding="utf-8") as output_file:
-        json.dump(
-            accumulators_to_output(
-                accumulators,
-                seed,
-                pairs,
-                generation,
-                generation_accumulators,
-                use_control_variates,
-            ),
-            output_file,
-            indent=2,
-        )
+        json.dump(output, output_file, indent=2)
         output_file.write("\n")
     os.replace(temporary_output_path, output_path)
+    if client_output_path is not None:
+        write_client_output(output, client_output_path)
 
 
 def get_deal_count(accumulators, pair, player, use_cv=False):
@@ -1124,6 +1203,21 @@ def main(override_pairs=None):
         help=f"Output JSON path (default: {DEFAULT_OUTPUT_PATH}).",
     )
     parser.add_argument(
+        "--client-output",
+        default=None,
+        help=(
+            "Lean client JSON path consumed by the web app. Carries only the "
+            "values the browser reads (per-bucket mu and point mu, plus "
+            "starter_suit_relation for suited and Jack discards). Defaults to "
+            "<output>.client.json; pass --no-client-output to skip it."
+        ),
+    )
+    parser.add_argument(
+        "--no-client-output",
+        action="store_true",
+        help="Skip writing the lean client artifact alongside the full table.",
+    )
+    parser.add_argument(
         "--no-resume",
         action="store_true",
         help="Ignore any existing output file and start a fresh run.",
@@ -1213,6 +1307,12 @@ def main(override_pairs=None):
             metadata.get("generation_accumulators")
         )
 
+    client_output_path = (
+        None
+        if args.no_client_output
+        else (args.client_output or derive_client_output_path(args.output))
+    )
+
     def checkpoint():
         write_output(
             accumulators,
@@ -1222,6 +1322,7 @@ def main(override_pairs=None):
             generation,
             generation_accumulators,
             use_control_variates=getattr(args, "use_control_variates", False),
+            client_output_path=client_output_path,
         )
 
     # pylint: disable=too-many-nested-blocks

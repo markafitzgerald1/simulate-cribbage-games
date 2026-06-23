@@ -113,6 +113,17 @@ The command writes `expected_crib_points.json` in the current working
 directory. Use a larger `--samples` value for less noisy estimates; `--seed` is
 optional and makes runs reproducible.
 
+Alongside the full table it also writes a lean client artifact,
+`expected_crib_points.client.json` (override with `--client-output`, or skip with
+`--no-client-output`). This carries only what the web client (cribbage-trainer)
+reads — each bucket's `mu` and the per-category point `mu`, plus
+`starter_suit_relation` buckets only for suited or Jack discards, where the
+starter suit actually affects crib EV via flushes or his-nobs. It omits the
+generation-time `n`/`se`/`sum_w2` statistics, the redundant `points.total`, the
+`__metadata__.generation_accumulators`, and the suit-relation buckets for
+unsuited non-Jack discards (which are sampling noise), shrinking the payload by
+~94%. The full table remains the source of truth for convergence analysis.
+
 Generation resumes from an existing `expected_crib_points.json` by default and
 periodically rewrites that file atomically after each discard pair and player
 role chunk. The `--samples` value is a cumulative target per discard pair and

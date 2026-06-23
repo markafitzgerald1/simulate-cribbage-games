@@ -35,6 +35,7 @@
 /coverage\.xml
 /env*/
 /expected_crib_points.json
+/expected_crib_points.client.json
 /expected_crib_points.analytical.json
 *.py[cod]
 __pycache__/
