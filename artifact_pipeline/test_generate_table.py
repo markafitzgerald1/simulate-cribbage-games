@@ -41,6 +41,12 @@ from artifact_pipeline.generate_table import (
     METADATA_KEY,
     validate_resume_metadata,
     write_output,
+    write_client_output,
+    build_client_table,
+    derive_client_output_path,
+    starter_suit_affects_crib,
+    round_client_mu,
+    CLIENT_POINT_TYPES,
     load_or_initialize_accumulators,
     select_opponent_kept_cards_dynamic,
     GENERATION_METHOD,
@@ -3040,6 +3046,205 @@ class TestControlVariates(unittest.TestCase):
                 accumulators, ["A_A_Unsuited"], 100, use_cv=True
             )
         )
+
+
+def full_statistic(mu, with_points=True, relations=None):
+    """Build a full-output bucket carrying the generation fields the client drops."""
+    bucket = {"n": 12.0, "mu": mu, "se": 0.02, "sum_w2": 6.0}
+    if with_points:
+        bucket["points"] = {
+            point_type: {"n": 12.0, "mu": mu + 0.1, "se": 0.02, "sum_w2": 6.0}
+            for point_type in POINT_TYPES
+        }
+    if relations is not None:
+        bucket["starter_suit_relation"] = relations
+    return bucket
+
+
+def full_output_for(pair_key, bucket):
+    return {
+        METADATA_KEY: {
+            "generation_method": GENERATION_METHOD,
+            "seed": 42,
+            "generation_accumulators": {"A_A_Unsuited": {"Dealer": {"A": {"n": 1}}}},
+        },
+        pair_key: {"Dealer": {"A": bucket}, "Pone": {"A": bucket}},
+    }
+
+
+class TestClientArtifact(unittest.TestCase):
+    def test_round_client_mu_normalizes_negative_zero(self):
+        self.assertEqual(round_client_mu(-0.0), 0.0)
+        self.assertEqual(round_client_mu(0.00004), 0.0)
+        self.assertEqual(round_client_mu(1.234567), 1.2346)
+
+    def test_starter_suit_affects_crib(self):
+        self.assertTrue(starter_suit_affects_crib("A_2_Suited"))
+        self.assertTrue(starter_suit_affects_crib("5_J_Unsuited"))
+        self.assertTrue(starter_suit_affects_crib("J_5_Unsuited"))
+        self.assertFalse(starter_suit_affects_crib("8_K_Unsuited"))
+        self.assertFalse(starter_suit_affects_crib("A_A_Unsuited"))
+
+    def test_build_client_table_keeps_only_mu(self):
+        client = build_client_table(
+            full_output_for("8_K_Unsuited", full_statistic(2.5))
+        )
+        bucket = client["8_K_Unsuited"]["Dealer"]["A"]
+
+        self.assertEqual(set(bucket), {"mu", "points"})
+        self.assertEqual(bucket["mu"], 2.5)
+        # Points carry only mu, and the redundant "total" entry is dropped.
+        self.assertEqual(set(bucket["points"]), set(CLIENT_POINT_TYPES))
+        self.assertEqual(set(bucket["points"]["fifteens"]), {"mu"})
+        self.assertEqual(bucket["points"]["fifteens"]["mu"], 2.6)
+
+    def test_build_client_table_strips_generation_accumulators(self):
+        client = build_client_table(
+            full_output_for("A_A_Unsuited", full_statistic(1.0))
+        )
+        metadata = client[METADATA_KEY]
+
+        self.assertTrue("generation_accumulators" not in metadata)
+        self.assertEqual(metadata["generation_method"], GENERATION_METHOD)
+        self.assertEqual(metadata["seed"], 42)
+
+    def test_relations_kept_only_when_suit_matters(self):
+        relations = {MATCHING_DISCARD_SUIT: full_statistic(3.0)}
+
+        suited = build_client_table(
+            full_output_for("A_2_Suited", full_statistic(2.0, relations=relations))
+        )
+        unsuited = build_client_table(
+            full_output_for("8_K_Unsuited", full_statistic(2.0, relations=relations))
+        )
+
+        suited_bucket = suited["A_2_Suited"]["Dealer"]["A"]
+        unsuited_bucket = unsuited["8_K_Unsuited"]["Dealer"]["A"]
+
+        self.assertTrue("starter_suit_relation" in suited_bucket)
+        self.assertEqual(
+            suited_bucket["starter_suit_relation"][MATCHING_DISCARD_SUIT]["mu"], 3.0
+        )
+        self.assertTrue("starter_suit_relation" not in unsuited_bucket)
+
+    def test_bucket_without_points_omits_points(self):
+        client = build_client_table(
+            full_output_for("8_K_Unsuited", full_statistic(2.0, with_points=False))
+        )
+        self.assertEqual(set(client["8_K_Unsuited"]["Dealer"]["A"]), {"mu"})
+
+    def test_missing_point_category_is_skipped(self):
+        bucket = full_statistic(2.0)
+        del bucket["points"]["fifteens"]
+
+        client = build_client_table(full_output_for("8_K_Unsuited", bucket))
+        points = client["8_K_Unsuited"]["Dealer"]["A"]["points"]
+
+        self.assertTrue("fifteens" not in points)
+        self.assertTrue("pairs" in points)
+
+    def test_derive_client_output_path(self):
+        self.assertEqual(
+            derive_client_output_path("expected_crib_points.json"),
+            "expected_crib_points.client.json",
+        )
+        self.assertEqual(
+            derive_client_output_path("/tmp/table"), "/tmp/table.client.json"
+        )
+
+    def test_write_output_emits_compact_client_artifact(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+            client_path = os.path.join(temp_dir, "expected_crib_points.client.json")
+
+            write_output(
+                accumulators={},
+                output_path=output_path,
+                seed=42,
+                pairs=["A_A_Unsuited"],
+                generation=1,
+                generation_accumulators={},
+                client_output_path=client_path,
+            )
+
+            self.assertTrue(os.path.exists(client_path))
+            with open(client_path, "r", encoding="utf-8") as client_file:
+                contents = client_file.read()
+            # Compact serialization: no indentation whitespace after separators.
+            self.assertTrue(": " not in contents)
+            client = json.loads(contents)
+            self.assertTrue("generation_accumulators" not in client[METADATA_KEY])
+
+    def test_write_output_skips_client_artifact_when_unset(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+            client_path = os.path.join(temp_dir, "expected_crib_points.client.json")
+
+            write_output(accumulators={}, output_path=output_path, seed=42)
+
+            self.assertTrue(os.path.exists(output_path))
+            self.assertFalse(os.path.exists(client_path))
+
+    def test_write_client_output_matches_build_client_table(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            client_path = os.path.join(temp_dir, "client.json")
+            output = full_output_for("A_2_Suited", full_statistic(2.0))
+
+            write_client_output(output, client_path)
+
+            with open(client_path, "r", encoding="utf-8") as client_file:
+                self.assertEqual(json.load(client_file), build_client_table(output))
+
+    def test_main_writes_client_artifact_by_default(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+            client_path = os.path.join(temp_dir, "expected_crib_points.client.json")
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--seed",
+                    "42",
+                    "--bootstrap",
+                    "",
+                    "--output",
+                    output_path,
+                ],
+            ):
+                run_main_silently()
+
+            self.assertTrue(os.path.exists(client_path))
+            with open(client_path, "r", encoding="utf-8") as client_file:
+                client = json.load(client_file)
+            self.assertTrue("generation_accumulators" not in client[METADATA_KEY])
+
+    def test_main_no_client_output(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = os.path.join(temp_dir, "expected_crib_points.json")
+            client_path = os.path.join(temp_dir, "expected_crib_points.client.json")
+
+            with patch(
+                "sys.argv",
+                [
+                    "generate_table.py",
+                    "--samples",
+                    "1",
+                    "--seed",
+                    "42",
+                    "--bootstrap",
+                    "",
+                    "--output",
+                    output_path,
+                    "--no-client-output",
+                ],
+            ):
+                run_main_silently()
+
+            self.assertTrue(os.path.exists(output_path))
+            self.assertFalse(os.path.exists(client_path))
 
 
 if __name__ == "__main__":
