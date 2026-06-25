@@ -311,6 +311,28 @@ Monte Carlo output without the sample counts needed to compute the displayed
 uncertainty. Do not claim exact agreement with external tables when the
 generation methodology differs.
 
+The pipeline emits two artifacts. `generate_table.py` writes the full table plus
+a lean client artifact (`build_client_table`, the `--client-output`
+`expected_crib_points.client.json`) that the `cribbage-trainer` web app consumes
+directly. The client artifact keeps only what the browser reads: per-bucket `mu`
+and per-category point `mu`, plus `starter_suit_relation` only for suited or
+Jack discards. It is published to the rolling `expected-crib-points` release.
+Keep the two repos in sync: bucket-schema changes must be reflected in both
+`build_client_table` here and the trainer's lookup.
+
+Crib EV depends on the starter's suit only through flushes (possible only for a
+suited discard) and his-nobs (a discarded Jack matching the starter suit). For
+every other discard the `starter_suit_relation` buckets are sampling noise, so
+the lean client artifact omits them for unsuited, non-Jack discards. Do not add
+suit conditioning where the rules make it impossible.
+
+The weekly production generation runs close to the 6-hour GitHub Actions cap
+(about 20 minutes of headroom) with a razor-thin convergence margin (max EV
+shift near the 0.10 threshold). Do not trim the sample count to buy wall-clock
+time: fewer samples raise the shift and risk a non-convergence failure. Prefer
+resume-across-runs (the resumable-checkpoint design above) if the cap becomes a
+recurring problem.
+
 ## Lint Configuration Expectations
 
 Do not assume lint rules are enforced unless they are present in local
