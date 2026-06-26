@@ -422,11 +422,13 @@ def _select_discard_indices(
 ):  # pylint: disable=too-many-locals,too-many-arguments,too-many-positional-arguments
     """Select discards, optionally adding kept-hand pegging delta values."""
     selected = []
-    play_analytical_pairs = (
-        get_analytical_pairs()
-        if dealer_play_values is not None or pone_play_values is not None
-        else None
-    )
+    play_analytical_pairs = None
+    if dealer_play_values is not None or pone_play_values is not None:
+        # Index play values with the caller's pair ordering when supplied so a
+        # custom analytical_pairs list cannot reconstruct the wrong kept ranks.
+        play_analytical_pairs = (
+            analytical_pairs if analytical_pairs is not None else get_analytical_pairs()
+        )
     for hand, _weight, discards_ev in hand_kept_evs:
         best_dl_idx = None
         best_dl_score = -math.inf

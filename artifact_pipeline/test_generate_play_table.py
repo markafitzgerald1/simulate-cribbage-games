@@ -24,7 +24,7 @@ from artifact_pipeline.generate_play_table import (
     generate_play_table,
     main,
     maximum_play_shift,
-    non_negative_float,
+    positive_float,
     play_values_from_table,
     positive_int,
     refine_discard_policy,
@@ -34,7 +34,10 @@ from artifact_pipeline.generate_play_table import (
     solve_initial_discard_policy,
     validate_resume_table,
 )
-from artifact_pipeline.analytical_solver import _select_discard_indices
+from artifact_pipeline.analytical_solver import (
+    _select_discard_indices,
+    get_analytical_pairs,
+)
 
 
 class FirstPolicy:  # pylint: disable=too-few-public-methods
@@ -106,8 +109,16 @@ class TestGeneratePlayTable(unittest.TestCase):
             [0.0] * 91,
             pone_play_values={(2, 3, 4, 5): 3.0},
         )
+        explicit_pairs_selected = _select_discard_indices(
+            [(hand, 1, {1: 0.0, 2: 0.0})],
+            [0.0] * 91,
+            [0.0] * 91,
+            analytical_pairs=get_analytical_pairs(),
+            dealer_play_values={(1, 3, 4, 5): 2.0},
+        )
         self.assertEqual(dealer_selected, [(hand, 2, 1)])
         self.assertEqual(pone_selected, [(hand, 1, 1)])
+        self.assertEqual(explicit_pairs_selected, [(hand, 2, 1)])
 
     def test_policy_deal_and_conditioned_opponent_keep(self):
         pone, dealer = sample_policy_deal(random.Random(42), self.discard_policy)
@@ -299,10 +310,10 @@ class TestGeneratePlayTable(unittest.TestCase):
         self.assertEqual(positive_int("2"), 2)
         with self.assertRaises(argparse.ArgumentTypeError):
             positive_int("0")
-        self.assertEqual(non_negative_float("0.2"), 0.2)
+        self.assertEqual(positive_float("0.2"), 0.2)
         for value in ("0", "-1", "nan"):
             with self.assertRaises(argparse.ArgumentTypeError):
-                non_negative_float(value)
+                positive_float(value)
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "table.json"
             _write_json(str(path), {"b": 1, "a": 2})

@@ -492,7 +492,7 @@ def positive_int(value: str) -> int:
     return parsed
 
 
-def non_negative_float(value: str) -> float:
+def positive_float(value: str) -> float:
     parsed = float(value)
     if parsed <= 0.0 or not math.isfinite(parsed):
         raise argparse.ArgumentTypeError("Value must be finite and positive")
@@ -523,7 +523,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--client-output", default=DEFAULT_CLIENT_OUTPUT_PATH)
     parser.add_argument("--samples", type=positive_int, default=1000)
     parser.add_argument("--max-samples", type=positive_int)
-    parser.add_argument("--target-standard-error", type=non_negative_float)
+    parser.add_argument("--target-standard-error", type=positive_float)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--ibr-iterations", type=positive_int, default=2)
     parser.add_argument("--ibr-samples", type=positive_int, default=5000)

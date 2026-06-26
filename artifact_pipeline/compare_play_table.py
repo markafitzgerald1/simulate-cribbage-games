@@ -15,6 +15,7 @@ from urllib.request import urlopen
 from artifact_pipeline.pegging import DEALER, PONE
 
 DEFAULT_SOURCE_URL = "https://www.cribbagepro.net/pegging_quiz/pegging_data.js"
+DOWNLOAD_TIMEOUT_SECONDS = 30
 ROW_PATTERN = re.compile(r"(\[\s*['\"].*?\])\s*,?", re.DOTALL)
 
 
@@ -152,7 +153,9 @@ def main() -> None:
     args = _parse_args()
     with open(args.table, encoding="utf-8") as table_file:
         generated = json.load(table_file)
-    with urlopen(args.source_url) as response:  # nosec B310
+    with urlopen(  # nosec B310
+        args.source_url, timeout=DOWNLOAD_TIMEOUT_SECONDS
+    ) as response:
         source = response.read()
     external = parse_cribbage_pro_data(source.decode("utf-8"))
     report = {
