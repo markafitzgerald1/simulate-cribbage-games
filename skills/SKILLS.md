@@ -126,6 +126,13 @@ code cannot call the Python solver directly, so either encode needed
 conditional values in the artifact or reimplement runtime adjustments in
 TypeScript with Python-generated golden tests.
 
+The expected-play artifact follows the same boundary. Pegging policy training,
+hidden-information rollouts, discard-policy refinement, and uncertainty remain
+in Python. The browser receives only means keyed by four kept ranks and role,
+including absolute Pone and Dealer point-type components and the keyed player's
+paired delta. Keep policy views limited to the acting player's cards and public
+history.
+
 Coverage must not decrease as a result of code changes. New simulator behavior
 must include focused tests, especially for cribbage scoring, discard selection,
 play selection, game-state transitions, and command-line options.

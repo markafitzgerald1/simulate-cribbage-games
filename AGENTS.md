@@ -333,6 +333,50 @@ time: fewer samples raise the shift and risk a non-convergence failure. Prefer
 resume-across-runs (the resumable-checkpoint design above) if the cap becomes a
 recurring problem.
 
+The expected-play pipeline is separate from the expected-crib pipeline.
+`generate_play_table.py` uses the analytical `E(h +/- c)` solution as its
+initial discard policy, trains a rank-only hidden-information pegging policy by
+rollout iterative best response, and refines discards using
+`E(h +/- c +/- deltaP)`. Its full artifact stores paired uncertainty for the
+keyed player's delta plus absolute Pone and Dealer point-type totals. Its lean
+client artifact recursively strips `n` and `se` while retaining those means.
+Do not expose hidden opponent cards to policy inputs or move rollout decisions
+into the browser.
+
+Seeded play-table samples are independent by canonical hand, role, and
+cumulative sample index. Preserve this property when changing generation or
+checkpoint behavior so resumed runs remain equivalent to uninterrupted runs.
+The optional Cribbage Pro comparison downloads third-party data at run time;
+do not vendor that dataset without explicit permission.
+
+A full-accuracy production play-table run does not fit inside the six-hour
+GitHub Actions cap on a single CI runner. Measured single-threaded on Apple
+Silicon developer hardware, the dominant costs scale as follows: pegging
+simulation runs at roughly 5,000 deals per second with the trained nested
+policy, rollout best-response training at roughly 330 training samples per
+second, and the analytical seed at about four seconds per pair-IBR iteration.
+The pegging-delta standard deviation is about 2.4 to 3.2 points, so a
+`--target-standard-error=0.02` goal would need roughly 14,000 to 25,000 final
+samples per seat entry across all 3,640 entries; at that accuracy the final
+sampling phase alone approaches the cap, and adding IBR training plus the
+per-outer policy tables pushes the total over six hours on slower CI hardware.
+
+The scheduled workflow therefore runs a deliberately time-capped single pass at
+reduced sample counts (`--ibr-samples=30000`, `--samples=9000`, two outer and
+two IBR iterations, no `--target-standard-error`, no `--max-samples`, no
+`--fail-on-non-convergence`, and `--no-resume`). The `--samples=7500` variant
+was measured end to end at about 80 minutes single-threaded on Apple Silicon
+developer hardware, so `--samples=9000` projects near 92 minutes locally, which
+is roughly four to four and a half hours on a slower CI runner (about 5.3 hours
+at a pessimistic 3.5x) -- confidently under the cap. The final per-entry
+standard error is about 2.7 / sqrt(samples), near 0.028. The emitted artifact
+records `joint_policy_converged: false`; that is expected for the capped run and
+is not a failure. Do not silently cut samples below this to buy wall-clock time,
+and do not raise them much past `--samples=12000` without adopting the
+resume-across-runs checkpoint design above: a higher-accuracy run (for example
+`--target-standard-error=0.02` with a raised `--max-samples`) must be spread
+across multiple resumed runs because it cannot finish in one six-hour job.
+
 ## Lint Configuration Expectations
 
 Do not assume lint rules are enforced unless they are present in local

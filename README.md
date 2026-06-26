@@ -229,6 +229,51 @@ generator checkpoints, because older checkpoints do not contain the expanded
 starter-suit relation accumulators. Start v3 production runs with `--no-resume`,
 optionally using an analytical bootstrap as the policy baseline.
 
+### Expected pegging points artifact
+
+Generate a bounded rank-only expected pegging table:
+
+```sh
+python artifact_pipeline/generate_play_table.py \
+  --analytical-max-iterations=2 \
+  --full-hand-policy-max-iterations=1 \
+  --outer-iterations=1 \
+  --ibr-iterations=1 \
+  --ibr-samples=25 \
+  --rollouts-per-action=1 \
+  --policy-table-samples=10 \
+  --samples=25 \
+  --hand-limit=4 \
+  --no-resume \
+  --seed=42
+```
+
+The generator starts from the analytical `E(h +/- c)` discard policy, improves
+the rank-only pegging policy through rollout-based iterative best response, and
+then refines discards on `E(h +/- c +/- deltaP)`. The full artifact records
+paired `n`, `mu`, and `se` values for the keyed player's pegging delta and for
+absolute Pone and Dealer totals broken down into fifteens, thirty-ones, pairs,
+runs, go, and last-card points. The lean client artifact retains only those
+means.
+
+Production runs resume from `expected_play_points.json` by default. Each sample
+is seeded independently by hand, role, and cumulative sample index, so a resumed
+seeded run produces the same estimates as an uninterrupted run. Pass
+`--no-resume` for a fresh run.
+
+Optionally compare the generated totals with Cribbage Pro's published empirical
+1,820-hand pegging data:
+
+```sh
+python artifact_pipeline/compare_play_table.py \
+  expected_play_points.json \
+  --write-metadata
+```
+
+This downloads the public source at comparison time and records aggregate
+regression metrics and its SHA-256 digest. The third-party dataset is not
+vendored in this repository.
+
 Summarize a generated table:
 
 ```sh

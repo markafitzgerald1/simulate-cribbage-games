@@ -170,7 +170,7 @@ def _hand_conditioned_policy_ev(hand, cut_values):
 
 
 def _iter_rank_count_subsets(
-    rank_counts: Iterable[Tuple[int, int]]
+    rank_counts: Iterable[Tuple[int, int]],
 ) -> List[Tuple[Tuple[Tuple[int, int], ...], int, int]]:
     """Yield sparse rank-count subsets and their physical subset multiplicity."""
     sorted_rank_counts = sorted(rank_counts)
@@ -193,7 +193,7 @@ def _iter_rank_count_subsets(
 
 
 def _iter_containment_subset_weights(
-    rank_counts: Iterable[Tuple[int, int]]
+    rank_counts: Iterable[Tuple[int, int]],
 ) -> List[Tuple[Tuple[Tuple[int, int], ...], int]]:
     """Yield physical-hand containment weights for every subset of a rank hand."""
     sorted_rank_counts = sorted(rank_counts)
@@ -417,9 +417,16 @@ def _select_discard_indices(
     analytical_pairs=None,
     crib_scores=None,
     crib_score_matrices=None,
+    dealer_play_values=None,
+    pone_play_values=None,
 ):  # pylint: disable=too-many-locals,too-many-arguments,too-many-positional-arguments
-    """Select Dealer and Pone discards for each possible six-card rank hand."""
+    """Select discards, optionally adding kept-hand pegging delta values."""
     selected = []
+    play_analytical_pairs = (
+        get_analytical_pairs()
+        if dealer_play_values is not None or pone_play_values is not None
+        else None
+    )
     for hand, _weight, discards_ev in hand_kept_evs:
         best_dl_idx = None
         best_dl_score = -math.inf
@@ -454,6 +461,17 @@ def _select_discard_indices(
                 )
             dl_score = hand_ev + dl_policy_ev
             pn_score = hand_ev - pn_policy_ev
+            if dealer_play_values is not None or pone_play_values is not None:
+                assert play_analytical_pairs is not None
+                kept = list(hand)
+                discard = play_analytical_pairs[idx]
+                kept.remove(discard[0])
+                kept.remove(discard[1])
+                kept_key = tuple(kept)
+                if dealer_play_values is not None:
+                    dl_score += dealer_play_values.get(kept_key, 0.0)
+                if pone_play_values is not None:
+                    pn_score += pone_play_values.get(kept_key, 0.0)
             if dl_score > best_dl_score:
                 best_dl_idx = idx
                 best_dl_score = dl_score

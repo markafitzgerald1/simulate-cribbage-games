@@ -1,0 +1,138 @@
+name: Generate Play Artifact
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 0"
+
+concurrency:
+  group: expected-play-points-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  generate-table:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14.4"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Generate bounded PR artifact
+        if: github.event_name == 'pull_request'
+        run: |
+          python -u artifact_pipeline/generate_play_table.py \
+            --analytical-max-iterations=2 \
+            --full-hand-policy-max-iterations=1 \
+            --outer-iterations=1 \
+            --ibr-iterations=1 \
+            --ibr-samples=25 \
+            --rollouts-per-action=1 \
+            --policy-table-samples=10 \
+            --samples=25 \
+            --hand-limit=4 \
+            --no-resume \
+            --seed=42
+
+      # Single-run, time-capped production generation. Sample counts are below a
+      # full-accuracy run so the whole job finishes inside the six-hour GitHub
+      # Actions cap without resume-across-runs. Measured 80 min single-threaded
+      # on Apple Silicon at --samples=7500; --samples=9000 projects ~92 min
+      # locally, i.e. ~4 to 4.6 h on a slower CI runner (2.5-3x) and ~5.3 h at a
+      # pessimistic 3.5x -- confidently under the cap. Final per-entry standard
+      # error is about 2.7 / sqrt(samples), near 0.028. Raise --samples (and, for
+      # policy quality, --ibr-samples) for accuracy; past ~12000 the pessimistic
+      # runtime starts to risk the cap, so prefer resume-across-runs beyond that.
+      - name: Generate production artifact
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          python -u artifact_pipeline/generate_play_table.py \
+            --analytical-max-iterations=40 \
+            --full-hand-policy-max-iterations=2 \
+            --outer-iterations=2 \
+            --ibr-iterations=2 \
+            --ibr-samples=30000 \
+            --rollouts-per-action=2 \
+            --policy-table-samples=200 \
+            --samples=9000 \
+            --no-resume \
+            --seed=42
+
+      - name: Compare with published Cribbage Pro totals
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        continue-on-error: true
+        run: |
+          python -u artifact_pipeline/compare_play_table.py \
+            expected_play_points.json \
+            --write-metadata
+
+      - name: Upload full table
+        uses: actions/upload-artifact@v7
+        with:
+          name: expected-play-points
+          path: expected_play_points.json
+
+      - name: Upload lean client table
+        uses: actions/upload-artifact@v7
+        with:
+          name: expected-play-points-client
+          path: expected_play_points.client.json
+
+  release-artifact:
+    needs: generate-table
+    if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download full table
+        uses: actions/download-artifact@v8
+        with:
+          name: expected-play-points
+
+      - name: Download lean client table
+        uses: actions/download-artifact@v8
+        with:
+          name: expected-play-points-client
+
+      - name: Capture build timestamp
+        id: build_timestamp
+        run: echo "now=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
+
+      - name: Publish rolling release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: expected-play-points
+          name: "Latest Expected Play Points Table"
+          body: |
+            This release contains the latest rank-only expected pegging table.
+
+            **Last generated (UTC):** ${{ steps.build_timestamp.outputs.now }}
+
+            - `expected_play_points.json`: paired sampling statistics and
+              point-type details.
+            - `expected_play_points.client.json`: lean table consumed by the
+              browser.
+
+            Triggered by: ${{ github.event_name }} on commit ${{ github.sha }}.
+          files: |
+            expected_play_points.json
+            expected_play_points.client.json
+          make_latest: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

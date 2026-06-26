@@ -22,6 +22,7 @@ from simulate_cribbage_games import (  # noqa: E402
     cached_pairs_runs_and_fifteens_points,
     BEST_STATIC_SELECT_PONE_KEPT_CARDS,
     BEST_STATIC_SELECT_DEALER_KEPT_CARDS,
+    DEFAULT_SELECT_PLAY,
 )
 
 __all__ = [
@@ -33,9 +34,20 @@ __all__ = [
     "cached_pairs_runs_and_fifteens_points",
     "BEST_STATIC_SELECT_PONE_KEPT_CARDS",
     "BEST_STATIC_SELECT_DEALER_KEPT_CARDS",
+    "legacy_select_play_rank",
     "get_canonical_pairs",
     "score_hand_over_starters",
 ]
+
+
+def legacy_select_play_rank(playable_ranks, current_play_count, sequence):
+    """Select a rank using the immutable legacy simulator's default policy."""
+    playable_cards = [Card(rank, 0) for rank in playable_ranks]
+    sequence_cards = [Card(rank, 0) for rank in sequence]
+    selected_index = DEFAULT_SELECT_PLAY(
+        playable_cards, current_play_count, sequence_cards
+    )
+    return playable_cards[selected_index].index
 
 
 def get_canonical_pairs():
