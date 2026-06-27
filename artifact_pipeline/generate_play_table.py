@@ -349,13 +349,10 @@ def generate_play_table(
                 else _empty_entry_accumulators()
             )
             sample_limit = max_samples or samples
+            # Invariant across the sample loop, so hash the entry seed once.
+            entry_seed = _entry_seed(seed, hand, target_role)
             while accumulators.delta.n < sample_limit:
-                rng = random.Random(
-                    _sample_seed(
-                        _entry_seed(seed, hand, target_role),
-                        accumulators.delta.n,
-                    )
-                )
+                rng = random.Random(_sample_seed(entry_seed, accumulators.delta.n))
                 opponent_role = other_role(target_role)
                 opponent_keep = sample_opponent_keep(
                     hand, opponent_role, discard_policy, rng
