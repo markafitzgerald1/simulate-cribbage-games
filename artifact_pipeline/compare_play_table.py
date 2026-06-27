@@ -7,12 +7,18 @@ import ast
 import hashlib
 import json
 import math
+import os
 import re
+import sys
 from statistics import mean
 from typing import Any, Mapping, Sequence
 from urllib.request import urlopen
 
-from artifact_pipeline.pegging import DEALER, PONE
+if __package__ in (None, ""):  # pragma: no cover
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# pylint: disable=wrong-import-position
+from artifact_pipeline.pegging import DEALER, PONE  # noqa: E402
 
 DEFAULT_SOURCE_URL = "https://www.cribbagepro.net/pegging_quiz/pegging_data.js"
 DOWNLOAD_TIMEOUT_SECONDS = 30

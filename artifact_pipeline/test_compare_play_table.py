@@ -2,6 +2,8 @@
 
 import io
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -109,6 +111,18 @@ class TestComparePlayTable(unittest.TestCase):
             regression = updated["__metadata__"]["external_regression"]
             self.assertEqual(regression["source_url"], "https://example.test")
             self.assertEqual(len(regression["source_sha256"]), 64)
+
+    def test_documented_script_invocation_loads_package_imports(self):
+        repo_root = Path(__file__).resolve().parents[1]
+        result = subprocess.run(
+            [sys.executable, "artifact_pipeline/compare_play_table.py", "--help"],
+            cwd=repo_root,
+            capture_output=True,
+            check=False,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue("usage:" in result.stdout)
 
 
 if __name__ == "__main__":  # pragma: no cover
