@@ -129,7 +129,7 @@ class TestGeneratePlayTable(unittest.TestCase):
             (0, 0, 0, 0), DEALER, self.discard_policy, random.Random(42)
         )
         self.assertEqual(len(opponent), 4)
-        self.assertLessEqual(opponent.count(0), 0)
+        self.assertEqual(opponent.count(0), 0)
         self.assertEqual(
             _representative_physical_hand((0, 0, 2, 2)),
             ((0, 0), (0, 1), (2, 0), (2, 1)),
