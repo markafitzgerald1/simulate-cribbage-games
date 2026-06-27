@@ -1,0 +1,145 @@
+name: Generate Play Artifact
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 0"
+
+concurrency:
+  group: expected-play-points-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  generate-table:
+    runs-on: ubuntu-latest
+    # Hard stop well under the 6 h Actions ceiling: the capped run finishes in
+    # ~3-5 h, so 330 min fails fast (and clearly) if a runner is far slower than
+    # measured, rather than letting the job be silently killed at 6 h.
+    timeout-minutes: 330
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14.4"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Generate bounded PR artifact
+        if: github.event_name == 'pull_request'
+        run: |
+          python -u artifact_pipeline/generate_play_table.py \
+            --analytical-max-iterations=2 \
+            --full-hand-policy-max-iterations=1 \
+            --outer-iterations=1 \
+            --ibr-iterations=1 \
+            --ibr-samples=25 \
+            --rollouts-per-action=1 \
+            --policy-table-samples=10 \
+            --samples=25 \
+            --hand-limit=4 \
+            --no-resume \
+            --seed=42
+
+      # Single-run, time-capped production generation -- no resume-across-runs.
+      # Cost model measured on this code (Apple M2 laptop, single-threaded):
+      # fixed setup (analytical + IBR + policy tables) is ~16 min and the final
+      # sampling adds ~0.47 s per --samples step over the 1820-hand table, so
+      # T_local ~= 16 min + 0.47 s * samples. At --samples=13000 that is ~118 min
+      # locally. The GitHub runner measured ~1.6x slower than local on both the
+      # analytical and the sampling test paths, so the real run is ~3.1 h; even a
+      # paranoid 2.5x is ~4.9 h, comfortably inside the cap (and the job
+      # timeout-minutes above). Final per-entry standard error is about
+      # 2.7 / sqrt(samples), near 0.024 here. Raise --samples for a tighter SE
+      # (and --ibr-samples for policy quality); ~16000 still fits, beyond that the
+      # paranoid runtime starts to approach the cap.
+      - name: Generate production artifact
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          python -u artifact_pipeline/generate_play_table.py \
+            --analytical-max-iterations=40 \
+            --full-hand-policy-max-iterations=2 \
+            --outer-iterations=2 \
+            --ibr-iterations=2 \
+            --ibr-samples=30000 \
+            --rollouts-per-action=2 \
+            --policy-table-samples=200 \
+            --samples=13000 \
+            --no-resume \
+            --seed=42
+
+      - name: Compare with published Cribbage Pro totals
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        continue-on-error: true
+        run: |
+          python -u artifact_pipeline/compare_play_table.py \
+            expected_play_points.json \
+            --write-metadata
+
+      - name: Upload full table
+        uses: actions/upload-artifact@v7
+        with:
+          name: expected-play-points
+          path: expected_play_points.json
+
+      - name: Upload lean client table
+        uses: actions/upload-artifact@v7
+        with:
+          name: expected-play-points-client
+          path: expected_play_points.client.json
+
+  release-artifact:
+    needs: generate-table
+    if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download full table
+        uses: actions/download-artifact@v8
+        with:
+          name: expected-play-points
+
+      - name: Download lean client table
+        uses: actions/download-artifact@v8
+        with:
+          name: expected-play-points-client
+
+      - name: Capture build timestamp
+        id: build_timestamp
+        run: echo "now=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
+
+      - name: Publish rolling release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: expected-play-points
+          name: "Latest Expected Play Points Table"
+          body: |
+            This release contains the latest rank-only expected pegging table.
+
+            **Last generated (UTC):** ${{ steps.build_timestamp.outputs.now }}
+
+            - `expected_play_points.json`: paired sampling statistics and
+              point-type details.
+            - `expected_play_points.client.json`: lean table consumed by the
+              browser.
+
+            Triggered by: ${{ github.event_name }} on commit ${{ github.sha }}.
+          files: |
+            expected_play_points.json
+            expected_play_points.client.json
+          make_latest: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
