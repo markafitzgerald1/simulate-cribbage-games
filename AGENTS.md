@@ -371,6 +371,11 @@ per-entry standard error is about 2.7 / sqrt(samples), near 0.024. The emitted
 artifact records `joint_policy_converged: false`; that is expected for the
 capped run and is not a failure.
 
+Each sampling pass (the per-outer policy tables and the final pass) emits a
+progress heartbeat to stderr -- a start line plus `hand X/Y` lines at every
+checkpoint with elapsed, remaining, and median standard error -- so a long run
+is observable rather than silent. The rollout-IBR training phases stay quiet.
+
 Raising `--samples` tightens the SE (and `--ibr-samples` improves policy quality
 at a fixed setup cost): about 16,000 samples still finishes under the cap at the
 paranoid 2.5x. Beyond that -- for example a tight `--target-standard-error=0.02`
