@@ -50,10 +50,12 @@ class TestComparePlayTable(unittest.TestCase):
         self.assertEqual(normalize_external_hand("K,10,A,5"), "A_5_T_K")
         parsed = parse_cribbage_pro_data(
             "const pegging_data = [['bad', 1], ['A,2,3,4', 2, 3, 4, 1],"
+            "['2,3,4,5', 'x', 3, 4, 1],"
             "['10,J,Q,K', 1.1, 2.2, 3.3, 4.4]];"
         )
         self.assertEqual(parsed["A_2_3_4"], (2.0, 3.0, 4.0, 1.0))
         self.assertEqual(parsed["T_J_Q_K"], (1.1, 2.2, 3.3, 4.4))
+        self.assertTrue("2_3_4_5" not in parsed)
         with self.assertRaises(ValueError):
             parse_cribbage_pro_data("const empty = [];")
 

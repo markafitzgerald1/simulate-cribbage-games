@@ -30,11 +30,16 @@ def parse_cribbage_pro_data(source: str) -> dict[str, tuple[float, ...]]:
     """Parse the JavaScript array without executing third-party code."""
     rows = {}
     for match in ROW_PATTERN.finditer(source):
-        candidate = ast.literal_eval(match.group(1))
-        if len(candidate) == 5:
-            rows[normalize_external_hand(candidate[0])] = tuple(
-                float(value) for value in candidate[1:]
-            )
+        # Best-effort parse: skip rows that are malformed or non-numeric (the
+        # third-party format could change) rather than failing the whole run.
+        try:
+            candidate = ast.literal_eval(match.group(1))
+            if len(candidate) == 5:
+                rows[normalize_external_hand(candidate[0])] = tuple(
+                    float(value) for value in candidate[1:]
+                )
+        except (ValueError, SyntaxError, KeyError):
+            continue
     if not rows:
         raise ValueError("No Cribbage Pro pegging rows were found")
     return rows

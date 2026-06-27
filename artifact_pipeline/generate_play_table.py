@@ -571,7 +571,9 @@ def main() -> None:
             discard_policy,
             policies,
             samples=args.policy_table_samples,
-            seed=args.seed + outer_iteration,
+            # Fix the seed across outer iterations so the convergence shift
+            # reflects policy changes rather than per-iteration sampling noise.
+            seed=args.seed,
             hands=requested_hands,
         )
         next_context, changed, max_shift = refine_discard_policy(context, policy_table)
