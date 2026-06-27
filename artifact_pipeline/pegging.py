@@ -15,6 +15,9 @@ DEALER = "Dealer"
 ROLES = (PONE, DEALER)
 POINT_TYPES = ("fifteen", "thirty_one", "pair", "run", "go", "last_card")
 GO_ACTION = -1
+# Marks a sequence reset (after 31 or a go) in public_history. It stays part of
+# the policy key and cannot collide with ranks (0-12) or GO_ACTION (-1).
+SEQUENCE_RESET = -2
 
 
 def other_role(role: str) -> str:
@@ -280,7 +283,7 @@ def _run_points(sequence: Sequence[int]) -> int:
 
 
 def score_play(sequence: Sequence[int], count: int) -> dict[str, float]:
-    """Score one just-played card with mutually exclusive end-point categories."""
+    """Score one just-played card; a single play can earn several categories."""
     if not sequence:
         raise ValueError("Cannot score an empty sequence")
     points = _empty_points()
@@ -306,7 +309,7 @@ def _reset_sequence(state: PeggingState, next_role: str) -> None:
     state.count = 0
     state.sequence.clear()
     state.passed_roles.clear()
-    state.public_history.append(-2)
+    state.public_history.append(SEQUENCE_RESET)
     state.next_role = next_role
     state.last_player = None
 

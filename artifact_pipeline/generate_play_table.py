@@ -502,7 +502,7 @@ def positive_float(value: str) -> float:
 def maximum_play_shift(
     previous: Mapping[str, Any] | None, current: Mapping[str, Any]
 ) -> float:
-    """Return the largest root-mean movement across shared role entries."""
+    """Return the largest absolute change in mu across shared role entries."""
     if previous is None:
         return math.inf
     maximum = 0.0
