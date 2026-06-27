@@ -409,14 +409,19 @@ def refine_discard_policy(
 ) -> tuple[AnalyticalContext, int, float]:
     """Take one joint E(h +/- c +/- deltaP) discard-policy iteration."""
     dealer_play_values, pone_play_values = play_values_from_table(play_table)
+    # Discard candidates span every canonical kept hand, so a partial play
+    # table (for example a --hand-limit run) would refine against zero-filled
+    # deltas and bias the policy. Only fold in play values when the table is
+    # complete; otherwise refine on E(h +/- c) alone.
+    complete = len(dealer_play_values) >= len(get_canonical_hands())
     selected = _select_discard_indices(
         context.hand_kept_evs,
         context.dealer_table,
         context.pone_table,
         context.dealer_cut_table,
         context.pone_cut_table,
-        dealer_play_values=dealer_play_values,
-        pone_play_values=pone_play_values,
+        dealer_play_values=dealer_play_values if complete else None,
+        pone_play_values=pone_play_values if complete else None,
     )
     analytical_pairs = get_analytical_pairs()
     conditioned_hand_weights = [

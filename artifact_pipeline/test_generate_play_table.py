@@ -38,6 +38,7 @@ from artifact_pipeline.analytical_solver import (
     _select_discard_indices,
     get_analytical_pairs,
 )
+from artifact_pipeline.pegging import canonical_hand_key, get_canonical_hands
 
 
 class FirstPolicy:  # pylint: disable=too-few-public-methods
@@ -290,11 +291,17 @@ class TestGeneratePlayTable(unittest.TestCase):
             "__metadata__": {},
             "A_2_3_4": {PONE: {"mu": -1.0}, DEALER: {"mu": 1.0}},
         }
+        full_table = {"__metadata__": {}}
+        for hand in get_canonical_hands():
+            full_table[canonical_hand_key(hand)] = {
+                PONE: {"mu": 0.0},
+                DEALER: {"mu": 0.0},
+            }
         selected = [((0, 1, 2, 3, 4, 5), 1, 0)]
         with patch(
             "artifact_pipeline.generate_play_table._select_discard_indices",
             return_value=selected,
-        ), patch(
+        ) as select_mock, patch(
             "artifact_pipeline.generate_play_table._expected_crib_tables",
             return_value=([1.5], [1.75]),
         ), patch(
@@ -302,6 +309,10 @@ class TestGeneratePlayTable(unittest.TestCase):
             return_value=([[1.5] * 13], [[1.75] * 13]),
         ):
             refined, changed, shift = refine_discard_policy(context, table)
+            # A partial table skips play values; a complete one folds them in.
+            self.assertIsNone(select_mock.call_args.kwargs["dealer_play_values"])
+            refine_discard_policy(context, full_table)
+            self.assertIsNotNone(select_mock.call_args.kwargs["dealer_play_values"])
         self.assertEqual(refined.selected_discards, selected)
         self.assertEqual(changed, 1)
         self.assertEqual(shift, 0.5)
