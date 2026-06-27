@@ -349,16 +349,17 @@ checkpoint behavior so resumed runs remain equivalent to uninterrupted runs.
 The optional Cribbage Pro comparison downloads third-party data at run time;
 do not vendor that dataset without explicit permission.
 
-Runtime was measured end to end on the current code, single-threaded on Apple
-Silicon developer hardware. Fixed setup -- the analytical seed, rollout
+Runtime was measured end to end on the current code, single-threaded on an
+Apple M2 laptop. Fixed setup -- the analytical seed, rollout
 best-response training, and the per-outer policy tables -- is about 16 minutes,
 and the final sampling phase adds about 0.47 seconds per `--samples` step across
 all 3,640 seat entries (roughly 7,750 pegging simulations per second). So
 `T_local ~= 16 min + 0.47 s * samples`. The GitHub-hosted runner measured about
-1.6x slower than this developer hardware, consistent across both an exact
-analytical test shard and the sampling-heavy fast suite (each isolated from
-checkout and install), so multiply the local figure by ~1.6 for the real run and
-by ~2.5 for a paranoid bound.
+1.6x slower than that laptop, consistent across both an exact analytical test
+shard and the sampling-heavy fast suite (each isolated from checkout and
+install), so multiply the local figure by ~1.6 for the real run and by ~2.5 for
+a paranoid bound. The CI figures below are the operative ones; the local number
+is only the measurement source behind that multiplier.
 
 The scheduled workflow runs a deliberately time-capped single pass
 (`--ibr-samples=30000`, `--samples=13000`, two outer and two IBR iterations, no

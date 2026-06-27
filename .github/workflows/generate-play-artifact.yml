@@ -53,7 +53,7 @@ jobs:
             --seed=42
 
       # Single-run, time-capped production generation -- no resume-across-runs.
-      # Cost model measured on the current code (Apple Silicon, single-threaded):
+      # Cost model measured on this code (Apple M2 laptop, single-threaded):
       # fixed setup (analytical + IBR + policy tables) is ~16 min and the final
       # sampling adds ~0.47 s per --samples step over the 1820-hand table, so
       # T_local ~= 16 min + 0.47 s * samples. At --samples=13000 that is ~118 min
