@@ -15,6 +15,10 @@ concurrency:
 jobs:
   generate-table:
     runs-on: ubuntu-latest
+    # Hard stop well under the 6 h Actions ceiling: the capped run finishes in
+    # ~3-5 h, so 330 min fails fast (and clearly) if a runner is far slower than
+    # measured, rather than letting the job be silently killed at 6 h.
+    timeout-minutes: 330
     permissions:
       contents: read
 
@@ -48,15 +52,18 @@ jobs:
             --no-resume \
             --seed=42
 
-      # Single-run, time-capped production generation. Sample counts are below a
-      # full-accuracy run so the whole job finishes inside the six-hour GitHub
-      # Actions cap without resume-across-runs. Measured 80 min single-threaded
-      # on Apple Silicon at --samples=7500; --samples=9000 projects ~92 min
-      # locally, i.e. ~4 to 4.6 h on a slower CI runner (2.5-3x) and ~5.3 h at a
-      # pessimistic 3.5x -- confidently under the cap. Final per-entry standard
-      # error is about 2.7 / sqrt(samples), near 0.028. Raise --samples (and, for
-      # policy quality, --ibr-samples) for accuracy; past ~12000 the pessimistic
-      # runtime starts to risk the cap, so prefer resume-across-runs beyond that.
+      # Single-run, time-capped production generation -- no resume-across-runs.
+      # Cost model measured on the current code (Apple Silicon, single-threaded):
+      # fixed setup (analytical + IBR + policy tables) is ~16 min and the final
+      # sampling adds ~0.47 s per --samples step over the 1820-hand table, so
+      # T_local ~= 16 min + 0.47 s * samples. At --samples=13000 that is ~118 min
+      # locally. The GitHub runner measured ~1.6x slower than local on both the
+      # analytical and the sampling test paths, so the real run is ~3.1 h; even a
+      # paranoid 2.5x is ~4.9 h, comfortably inside the cap (and the job
+      # timeout-minutes above). Final per-entry standard error is about
+      # 2.7 / sqrt(samples), near 0.024 here. Raise --samples for a tighter SE
+      # (and --ibr-samples for policy quality); ~16000 still fits, beyond that the
+      # paranoid runtime starts to approach the cap.
       - name: Generate production artifact
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
@@ -68,7 +75,7 @@ jobs:
             --ibr-samples=30000 \
             --rollouts-per-action=2 \
             --policy-table-samples=200 \
-            --samples=9000 \
+            --samples=13000 \
             --no-resume \
             --seed=42
 
