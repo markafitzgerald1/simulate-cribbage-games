@@ -1,6 +1,7 @@
 """Tests for expected pegging artifact generation."""
 
 import argparse
+import io
 import itertools
 import json
 import math
@@ -17,6 +18,7 @@ from artifact_pipeline.generate_play_table import (
     DEFAULT_OUTPUT_PATH,
     DiscardPolicy,
     PONE,
+    _format_duration,
     _parse_args,
     _representative_physical_hand,
     _sample_target_deal,
@@ -213,6 +215,25 @@ class TestGeneratePlayTable(unittest.TestCase):
         for hand in (first_hand, second_hand):
             hand_key = canonical_hand_key(hand)
             self.assertEqual(forward[hand_key], reversed_order[hand_key])
+
+    def test_format_duration_handles_hours_and_minutes(self):
+        self.assertEqual(_format_duration(65), "1m05s")
+        self.assertEqual(_format_duration(3725), "1h02m")
+
+    def test_sampling_emits_progress_heartbeat_to_stderr(self):
+        stderr = io.StringIO()
+        with patch("sys.stderr", stderr):
+            generate_play_table(
+                self.discard_policy,
+                self.play_policies,
+                samples=2,
+                seed=42,
+                hands=[(0, 1, 2, 3), (1, 2, 3, 4)],
+            )
+        report = stderr.getvalue()
+        self.assertTrue("[play-table] sampling 2 hands" in report)
+        self.assertTrue("[play-table] hand 2/2 (100%)" in report)
+        self.assertTrue("median standard error" in report)
 
     def test_adaptive_sampling_and_generation_validation(self):
         table = generate_play_table(

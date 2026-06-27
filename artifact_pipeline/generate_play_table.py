@@ -11,9 +11,11 @@ import math
 import os
 import random
 import sys
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from functools import partial
+from statistics import median
 from typing import Any, Mapping, Sequence
 
 if __package__ in (None, ""):  # pragma: no cover
@@ -272,6 +274,44 @@ def _sample_seed(entry_seed: int, sample_index: int) -> int:
     return entry_seed + sample_index * 3_640_003
 
 
+def _format_duration(seconds: float) -> str:
+    """Render an elapsed or remaining duration as Hh MMm or MMmSSs."""
+    minutes, secs = divmod(int(seconds), 60)
+    hours, minutes = divmod(minutes, 60)
+    if hours:
+        return f"{hours}h{minutes:02d}m"
+    return f"{minutes}m{secs:02d}s"
+
+
+def _maybe_checkpoint(
+    checkpoint: Callable[[Mapping[str, Any]], None] | None,
+    output: Mapping[str, Any],
+) -> None:
+    """Persist the in-progress table when a checkpoint callback is configured."""
+    if checkpoint is not None:
+        checkpoint(output)
+
+
+def _log_progress(
+    completed_hands: int,
+    total_hands: int,
+    start_time: float,
+    entry_standard_errors: Sequence[float],
+) -> None:
+    """Emit a one-line sampling heartbeat to stderr for the long sampling pass."""
+    elapsed = time.monotonic() - start_time
+    fraction = completed_hands / total_hands
+    remaining = elapsed / fraction - elapsed
+    print(
+        f"[play-table] hand {completed_hands}/{total_hands} "
+        f"({fraction * 100:.0f}%) - elapsed {_format_duration(elapsed)} - "
+        f"remaining ~{_format_duration(remaining)} - median standard error "
+        f"{median(entry_standard_errors):.4f}",
+        file=sys.stderr,
+        flush=True,
+    )
+
+
 def validate_resume_table(
     existing_table: Mapping[str, Any],
     seed: int,
@@ -338,6 +378,15 @@ def generate_play_table(
             "policy_fingerprint": play_policy_fingerprint,
         },
     }
+    total_hands = len(requested_hands)
+    start_time = time.monotonic()
+    completed_entry_standard_errors: list[float] = []
+    print(
+        f"[play-table] sampling {total_hands} hands x {len(ROLES)} roles "
+        f"x up to {max_samples or samples} samples",
+        file=sys.stderr,
+        flush=True,
+    )
     for hand_index, hand in enumerate(requested_hands):
         hand_key = canonical_hand_key(hand)
         role_entries = output.setdefault(hand_key, {})
@@ -370,11 +419,18 @@ def generate_play_table(
                 if accumulators.delta.n >= samples and target_standard_error is None:
                     break
             role_entries[target_role] = _entry_to_output(accumulators)
-        if checkpoint is not None and (
-            (hand_index + 1) % checkpoint_frequency == 0
-            or hand_index + 1 == len(requested_hands)
-        ):
-            checkpoint(output)
+            completed_entry_standard_errors.append(accumulators.delta.standard_error)
+        at_checkpoint = (hand_index + 1) % checkpoint_frequency == 0 or (
+            hand_index + 1 == total_hands
+        )
+        if at_checkpoint:
+            _maybe_checkpoint(checkpoint, output)
+            _log_progress(
+                hand_index + 1,
+                total_hands,
+                start_time,
+                completed_entry_standard_errors,
+            )
     return output
 
 
