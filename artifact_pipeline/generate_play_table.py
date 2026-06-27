@@ -296,6 +296,14 @@ def generate_play_table(
         raise ValueError("Samples must be positive")
     if target_standard_error is not None and target_standard_error <= 0.0:
         raise ValueError("Target standard error must be positive")
+    if target_standard_error is not None and (
+        max_samples is None or max_samples <= samples
+    ):
+        # Without headroom above samples the loop stops at exactly samples, so
+        # the standard-error target would be silently ineffective.
+        raise ValueError(
+            "target_standard_error requires max_samples greater than samples"
+        )
     if max_samples is not None and max_samples < samples:
         raise ValueError("Maximum samples cannot be below minimum samples")
     if checkpoint_frequency <= 0:
@@ -590,7 +598,9 @@ def main() -> None:
                 "changed_discards": changed,
                 "changed_discard_fraction": changed_fraction,
                 "max_crib_shift": max_shift,
-                "max_play_shift": play_shift,
+                # math.inf on the first iteration would serialize as the
+                # non-standard JSON token "Infinity"; store null instead.
+                "max_play_shift": (play_shift if math.isfinite(play_shift) else None),
                 "play_ibr": ibr_reports,
             }
         )

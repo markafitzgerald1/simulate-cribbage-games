@@ -196,6 +196,15 @@ class TestGeneratePlayTable(unittest.TestCase):
                 2,
                 1,
                 [(0, 1, 2, 3)],
+                target_standard_error=0.01,
+            )
+        with self.assertRaises(ValueError):
+            generate_play_table(
+                self.discard_policy,
+                self.play_policies,
+                2,
+                1,
+                [(0, 1, 2, 3)],
                 max_samples=1,
             )
         with self.assertRaises(ValueError):
