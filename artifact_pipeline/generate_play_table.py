@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from collections.abc import Callable
 from copy import deepcopy
+import hashlib
 import json
 import math
 import os
@@ -44,7 +45,7 @@ from artifact_pipeline.pegging import (  # noqa: E402
 
 DEFAULT_OUTPUT_PATH = "expected_play_points.json"
 DEFAULT_CLIENT_OUTPUT_PATH = "expected_play_points.client.json"
-GENERATION_METHOD = "artifact_pipeline.generate_play_table.v1"
+GENERATION_METHOD = "artifact_pipeline.generate_play_table.v2"
 PHYSICAL_DECK = tuple((rank, suit) for rank in range(13) for suit in range(4))
 
 
@@ -182,14 +183,24 @@ def _representative_physical_hand(ranks: Sequence[int]) -> tuple[tuple[int, int]
     return tuple(cards)
 
 
+def _sample_target_deal(
+    target_hand: Sequence[int], rng: random.Random
+) -> tuple[tuple[int, int], ...]:
+    target_kept = _representative_physical_hand(target_hand)
+    removed = set(target_kept)
+    target_discard_pool = [card for card in PHYSICAL_DECK if card not in removed]
+    target_discards = tuple(rng.sample(target_discard_pool, 2))
+    return target_kept + target_discards
+
+
 def sample_opponent_keep(
     target_hand: Sequence[int],
     opponent_role: str,
     discard_policy: DiscardPolicy,
     rng: random.Random,
 ) -> tuple[int, ...]:
-    """Sample an opponent six-card deal after removing the target kept hand."""
-    removed = set(_representative_physical_hand(target_hand))
+    """Sample an opponent deal after removing a compatible target full deal."""
+    removed = set(_sample_target_deal(target_hand, rng))
     remaining_deck = [card for card in PHYSICAL_DECK if card not in removed]
     opponent_dealt = rng.sample(remaining_deck, 6)
     opponent_kept = discard_policy.keep_physical_cards(opponent_role, opponent_dealt)
@@ -251,8 +262,10 @@ def _entry_to_output(accumulators: EntryAccumulators) -> dict[str, Any]:
     return output
 
 
-def _entry_seed(seed: int, hand_index: int, role_index: int) -> int:
-    return seed + hand_index * len(ROLES) + role_index
+def _entry_seed(seed: int, hand: Sequence[int], role: str) -> int:
+    payload = f"{seed}|{canonical_hand_key(hand)}|{role}".encode("ascii")
+    digest = hashlib.sha256(payload).digest()
+    return int.from_bytes(digest[:16], byteorder="big")
 
 
 def _sample_seed(entry_seed: int, sample_index: int) -> int:
@@ -328,7 +341,7 @@ def generate_play_table(
     for hand_index, hand in enumerate(requested_hands):
         hand_key = canonical_hand_key(hand)
         role_entries = output.setdefault(hand_key, {})
-        for role_index, target_role in enumerate(ROLES):
+        for target_role in ROLES:
             existing_entry = role_entries.get(target_role)
             accumulators = (
                 _entry_from_output(existing_entry)
@@ -339,7 +352,7 @@ def generate_play_table(
             while accumulators.delta.n < sample_limit:
                 rng = random.Random(
                     _sample_seed(
-                        _entry_seed(seed, hand_index, role_index),
+                        _entry_seed(seed, hand, target_role),
                         accumulators.delta.n,
                     )
                 )

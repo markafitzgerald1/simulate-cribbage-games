@@ -19,6 +19,7 @@ from artifact_pipeline.generate_play_table import (
     PONE,
     _parse_args,
     _representative_physical_hand,
+    _sample_target_deal,
     _write_json,
     build_client_table,
     generate_play_table,
@@ -125,6 +126,9 @@ class TestGeneratePlayTable(unittest.TestCase):
         pone, dealer = sample_policy_deal(random.Random(42), self.discard_policy)
         self.assertEqual(len(pone), 4)
         self.assertEqual(len(dealer), 4)
+        target_deal = _sample_target_deal((0, 1, 2, 3), random.Random(42))
+        self.assertEqual(len(target_deal), 6)
+        self.assertEqual(tuple(card[0] for card in target_deal[:4]), (0, 1, 2, 3))
         opponent = sample_opponent_keep(
             (0, 0, 0, 0), DEALER, self.discard_policy, random.Random(42)
         )
@@ -134,6 +138,30 @@ class TestGeneratePlayTable(unittest.TestCase):
             _representative_physical_hand((0, 0, 2, 2)),
             ((0, 0), (0, 1), (2, 0), (2, 1)),
         )
+
+    def test_opponent_deal_excludes_sampled_target_discards(self):
+        class ScriptedRandom:  # pylint: disable=too-few-public-methods
+            def __init__(self):
+                self.populations = []
+
+            def sample(self, population, count):
+                self.populations.append(tuple(population))
+                if count == 2:
+                    return [(4, 0), (5, 0)]
+                return list(population[:count])
+
+        rng = ScriptedRandom()
+        sample_opponent_keep((0, 1, 2, 3), DEALER, self.discard_policy, rng)
+        opponent_population = rng.populations[1]
+        for removed_card in (
+            (0, 0),
+            (1, 0),
+            (2, 0),
+            (3, 0),
+            (4, 0),
+            (5, 0),
+        ):
+            self.assertNotIn(removed_card, opponent_population)
 
     def test_generate_full_and_client_table(self):
         table = generate_play_table(
@@ -165,6 +193,27 @@ class TestGeneratePlayTable(unittest.TestCase):
             {"fifteen", "thirty_one", "pair", "run", "go", "last_card"},
         )
 
+    def test_seeded_generation_is_order_invariant_by_hand_key(self):
+        first_hand = (0, 1, 2, 3)
+        second_hand = (1, 2, 3, 4)
+        forward = generate_play_table(
+            self.discard_policy,
+            self.play_policies,
+            samples=2,
+            seed=42,
+            hands=[first_hand, second_hand],
+        )
+        reversed_order = generate_play_table(
+            self.discard_policy,
+            self.play_policies,
+            samples=2,
+            seed=42,
+            hands=[second_hand, first_hand],
+        )
+        for hand in (first_hand, second_hand):
+            hand_key = canonical_hand_key(hand)
+            self.assertEqual(forward[hand_key], reversed_order[hand_key])
+
     def test_adaptive_sampling_and_generation_validation(self):
         table = generate_play_table(
             self.discard_policy,
@@ -176,6 +225,16 @@ class TestGeneratePlayTable(unittest.TestCase):
             hands=[(0, 0, 0, 0)],
         )
         self.assertTrue(table["A_A_A_A"][PONE]["n"] in (2, 3))
+        early_stop_table = generate_play_table(
+            self.discard_policy,
+            self.play_policies,
+            samples=2,
+            max_samples=5,
+            target_standard_error=100.0,
+            seed=2,
+            hands=[(0, 0, 0, 0)],
+        )
+        self.assertEqual(early_stop_table["A_A_A_A"][PONE]["n"], 2)
         with self.assertRaises(ValueError):
             generate_play_table(
                 self.discard_policy, self.play_policies, 0, 1, [(0, 1, 2, 3)]
@@ -249,7 +308,7 @@ class TestGeneratePlayTable(unittest.TestCase):
             validate_resume_table(invalid_method, 42)
         invalid_seed = {
             "__metadata__": {
-                "generation_method": "artifact_pipeline.generate_play_table.v1",
+                "generation_method": "artifact_pipeline.generate_play_table.v2",
                 "seed": 1,
             }
         }
@@ -257,7 +316,7 @@ class TestGeneratePlayTable(unittest.TestCase):
             validate_resume_table(invalid_seed, 42)
         invalid_policy = {
             "__metadata__": {
-                "generation_method": "artifact_pipeline.generate_play_table.v1",
+                "generation_method": "artifact_pipeline.generate_play_table.v2",
                 "seed": 42,
                 "policy_fingerprint": "old",
             }
@@ -411,7 +470,7 @@ class TestGeneratePlayTable(unittest.TestCase):
         checkpoint_json = json.dumps(
             {
                 "__metadata__": {
-                    "generation_method": "artifact_pipeline.generate_play_table.v1",
+                    "generation_method": "artifact_pipeline.generate_play_table.v2",
                     "seed": 42,
                 }
             }
