@@ -81,8 +81,8 @@ jobs:
 
       # Always run on production generation: an offline corroboration of the
       # simulated table against a vendored Cribbage Pro sample (their empirical
-      # human-play data -- a fully independent methodology, and the only other
-      # public source of expected pegging points). Gating: it records the metrics
+      # human-play data -- a fully independent methodology, and the only
+      # comparable public source we have found). Gating: it records the metrics
       # in the artifact metadata and fails the build if the role-relative deltas
       # diverge grossly from the reference, so a regressed table is never
       # released.

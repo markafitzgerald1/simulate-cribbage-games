@@ -4,7 +4,7 @@ Run on every scheduled/dispatch artifact generation (see the play-artifact
 workflow), this offline check compares this project's independently simulated
 pegging table against a small, attributed sample of Cribbage Pro's published
 values -- their empirical human-play averages, a fully independent methodology
-and the only other public source of expected pegging points. It records the
+and the only comparable public source we have found. It records the
 aggregate metrics in the artifact metadata, and with ``--fail-on-regression``
 it fails the build when the role-relative deltas diverge grossly from the
 reference, so a regressed table is never released. See ``cribbage_pro_reference``
