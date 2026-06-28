@@ -1,10 +1,14 @@
-"""Compare a generated play table against a vendored Cribbage Pro sample.
+"""Corroborate a generated play table against a vendored Cribbage Pro sample.
 
-This is an optional, offline sanity check: it compares this project's
-independently simulated pegging table against a small, attributed sample of
-Cribbage Pro's published values vendored in ``cribbage_pro_reference`` (no
-network access). See that module for source attribution and the no-copyright
-note on the underlying averages.
+Run on every scheduled/dispatch artifact generation (see the play-artifact
+workflow), this offline check compares this project's independently simulated
+pegging table against a small, attributed sample of Cribbage Pro's published
+values -- their empirical human-play averages, a fully independent methodology
+and the only other public source of expected pegging points. It records the
+aggregate metrics in the artifact metadata, and with ``--fail-on-regression``
+it fails the build when the role-relative deltas diverge grossly from the
+reference, so a regressed table is never released. See ``cribbage_pro_reference``
+for source attribution and the no-copyright note on the underlying averages.
 """
 
 from __future__ import annotations
@@ -129,10 +133,35 @@ def compare_tables(
     }
 
 
+# Gross-regression thresholds for the role-relative delta series (the values the
+# UI shows). A production run sits well inside these (pearson ~0.93, |bias|
+# ~0.18); the margin tolerates Cribbage Pro's different (human-play) methodology
+# while still catching a sign flip or a scaling/offset bug.
+GATED_SERIES = ("pone_delta", "dealer_delta")
+MIN_PEARSON = 0.8
+MAX_ABS_BIAS = 0.6
+
+
+def regression_failures(report: Mapping[str, Any]) -> list[str]:
+    """Return threshold violations for the gated delta series, empty if none."""
+    metrics = report["metrics"]
+    failures: list[str] = []
+    for name in GATED_SERIES:
+        series = metrics[name]
+        if series["pearson"] < MIN_PEARSON:
+            failures.append(f"{name}: pearson {series['pearson']:.3f} < {MIN_PEARSON}")
+        if abs(series["bias"]) > MAX_ABS_BIAS:
+            failures.append(
+                f"{name}: |bias| {abs(series['bias']):.3f} > {MAX_ABS_BIAS}"
+            )
+    return failures
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("table")
     parser.add_argument("--write-metadata", action="store_true")
+    parser.add_argument("--fail-on-regression", action="store_true")
     return parser.parse_args()
 
 
@@ -152,6 +181,16 @@ def main() -> None:
             json.dump(generated, table_file, indent=2, sort_keys=True)
             table_file.write("\n")
     print(json.dumps(report, indent=2, sort_keys=True))
+    if args.fail_on_regression:
+        failures = regression_failures(report)
+        if failures:
+            print(
+                "Pegging table diverges from the Cribbage Pro reference:",
+                *failures,
+                sep="\n  ",
+                file=sys.stderr,
+            )
+            sys.exit(1)
 
 
 if __name__ == "__main__":  # pragma: no cover

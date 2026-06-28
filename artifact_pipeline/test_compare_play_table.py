@@ -1,4 +1,4 @@
-"""Tests for the optional vendored-sample Cribbage Pro comparison."""
+"""Tests for the vendored-sample Cribbage Pro corroboration."""
 
 import io
 import json
@@ -16,6 +16,7 @@ from artifact_pipeline.compare_play_table import (
     _parse_args,
     compare_tables,
     main,
+    regression_failures,
 )
 from artifact_pipeline.cribbage_pro_reference import CRIBBAGE_PRO_PEGGING_SAMPLE
 
@@ -64,6 +65,60 @@ class TestComparePlayTable(unittest.TestCase):
         constant = _metrics([1.0, 1.0], [2.0, 2.0])
         self.assertEqual(constant["pearson"], 0.0)
 
+    @staticmethod
+    def _report(pearson, bias):
+        series = {
+            "pearson": pearson,
+            "spearman": pearson,
+            "bias": bias,
+            "mae": 0.0,
+            "rmse": 0.0,
+        }
+        names = (
+            "pone_player",
+            "pone_opponent",
+            "dealer_player",
+            "dealer_opponent",
+            "pone_delta",
+            "dealer_delta",
+        )
+        return {"metrics": {name: dict(series) for name in names}}
+
+    def test_regression_failures(self):
+        self.assertEqual(regression_failures(self._report(0.95, 0.1)), [])
+        failures = regression_failures(self._report(0.1, 1.0))
+        # Both delta series violate both the pearson and the bias thresholds.
+        self.assertEqual(len(failures), 4)
+
+    def test_main_fails_on_regression(self):
+        with tempfile.TemporaryDirectory() as directory:
+            table_path = Path(directory) / "table.json"
+            table_path.write_text(json.dumps(self.generated), encoding="utf-8")
+            base = {"table": str(table_path), "write_metadata": False}
+            with patch(
+                "artifact_pipeline.compare_play_table._parse_args",
+                return_value=type("Args", (), {**base, "fail_on_regression": True})(),
+            ), patch(
+                "artifact_pipeline.compare_play_table.regression_failures",
+                return_value=[],
+            ), patch(
+                "sys.stdout", new_callable=io.StringIO
+            ):
+                main()  # passing thresholds -> returns normally
+            with patch(
+                "artifact_pipeline.compare_play_table._parse_args",
+                return_value=type("Args", (), {**base, "fail_on_regression": True})(),
+            ), patch(
+                "artifact_pipeline.compare_play_table.regression_failures",
+                return_value=["pone_delta: pearson 0.100 < 0.8"],
+            ), patch(
+                "sys.stdout", new_callable=io.StringIO
+            ), patch(
+                "sys.stderr", new_callable=io.StringIO
+            ):
+                with self.assertRaises(SystemExit):
+                    main()
+
     def test_parse_args_and_main(self):
         with patch("sys.argv", ["compare_play_table.py", "table.json"]):
             args = _parse_args()
@@ -75,7 +130,11 @@ class TestComparePlayTable(unittest.TestCase):
             main_args = type(
                 "Args",
                 (),
-                {"table": str(table_path), "write_metadata": True},
+                {
+                    "table": str(table_path),
+                    "write_metadata": True,
+                    "fail_on_regression": False,
+                },
             )()
             with patch(
                 "artifact_pipeline.compare_play_table._parse_args",
