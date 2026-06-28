@@ -119,6 +119,52 @@ class TestComparePlayTable(unittest.TestCase):
                 with self.assertRaises(SystemExit):
                     main()
 
+    def test_main_exits_when_no_overlap(self):
+        seat = {"mu": 0.0, "players": {PONE: {"mu": 0.0}, DEALER: {"mu": 0.0}}}
+        # 2_2_2_2 is not in the vendored sample -> no shared hands.
+        no_overlap = {"__metadata__": {}, "2_2_2_2": {PONE: seat, DEALER: seat}}
+        with tempfile.TemporaryDirectory() as directory:
+            table_path = Path(directory) / "table.json"
+            table_path.write_text(json.dumps(no_overlap), encoding="utf-8")
+            main_args = type(
+                "Args",
+                (),
+                {
+                    "table": str(table_path),
+                    "write_metadata": False,
+                    "fail_on_regression": False,
+                },
+            )()
+            with patch(
+                "artifact_pipeline.compare_play_table._parse_args",
+                return_value=main_args,
+            ), patch("sys.stderr", new_callable=io.StringIO) as stderr:
+                with self.assertRaises(SystemExit):
+                    main()
+            self.assertTrue("Cannot compare" in stderr.getvalue())
+
+    def test_main_creates_metadata_when_absent(self):
+        generated = {"A_2_3_4": self.generated["A_2_3_4"]}  # no __metadata__
+        with tempfile.TemporaryDirectory() as directory:
+            table_path = Path(directory) / "table.json"
+            table_path.write_text(json.dumps(generated), encoding="utf-8")
+            main_args = type(
+                "Args",
+                (),
+                {
+                    "table": str(table_path),
+                    "write_metadata": True,
+                    "fail_on_regression": False,
+                },
+            )()
+            with patch(
+                "artifact_pipeline.compare_play_table._parse_args",
+                return_value=main_args,
+            ), patch("sys.stdout", new_callable=io.StringIO):
+                main()
+            updated = json.loads(table_path.read_text(encoding="utf-8"))
+            self.assertTrue("external_regression" in updated["__metadata__"])
+
     def test_parse_args_and_main(self):
         with patch("sys.argv", ["compare_play_table.py", "table.json"]):
             args = _parse_args()

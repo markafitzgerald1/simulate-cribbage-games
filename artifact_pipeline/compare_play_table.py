@@ -169,14 +169,23 @@ def main() -> None:
     args = _parse_args()
     with open(args.table, encoding="utf-8") as table_file:
         generated = json.load(table_file)
+    try:
+        comparison = compare_tables(generated, CRIBBAGE_PRO_PEGGING_SAMPLE)
+    except ValueError as error:
+        print(
+            f"Cannot compare against the Cribbage Pro sample: {error}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     report = {
-        **compare_tables(generated, CRIBBAGE_PRO_PEGGING_SAMPLE),
+        **comparison,
         "reference": "Cribbage Pro pegging quiz (vendored sample)",
         "reference_hands": len(CRIBBAGE_PRO_PEGGING_SAMPLE),
         "reference_retrieved": RETRIEVED,
     }
     if args.write_metadata:
-        generated["__metadata__"]["external_regression"] = report
+        metadata = generated.setdefault("__metadata__", {})
+        metadata["external_regression"] = report
         with open(args.table, "w", encoding="utf-8") as table_file:
             json.dump(generated, table_file, indent=2, sort_keys=True)
             table_file.write("\n")
