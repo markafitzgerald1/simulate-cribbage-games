@@ -261,8 +261,8 @@ is seeded independently by hand, role, and cumulative sample index, so a resumed
 seeded run produces the same estimates as an uninterrupted run. Pass
 `--no-resume` for a fresh run.
 
-Optionally compare the generated totals with Cribbage Pro's published empirical
-1,820-hand pegging data:
+Optionally run an offline sanity check against a small, attributed sample of
+Cribbage Pro's published pegging values:
 
 ```sh
 python artifact_pipeline/compare_play_table.py \
@@ -270,9 +270,11 @@ python artifact_pipeline/compare_play_table.py \
   --write-metadata
 ```
 
-This downloads the public source at comparison time and records aggregate
-regression metrics and its SHA-256 digest. The third-party dataset is not
-vendored in this repository.
+This compares the generated totals against the vendored sample in
+`artifact_pipeline/cribbage_pro_reference.py` (no network access) and records
+aggregate regression metrics in the artifact metadata. Only a small
+representative sample is kept, re-expressed in this project's keys with a
+no-copyright-claim note on the underlying averages.
 
 Summarize a generated table:
 

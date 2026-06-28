@@ -346,8 +346,12 @@ into the browser.
 Seeded play-table samples are independent by canonical hand, role, and
 cumulative sample index. Preserve this property when changing generation or
 checkpoint behavior so resumed runs remain equivalent to uninterrupted runs.
-The optional Cribbage Pro comparison downloads third-party data at run time;
-do not vendor that dataset without explicit permission.
+The optional Cribbage Pro comparison runs offline against a small, attributed
+sample of their published pegging values vendored in
+`artifact_pipeline/cribbage_pro_reference.py` (re-expressed in this project's
+keys, with a no-copyright-claim note like the historical crib tables). Keep it a
+small representative sample rather than the full table, and keep it non-gating.
+Do not add a live network fetch back into the pipeline.
 
 Runtime was measured end to end on the current code, single-threaded on an
 Apple M2 laptop. Fixed setup -- the analytical seed, rollout

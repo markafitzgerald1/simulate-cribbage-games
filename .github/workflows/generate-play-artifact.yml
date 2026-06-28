@@ -79,7 +79,10 @@ jobs:
             --no-resume \
             --seed=42
 
-      - name: Compare with published Cribbage Pro totals
+      # Offline sanity check against a vendored Cribbage Pro sample (no network).
+      # Non-gating: it writes a regression report into the artifact metadata but
+      # must never block the release, so keep continue-on-error.
+      - name: Compare against vendored Cribbage Pro sample
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         continue-on-error: true
         run: |
