@@ -79,13 +79,20 @@ jobs:
             --no-resume \
             --seed=42
 
-      - name: Compare with published Cribbage Pro totals
+      # Always run on production generation: an offline corroboration of the
+      # simulated table against a vendored Cribbage Pro sample (their empirical
+      # human-play data -- a fully independent methodology, and the only
+      # comparable public source we have found). Gating: it records the metrics
+      # in the artifact metadata and fails the build if the role-relative deltas
+      # diverge grossly from the reference, so a regressed table is never
+      # released.
+      - name: Corroborate against vendored Cribbage Pro sample
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-        continue-on-error: true
         run: |
           python -u artifact_pipeline/compare_play_table.py \
             expected_play_points.json \
-            --write-metadata
+            --write-metadata \
+            --fail-on-regression
 
       - name: Upload full table
         uses: actions/upload-artifact@v7

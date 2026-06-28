@@ -1,4 +1,4 @@
-"""Tests for the optional Cribbage Pro regression comparison."""
+"""Tests for the vendored-sample Cribbage Pro corroboration."""
 
 import io
 import json
@@ -16,20 +16,9 @@ from artifact_pipeline.compare_play_table import (
     _parse_args,
     compare_tables,
     main,
-    normalize_external_hand,
-    parse_cribbage_pro_data,
+    regression_failures,
 )
-
-
-class Response:
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        return False
-
-    def read(self):
-        return b"var data = [['A,2,3,4', 2, 3, 4, 1]];"
+from artifact_pipeline.cribbage_pro_reference import CRIBBAGE_PRO_PEGGING_SAMPLE
 
 
 class TestComparePlayTable(unittest.TestCase):
@@ -48,18 +37,17 @@ class TestComparePlayTable(unittest.TestCase):
             },
         }
 
-    def test_normalize_and_parse(self):
-        self.assertEqual(normalize_external_hand("K,10,A,5"), "A_5_T_K")
-        parsed = parse_cribbage_pro_data(
-            "const pegging_data = [['bad', 1], ['A,2,3,4', 2, 3, 4, 1],"
-            "['2,3,4,5', 'x', 3, 4, 1],"
-            "['10,J,Q,K', 1.1, 2.2, 3.3, 4.4]];"
-        )
-        self.assertEqual(parsed["A_2_3_4"], (2.0, 3.0, 4.0, 1.0))
-        self.assertEqual(parsed["T_J_Q_K"], (1.1, 2.2, 3.3, 4.4))
-        self.assertTrue("2_3_4_5" not in parsed)
-        with self.assertRaises(ValueError):
-            parse_cribbage_pro_data("const empty = [];")
+    def test_vendored_sample_shape(self):
+        labels = "A23456789TJQK"
+        self.assertGreaterEqual(len(CRIBBAGE_PRO_PEGGING_SAMPLE), 30)
+        for key, values in CRIBBAGE_PRO_PEGGING_SAMPLE.items():
+            ranks = key.split("_")
+            self.assertEqual(len(ranks), 4)
+            self.assertTrue(all(rank in labels for rank in ranks))
+            order = [labels.index(rank) for rank in ranks]
+            self.assertEqual(order, sorted(order))
+            self.assertEqual(len(values), 4)
+            self.assertTrue(all(0.0 <= value <= 8.0 for value in values))
 
     def test_compare_tables(self):
         report = compare_tables(self.generated, {"A_2_3_4": (2.0, 3.0, 4.0, 1.0)})
@@ -77,6 +65,106 @@ class TestComparePlayTable(unittest.TestCase):
         constant = _metrics([1.0, 1.0], [2.0, 2.0])
         self.assertEqual(constant["pearson"], 0.0)
 
+    @staticmethod
+    def _report(pearson, bias):
+        series = {
+            "pearson": pearson,
+            "spearman": pearson,
+            "bias": bias,
+            "mae": 0.0,
+            "rmse": 0.0,
+        }
+        names = (
+            "pone_player",
+            "pone_opponent",
+            "dealer_player",
+            "dealer_opponent",
+            "pone_delta",
+            "dealer_delta",
+        )
+        return {"metrics": {name: dict(series) for name in names}}
+
+    def test_regression_failures(self):
+        self.assertEqual(regression_failures(self._report(0.95, 0.1)), [])
+        failures = regression_failures(self._report(0.1, 1.0))
+        # Both delta series violate both the pearson and the bias thresholds.
+        self.assertEqual(len(failures), 4)
+
+    def test_main_fails_on_regression(self):
+        with tempfile.TemporaryDirectory() as directory:
+            table_path = Path(directory) / "table.json"
+            table_path.write_text(json.dumps(self.generated), encoding="utf-8")
+            base = {"table": str(table_path), "write_metadata": False}
+            with patch(
+                "artifact_pipeline.compare_play_table._parse_args",
+                return_value=type("Args", (), {**base, "fail_on_regression": True})(),
+            ), patch(
+                "artifact_pipeline.compare_play_table.regression_failures",
+                return_value=[],
+            ), patch(
+                "sys.stdout", new_callable=io.StringIO
+            ):
+                main()  # passing thresholds -> returns normally
+            with patch(
+                "artifact_pipeline.compare_play_table._parse_args",
+                return_value=type("Args", (), {**base, "fail_on_regression": True})(),
+            ), patch(
+                "artifact_pipeline.compare_play_table.regression_failures",
+                return_value=["pone_delta: pearson 0.100 < 0.8"],
+            ), patch(
+                "sys.stdout", new_callable=io.StringIO
+            ), patch(
+                "sys.stderr", new_callable=io.StringIO
+            ):
+                with self.assertRaises(SystemExit):
+                    main()
+
+    def test_main_exits_when_no_overlap(self):
+        seat = {"mu": 0.0, "players": {PONE: {"mu": 0.0}, DEALER: {"mu": 0.0}}}
+        # 2_2_2_2 is not in the vendored sample -> no shared hands.
+        no_overlap = {"__metadata__": {}, "2_2_2_2": {PONE: seat, DEALER: seat}}
+        with tempfile.TemporaryDirectory() as directory:
+            table_path = Path(directory) / "table.json"
+            table_path.write_text(json.dumps(no_overlap), encoding="utf-8")
+            main_args = type(
+                "Args",
+                (),
+                {
+                    "table": str(table_path),
+                    "write_metadata": False,
+                    "fail_on_regression": False,
+                },
+            )()
+            with patch(
+                "artifact_pipeline.compare_play_table._parse_args",
+                return_value=main_args,
+            ), patch("sys.stderr", new_callable=io.StringIO) as stderr:
+                with self.assertRaises(SystemExit):
+                    main()
+            self.assertTrue("Cannot compare" in stderr.getvalue())
+
+    def test_main_creates_metadata_when_absent(self):
+        generated = {"A_2_3_4": self.generated["A_2_3_4"]}  # no __metadata__
+        with tempfile.TemporaryDirectory() as directory:
+            table_path = Path(directory) / "table.json"
+            table_path.write_text(json.dumps(generated), encoding="utf-8")
+            main_args = type(
+                "Args",
+                (),
+                {
+                    "table": str(table_path),
+                    "write_metadata": True,
+                    "fail_on_regression": False,
+                },
+            )()
+            with patch(
+                "artifact_pipeline.compare_play_table._parse_args",
+                return_value=main_args,
+            ), patch("sys.stdout", new_callable=io.StringIO):
+                main()
+            updated = json.loads(table_path.read_text(encoding="utf-8"))
+            self.assertTrue("external_regression" in updated["__metadata__"])
+
     def test_parse_args_and_main(self):
         with patch("sys.argv", ["compare_play_table.py", "table.json"]):
             args = _parse_args()
@@ -90,27 +178,25 @@ class TestComparePlayTable(unittest.TestCase):
                 (),
                 {
                     "table": str(table_path),
-                    "source_url": "https://example.test",
                     "write_metadata": True,
+                    "fail_on_regression": False,
                 },
             )()
             with patch(
                 "artifact_pipeline.compare_play_table._parse_args",
                 return_value=main_args,
-            ), patch(
-                "artifact_pipeline.compare_play_table.urlopen",
-                return_value=Response(),
-            ), patch(
-                "sys.stdout", new_callable=io.StringIO
-            ) as stdout:
+            ), patch("sys.stdout", new_callable=io.StringIO) as stdout:
                 main()
                 main_args.write_metadata = False
                 main()
+            # Only A_2_3_4 overlaps the vendored sample.
             self.assertTrue('"shared_hands": 1' in stdout.getvalue())
             updated = json.loads(table_path.read_text(encoding="utf-8"))
             regression = updated["__metadata__"]["external_regression"]
-            self.assertEqual(regression["source_url"], "https://example.test")
-            self.assertEqual(len(regression["source_sha256"]), 64)
+            self.assertEqual(
+                regression["reference_hands"], len(CRIBBAGE_PRO_PEGGING_SAMPLE)
+            )
+            self.assertTrue(regression["reference_retrieved"])
 
     def test_documented_script_invocation_loads_package_imports(self):
         repo_root = Path(__file__).resolve().parents[1]

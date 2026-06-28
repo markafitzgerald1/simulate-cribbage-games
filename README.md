@@ -261,8 +261,9 @@ is seeded independently by hand, role, and cumulative sample index, so a resumed
 seeded run produces the same estimates as an uninterrupted run. Pass
 `--no-resume` for a fresh run.
 
-Optionally compare the generated totals with Cribbage Pro's published empirical
-1,820-hand pegging data:
+The artifact workflow corroborates the generated table against a small,
+attributed sample of Cribbage Pro's published (empirical human-play) pegging
+values. Run it manually with:
 
 ```sh
 python artifact_pipeline/compare_play_table.py \
@@ -270,9 +271,13 @@ python artifact_pipeline/compare_play_table.py \
   --write-metadata
 ```
 
-This downloads the public source at comparison time and records aggregate
-regression metrics and its SHA-256 digest. The third-party dataset is not
-vendored in this repository.
+This compares the generated totals against the vendored sample in
+`artifact_pipeline/cribbage_pro_reference.py` (no network access) and records
+aggregate regression metrics in the artifact metadata. CI also passes
+`--fail-on-regression`, which fails the build if the role-relative deltas
+diverge grossly from the reference. Only a small representative sample is kept,
+re-expressed in this project's keys with a no-copyright-claim note on the
+underlying averages.
 
 Summarize a generated table:
 
