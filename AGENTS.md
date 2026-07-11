@@ -407,6 +407,13 @@ Before opening or updating a pull request, summarize what changed, why it
 changed, and which validation commands were run. Include any skipped checks and
 the reason they were skipped.
 
+Every pull request must also capture the session's durable, non-obvious
+learnings — new invariants, debugging techniques, validation pitfalls, or
+review-workflow quirks discovered while doing the work — in `AGENTS.md` or the
+matching `skills/` document as part of the same pull request, not as a
+follow-up. If the work produced no such learnings, say so explicitly in the
+pull request description.
+
 Use local `git` as the source of truth for branch, commit, and push state before
 creating a pull request. After pushing, verify that the remote branch exists and
 record the pull request URL. If one GitHub integration cannot create the pull
