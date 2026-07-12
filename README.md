@@ -279,6 +279,23 @@ diverge grossly from the reference. Only a small representative sample is kept,
 re-expressed in this project's keys with a no-copyright-claim note on the
 underlying averages.
 
+### Expected opponent hand points research
+
+Issue #75's research command compares exact suitless conditional opponent hand
+values with a suit-aware physical-card sampling pilot:
+
+```sh
+python artifact_pipeline/analyze_opponent_hand_points.py \
+  --physical-samples=10000 \
+  --seed=42 \
+  --output=opponent_hand_points_analysis.json
+```
+
+See
+[docs/expected-opponent-hand-points-spike.md](docs/expected-opponent-hand-points-spike.md)
+for the model, measurements, artifact-size analysis, and recommendation. This
+command emits research data only; it does not publish a browser artifact.
+
 Summarize a generated table:
 
 ```sh

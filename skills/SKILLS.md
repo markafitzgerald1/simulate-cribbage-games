@@ -133,6 +133,15 @@ including absolute Pone and Dealer point-type components and the keyed player's
 paired delta. Keep policy views limited to the acting player's cards and public
 history.
 
+An expected opponent hand value conditioned on the user's full six-card deal is
+constant across that user's discard candidates, because every candidate removes
+the same six cards from the opponent-deal and starter populations. Treat it as
+presentation research rather than a discard-ranking input. For suit-aware
+analysis, normalize only by global suit permutations that preserve each rank's
+suit incidence. The resulting 962,988 six-card states are manageable for packed
+producer storage but require explicit precision, indexing, transfer, and parsed
+memory analysis before becoming a browser contract.
+
 Coverage must not decrease as a result of code changes. New simulator behavior
 must include focused tests, especially for cribbage scoring, discard selection,
 play selection, game-state transitions, and command-line options.

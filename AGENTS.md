@@ -343,6 +343,17 @@ client artifact recursively strips `n` and `se` while retaining those means.
 Do not expose hidden opponent cards to policy inputs or move rollout decisions
 into the browser.
 
+Expected opponent hand points conditional on a user's known six-card deal are
+invariant across that user's 15 discard choices: all six known cards are removed
+from the opponent-deal and starter populations regardless of which two enter the
+crib, and a hidden-information opponent cannot condition on the selected
+discard. Such a value can clarify presentation but cannot change discard
+rankings. Suit-aware research may canonicalize physical deals under all 24
+global suit permutations, provided rank-to-suit incidence is preserved; this
+reduces the six-card state space to 962,988 entries but does not by itself make
+JSON browser-friendly. Keep this research producer-side and require a separate
+precision and consumer-contract decision before publishing an artifact.
+
 Seeded play-table samples are independent by canonical hand, role, and
 cumulative sample index. Preserve this property when changing generation or
 checkpoint behavior so resumed runs remain equivalent to uninterrupted runs.
