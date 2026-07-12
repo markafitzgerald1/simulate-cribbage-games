@@ -2,19 +2,33 @@
 
 ## Recommendation
 
-Defer a production expected-opponent-hand artifact.
+Do not publish an expected-opponent-hand artifact solely for the current
+position-unaware `E(h +/- c)` ranking. Preserve this work as a technically
+practical precursor to board-position-aware discard analysis, where the likely
+strength of the opponent's hand can affect whether the player should favor
+offense, defense, or score volatility.
 
-Suit normalization makes a suit-aware table feasible to store, particularly in
-a packed representation, but the value cannot change discard recommendations.
 Once the user's full six-card deal is known, the same six cards are unavailable
 for every one of the 15 discard choices. An opponent who cannot see the user's
 selected discard therefore has the same possible deal, discard policy, and
-starter distribution for every row. Adding the opponent expectation subtracts
-the same constant from every candidate and leaves their ordering unchanged.
+starter distribution for every row. Adding the opponent mean directly to the
+current linear `E(h +/- c)` objective subtracts the same constant from every
+candidate and leaves their ordering unchanged.
 
-The estimate may still make a future presentation read more naturally. That is
-a product-display question rather than a discard-analysis improvement, and it
-does not justify the generation and browser costs on its own.
+That does not make the estimate strategically irrelevant. A position-aware
+objective is nonlinear: the value of a discard can depend on whether either
+player is likely to cross a board threshold, which player counts first, and
+whether a high-variance offensive line or a lower-variance defensive line is
+preferable. The opponent expectation can supply context for those choices even
+though it is constant across the current hand's discard rows.
+
+The next step should be a vertical positional-play experiment using the compact
+exact rank model. Before freezing a production contract, that experiment should
+determine whether the opponent's mean is sufficient or whether score
+distributions, tail probabilities, or joint player/opponent outcomes are needed.
+Only then should the project decide whether suit-aware refinement materially
+improves positional decisions enough to justify its additional generation and
+browser costs.
 
 ## Model
 
@@ -41,7 +55,9 @@ full-hand refinement iterations. It ended in the existing small pair-policy
 cycle and with 183 changed full-hand discards, so the reported values are exact
 conditional expectations for that bounded policy, not a claim of globally
 converged optimal play. The discard-invariance conclusion does not depend on
-which hidden-information opponent policy is chosen.
+which hidden-information opponent policy is chosen. Its implication is limited
+to adding the value as a linear term in the current position-unaware objective;
+it does not rule out the value as context for a nonlinear board-position policy.
 
 ## Suitless Exact Analysis
 
@@ -87,7 +103,24 @@ is equivalent to the same rank-to-suit incidence expressed as four hearts and
 two spades. A different assignment of ranks to those suits is not necessarily
 equivalent.
 
-The 962,988 count was calculated with the group-action fixed-point average:
+There are 24 possible global suit renamings. Applying one renaming to every card
+in a deal is the "action," and a deal is a "fixed point" of a renaming when the
+renamed cards form exactly the same unordered deal. Most deals move to another
+representation, but some symmetric deals stay unchanged under particular suit
+swaps or cycles.
+
+Burnside's lemma says that the number of distinct normalized deals is the
+average number of deals left unchanged by each of the 24 renamings. This avoids
+incorrectly dividing by 24: symmetric deals have fewer than 24 distinct
+representations and would otherwise be undercounted. The fixed-deal counts are:
+
+- the identity renaming fixes all 20,358,520 deals;
+- each of the 6 single suit swaps fixes 450,216 deals;
+- each of the 3 pairs of simultaneous suit swaps fixes 2,600 deals;
+- each of the 8 three-suit cycles fixes 5,512 deals; and
+- each of the 6 four-suit cycles fixes no six-card deal.
+
+Averaging those fixed-deal counts gives:
 
 ```text
 (20,358,520 + 6*450,216 + 3*2,600 + 8*5,512 + 6*0) / 24
@@ -141,9 +174,14 @@ For 962,988 normalized keys and two role values:
 Suit normalization therefore makes producer-side storage manageable. A single
 JSON object remains unattractive for a browser because transfer size understates
 its parsed JavaScript-object memory. A packed or rank-baseline-plus-residual
-format is a plausible future direction if a presentation experiment establishes
-user value, but it would require a deliberate browser contract, precision gate,
-and consumer implementation.
+format is a plausible future direction if positional-play experiments establish
+that suit corrections affect decisions. It would require a deliberate browser
+contract, precision gate, and consumer implementation.
+
+The exact rank-only result is much cheaper: about 0.38 MB with gzip and 3.2
+seconds to calculate after constructing the existing analytical policy. It is
+therefore the appropriate starting point for a position-aware experiment rather
+than a reason to abandon opponent-hand modeling.
 
 ## Acceptance Criteria Assessment
 
@@ -154,9 +192,13 @@ and consumer implementation.
 - Exact enumeration is practical for the rank model but not for a complete
   physical-card table; Monte Carlo or a more advanced exact aggregation would
   be required for suit-aware values.
-- Opponent hand points change no discard rankings within a known six-card deal.
-- Production should be deferred; normalized packed encodings remain future
-  research for presentation only.
+- Opponent hand points change no rankings when added linearly to the current
+  position-unaware objective, but they can inform future nonlinear positional
+  strategy.
+- Publishing is deferred in this spike pending a position-aware experiment that
+  determines whether a mean, distribution, tail probabilities, or joint outcome
+  model is the correct production contract. The exact rank model is the
+  recommended first input to that experiment.
 - All expensive opponent-hand analysis stays in the Python producer. No
   browser-side simulation is proposed.
 

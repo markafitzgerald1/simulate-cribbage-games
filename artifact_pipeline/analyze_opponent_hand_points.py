@@ -489,9 +489,9 @@ def analyze(  # pylint: disable=too-many-locals
             ),
         },
         "recommendation": (
-            "defer a production opponent-hand artifact because its value is constant "
-            "across the user's discard choices; retain suit-normalized binary or "
-            "rank-baseline-plus-residual encoding as feasible presentation-only research"
+            "defer publishing until a position-aware experiment determines whether "
+            "opponent mean, distribution, tail probabilities, or joint outcomes are "
+            "needed; use the compact exact rank model as the first positional input"
         ),
         "elapsed_seconds": time.monotonic() - started,
     }
