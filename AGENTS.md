@@ -166,6 +166,13 @@ For Python or core dependency upgrades, run the regression checking script
 (passing the old and new Python binaries as arguments) to verify that simulated
 game outputs and generated tables match 100% identically. (Note: Once full test
 automation is complete under issue #37, this script may be retired.)
+This also validates `requirements.txt` bumps (for example grouped Dependabot
+pip PRs) even when the interpreter version is unchanged: install the old and
+new requirement sets into two virtualenvs and pass each venv's `bin/python`
+as the two binaries. The unit and artifact-pipeline suites do not exercise
+all legacy `simulate_cribbage_games.py` paths, so a green CI run on a
+dependency bump is not by itself proof that legacy simulation behavior is
+unchanged.
 
 When validating upgrades or writing regression checkers, observe these rules:
 - **Isolate execution environments:** Run checks in isolated temporary directories
