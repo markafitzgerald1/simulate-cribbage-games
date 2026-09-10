@@ -75,6 +75,15 @@ two unrelated issues can carry the same number and meet on the board: #22, #23,
 on the board must therefore key each item on the repository and the number
 together, never on the number alone, which silently merges them.
 
+The board is named for the sibling repository while tracking both, which reads
+as a filing error from here and is not one. Nearly everything open in this
+repository exists to serve that app: the client artifacts published from the
+pipeline, the table-quality validation behind them, and a frontend now
+scheduled to port there (#129). The shared mission both repositories state is
+broader than that name, so expect it to be revisited when the product is named
+for launch at the end of `Minimum Lovable Product`. Until then the mismatch is
+a known intermediate state rather than a sign you are on the wrong board.
+
 Project commands need a token scope an ordinary `gh` login does not carry. The
 minimum is `project`; without it the filing command below fails rather than
 creating the issue, so a working `gh auth status` is not by itself evidence that
