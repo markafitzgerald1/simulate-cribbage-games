@@ -59,6 +59,51 @@ substitute for a pull request. AI agents are permitted to commit using the
 `--no-gpg-sign` flag when committing in sandboxed environments where local GPG
 private keys are unavailable.
 
+## Issue Tracking And The Shared Project Board
+
+Issues in this repository are tracked on a project board shared with
+`markafitzgerald1/cribbage-trainer`: project 1 under `markafitzgerald1`, titled
+`Cribbage Trainer`. The board is how the state of play is read across both
+repositories, so an issue that is missing from it, or present without a Status,
+is invisible to planning even though it is open here.
+
+Two consequences follow from the board being shared. Every open issue in this
+repository needs a milestone and a Status on the board, the same as an issue in
+the sibling repository. And the two repositories share one issue-number space,
+so anything that audits or reports on the board must key each item on the
+repository and the number together, never on the number alone: #22, #23, #101
+and #102 each exist in both repositories, and keying on the number silently
+merges them.
+
+File an issue with `gh issue create --project "Cribbage Trainer"`. That adds the
+item to the board but leaves its Status empty, so it appears in no column;
+follow it with `gh project item-edit` to set one. A bare `gh issue create` does
+not reach the board at all. To read the board, pass an explicit limit, because
+the default hides most of the items on a board this size:
+
+```bash
+gh project item-list 1 --owner markafitzgerald1 --limit 400
+```
+
+`gh issue list` defaults to thirty and needs its own `--limit` for the same
+reason.
+
+The meanings of the Status column are agreed across both repositories and are
+recorded in the sibling repository's `skills/working-an-issue/SKILL.md`, along
+with the board invariants that follow from them. Read that file rather than
+inferring the meanings from the column names, which do not say, for example,
+that Todo means eligible to start now and therefore excludes anything deferred
+or blocked.
+
+The milestones here mirror the sibling repository's: `Minimum Lovable Product`
+is the active one and `Beyond MLP` is deferred.
+
+Near the end of this section, observe these boundaries: do not file an issue
+without placing it on the board and setting its Status and milestone, do not
+report a board audit that keyed on issue numbers alone, and do not restate the
+Status meanings here, because a second copy of them will drift from the one the
+sibling repository maintains.
+
 ## Agent Skills And Repository Instructions
 
 Before performing complex work, read this file, `skills/SKILLS.md`, and the
