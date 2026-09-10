@@ -69,11 +69,11 @@ is invisible to planning even though it is open here.
 
 Two consequences follow from the board being shared. Every open issue in this
 repository needs a milestone and a Status on the board, the same as an issue in
-the sibling repository. And the two repositories share one issue-number space,
-so anything that audits or reports on the board must key each item on the
-repository and the number together, never on the number alone: #22, #23, #101
-and #102 each exist in both repositories, and keying on the number silently
-merges them.
+the sibling repository. And issue numbers are scoped to their own repository, so
+two unrelated issues can carry the same number and meet on the board: #22, #23,
+#101 and #102 each exist in both repositories. Anything that audits or reports
+on the board must therefore key each item on the repository and the number
+together, never on the number alone, which silently merges them.
 
 File an issue with `gh issue create --project "Cribbage Trainer"`. That adds the
 item to the board but leaves its Status empty, so it appears in no column;
@@ -97,6 +97,10 @@ or blocked.
 
 The milestones here mirror the sibling repository's: `Minimum Lovable Product`
 is the active one and `Beyond MLP` is deferred.
+
+`README.md` and `skills/SKILLS.md` point at this section rather than restating
+it, for the same reason it does not restate the Status meanings: one description
+that drifts is worse than one hop to the description that is maintained.
 
 Near the end of this section, observe these boundaries: do not file an issue
 without placing it on the board and setting its Status and milestone, do not

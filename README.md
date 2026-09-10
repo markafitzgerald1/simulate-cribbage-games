@@ -13,6 +13,11 @@ All AI agents and human developers must work on feature branches and submit code
 exclusively through pull requests. Direct pushes to `main` are strictly
 forbidden.
 
+Issues here are tracked on a project board shared with
+`markafitzgerald1/cribbage-trainer`, so filing one takes an extra step beyond
+`gh issue create` and every open issue needs a Status and a milestone on that
+board. See `AGENTS.md`, "Issue Tracking And The Shared Project Board".
+
 The simulator's governing technical principle is objective mathematical
 simulation over subjective heuristics. Scoring, discard, play, and expected
 value logic must be justified by cribbage rules, enumeration, probability,
