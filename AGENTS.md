@@ -94,16 +94,20 @@ A bare `gh issue create` does not reach the board at all. Filing with
 `--project` does, but leaves Status empty, so the item appears in no column and
 is invisible to anyone reading the board. Setting Status is a second command
 that needs four identifiers, none of which the filing step reports: the item,
-the project, the Status field, and the option on that field. Read the field and
-its options once, since their identifiers are stable:
+the project, the Status field, and the option on that field. The board number in
+these commands is not the project identifier `item-edit` wants, which is a node
+id. Read the project, the field, and the field's options once, since all three
+are stable:
 
 ```bash
+gh project list --owner markafitzgerald1 --format json \
+  | jq -r '.projects[] | select(.number == 1) | .id'
 gh project field-list 1 --owner markafitzgerald1 --format json
 ```
 
-Then find the new item's identifier and set the value. Both project listings
-need an explicit `--limit`, because the default hides most of the items on a
-board this size:
+Then find the new item's identifier and set the value. The item listing needs an
+explicit `--limit`, because the default hides most of the items on a board this
+size:
 
 ```bash
 gh project item-list 1 --owner markafitzgerald1 --limit 400 --format json
