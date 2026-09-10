@@ -123,6 +123,19 @@ gh project item-edit --id <item-id> --project-id <project-id> \
 `gh issue list` defaults to thirty and needs its own `--limit` for the same
 reason.
 
+These project commands share one secondary rate limit with every other GraphQL
+call, and it is easy to exhaust: a board audit that re-runs the item listing
+after each change will hit it. Two things make that confusing rather than
+merely slow. The limit is invisible in `gh api rate_limit`, which keeps
+reporting the documented quota as fully available. And while it is in force,
+`gh project` reports `unknown owner type` rather than naming a rate limit,
+which is indistinguishable from a genuine failure and reads as a broken
+command. REST calls keep working throughout, so replying to a review thread
+succeeds while resolving one — which is GraphQL only, with no REST equivalent
+— does not. List the board once and reuse the result rather than re-listing
+after each mutation, and treat `unknown owner type` as a suspected rate limit
+before believing anything it seems to say about the command.
+
 The meanings of the Status column are agreed across both repositories and are
 recorded in the sibling repository's `skills/working-an-issue/SKILL.md`, along
 with the board invariants that follow from them. Read that file rather than
