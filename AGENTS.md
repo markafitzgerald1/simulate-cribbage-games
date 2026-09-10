@@ -100,8 +100,7 @@ id. Read the project, the field, and the field's options once, since all three
 are stable:
 
 ```bash
-gh project list --owner markafitzgerald1 --format json \
-  | jq -r '.projects[] | select(.number == 1) | .id'
+gh project view 1 --owner markafitzgerald1 --format json --jq .id
 gh project field-list 1 --owner markafitzgerald1 --format json
 ```
 
