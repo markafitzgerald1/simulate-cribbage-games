@@ -75,14 +75,40 @@ two unrelated issues can carry the same number and meet on the board: #22, #23,
 on the board must therefore key each item on the repository and the number
 together, never on the number alone, which silently merges them.
 
-File an issue with `gh issue create --project "Cribbage Trainer"`. That adds the
-item to the board but leaves its Status empty, so it appears in no column;
-follow it with `gh project item-edit` to set one. A bare `gh issue create` does
-not reach the board at all. To read the board, pass an explicit limit, because
-the default hides most of the items on a board this size:
+Project commands need a token scope an ordinary `gh` login does not carry. The
+minimum is `project`; without it the filing command below fails rather than
+creating the issue, so a working `gh auth status` is not by itself evidence that
+this workflow will run. Check the scope list it prints, and add the scope with
+`gh auth refresh -s project` if it is absent.
+
+File an issue with both the project and the milestone, because `--project` does
+not supply one and an issue filed without it violates the invariant above:
 
 ```bash
-gh project item-list 1 --owner markafitzgerald1 --limit 400
+gh issue create --repo markafitzgerald1/simulate-cribbage-games \
+  --title "..." --body-file body.md \
+  --project "Cribbage Trainer" --milestone "Minimum Lovable Product"
+```
+
+A bare `gh issue create` does not reach the board at all. Filing with
+`--project` does, but leaves Status empty, so the item appears in no column and
+is invisible to anyone reading the board. Setting Status is a second command
+that needs four identifiers, none of which the filing step reports: the item,
+the project, the Status field, and the option on that field. Read the field and
+its options once, since their identifiers are stable:
+
+```bash
+gh project field-list 1 --owner markafitzgerald1 --format json
+```
+
+Then find the new item's identifier and set the value. Both project listings
+need an explicit `--limit`, because the default hides most of the items on a
+board this size:
+
+```bash
+gh project item-list 1 --owner markafitzgerald1 --limit 400 --format json
+gh project item-edit --id <item-id> --project-id <project-id> \
+  --field-id <status-field-id> --single-select-option-id <option-id>
 ```
 
 `gh issue list` defaults to thirty and needs its own `--limit` for the same
