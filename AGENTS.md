@@ -59,6 +59,100 @@ substitute for a pull request. AI agents are permitted to commit using the
 `--no-gpg-sign` flag when committing in sandboxed environments where local GPG
 private keys are unavailable.
 
+## Issue Tracking And The Shared Project Board
+
+Issues in this repository are tracked on a project board shared with
+`markafitzgerald1/cribbage-trainer`: project 1 under `markafitzgerald1`, titled
+`Cribbage Trainer`. The board is how the state of play is read across both
+repositories, so an issue that is missing from it, or present without a Status,
+is invisible to planning even though it is open here.
+
+Two consequences follow from the board being shared. Every open issue in this
+repository needs a milestone and a Status on the board, the same as an issue in
+the sibling repository. And issue numbers are scoped to their own repository, so
+two unrelated issues can carry the same number and meet on the board: #22, #23,
+#101 and #102 each exist in both repositories. Anything that audits or reports
+on the board must therefore key each item on the repository and the number
+together, never on the number alone, which silently merges them.
+
+Project commands need a token scope an ordinary `gh` login does not carry. The
+minimum is `project`; without it the filing command below fails rather than
+creating the issue, so a working `gh auth status` is not by itself evidence that
+this workflow will run. Check the scope list it prints, and add the scope with
+`gh auth refresh -s project` if it is absent.
+
+The milestones here mirror the sibling repository's: `Minimum Lovable Product`
+is the active one and `Beyond MLP` is deferred. Choose between them when filing,
+rather than defaulting to the active one, because a deferred issue filed as
+active misreports what is left to do in the milestone the board is planned from.
+
+File an issue with both the project and the milestone, because `--project` does
+not supply one and an issue filed without a milestone violates the invariant
+above:
+
+```bash
+gh issue create --repo markafitzgerald1/simulate-cribbage-games \
+  --title "..." --body-file body.md \
+  --project "Cribbage Trainer" --milestone "<one of the two above>"
+```
+
+A bare `gh issue create` does not reach the board at all. Filing with
+`--project` does, but leaves Status empty, so the item appears in no column and
+is invisible to anyone reading the board. Setting Status is a second command
+that needs four identifiers, none of which the filing step reports: the item,
+the project, the Status field, and the option on that field. The board number in
+these commands is not the project identifier `item-edit` wants, which is a node
+id. Read the project, the field, and the field's options once, since all three
+are stable:
+
+```bash
+gh project view 1 --owner markafitzgerald1 --format json --jq .id
+gh project field-list 1 --owner markafitzgerald1 --format json
+```
+
+Then find the new item's identifier and set the value. The item listing needs an
+explicit `--limit`, because the default hides most of the items on a board this
+size:
+
+```bash
+gh project item-list 1 --owner markafitzgerald1 --limit 400 --format json
+gh project item-edit --id <item-id> --project-id <project-id> \
+  --field-id <status-field-id> --single-select-option-id <option-id>
+```
+
+`gh issue list` defaults to thirty and needs its own `--limit` for the same
+reason.
+
+These project commands share one secondary rate limit with every other GraphQL
+call, and it is easy to exhaust: a board audit that re-runs the item listing
+after each change will hit it. Two things make that confusing rather than
+merely slow. The limit is invisible in `gh api rate_limit`, which keeps
+reporting the documented quota as fully available. And while it is in force,
+`gh project` reports `unknown owner type` rather than naming a rate limit,
+which is indistinguishable from a genuine failure and reads as a broken
+command. REST calls keep working throughout, so replying to a review thread
+succeeds while resolving one — which is GraphQL only, with no REST equivalent
+— does not. List the board once and reuse the result rather than re-listing
+after each mutation, and treat `unknown owner type` as a suspected rate limit
+before believing anything it seems to say about the command.
+
+The meanings of the Status column are agreed across both repositories and are
+recorded in the sibling repository's `skills/working-an-issue/SKILL.md`, along
+with the board invariants that follow from them. Read that file rather than
+inferring the meanings from the column names, which do not say, for example,
+that Todo means eligible to start now and therefore excludes anything deferred
+or blocked.
+
+`README.md` and `skills/SKILLS.md` point at this section rather than restating
+it, for the same reason it does not restate the Status meanings: one description
+that drifts is worse than one hop to the description that is maintained.
+
+Near the end of this section, observe these boundaries: do not file an issue
+without placing it on the board and setting its Status and milestone, do not
+report a board audit that keyed on issue numbers alone, and do not restate the
+Status meanings here, because a second copy of them will drift from the one the
+sibling repository maintains.
+
 ## Agent Skills And Repository Instructions
 
 Before performing complex work, read this file, `skills/SKILLS.md`, and the

@@ -57,6 +57,10 @@ default skill for documentation and Python backend work.
    considered resolved and identify the agent or human making that assessment.
 16. Update `README.md`, `AGENTS.md`, and this file together when shared workflow
    guidance changes.
+17. When filing an issue, place it on the project board shared with
+   `markafitzgerald1/cribbage-trainer` and set its Status and milestone; see
+   `AGENTS.md`, "Issue Tracking And The Shared Project Board", for how, and for
+   why an audit keys on repository and number together.
 
 ## Skill Authoring Rules
 
