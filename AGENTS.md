@@ -81,13 +81,19 @@ creating the issue, so a working `gh auth status` is not by itself evidence that
 this workflow will run. Check the scope list it prints, and add the scope with
 `gh auth refresh -s project` if it is absent.
 
+The milestones here mirror the sibling repository's: `Minimum Lovable Product`
+is the active one and `Beyond MLP` is deferred. Choose between them when filing,
+rather than defaulting to the active one, because a deferred issue filed as
+active misreports what is left to do in the milestone the board is planned from.
+
 File an issue with both the project and the milestone, because `--project` does
-not supply one and an issue filed without it violates the invariant above:
+not supply one and an issue filed without a milestone violates the invariant
+above:
 
 ```bash
 gh issue create --repo markafitzgerald1/simulate-cribbage-games \
   --title "..." --body-file body.md \
-  --project "Cribbage Trainer" --milestone "Minimum Lovable Product"
+  --project "Cribbage Trainer" --milestone "<one of the two above>"
 ```
 
 A bare `gh issue create` does not reach the board at all. Filing with
@@ -123,9 +129,6 @@ with the board invariants that follow from them. Read that file rather than
 inferring the meanings from the column names, which do not say, for example,
 that Todo means eligible to start now and therefore excludes anything deferred
 or blocked.
-
-The milestones here mirror the sibling repository's: `Minimum Lovable Product`
-is the active one and `Beyond MLP` is deferred.
 
 `README.md` and `skills/SKILLS.md` point at this section rather than restating
 it, for the same reason it does not restate the Status meanings: one description
