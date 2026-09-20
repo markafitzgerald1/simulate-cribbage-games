@@ -129,6 +129,15 @@ generation-time `n`/`se`/`sum_w2` statistics, the redundant `points.total`, the
 unsuited non-Jack discards (which are sampling noise), shrinking the payload by
 ~94%. The full table remains the source of truth for convergence analysis.
 
+To expose existing marginal statistics without generation, use the standalone
+[uncertainty exporter](docs/uncertainty-sidecars.md). It reads a full artifact
+and its matching client means, writing a separate JSON sidecar with
+`reported_marginal_se` and count semantics. It leaves both inputs unchanged,
+preserves the measured/policy distinction, and does not publish a release.
+Crib weighted marginal errors are not established as calibrated comparison
+uncertainty. The contract documents missing capabilities, future category
+groups, the measured JSON/binary size choice, and separate trainer integration.
+
 Generation resumes from an existing `expected_crib_points.json` by default and
 periodically rewrites that file atomically after each discard pair and player
 role chunk. The `--samples` value is a cumulative target per discard pair and
