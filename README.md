@@ -133,7 +133,12 @@ To expose existing marginal statistics without generation, use the standalone
 [uncertainty exporter](docs/uncertainty-sidecars.md). It reads a full artifact
 and its matching client means, writing a separate JSON sidecar with
 `reported_marginal_se` and count semantics. It leaves both inputs unchanged,
-preserves the measured/policy distinction, and does not publish a release.
+preserves the measured/policy distinction, and does not publish a release
+itself. Both generation workflows run it after generating their table and
+attach the sidecar to the rolling release in the same call as the table and the
+client means, so the three assets always describe one another;
+`.github/workflows/export-uncertainty.yml` backfills or re-exports the sidecars
+from the released assets on demand.
 Crib weighted marginal errors are not established as calibrated comparison
 uncertainty. The contract documents missing capabilities, future category
 groups, the measured JSON/binary size choice, and separate trainer integration.
