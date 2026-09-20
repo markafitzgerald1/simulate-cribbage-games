@@ -197,6 +197,25 @@ class TestExportUncertainty(unittest.TestCase):
                 {field: records(loaded)[key][field] for field in record}, record
             )
 
+    def test_qualifications_wording_may_change_but_keys_may_not(self):
+        """Wording is prose, not wire format; only the keys are the contract.
+
+        Regression for a finding against whole-dict equality on
+        `qualifications`: clarifying a qualification's text must not reject
+        a previously published sidecar, and publishing reworded text must
+        not be rejected by an unchanged reader.
+        """
+        full, means = fixture("play")
+        good = exporter.build_sidecar("play", encoded(full), encoded(means))
+        reworded = copy.deepcopy(good)
+        reworded["qualifications"] = {
+            key: f"{value} (reworded for clarity)"
+            for key, value in reworded["qualifications"].items()
+        }
+        self.assertNotEqual(reworded["qualifications"], good["qualifications"])
+        decoded = exporter.decode_sidecar(encoded(reworded), encoded(means))
+        self.assertEqual(decoded["qualifications"], reworded["qualifications"])
+
     def test_bad_json_and_numbers(self):
         for value in (
             b"[]",
@@ -263,7 +282,13 @@ class TestExportUncertainty(unittest.TestCase):
             lambda data: data.pop("policy_uncertainty"),
             lambda data: data.pop("qualifications"),
             lambda data: data.update(qualifications={}),
-            lambda data: data["qualifications"].update(scope="missing is zero"),
+            lambda data: data["qualifications"].pop("scope"),
+            lambda data: data.update(
+                qualifications={**good["qualifications"], "extra": "x"}
+            ),
+            lambda data: data["qualifications"].update(scope=""),
+            lambda data: data["qualifications"].update(scope=123),
+            lambda data: data.update(qualifications="not a dict"),
             lambda data: data.update(keys=["A_2_3_4", "A_2_3_4"]),
             lambda data: data.update(source_full_sha256=None),
             lambda data: data.update(source_full_sha256="bad"),

@@ -52,7 +52,13 @@ play retains its policy fingerprint and `joint_policy_converged: false`.
 play uses `simulation_count`. `cross_bucket_covariance`, `policy_uncertainty`
 and `calibrated_comparison_uncertainty` are explicitly `null`, meaning
 unavailable, never zero or independent. Textual `qualifications` preserve the
-estimator and policy limitations alongside the numbers.
+estimator and policy limitations alongside the numbers. Only its keys
+(`crib`, `play`, `scope`) are part of the wire contract: a reader requires
+every key present with a non-empty string value, but does not pin the exact
+wording, so clarifying a qualification's text does not orphan previously
+published sidecars or reject newly published ones from an older reader.
+Adding, removing, or emptying a key is still rejected, because that would
+mean a consumer received a sidecar stripped of one of these statements.
 
 `keys` lists the client keys in lexicographic order. `roles` is
 `["Dealer", "Pone"]`. Crib `ranks` is

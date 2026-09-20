@@ -226,6 +226,24 @@ def build_sidecar(table: str, full_bytes: bytes, means_bytes: bytes) -> dict[str
     return decode_sidecar(encode_json(result), means_bytes)
 
 
+def _validate_qualifications(sidecar: dict[str, Any]) -> None:
+    """Require the stable identifiers and non-empty text, not exact wording.
+
+    Qualification wording is prose, not wire format: whole-dict equality
+    against QUALIFICATIONS would force every published sidecar and every
+    reader into lockstep on a wording-only edit.
+    """
+    qualifications = sidecar.get("qualifications")
+    if not isinstance(qualifications, dict) or set(qualifications) != set(
+        QUALIFICATIONS
+    ):
+        raise ValueError("Invalid sidecar field: qualifications")
+    if any(
+        not isinstance(value, str) or not value for value in qualifications.values()
+    ):
+        raise ValueError("Invalid sidecar field: qualifications")
+
+
 def decode_sidecar(data: bytes, means_bytes: bytes) -> dict[str, Any]:
     """Validate version-1 totals; ignore separate, future record groups/fields."""
     sidecar = read_json(data)
@@ -244,11 +262,11 @@ def decode_sidecar(data: bytes, means_bytes: bytes) -> dict[str, Any]:
         "cross_bucket_covariance": None,
         "policy_uncertainty": None,
         "calibrated_comparison_uncertainty": None,
-        "qualifications": QUALIFICATIONS,
     }
     for key, value in expected.items():
         if key not in sidecar or sidecar[key] != value:
             raise ValueError(f"Invalid sidecar field: {key}")
+    _validate_qualifications(sidecar)
     digest = sidecar.get("source_full_sha256")
     if (
         not isinstance(digest, str)
