@@ -75,21 +75,24 @@ def _number(value: Any) -> float:
 
 def _keys(table: str, means: dict[str, Any]) -> list[str]:
     if table == "crib":
-        allowed = {
+        ordered = [
             f"{first}_{second}_{suit}"
             for first, second in itertools.combinations_with_replacement(RANKS, 2)
             for suit in (["Unsuited"] if first == second else ["Suited", "Unsuited"])
-        }
+        ]
     elif table == "play":
-        allowed = {
+        ordered = [
             "_".join(hand) for hand in itertools.combinations_with_replacement(RANKS, 4)
-        }
+        ]
     else:
         raise ValueError("Unknown table")
-    keys = sorted(key for key in means if key != "__metadata__")
-    if not keys or not set(keys) <= allowed:
+    # Rank order, not lexicographic: RANKS.index("T") sorts ten between nine
+    # and jack, matching the published client table's own key order rather
+    # than ASCII order, which would sort digits before "T" and land ten last.
+    present = {key for key in means if key != "__metadata__"}
+    if not present or not present <= set(ordered):
         raise ValueError("Unexpected artifact keys")
-    return keys
+    return [key for key in ordered if key in present]
 
 
 def _relations(key: str, rank: str) -> set[str]:

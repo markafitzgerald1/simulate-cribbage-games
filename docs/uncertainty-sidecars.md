@@ -60,7 +60,17 @@ published sidecars or reject newly published ones from an older reader.
 Adding, removing, or emptying a key is still rejected, because that would
 mean a consumer received a sidecar stripped of one of these statements.
 
-`keys` lists the client keys in lexicographic order. `roles` is
+`keys` lists the client keys in rank order — the order of `RANKS`
+(`"A23456789TJQK"`), not lexicographic (ASCII) order. Ten is spelled `T`, so
+rank order runs ace, two, ..., nine, ten, jack, queen, king; a reader
+searching the array for `"10"` will not find it, and lexicographic order
+would instead sort the digit ranks before `"A"` and place ten last, after
+`"K"`. The published client table's own key order is rank order and is
+verifiably not `sorted()`: it begins `A_A_Unsuited, A_2_Suited,
+A_2_Unsuited, A_3_Suited`, which lexicographic order would not produce. A
+crib key orders its two ranks by `RANKS` position, then `Suited` before
+`Unsuited` when both exist; a play key orders its four ranks the same way.
+`roles` is
 `["Dealer", "Pone"]`. Crib `ranks` is
 `["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"]`;
 play uses an empty list. Crib `slots` lists `total`, `matching_discard_suit`,

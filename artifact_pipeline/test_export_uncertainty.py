@@ -13,6 +13,8 @@ import unittest
 from unittest.mock import patch
 
 from artifact_pipeline import export_uncertainty as exporter
+from artifact_pipeline.adapter import get_canonical_pairs
+from artifact_pipeline.pegging import canonical_hand_key, get_canonical_hands
 from scripts.measure_uncertainty import packed_candidate
 
 
@@ -164,6 +166,66 @@ class TestExportUncertainty(unittest.TestCase):
                 + header["mask_bytes"]
                 + len(records(sidecar)) * len(header["columns"]) * 8,
             )
+
+    def test_keys_are_rank_ordered_not_lexicographic(self):
+        """`keys` must match the published client table's own order.
+
+        Pin the expected order against the production canonical-order
+        helpers (`get_canonical_pairs` for crib, `get_canonical_hands` /
+        `canonical_hand_key` for play) rather than a hard-coded key list, so
+        a hard-coded expectation could not pass by drifting in lockstep with
+        a bug in the exporter's own ordering. Insert the fixture keys in
+        neither lexicographic nor rank order, so a regression to
+        `sorted()` (or an accidental no-op) is distinguishable from a
+        correct rank-order result.
+        """
+        bucket = {"mu": 1.0, "se": 0.1, "n": 100, "sum_w2": 100}
+        crib_present = ["J_J_Unsuited", "A_J_Unsuited", "A_2_Suited", "A_A_Unsuited"]
+        full = {
+            key: {
+                role: {rank: dict(bucket) for rank in exporter.RANKS}
+                for role in exporter.ROLES
+            }
+            for key in crib_present
+        }
+        means = {
+            key: {
+                role: {rank: {"mu": bucket["mu"]} for rank in exporter.RANKS}
+                for role in exporter.ROLES
+            }
+            for key in crib_present
+        }
+        full["__metadata__"] = {"seed": 1}
+        expected_crib = [key for key in get_canonical_pairs() if key in crib_present]
+        self.assertNotEqual(sorted(crib_present), expected_crib)
+        sidecar = exporter.build_sidecar("crib", encoded(full), encoded(means))
+        self.assertEqual(sidecar["keys"], expected_crib)
+
+        play_bucket = {"mu": 1.0, "se": 0.1, "n": 100}
+        play_present = [
+            canonical_hand_key(hand)
+            for hand in [(3, 2, 1, 0), (12, 0, 0, 0), (0, 0, 0, 0)]
+        ]
+        full_play = {
+            key: {role: dict(play_bucket) for role in exporter.ROLES}
+            for key in play_present
+        }
+        means_play = {
+            key: {role: {"mu": play_bucket["mu"]} for role in exporter.ROLES}
+            for key in play_present
+        }
+        full_play["__metadata__"] = {
+            "seed": 1,
+            "policy_fingerprint": "fixed",
+            "joint_policy_converged": False,
+        }
+        all_play_keys = [canonical_hand_key(hand) for hand in get_canonical_hands()]
+        expected_play = [key for key in all_play_keys if key in play_present]
+        self.assertNotEqual(sorted(play_present), expected_play)
+        sidecar_play = exporter.build_sidecar(
+            "play", encoded(full_play), encoded(means_play)
+        )
+        self.assertEqual(sidecar_play["keys"], expected_play)
 
     def test_absence_zero_defaults_and_extension_groups(self):
         full, means = fixture("crib")
