@@ -333,6 +333,16 @@ time: fewer samples raise the shift and risk a non-convergence failure. Prefer
 resume-across-runs (the resumable-checkpoint design above) if the cap becomes a
 recurring problem.
 
+Uncertainty publication has a standalone read/export boundary documented in
+[the sidecar contract](docs/uncertainty-sidecars.md). Export the top-level
+measured buckets matching the client means, never `generation_accumulators` or
+dampened policy values. Recoverable marginal moments do not supply the missing
+joint weighted-estimator moments or establish calibration. Keep crib weight
+sums fractional, use play's paired delta SE, and retain policy provenance.
+Version-1 JSON readers ignore new named record groups; future categories belong
+in a separate group, never in the existing totals group. The exporter must not
+import generators, train, resume, sample, modify means, or publish releases.
+
 The expected-play pipeline is separate from the expected-crib pipeline.
 `generate_play_table.py` uses the analytical `E(h +/- c)` solution as its
 initial discard policy, trains a rank-only hidden-information pegging policy by

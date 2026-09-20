@@ -133,6 +133,17 @@ including absolute Pone and Dealer point-type components and the keyed player's
 paired delta. Keep policy views limited to the acting player's cards and public
 history.
 
+For standalone uncertainty exports, follow
+[the JSON sidecar contract](../docs/uncertainty-sidecars.md). Preserve the exact
+client means bytes and export only their top-level measured statistics, not
+the frozen policy snapshot. Crib weight sums and recoverable marginal moments
+do not establish joint weighted-estimator uncertainty or calibration. Preserve
+play's directly measured paired delta SE and policy provenance. Test measured
+zero separately from missing data and keep future category records in their
+own group so existing readers remain compatible. Export must not import
+generators, train, resume, sample, or publish a release; generator changes and
+trainer integration remain separate work.
+
 An expected opponent hand value conditioned on the user's full six-card deal is
 constant across that user's discard candidates, because every candidate removes
 the same six cards from the opponent-deal and starter populations. It cannot
