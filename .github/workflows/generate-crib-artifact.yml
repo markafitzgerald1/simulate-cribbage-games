@@ -63,9 +63,9 @@ jobs:
       # Publication-path export, deliberately not gated on the event: the fast
       # pull-request generation above writes the same two files the production
       # run does, so every pull request exercises this exact step in seconds
-      # against its own freshly generated pair. The digest check keeps #138's guarantee where a
-      # regeneration could actually break it -- the client means the release
-      # publishes are the bytes the sidecar was derived from.
+      # against its own freshly generated pair. The digest check keeps #138's
+      # guarantee where a regeneration could actually break it -- the client
+      # means the release publishes are the bytes the sidecar was derived from.
       - name: Export uncertainty sidecar
         run: |
           before="$(sha256sum expected_crib_points.client.json | cut -d' ' -f1)"
