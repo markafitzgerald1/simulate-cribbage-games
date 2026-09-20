@@ -20,6 +20,16 @@ CRIB_SLOTS = [
     "matching_rank_1_suit",
     "matching_rank_2_suit",
 ]
+QUALIFICATIONS = {
+    "crib": "Weighted marginal formula is not established as calibrated; "
+    "joint and squared-weight residual moments are unavailable. "
+    "Root and relation estimates overlap; do not add them.",
+    "play": "Delta SE preserves own-minus-opponent pairing. Distinct entries "
+    "are independently sampled conditional on frozen policies. "
+    "Identical estimate identities cancel before comparisons.",
+    "scope": "No policy-learning or model uncertainty; no global or "
+    "twin-difference noise floor; missing is unavailable, not zero.",
+}
 
 
 def _object(value: Any) -> dict[str, Any]:
@@ -156,6 +166,20 @@ def _statistics(table: str, source: dict[str, Any]) -> dict[str, Any] | None:
     return {"reported_marginal_se": values.pop("se"), **values}
 
 
+def _validate_provenance(table: str, provenance: dict[str, Any]) -> None:
+    for value in provenance.values():
+        if isinstance(value, (dict, list)):
+            raise ValueError("Provenance must contain scalar values only")
+        if isinstance(value, (float, int)) and not isinstance(value, bool):
+            _number(value)
+    if table == "play":
+        fingerprint = provenance.get("policy_fingerprint")
+        if not isinstance(fingerprint, str) or not fingerprint:
+            raise ValueError("Invalid play policy fingerprint")
+        if not isinstance(provenance.get("joint_policy_converged"), bool):
+            raise ValueError("Invalid play convergence status")
+
+
 def build_sidecar(table: str, full_bytes: bytes, means_bytes: bytes) -> dict[str, Any]:
     """Export measured totals only; snapshot and policy values are never read."""
     full, means = read_json(full_bytes), read_json(means_bytes)
@@ -169,6 +193,7 @@ def build_sidecar(table: str, full_bytes: bytes, means_bytes: bytes) -> dict[str
         for key, value in metadata.items()
         if not isinstance(value, (dict, list))
     }
+    _validate_provenance(table, provenance)
     records = {}
     for identity in buckets:
         path = identity.split("/")
@@ -191,16 +216,7 @@ def build_sidecar(table: str, full_bytes: bytes, means_bytes: bytes) -> dict[str
         "cross_bucket_covariance": None,
         "policy_uncertainty": None,
         "calibrated_comparison_uncertainty": None,
-        "qualifications": {
-            "crib": "Weighted marginal formula is not established as calibrated; "
-            "joint and squared-weight residual moments are unavailable. "
-            "Root and relation estimates overlap; do not add them.",
-            "play": "Delta SE preserves own-minus-opponent pairing. Distinct entries "
-            "are independently sampled conditional on frozen policies. "
-            "Identical estimate identities cancel before comparisons.",
-            "scope": "No policy-learning or model uncertainty; no global or "
-            "twin-difference noise floor; missing is unavailable, not zero.",
-        },
+        "qualifications": QUALIFICATIONS,
         "keys": _keys(table, means),
         "roles": ROLES,
         "ranks": RANKS if table == "crib" else [],
@@ -228,6 +244,7 @@ def decode_sidecar(data: bytes, means_bytes: bytes) -> dict[str, Any]:
         "cross_bucket_covariance": None,
         "policy_uncertainty": None,
         "calibrated_comparison_uncertainty": None,
+        "qualifications": QUALIFICATIONS,
     }
     for key, value in expected.items():
         if key not in sidecar or sidecar[key] != value:
@@ -240,11 +257,7 @@ def decode_sidecar(data: bytes, means_bytes: bytes) -> dict[str, Any]:
     ):
         raise ValueError("Invalid source digest")
     provenance = _object(sidecar.get("provenance"))
-    for value in provenance.values():
-        if isinstance(value, (dict, list)):
-            raise ValueError("Provenance must contain scalar values only")
-        if isinstance(value, (float, int)) and not isinstance(value, bool):
-            _number(value)
+    _validate_provenance(table, provenance)
     totals = _object(_object(sidecar.get("record_groups")).get("totals"))
     records = _object(totals.get("records"))
     if (
@@ -260,7 +273,11 @@ def decode_sidecar(data: bytes, means_bytes: bytes) -> dict[str, Any]:
         record = _object(record)
         if any(column not in record for column in columns):
             raise ValueError("Missing statistic column")
-        source = {"se": record["reported_marginal_se"], **record}
+        source = {
+            "se": record["reported_marginal_se"],
+            "n": record["n"],
+            **({"sum_w2": record["sum_w2"]} if table == "crib" else {}),
+        }
         if _statistics(table, source) is None:
             raise ValueError("Unsupported measured record")
     return sidecar

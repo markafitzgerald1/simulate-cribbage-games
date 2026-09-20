@@ -261,12 +261,19 @@ class TestExportUncertainty(unittest.TestCase):
             lambda data: data.update(table="other"),
             lambda data: data.update(means_sha256="0" * 64),
             lambda data: data.pop("policy_uncertainty"),
+            lambda data: data.pop("qualifications"),
+            lambda data: data.update(qualifications={}),
+            lambda data: data["qualifications"].update(scope="missing is zero"),
             lambda data: data.update(keys=["A_2_3_4", "A_2_3_4"]),
             lambda data: data.update(source_full_sha256=None),
             lambda data: data.update(source_full_sha256="bad"),
             lambda data: data.update(source_full_sha256="z" * 64),
             lambda data: data.update(provenance={"invalid": []}),
             lambda data: data.update(provenance={"invalid": 1e309}),
+            lambda data: data["provenance"].pop("policy_fingerprint"),
+            lambda data: data["provenance"].update(policy_fingerprint=""),
+            lambda data: data["provenance"].pop("joint_policy_converged"),
+            lambda data: data["provenance"].update(joint_policy_converged=0),
             lambda data: data["record_groups"]["totals"].update(record_count=0),
             lambda data: data["record_groups"]["totals"].update(record_count=True),
             lambda data: data["record_groups"]["totals"].update(record_count="2"),
@@ -275,12 +282,25 @@ class TestExportUncertainty(unittest.TestCase):
             ),
             lambda data: records(data)["A_2_3_4/Dealer/delta"].pop("n"),
             lambda data: records(data)["A_2_3_4/Dealer/delta"].update(n=0),
+            lambda data: records(data)["A_2_3_4/Dealer/delta"].update(
+                reported_marginal_se=-1, se=0.1
+            ),
+            lambda data: records(data)["A_2_3_4/Dealer/delta"].update(
+                reported_marginal_se="invalid", se=0.1
+            ),
         ]
         for change in changes:
             mutated = copy.deepcopy(good)
             change(mutated)
             with self.assertRaises(ValueError):
                 exporter.decode_sidecar(encoded(mutated), encoded(means))
+        for field in ("policy_fingerprint", "joint_policy_converged"):
+            incomplete, incomplete_means = fixture("play")
+            incomplete["__metadata__"].pop(field)
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                exporter.build_sidecar(
+                    "play", encoded(incomplete), encoded(incomplete_means)
+                )
         # Numeric overflow uses standard JSON syntax but must also be rejected.
         with self.assertRaises(ValueError):
             exporter.decode_sidecar(
