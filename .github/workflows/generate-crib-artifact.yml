@@ -60,6 +60,27 @@ jobs:
         run: |
           python -u artifact_pipeline/generate_table.py --bootstrap=expected_crib_points.analytical.json --samples=22000 --convergence-threshold=0.10 --max-generations=2 --fail-on-non-convergence --output=expected_crib_points.json --no-resume --seed=42 --use-control-variates
 
+      # Publication-path export, deliberately not gated on the event: the fast
+      # pull-request generation above writes the same two files the production
+      # run does, so every pull request exercises this exact step in seconds
+      # against its own freshly generated pair. The digest check keeps #138's guarantee where a
+      # regeneration could actually break it -- the client means the release
+      # publishes are the bytes the sidecar was derived from.
+      - name: Export uncertainty sidecar
+        run: |
+          before="$(sha256sum expected_crib_points.client.json | cut -d' ' -f1)"
+          python -u artifact_pipeline/export_uncertainty.py \
+            --table crib \
+            --full expected_crib_points.json \
+            --means expected_crib_points.client.json \
+            --output expected_crib_points.uncertainty.json
+          after="$(sha256sum expected_crib_points.client.json | cut -d' ' -f1)"
+          if [ "$before" != "$after" ]; then
+            echo "Client means bytes changed during export: $before -> $after" >&2
+            exit 1
+          fi
+          python -c 'import json, sys; count = json.load(open("expected_crib_points.uncertainty.json"))["record_groups"]["totals"]["record_count"]; print(f"Exported {count} measured records"); sys.exit(0 if count else "Sidecar carries no measured records")'
+
       - name: Upload analytical bootstrap artifact
         uses: actions/upload-artifact@v7
         with:
@@ -78,6 +99,12 @@ jobs:
         with:
           name: expected-crib-points-client
           path: expected_crib_points.client.json
+
+      - name: Upload uncertainty sidecar artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: expected-crib-points-uncertainty
+          path: expected_crib_points.uncertainty.json
 
   release-artifact:
     needs: generate-table
@@ -98,6 +125,11 @@ jobs:
         with:
           name: expected-crib-points-client
 
+      - name: Download uncertainty sidecar artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: expected-crib-points-uncertainty
+
       # GitHub freezes a release's published_at at first publish and never bumps
       # it when the rolling tag's assets are replaced, so surface the real
       # generation time in the body instead (timestamp = freshness).
@@ -117,11 +149,13 @@ jobs:
 
             - `expected_crib_points.json`: full table with sampling statistics for analysis.
             - `expected_crib_points.client.json`: lean table consumed directly by the web client.
+            - `expected_crib_points.uncertainty.json`: reported marginal uncertainty sidecar for the client means (see `docs/uncertainty-sidecars.md`).
 
             Triggered by: ${{ github.event_name }} on commit ${{ github.sha }}.
           files: |
             expected_crib_points.json
             expected_crib_points.client.json
+            expected_crib_points.uncertainty.json
           make_latest: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -94,6 +94,27 @@ jobs:
             --write-metadata \
             --fail-on-regression
 
+      # Publication-path export, deliberately not gated on the event: the
+      # bounded pull-request generation above writes the same two files the
+      # production run does, so every pull request exercises this exact step in
+      # seconds against its own freshly generated pair. The digest check keeps #138's
+      # guarantee where a regeneration could actually break it -- the client
+      # means the release publishes are the bytes the sidecar was derived from.
+      - name: Export uncertainty sidecar
+        run: |
+          before="$(sha256sum expected_play_points.client.json | cut -d' ' -f1)"
+          python -u artifact_pipeline/export_uncertainty.py \
+            --table play \
+            --full expected_play_points.json \
+            --means expected_play_points.client.json \
+            --output expected_play_points.uncertainty.json
+          after="$(sha256sum expected_play_points.client.json | cut -d' ' -f1)"
+          if [ "$before" != "$after" ]; then
+            echo "Client means bytes changed during export: $before -> $after" >&2
+            exit 1
+          fi
+          python -c 'import json, sys; count = json.load(open("expected_play_points.uncertainty.json"))["record_groups"]["totals"]["record_count"]; print(f"Exported {count} measured records"); sys.exit(0 if count else "Sidecar carries no measured records")'
+
       - name: Upload full table
         uses: actions/upload-artifact@v7
         with:
@@ -105,6 +126,12 @@ jobs:
         with:
           name: expected-play-points-client
           path: expected_play_points.client.json
+
+      - name: Upload uncertainty sidecar
+        uses: actions/upload-artifact@v7
+        with:
+          name: expected-play-points-uncertainty
+          path: expected_play_points.uncertainty.json
 
   release-artifact:
     needs: generate-table
@@ -124,6 +151,11 @@ jobs:
         with:
           name: expected-play-points-client
 
+      - name: Download uncertainty sidecar
+        uses: actions/download-artifact@v8
+        with:
+          name: expected-play-points-uncertainty
+
       - name: Capture build timestamp
         id: build_timestamp
         run: echo "now=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
@@ -142,11 +174,15 @@ jobs:
               point-type details.
             - `expected_play_points.client.json`: lean table consumed by the
               browser.
+            - `expected_play_points.uncertainty.json`: reported marginal
+              uncertainty sidecar for the client means (see
+              `docs/uncertainty-sidecars.md`).
 
             Triggered by: ${{ github.event_name }} on commit ${{ github.sha }}.
           files: |
             expected_play_points.json
             expected_play_points.client.json
+            expected_play_points.uncertainty.json
           make_latest: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
