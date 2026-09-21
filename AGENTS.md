@@ -91,10 +91,13 @@ creating the issue, so a working `gh auth status` is not by itself evidence that
 this workflow will run. Check the scope list it prints, and add the scope with
 `gh auth refresh -s project` if it is absent.
 
-The milestones here mirror the sibling repository's: `Minimum Lovable Product`
-is the active one and `Beyond MLP` is deferred. Choose between them when filing,
-rather than defaulting to the active one, because a deferred issue filed as
-active misreports what is left to do in the milestone the board is planned from.
+The milestones here mirror the sibling repository's: `MLP` is the active one
+and `Beyond MLP` is deferred. Those are the literal titles `--milestone` takes.
+`MLP` abbreviates Minimum Lovable Product, and passing the expansion fails the
+command rather than filing the issue, so use the short title. Choose between
+the two when filing, rather than defaulting to the active one, because a
+deferred issue filed as active misreports what is left to do in the milestone
+the board is planned from.
 
 File an issue with both the project and the milestone, because `--project` does
 not supply one and an issue filed without a milestone violates the invariant
