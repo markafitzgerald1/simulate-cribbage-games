@@ -147,6 +147,11 @@ zero separately from missing data and keep future category records in their
 own group so existing readers remain compatible. Export must not import
 generators, train, resume, sample, or publish a release; generator changes and
 trainer integration remain separate work.
+Publication of those sidecars belongs in the generation job, beside the table
+they describe, so that a release can never carry a sidecar and means that came
+from different tables. See `AGENTS.md`, "Artifact Pipeline And Statistical
+Tables", for why, for the pull-request coverage that follows from it, and
+for why dispatching a generation workflow is not a way to test any of this.
 
 An expected opponent hand value conditioned on the user's full six-card deal is
 constant across that user's discard candidates, because every candidate removes

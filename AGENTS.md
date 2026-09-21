@@ -457,6 +457,36 @@ Version-1 JSON readers ignore new named record groups; future categories belong
 in a separate group, never in the existing totals group. The exporter must not
 import generators, train, resume, sample, modify means, or publish releases.
 
+Each generation workflow runs that exporter in the same job that writes its
+table and publishes the sidecar in the same `action-gh-release` call as the
+table and the client means. Keep it there. A downstream job that re-derived a
+sidecar from already-published assets would publish one built from the previous
+tables at the moment the tables changed, and nothing about that failure would
+be visible while generation stayed deterministic. The export step carries
+no event condition, so the bounded pull-request generation exercises the real
+publication step on every pull request: the bounded crib run
+(`--samples=300 --max-generations=1`) and the bounded play run
+(`--hand-limit=4`) write the same `se`, `n` and `sum_w2` accumulators the
+production runs do, and export in well under a second. Each step asserts the
+client means digest is unchanged across the export and that the sidecar carries
+at least one measured record.
+
+`workflow_dispatch` on either generation workflow is not a cheap way to test a
+workflow change. The production generation steps are gated on `schedule ||
+workflow_dispatch`, so a dispatch runs the full table generation -- hours, not
+minutes -- and `release-artifact` additionally requires `refs/heads/main`. A
+dispatch from a branch therefore burns those hours and then skips publication
+entirely, and a dispatch from `main` replaces the real release assets. Use the
+pull-request path, or a separate `workflow_dispatch`-only workflow, to exercise
+publication logic.
+
+Client means bytes are reproducible across regenerations: the released crib and
+play `.client.json` digests still match the copies `cribbage-trainer` vendored
+in June 2026, across roughly twelve weekly generations. That is what lets
+`export-uncertainty.yml` pin those digests when backfilling from release
+assets; it is not a promise that a deliberate generation change will preserve
+them, and a dispatch after such a change must turn the check off.
+
 The expected-play pipeline is separate from the expected-crib pipeline.
 `generate_play_table.py` uses the analytical `E(h +/- c)` solution as its
 initial discard policy, trains a rank-only hidden-information pegging policy by
