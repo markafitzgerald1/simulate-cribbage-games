@@ -1,0 +1,103 @@
+name: Export Uncertainty Sidecars
+
+# Backfill path only. It rebuilds both sidecars from the table assets already
+# attached to the rolling releases, without regenerating a table, and attaches
+# them to the same tags. Use it to land sidecars for tables that were generated
+# before the generation workflows exported one, and to re-export after a fix to
+# artifact_pipeline/export_uncertainty.py.
+#
+# This is not the production publication path and does not test one: a
+# scheduled run exports its sidecar in the same job that writes the table, so
+# the pair it publishes cannot disagree. This workflow reads whatever is on the
+# release at dispatch time instead.
+on:
+  workflow_dispatch:
+    inputs:
+      verify_released_digests:
+        description: >-
+          Require each downloaded client means file to match the digest pinned
+          in the matrix below. Turn this off only once a regeneration has
+          legitimately replaced those bytes.
+        type: boolean
+        default: true
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Digests of the client means assets as released on 2026-09-20, which
+          # are byte-identical to the copies cribbage-trainer vendored in June
+          # 2026 across roughly twelve weekly generations.
+          - table: crib
+            tag: expected-crib-points
+            client_sha256: "4cd8a9258d32973710361b9c2a764aea3b8c9a1178ab53e1c2aa38a53e030cc1"
+          - table: play
+            tag: expected-play-points
+            client_sha256: "7420b1804f64a32a73edb2fcc7fe9f53fe427510755c8b2b3723142e503cca5c"
+
+    # Share the generation workflows' release groups so a backfill can never
+    # interleave with the scheduled run that replaces the same tag's assets.
+    concurrency:
+      group: ${{ matrix.tag }}-release-${{ github.ref_name }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14.4"
+
+      # No dependency install: the exporter is standard library only, and
+      # requirements.txt is development and lint tooling.
+      - name: Download released tables
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p inputs
+          gh release download "${{ matrix.tag }}" --repo "$GITHUB_REPOSITORY" --dir inputs \
+            --pattern "expected_${{ matrix.table }}_points.json" \
+            --pattern "expected_${{ matrix.table }}_points.client.json"
+
+      - name: Verify released client means digest
+        if: ${{ inputs.verify_released_digests }}
+        run: |
+          echo "${{ matrix.client_sha256 }}  inputs/expected_${{ matrix.table }}_points.client.json" \
+            | sha256sum --check --strict
+
+      # The output directory is kept separate from the inputs; the exporter
+      # additionally refuses an output path that aliases either input.
+      - name: Export uncertainty sidecar
+        run: |
+          mkdir -p dist
+          before="$(sha256sum inputs/expected_${{ matrix.table }}_points.client.json | cut -d' ' -f1)"
+          python -u artifact_pipeline/export_uncertainty.py \
+            --table "${{ matrix.table }}" \
+            --full "inputs/expected_${{ matrix.table }}_points.json" \
+            --means "inputs/expected_${{ matrix.table }}_points.client.json" \
+            --output "dist/expected_${{ matrix.table }}_points.uncertainty.json"
+          after="$(sha256sum inputs/expected_${{ matrix.table }}_points.client.json | cut -d' ' -f1)"
+          if [ "$before" != "$after" ]; then
+            echo "Client means bytes changed during export: $before -> $after" >&2
+            exit 1
+          fi
+          python -c 'import json, sys; count = json.load(open(sys.argv[1]))["record_groups"]["totals"]["record_count"]; print(f"Exported {count} measured records"); sys.exit(0 if count else "Sidecar carries no measured records")' \
+            "dist/expected_${{ matrix.table }}_points.uncertainty.json"
+
+      # Only the sidecar asset is replaced. The release body gains its own
+      # bullet on the next scheduled generation.
+      - name: Attach sidecar to the rolling release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ matrix.tag }}" \
+            "dist/expected_${{ matrix.table }}_points.uncertainty.json" \
+            --repo "$GITHUB_REPOSITORY" --clobber

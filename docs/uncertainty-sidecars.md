@@ -2,8 +2,9 @@
 
 Issue #137 exports statistics already saved in the full artifacts. Export does
 not import either generator or the legacy simulator, invoke training or
-dampening, resume, or sample. Publication and trainer integration are separate
-decisions. Existing release workflows and client means remain unchanged.
+dampening, resume, or sample. Issue #139 publishes the exported sidecars from
+CI; trainer integration remains a separate decision, and the client means
+assets remain byte-for-byte unchanged.
 
 ## Export and inspect
 
@@ -39,6 +40,38 @@ values, unexpected keys/roles/ranks/slots and mismatched means are errors.
 Consumers should turn a missing or rejected sidecar into an unavailable
 capability, not a measured zero. A rolling-release race must not combine a new
 means file with an old sidecar.
+
+## Publication
+
+Each generation workflow exports its sidecar in the same job that writes the
+table, immediately after generation, and its `release-artifact` job attaches
+the full table, the client means, and the sidecar to the rolling release in a
+single call. Publication is therefore atomic: the release cannot hold a sidecar
+derived from a table other than the means beside it. A downstream job that
+re-derived the sidecar from already-published assets would have the opposite
+property — it would ship a sidecar built from the previous tables at exactly
+the moment the tables changed, which is when the mismatch matters.
+
+The export step carries no event condition, so it also runs on `pull_request`
+against that run's own bounded artifacts. The bounded crib run
+(`--samples=300 --max-generations=1`) writes the same `se`, `n` and `sum_w2`
+accumulators the production run does, and exports the same 9,076 records; the
+bounded play run (`--hand-limit=4`) exports its 8. Each export takes well under
+a second, so the production publication step runs on every pull request rather
+than first on a weekly cron. Each step also records the client means digest
+before and after the export and fails if those bytes moved, and fails if the
+sidecar carries no measured records.
+
+`.github/workflows/export-uncertainty.yml` is a `workflow_dispatch`-only
+backfill, not a second production path and not a test of one. It downloads the
+assets currently attached to the rolling releases, re-exports, and attaches the
+sidecars to the same tags without regenerating a table. Use it to land sidecars
+for tables generated before this publication path existed, and to re-export
+after a fix to the exporter. It shares the generation workflows' per-tag
+concurrency groups so it cannot interleave with a scheduled run replacing the
+same assets, and by default it checks each downloaded client means file against
+the digest pinned in its matrix. A dispatch after a regeneration has
+legitimately replaced those bytes must turn that check off.
 
 ## Version 1 JSON contract
 
