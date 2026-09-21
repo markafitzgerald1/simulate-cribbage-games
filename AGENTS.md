@@ -184,8 +184,16 @@ skills unless the work product shows it.
 
 ## Python Setup
 
-Use Python 3.14.4 unless a task updates the supported version. Install
-dependencies with:
+Use Python 3.14.4 unless a task updates the supported version.
+`.python-version` is the single source of truth: pyenv reads it locally, and
+the workflows that set up one interpreter pass it to `actions/setup-python` as
+`python-version-file`. The matrix jobs in `python-install-and-test.yml` keep a
+literal version, because a `strategy` block is evaluated before checkout and
+can read neither that file nor the `env` context; that list is also where a
+second supported version would be added. A version bump therefore edits
+`.python-version`, those matrices, and this line.
+
+Install dependencies with:
 
 ```sh
 pip install -r requirements.txt

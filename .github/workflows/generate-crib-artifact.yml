@@ -24,10 +24,12 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
+      # Version comes from .python-version, the same file pyenv reads locally,
+      # so CI and local development cannot drift apart.
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.14.4"
+          python-version-file: .python-version
 
       - name: Install dependencies
         run: |
