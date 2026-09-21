@@ -6,6 +6,10 @@ on:
     branches:
       - main
 
+# The matrices below keep the version literal on purpose. A strategy block is
+# evaluated before any checkout and cannot read .python-version, which the
+# single-version workflows use instead. The list is also what a second
+# supported version would be added to.
 jobs:
   legacy-tests:
     runs-on: ubuntu-latest
