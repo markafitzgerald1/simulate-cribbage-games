@@ -479,6 +479,18 @@ production runs do, and export in well under a second. Each step asserts the
 client means digest is unchanged across the export and that the sidecar carries
 at least one measured record.
 
+On pull requests both generation workflows are filtered to the paths that can
+reach generation or the export step: `artifact_pipeline/**`,
+`simulate_cribbage_games.py` (which `adapter.py` imports), `requirements.txt`,
+`.python-version`, and the workflow's own file. Keep that list in step with
+what generation actually reads, because a path the filter omits is a path whose
+changes reach `main` without the bounded run ever having exercised them. The
+filter is safe only while neither workflow supplies a required status check: a
+path-filtered workflow reports no check at all rather than a skipped one, so
+making `generate-table` required would leave every filtered pull request
+waiting on a check that never arrives. The scheduled and dispatched triggers
+are unfiltered and unaffected.
+
 `workflow_dispatch` on either generation workflow is not a cheap way to test a
 workflow change. The production generation steps are gated on `schedule ||
 workflow_dispatch`, so a dispatch runs the full table generation -- hours, not
