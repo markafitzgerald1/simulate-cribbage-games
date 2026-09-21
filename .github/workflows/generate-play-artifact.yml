@@ -1,9 +1,20 @@
 name: Generate Play Artifact
 
 on:
+  # Only for changes that can reach generation or the export step. A
+  # documentation-only pull request cannot, and was paying minutes of bounded
+  # generation for nothing. Safe because this workflow supplies no required
+  # status check -- a path-filtered workflow reports no check at all rather
+  # than a skipped one, which would leave a required check pending forever.
   pull_request:
     branches:
       - main
+    paths:
+      - artifact_pipeline/**
+      - simulate_cribbage_games.py
+      - requirements.txt
+      - .python-version
+      - .github/workflows/generate-play-artifact.yml
   workflow_dispatch:
   schedule:
     - cron: "0 6 * * 0"
