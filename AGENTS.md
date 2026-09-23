@@ -212,6 +212,18 @@ Install pre-commit hooks for local development:
 pre-commit install
 ```
 
+Bootstrap the tally shelf once per working directory so the simulator can run.
+The shelf is a runtime artifact, not a tracked file, and the simulator opens it
+read-only unless tallying is active:
+
+```sh
+python simulate_cribbage_games.py --game-count 10 \
+  --tally-start-of-hand-position-results --hide-play-actions
+```
+
+This must be a single-process run with no fixed dealt or kept cards; the
+tallying flag is silently ignored otherwise.
+
 The Python simulator is currently packaged by `setup.py` and tested through
 `coverage run`, which discovers the existing unittest suite.
 
