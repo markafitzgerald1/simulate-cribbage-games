@@ -13,6 +13,7 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
+        update-types: ["minor", "patch"]
 
   # Maintain dependencies for pip (requirements.txt)
   - package-ecosystem: "pip"
@@ -30,6 +31,7 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
+        update-types: ["minor", "patch"]
 
   # Maintain dependencies for npm (package.json)
   - package-ecosystem: "npm"
@@ -44,3 +46,4 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
+        update-types: ["minor", "patch"]
