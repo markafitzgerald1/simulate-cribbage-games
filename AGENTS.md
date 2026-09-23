@@ -214,15 +214,13 @@ pre-commit install
 
 Bootstrap the tally shelf once per working directory so the simulator can run.
 The shelf is a runtime artifact, not a tracked file, and the simulator opens it
-read-only unless tallying is active:
+read-only unless tallying is active. An empty shelf satisfies the initial read;
+the optional build step described in `README.md` later fills it with meaningful
+data:
 
 ```sh
-python simulate_cribbage_games.py --game-count 10 \
-  --tally-start-of-hand-position-results --hide-play-actions
+python -c "import shelve; shelve.open('start_of_hand_position_results_tallies_shelf', flag='c').close()"
 ```
-
-This must be a single-process run with no fixed dealt or kept cards; the
-tallying flag is silently ignored otherwise.
 
 The Python simulator is currently packaged by `setup.py` and tested through
 `coverage run`, which discovers the existing unittest suite.
