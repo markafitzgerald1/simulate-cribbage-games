@@ -1,15 +1,16 @@
 """Verify that workers reading the tally shelf under spawn and forkserver
-see the same data as a direct parent read.
+see the exact same data as a direct parent read.
 
-Seeds a tally shelf with a short simulation, then opens it read-only in
-the parent and in children started with ``spawn`` and ``forkserver``.
-Each child returns ``sorted(shelf.items())``, hashed for comparison.
-Asserts all three are exactly equal and non-empty.
+After seeding, opens TALLY_SHELF_PATH read-only in the parent and in children
+started with multiprocessing.get_context("spawn") and "forkserver".
+Asserts that parent, spawn child, and forkserver child read sorted(shelf.items())
+identically and that the shelf is non-empty.
 
-Then repeats the check on an empty shelf and asserts the non-empty guard
-catches it, proving the positive check is not vacuously true.
+When invoked with --empty, runs against an empty shelf so the non-empty assertion
+fails, proving that the check discriminates between populated and empty shelves.
 """
 
+import argparse
 import hashlib
 import multiprocessing
 import os
@@ -19,134 +20,156 @@ import subprocess
 import sys
 import tempfile
 
-# Import the canonical shelf path from the simulator so the script
-# cannot drift from the constant the fix introduced.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from simulate_cribbage_games import TALLY_SHELF_PATH  # noqa: E402
+import simulate_cribbage_games  # noqa: E402, F401
+from simulate_cribbage_games import (  # noqa: E402
+    GameScoreResultsTallies,
+    TALLY_SHELF_PATH,
+)
+
+# Alias GameScoreResultsTallies in __main__ so shelve unpickling finds it
+# when deserializing records written by simulate_cribbage_games.py.
+main_mod = sys.modules.get("__main__")
+if main_mod is not None:
+    setattr(main_mod, "GameScoreResultsTallies", GameScoreResultsTallies)
 
 SCRIPT = "simulate_cribbage_games.py"
 
 
-def read_shelf_hash(shelf_path):
+def read_shelf_digest(shelf_path: str):
     """Return (key_count, sha256_hex) for the shelf contents."""
+    cur_main = sys.modules.get("__main__")
+    if cur_main is not None:
+        setattr(cur_main, "GameScoreResultsTallies", GameScoreResultsTallies)
+
     with shelve.open(shelf_path, flag="r") as s:
         items = sorted(s.items(), key=lambda kv: kv[0])
     digest = hashlib.sha256(pickle.dumps(items)).hexdigest()
     return len(items), digest
 
 
-def child_read_shelf(shelf_path, result_dict, label):
-    """Target for a child process: read the shelf and store the hash."""
-    key_count, digest = read_shelf_hash(shelf_path)
-    result_dict[label] = (key_count, digest)
+def _worker_read_shelf(shelf_path: str, queue):
+    """Worker target for spawn and forkserver children."""
+    cur_main = sys.modules.get("__main__")
+    if cur_main is not None:
+        setattr(cur_main, "GameScoreResultsTallies", GameScoreResultsTallies)
+
+    try:
+        count, digest = read_shelf_digest(shelf_path)
+        queue.put(("OK", count, digest))
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        queue.put(("ERR", str(exc), ""))
 
 
-def check_reads(shelf_path, expect_nonempty):
-    """Open the shelf in parent, spawn child, forkserver child; compare."""
-    parent_count, parent_hash = read_shelf_hash(shelf_path)
+def verify_shelf_reads(shelf_path: str):
+    """Assert parent, spawn, and forkserver read identical, non-empty items."""
+    print(f"Reading shelf at: {shelf_path}")
+    parent_count, parent_digest = read_shelf_digest(shelf_path)
+    print(f"  Parent:     {parent_count} entries, digest {parent_digest[:16]}…")
 
-    manager = multiprocessing.Manager()
-    result_dict = manager.dict()
+    # Preload sqlite3 in forkserver server process to ensure clean initialization
+    multiprocessing.set_forkserver_preload(["sqlite3"])
 
-    for method in ("spawn", "forkserver"):
+    child_results = {}
+    for method in ("forkserver", "spawn"):
         ctx = multiprocessing.get_context(method)
-        p = ctx.Process(
-            target=child_read_shelf,
-            args=(shelf_path, result_dict, method),
+        q = ctx.SimpleQueue()  # type: ignore[attr-defined]
+        p = ctx.Process(  # type: ignore[attr-defined]
+            target=_worker_read_shelf, args=(shelf_path, q)
         )
         p.start()
         p.join(timeout=30)
-        if p.exitcode != 0:
-            return False, f"{method} child exited {p.exitcode}"
+        assert p.exitcode == 0, f"{method} process failed with exitcode {p.exitcode}"
+        assert not q.empty(), f"{method} process exited without sending result"
+        status, count, digest = q.get()
+        assert status == "OK", f"{method} process error: {count}"
+        print(f"  {method.capitalize():11} {count} entries, digest {digest[:16]}…")
+        child_results[method] = (count, digest)
 
-    spawn_count, spawn_hash = result_dict["spawn"]
-    forkserver_count, forkserver_hash = result_dict["forkserver"]
+    spawn_count, spawn_digest = child_results["spawn"]
+    forkserver_count, forkserver_digest = child_results["forkserver"]
 
-    if expect_nonempty and parent_count == 0:
-        return False, "parent read 0 entries (expected non-empty shelf)"
+    # Assert all three are non-empty
+    assert (
+        parent_count > 0
+    ), f"AssertionError: shelf is empty! parent_count={parent_count}"
+    assert (
+        spawn_count > 0
+    ), f"AssertionError: spawn child read empty shelf! count={spawn_count}"
+    assert (
+        forkserver_count > 0
+    ), f"AssertionError: forkserver child read empty shelf! count={forkserver_count}"
 
-    if not expect_nonempty and parent_count > 0:
-        return False, f"parent read {parent_count} entries (expected empty shelf)"
+    # Assert exact equality across parent, spawn, and forkserver
+    assert (
+        parent_count == spawn_count == forkserver_count
+    ), f"Count mismatch: parent={parent_count}, spawn={spawn_count}, forkserver={forkserver_count}"
+    assert (
+        parent_digest == spawn_digest == forkserver_digest
+    ), f"Digest mismatch: parent={parent_digest}, spawn={spawn_digest}, forkserver={forkserver_digest}"
 
-    if parent_hash != spawn_hash:
-        return False, (
-            f"spawn hash mismatch: parent={parent_hash[:16]}… "
-            f"spawn={spawn_hash[:16]}…"
-        )
-    if parent_hash != forkserver_hash:
-        return False, (
-            f"forkserver hash mismatch: parent={parent_hash[:16]}… "
-            f"forkserver={forkserver_hash[:16]}…"
-        )
-
-    return True, (
-        f"all three reads equal, {parent_count} entries, " f"hash={parent_hash[:16]}…"
+    print(
+        f"\nSUCCESS: parent, spawn, and forkserver read exactly equal, "
+        f"non-empty data ({parent_count} entries)."
     )
 
 
+def seed_shelf(work_dir: str, python_bin: str, game_count: int = 200) -> str:
+    """Seed a tally shelf in work_dir with simulation games."""
+    shelf_path = os.path.join(work_dir, TALLY_SHELF_PATH)
+    shelve.open(shelf_path, flag="c").close()
+
+    script_path = os.path.abspath(SCRIPT)
+    seed_code = (
+        f"import random; random.seed(42); import sys; "
+        f"sys.argv = ['simulate_cribbage_games.py', "
+        f"'--game-count', '{game_count}', '--unlimited-hands-per-game', "
+        f"'--tally-start-of-hand-position-results', "
+        f"'--hide-play-actions', '--process-count', '1']; "
+        f"import runpy; runpy.run_path({script_path!r}, run_name='__main__')"
+    )
+    env = os.environ.copy()
+    env["PYTHONPATH"] = work_dir + os.pathsep + env.get("PYTHONPATH", "")
+    res = subprocess.run(
+        [python_bin, "-c", seed_code],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        cwd=work_dir,
+        env=env,
+        check=False,
+    )
+    assert res.returncode == 0, f"Tally seeding failed:\n{res.stderr}"
+    return shelf_path
+
+
 def main():
-    python_bin = sys.argv[1] if len(sys.argv) > 1 else sys.executable
-    src_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    parser = argparse.ArgumentParser(
+        description="Verify multiprocess shelf read parity across spawn and forkserver."
+    )
+    parser.add_argument(
+        "--empty",
+        action="store_true",
+        help="Run against an empty shelf to verify non-empty assertion fails.",
+    )
+    parser.add_argument(
+        "--python-bin",
+        default=sys.executable,
+        help="Path to Python binary.",
+    )
+    args = parser.parse_args()
 
     with tempfile.TemporaryDirectory() as work_dir:
-        src_file = os.path.join(src_dir, SCRIPT)
-        dst_file = os.path.join(work_dir, SCRIPT)
-        with open(src_file) as f:
-            content = f.read()
-        with open(dst_file, "w") as f:
-            f.write(content)
-
-        shelf_path = os.path.join(work_dir, TALLY_SHELF_PATH)
-
-        # --- Positive check: seeded non-empty shelf ---
-        print("Step 1: Seeding tally shelf ...")
-        shelve.open(shelf_path, flag="c").close()
-
-        seed_code = (
-            f"import random; random.seed(42); import sys; "
-            f"sys.argv = ['simulate_cribbage_games.py', "
-            f"'--game-count', '500', '--unlimited-hands-per-game', "
-            f"'--tally-start-of-hand-position-results', "
-            f"'--hide-play-actions', '--process-count', '1']; "
-            f"import runpy; runpy.run_path({dst_file!r}, run_name='__main__')"
-        )
-        env = os.environ.copy()
-        env["PYTHONPATH"] = work_dir + os.pathsep + env.get("PYTHONPATH", "")
-        result = subprocess.run(
-            [python_bin, "-c", seed_code],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            cwd=work_dir,
-            env=env,
-        )
-        if result.returncode != 0:
-            print(f"FAIL: tally seeding exited {result.returncode}")
-            print(result.stderr[-500:])
-            sys.exit(1)
-
-        print("Step 2: Positive check (non-empty shelf) ...")
-        ok, msg = check_reads(shelf_path, expect_nonempty=True)
-        print(f"  {msg}")
-        if not ok:
-            print("FAIL: positive check failed")
-            sys.exit(1)
-        print("  PASS")
-
-        # --- Negative check: empty shelf ---
-        print("Step 3: Negative check (empty shelf) ...")
-        with tempfile.TemporaryDirectory() as empty_dir:
-            empty_shelf = os.path.join(empty_dir, TALLY_SHELF_PATH)
-            shelve.open(empty_shelf, flag="c").close()
-
-            ok_empty, msg_empty = check_reads(empty_shelf, expect_nonempty=True)
-            print(f"  {msg_empty}")
-            if ok_empty:
-                print("FAIL: empty shelf passed the non-empty check")
-                sys.exit(1)
-            print("  PASS (empty shelf correctly detected)")
-
-        print("\nAll checks passed.")
+        if args.empty:
+            print("=== Running negative check on EMPTY shelf ===")
+            shelf_path = os.path.join(work_dir, TALLY_SHELF_PATH)
+            shelve.open(shelf_path, flag="c").close()
+            verify_shelf_reads(shelf_path)
+        else:
+            print("=== Running positive check on SEEDED shelf ===")
+            print("Seeding tally shelf ...")
+            shelf_path = seed_shelf(work_dir, args.python_bin, game_count=200)
+            verify_shelf_reads(shelf_path)
 
 
 if __name__ == "__main__":
