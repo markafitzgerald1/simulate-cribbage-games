@@ -611,6 +611,7 @@ DEALER: Player = 1
 
 CardCount = NewType("CardCount", int)
 DEALT_CARDS_LEN: CardCount = CardCount(6)
+TALLY_SHELF_PATH = "start_of_hand_position_results_tallies_shelf"
 
 
 class GameSimulationResult(NamedTuple):
@@ -4273,7 +4274,7 @@ if __name__ == "__main__":
         and not args.select_each_post_initial_play
     )
     args_start_of_hand_position_results_tallies: shelve.Shelf[object] = shelve.open(
-        "start_of_hand_position_results_tallies_shelf",
+        TALLY_SHELF_PATH,
         flag=("c" if args_tally_start_of_hand_position_results else "r"),
     )
 
@@ -4322,9 +4323,15 @@ if __name__ == "__main__":
     if args.process_count == 1:
         simulate_games(*simulate_games_args)
     else:
+        shelf_index = simulate_games_args.index(
+            args_start_of_hand_position_results_tallies
+        )
+        assert (
+            shelf_index == 29
+        ), f"Expected shelf at position 29, found at {shelf_index}"
         args_start_of_hand_position_results_tallies.close()
         worker_simulate_games_args = list(simulate_games_args)
-        worker_simulate_games_args[29] = "start_of_hand_position_results_tallies_shelf"
+        worker_simulate_games_args[shelf_index] = TALLY_SHELF_PATH
         processes = [
             Process(target=simulate_games, args=worker_simulate_games_args)
             for process_number in range(args.process_count)
