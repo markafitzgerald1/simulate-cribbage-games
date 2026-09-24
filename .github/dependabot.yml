@@ -9,6 +9,11 @@ updates:
       github-actions-dependencies:
         patterns:
           - "*"
+      github-actions-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+        update-types: ["minor", "patch"]
 
   # Maintain dependencies for pip (requirements.txt)
   - package-ecosystem: "pip"
@@ -22,6 +27,11 @@ updates:
       pip-dependencies:
         patterns:
           - "*"
+      pip-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+        update-types: ["minor", "patch"]
 
   # Maintain dependencies for npm (package.json)
   - package-ecosystem: "npm"
@@ -32,3 +42,8 @@ updates:
       npm-dependencies:
         patterns:
           - "*"
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+        update-types: ["minor", "patch"]
