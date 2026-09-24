@@ -3,10 +3,10 @@ see the exact same data as a direct parent read.
 
 After seeding, opens TALLY_SHELF_PATH read-only in the parent and in children
 started with multiprocessing.get_context("spawn") and "forkserver".
-Asserts that parent, spawn child, and forkserver child read sorted(shelf.items())
+Verifies that parent, spawn child, and forkserver child read sorted(shelf.items())
 identically and that the shelf is non-empty.
 
-When invoked with --empty, runs against an empty shelf so the non-empty assertion
+When invoked with --empty, runs against an empty shelf so the non-empty check
 fails, proving that the check discriminates between populated and empty shelves.
 """
 
@@ -79,34 +79,66 @@ def verify_shelf_reads(shelf_path: str):
         )
         p.start()
         p.join(timeout=30)
-        assert p.exitcode == 0, f"{method} process failed with exitcode {p.exitcode}"
-        assert not q.empty(), f"{method} process exited without sending result"
+        if p.exitcode != 0:
+            print(
+                f"FAIL: {method} process failed with exitcode {p.exitcode}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        if q.empty():
+            print(
+                f"FAIL: {method} process exited without sending result",
+                file=sys.stderr,
+            )
+            sys.exit(1)
         status, count, digest = q.get()
-        assert status == "OK", f"{method} process error: {count}"
+        if status != "OK":
+            print(
+                f"FAIL: {method} process error: {count}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
         print(f"  {method.capitalize():11} {count} entries, digest {digest[:16]}…")
         child_results[method] = (count, digest)
 
     spawn_count, spawn_digest = child_results["spawn"]
     forkserver_count, forkserver_digest = child_results["forkserver"]
 
-    # Assert all three are non-empty
-    assert (
-        parent_count > 0
-    ), f"AssertionError: shelf is empty! parent_count={parent_count}"
-    assert (
-        spawn_count > 0
-    ), f"AssertionError: spawn child read empty shelf! count={spawn_count}"
-    assert (
-        forkserver_count > 0
-    ), f"AssertionError: forkserver child read empty shelf! count={forkserver_count}"
+    # Explicit check that all three are non-empty
+    if parent_count <= 0:
+        print(
+            f"FAIL: shelf is empty! parent_count={parent_count}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if spawn_count <= 0:
+        print(
+            f"FAIL: spawn child read empty shelf! count={spawn_count}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if forkserver_count <= 0:
+        print(
+            f"FAIL: forkserver child read empty shelf! count={forkserver_count}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
-    # Assert exact equality across parent, spawn, and forkserver
-    assert (
-        parent_count == spawn_count == forkserver_count
-    ), f"Count mismatch: parent={parent_count}, spawn={spawn_count}, forkserver={forkserver_count}"
-    assert (
-        parent_digest == spawn_digest == forkserver_digest
-    ), f"Digest mismatch: parent={parent_digest}, spawn={spawn_digest}, forkserver={forkserver_digest}"
+    # Explicit equality check across parent, spawn, and forkserver
+    if not (parent_count == spawn_count == forkserver_count):
+        print(
+            f"FAIL: count mismatch: parent={parent_count}, spawn={spawn_count}, "
+            f"forkserver={forkserver_count}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if not (parent_digest == spawn_digest == forkserver_digest):
+        print(
+            f"FAIL: digest mismatch: parent={parent_digest}, spawn={spawn_digest}, "
+            f"forkserver={forkserver_digest}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     print(
         f"\nSUCCESS: parent, spawn, and forkserver read exactly equal, "
@@ -139,7 +171,9 @@ def seed_shelf(work_dir: str, python_bin: str, game_count: int = 200) -> str:
         env=env,
         check=False,
     )
-    assert res.returncode == 0, f"Tally seeding failed:\n{res.stderr}"
+    if res.returncode != 0:
+        print(f"FAIL: tally seeding failed:\n{res.stderr}", file=sys.stderr)
+        sys.exit(1)
     return shelf_path
 
 
@@ -150,7 +184,7 @@ def main():
     parser.add_argument(
         "--empty",
         action="store_true",
-        help="Run against an empty shelf to verify non-empty assertion fails.",
+        help="Run against an empty shelf to verify non-empty check fails.",
     )
     parser.add_argument(
         "--python-bin",
