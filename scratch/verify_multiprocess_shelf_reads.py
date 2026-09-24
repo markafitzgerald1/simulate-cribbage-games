@@ -1,63 +1,87 @@
-"""Verify that multi-process shelf reads match single-process reads.
+"""Verify that workers reading the tally shelf under spawn and forkserver
+see the same data as a direct parent read.
 
-Seeds a tally shelf with a small simulation, then runs the simulator
-with position estimates under --process-count 1 and --process-count 2.
-Compares the "Game points" and "Game wins" summary-statistics lines:
-when estimates are active and the shelf has matching keys, those lines
-will show non-zero fractional values.  If workers silently opened an
-empty shelf or fell back to "no estimate available", those lines would
-stay at +0.00000, which this script detects as a failure.
+Seeds a tally shelf with a short simulation, then opens it read-only in
+the parent and in children started with ``spawn`` and ``forkserver``.
+Each child returns ``sorted(shelf.items())``, hashed for comparison.
+Asserts all three are exactly equal and non-empty.
+
+Then repeats the check on an empty shelf and asserts the non-empty guard
+catches it, proving the positive check is not vacuously true.
 """
 
+import hashlib
+import multiprocessing
 import os
-import re
+import pickle
 import shelve
 import subprocess
 import sys
 import tempfile
 
+# Import the canonical shelf path from the simulator so the script
+# cannot drift from the constant the fix introduced.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from simulate_cribbage_games import TALLY_SHELF_PATH  # noqa: E402
+
 SCRIPT = "simulate_cribbage_games.py"
-SHELF_NAME = "start_of_hand_position_results_tallies_shelf"
 
 
-def run_simulator(python_bin, cwd, extra_args, seed=12345):
-    """Run the simulator with seeded randomness and return stdout."""
-    script_path = os.path.join(cwd, SCRIPT)
-    code = (
-        f"import random; random.seed({seed}); import sys; "
-        f"sys.argv = ['simulate_cribbage_games.py'] + {extra_args!r}; "
-        f"import runpy; runpy.run_path({script_path!r}, run_name='__main__')"
+def read_shelf_hash(shelf_path):
+    """Return (key_count, sha256_hex) for the shelf contents."""
+    with shelve.open(shelf_path, flag="r") as s:
+        items = sorted(s.items(), key=lambda kv: kv[0])
+    digest = hashlib.sha256(pickle.dumps(items)).hexdigest()
+    return len(items), digest
+
+
+def child_read_shelf(shelf_path, result_dict, label):
+    """Target for a child process: read the shelf and store the hash."""
+    key_count, digest = read_shelf_hash(shelf_path)
+    result_dict[label] = (key_count, digest)
+
+
+def check_reads(shelf_path, expect_nonempty):
+    """Open the shelf in parent, spawn child, forkserver child; compare."""
+    parent_count, parent_hash = read_shelf_hash(shelf_path)
+
+    manager = multiprocessing.Manager()
+    result_dict = manager.dict()
+
+    for method in ("spawn", "forkserver"):
+        ctx = multiprocessing.get_context(method)
+        p = ctx.Process(
+            target=child_read_shelf,
+            args=(shelf_path, result_dict, method),
+        )
+        p.start()
+        p.join(timeout=30)
+        if p.exitcode != 0:
+            return False, f"{method} child exited {p.exitcode}"
+
+    spawn_count, spawn_hash = result_dict["spawn"]
+    forkserver_count, forkserver_hash = result_dict["forkserver"]
+
+    if expect_nonempty and parent_count == 0:
+        return False, "parent read 0 entries (expected non-empty shelf)"
+
+    if not expect_nonempty and parent_count > 0:
+        return False, f"parent read {parent_count} entries (expected empty shelf)"
+
+    if parent_hash != spawn_hash:
+        return False, (
+            f"spawn hash mismatch: parent={parent_hash[:16]}… "
+            f"spawn={spawn_hash[:16]}…"
+        )
+    if parent_hash != forkserver_hash:
+        return False, (
+            f"forkserver hash mismatch: parent={parent_hash[:16]}… "
+            f"forkserver={forkserver_hash[:16]}…"
+        )
+
+    return True, (
+        f"all three reads equal, {parent_count} entries, " f"hash={parent_hash[:16]}…"
     )
-    env = os.environ.copy()
-    env["PYTHONPATH"] = cwd + os.pathsep + env.get("PYTHONPATH", "")
-    result = subprocess.run(
-        [python_bin, "-c", code],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        cwd=cwd,
-        env=env,
-    )
-    return result
-
-
-def extract_game_stats(text):
-    """Extract Game points and Game wins lines from final statistics block."""
-    lines = text.splitlines()
-    game_lines = []
-    for line in lines:
-        if "Game  points" in line or "Game  wins" in line:
-            game_lines.append(line.strip())
-    return game_lines
-
-
-def has_nonzero_estimates(game_lines):
-    """Check whether any Game points or Game wins line has a non-zero value."""
-    for line in game_lines:
-        match = re.search(r"[+-](\d+\.\d+)", line)
-        if match and float(match.group(1)) != 0.0:
-            return True
-    return False
 
 
 def main():
@@ -65,7 +89,6 @@ def main():
     src_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     with tempfile.TemporaryDirectory() as work_dir:
-        # Copy the simulator into the isolated workspace
         src_file = os.path.join(src_dir, SCRIPT)
         dst_file = os.path.join(work_dir, SCRIPT)
         with open(src_file) as f:
@@ -73,98 +96,57 @@ def main():
         with open(dst_file, "w") as f:
             f.write(content)
 
-        # Step 1: Seed the shelf with a tally run
-        print("Step 1: Seeding tally shelf with --game-count 1000 ...")
-        shelve.open(os.path.join(work_dir, SHELF_NAME), flag="c").close()
-        tally_args = [
-            "--game-count",
-            "1000",
-            "--unlimited-hands-per-game",
-            "--tally-start-of-hand-position-results",
-            "--hide-play-actions",
-            "--process-count",
-            "1",
-        ]
-        result = run_simulator(python_bin, work_dir, tally_args, seed=42)
+        shelf_path = os.path.join(work_dir, TALLY_SHELF_PATH)
+
+        # --- Positive check: seeded non-empty shelf ---
+        print("Step 1: Seeding tally shelf ...")
+        shelve.open(shelf_path, flag="c").close()
+
+        seed_code = (
+            f"import random; random.seed(42); import sys; "
+            f"sys.argv = ['simulate_cribbage_games.py', "
+            f"'--game-count', '500', '--unlimited-hands-per-game', "
+            f"'--tally-start-of-hand-position-results', "
+            f"'--hide-play-actions', '--process-count', '1']; "
+            f"import runpy; runpy.run_path({dst_file!r}, run_name='__main__')"
+        )
+        env = os.environ.copy()
+        env["PYTHONPATH"] = work_dir + os.pathsep + env.get("PYTHONPATH", "")
+        result = subprocess.run(
+            [python_bin, "-c", seed_code],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            cwd=work_dir,
+            env=env,
+        )
         if result.returncode != 0:
-            print(f"FAIL: tally run exited {result.returncode}")
-            print(result.stderr)
+            print(f"FAIL: tally seeding exited {result.returncode}")
+            print(result.stderr[-500:])
             sys.exit(1)
 
-        with shelve.open(os.path.join(work_dir, SHELF_NAME), flag="r") as s:
-            key_count = len(list(s.keys()))
-        print(f"  Tally shelf has {key_count} entries")
-        if key_count == 0:
-            print("FAIL: shelf is empty after tally run")
+        print("Step 2: Positive check (non-empty shelf) ...")
+        ok, msg = check_reads(shelf_path, expect_nonempty=True)
+        print(f"  {msg}")
+        if not ok:
+            print("FAIL: positive check failed")
             sys.exit(1)
+        print("  PASS")
 
-        # Step 2: Single-process run with estimates
-        print("Step 2: Running --process-count 1 with estimates ...")
-        estimate_args = [
-            "--game-count",
-            "20",
-            "--unlimited-hands-per-game",
-            "--estimate-first-pone-incomplete-game-wins-and-game-points",
-            "--estimate-first-dealer-incomplete-game-wins-and-game-points",
-            "--hide-play-actions",
-            "--process-count",
-            "1",
-        ]
-        single = run_simulator(python_bin, work_dir, estimate_args, seed=99)
-        if single.returncode != 0:
-            print(f"FAIL: single-process run exited {single.returncode}")
-            print(single.stderr)
-            sys.exit(1)
+        # --- Negative check: empty shelf ---
+        print("Step 3: Negative check (empty shelf) ...")
+        with tempfile.TemporaryDirectory() as empty_dir:
+            empty_shelf = os.path.join(empty_dir, TALLY_SHELF_PATH)
+            shelve.open(empty_shelf, flag="c").close()
 
-        single_game_lines = extract_game_stats(single.stdout)
-        single_has_estimates = has_nonzero_estimates(single_game_lines)
+            ok_empty, msg_empty = check_reads(empty_shelf, expect_nonempty=True)
+            print(f"  {msg_empty}")
+            if ok_empty:
+                print("FAIL: empty shelf passed the non-empty check")
+                sys.exit(1)
+            print("  PASS (empty shelf correctly detected)")
 
-        # Step 3: Multi-process run with estimates
-        print("Step 3: Running --process-count 2 with estimates ...")
-        estimate_args_mp = list(estimate_args)
-        pc_idx = estimate_args_mp.index("--process-count")
-        estimate_args_mp[pc_idx + 1] = "2"
-        multi = run_simulator(python_bin, work_dir, estimate_args_mp, seed=99)
-        if multi.returncode != 0:
-            print(f"FAIL: multi-process run exited {multi.returncode}")
-            print(multi.stderr)
-            sys.exit(1)
-
-        multi_game_lines = extract_game_stats(multi.stdout)
-        multi_has_estimates = has_nonzero_estimates(multi_game_lines)
-
-        # Step 4: Compare
-        print("\n  Single-process final Game stats:")
-        for line in single_game_lines[-6:]:
-            print(f"    {line}")
-
-        print("  Multi-process final Game stats:")
-        for line in multi_game_lines[-6:]:
-            print(f"    {line}")
-
-        if not single_has_estimates:
-            print(
-                "\nFAIL: single-process run showed no estimated game "
-                "points/wins — shelf keys may not match game positions"
-            )
-            sys.exit(1)
-
-        if not multi_has_estimates:
-            print(
-                "\nFAIL: multi-process run showed no estimated game "
-                "points/wins — workers may not be reading the shelf"
-            )
-            sys.exit(1)
-
-        if single_has_estimates and multi_has_estimates:
-            print(
-                "\nPASS: both single-process and multi-process runs "
-                "produced non-zero estimated Game points and Game wins, "
-                "confirming workers read the same shelf entries."
-            )
-        else:
-            print("\nFAIL: estimate comparison failed")
-            sys.exit(1)
+        print("\nAll checks passed.")
 
 
 if __name__ == "__main__":

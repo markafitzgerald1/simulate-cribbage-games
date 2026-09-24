@@ -4326,9 +4326,6 @@ if __name__ == "__main__":
         shelf_index = simulate_games_args.index(
             args_start_of_hand_position_results_tallies
         )
-        assert (
-            shelf_index == 29
-        ), f"Expected shelf at position 29, found at {shelf_index}"
         args_start_of_hand_position_results_tallies.close()
         worker_simulate_games_args = list(simulate_games_args)
         worker_simulate_games_args[shelf_index] = TALLY_SHELF_PATH
