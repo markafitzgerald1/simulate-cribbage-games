@@ -49,6 +49,11 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 - Install Node.js 18 or newer and npm dependencies for spellcheck:
   `npm ci --ignore-scripts`
 - Install pre-commit hooks: `pre-commit install`
+- Bootstrap the tally shelf (required once per working directory before any
+  simulation will run — the shelf is a runtime artifact, not a tracked file):
+  `python -c "import shelve; shelve.open('start_of_hand_position_results_tallies_shelf', flag='c').close()"`.
+  This creates an empty shelf so simulations can run; the optional build step
+  below later fills it with meaningful data.
 - Run pre-commit hooks: `pre-commit run --all-files`
 - Check for type errors: `mypy simulate_cribbage_games.py`
 - Run unit tests, generate machine parseable test coverage info (can be used in the Visual Studio Code Coverage Gutters extension, for example) and ensure that the unit test code coverage percentage has not decreased: `coverage run && coverage xml && coverage report`
@@ -332,7 +337,9 @@ python artifact_pipeline/compare_hessel.py expected_crib_points.json --role Deal
 
 ## Smoke Tests and Usage Examples
 
-All of the following should exit with status code 0 and no raised exception:
+All of the following should exit with status code 0 and no raised exception
+(the tally shelf must exist in the working directory first — see Python Setup
+above):
 
 - Simulate play of 10 reasonably well discarded and played hands of cribbage: `python simulate_cribbage_games.py --game-count 10`;
 - Simulate play of 10 reasonably well discarded and played games of cribbage: `python simulate_cribbage_games.py --game-count 10 --unlimited-hands-per-game`;

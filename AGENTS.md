@@ -212,6 +212,16 @@ Install pre-commit hooks for local development:
 pre-commit install
 ```
 
+Bootstrap the tally shelf once per working directory so the simulator can run.
+The shelf is a runtime artifact, not a tracked file, and the simulator opens it
+read-only unless tallying is active. An empty shelf satisfies the initial read;
+the optional build step described in `README.md` later fills it with meaningful
+data:
+
+```sh
+python -c "import shelve; shelve.open('start_of_hand_position_results_tallies_shelf', flag='c').close()"
+```
+
 The Python simulator is currently packaged by `setup.py` and tested through
 `coverage run`, which discovers the existing unittest suite.
 
