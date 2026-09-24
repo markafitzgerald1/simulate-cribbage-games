@@ -20,10 +20,9 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    ignore:
-      - dependency-name: "astroid"
-        versions: ["4.1.0", "4.1.1", "4.1.2"]
     groups:
+      pylint-astroid:
+        patterns: ["pylint", "astroid"]
       pip-dependencies:
         patterns:
           - "*"
