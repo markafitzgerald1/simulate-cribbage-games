@@ -1835,7 +1835,7 @@ def simulate_games(
     estimate_first_pone_incomplete_game_wins_and_game_points: bool,
     estimate_first_dealer_incomplete_game_wins_and_game_points: bool,
     hide_missing_incomplete_game_wins_and_game_points_estimates: bool,
-    start_of_hand_position_results_tallies: shelve.Shelf,
+    start_of_hand_position_results_tallies: Union[shelve.Shelf, str],
     select_each_post_initial_play: bool,
     hide_first_pone_hands: bool,
     hide_first_dealer_hands: bool,
@@ -1863,6 +1863,11 @@ def simulate_games(
         f" {len(set(first_dealer_dealt_cards + list(first_dealer_kept_cards)))}"
         " specified"
     )
+
+    worker_shelf: Optional[shelve.Shelf] = None
+    if isinstance(start_of_hand_position_results_tallies, str):
+        worker_shelf = shelve.open(start_of_hand_position_results_tallies, flag="r")
+        start_of_hand_position_results_tallies = worker_shelf
 
     try:
         if show_calc_cache_usage_stats:
@@ -2713,6 +2718,9 @@ def simulate_games(
 
     except KeyboardInterrupt:
         sys.exit(0)
+    finally:
+        if worker_shelf is not None:
+            worker_shelf.close()
 
 
 # TODO: change return type from Sequence[Card] to Tuple[Card, Card] for increased type
@@ -4314,8 +4322,11 @@ if __name__ == "__main__":
     if args.process_count == 1:
         simulate_games(*simulate_games_args)
     else:
+        args_start_of_hand_position_results_tallies.close()
+        worker_simulate_games_args = list(simulate_games_args)
+        worker_simulate_games_args[29] = "start_of_hand_position_results_tallies_shelf"
         processes = [
-            Process(target=simulate_games, args=simulate_games_args)
+            Process(target=simulate_games, args=worker_simulate_games_args)
             for process_number in range(args.process_count)
         ]
         for process in processes:
