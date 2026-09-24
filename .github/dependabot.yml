@@ -38,6 +38,9 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      - dependency-name: "typescript"
+        versions: [">= 6.1"]
     groups:
       npm-dependencies:
         patterns:
