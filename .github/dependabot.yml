@@ -38,6 +38,11 @@ updates:
     schedule:
       interval: "monthly"
     ignore:
+      # Bounded to the current release (not >=10) so the ignore ages out and
+      # prompts a periodic compatibility re-check. Blocked by the latest
+      # eslint-plugin-react peer range (^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9.7).
+      - dependency-name: "eslint"
+        versions: [">=10.0.0 <=10.11.0"]
       - dependency-name: "typescript"
         versions: [">= 6.1"]
     groups:
