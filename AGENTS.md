@@ -393,6 +393,17 @@ rankings. Do not replace objective simulation with subjective heuristics.
 
 ## Artifact Pipeline And Statistical Tables
 
+The issue #135 decomposition core is isolated from scheduled generation until
+version-4 activation is explicitly approved. Its reduced-population oracle
+enumerates ordered opponent hands and physical starters under a fixed
+suit-sensitive policy. It proves the shared rank baseline plus residual and
+separate flush/nobs expectation identities, including conditional
+starter-suit corrections. Retain the residual even when negative. The rule
+guarantees a suited flush is impossible at either discarded rank and that an
+unsuited discard never flushes; positive flush *possibility* at other ranks is
+not a guarantee of positive policy-weighted expectation. Neither the oracle
+nor this rule justifies a per-cut suited-minus-unsuited sign gate.
+
 When generating Monte Carlo artifact tables, make long runs resumable and
 checkpointed where practical. Persist enough state in the artifact to continue
 without duplicating samples, validate resume compatibility, and summarize
