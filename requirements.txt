@@ -14,7 +14,7 @@ cfgv==3.5.0
     # via pre-commit
 click==8.4.2
     # via black
-coverage==7.15.0
+coverage==7.16.1
     # via -r requirements.in
 dill==0.4.1
     # via pylint
@@ -26,19 +26,19 @@ filelock==3.29.6
     # via
     #   python-discovery
     #   virtualenv
-flake8==7.3.0
+flake8==7.4.1
     # via -r requirements.in
 identify==2.6.19
     # via pre-commit
 isort==8.0.1
     # via pylint
-librt==0.12.0
+librt==0.15.0
     # via mypy
 mccabe==0.7.0
     # via
     #   flake8
     #   pylint
-mypy==2.1.0
+mypy==2.3.1
     # via -r requirements.in
 mypy-extensions==1.1.0
     # via
@@ -58,13 +58,13 @@ platformdirs==4.10.0
     #   pylint
     #   python-discovery
     #   virtualenv
-pre-commit==4.6.0
+pre-commit==4.6.2
     # via -r requirements.in
-pycodestyle==2.14.0
+pycodestyle==2.15.0
     # via flake8
-pyflakes==3.4.0
+pyflakes==4.0.0
     # via flake8
-pylint==4.0.6
+pylint==4.0.8
     # via -r requirements.in
 python-discovery==1.4.3
     # via virtualenv
