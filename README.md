@@ -139,6 +139,36 @@ An additional full-deck rule test checks every canonical own rank pair, legal
 starter, and two-card crib completion for flush possibility without imposing a
 per-cut sign requirement on the estimator.
 
+The opt-in version-4 producer joins this decomposition to resumable, joint
+integer moments. For a bounded trial, choose a separate output path:
+
+```sh
+python artifact_pipeline/generate_table.py --estimator-v4 --samples 2 \
+  --seed 42 --output /tmp/expected-crib-points-v4.json
+```
+
+The ordinary command below still selects version 3, including in the weekly
+generation workflow. Version 4 processes both physical suit variants of each
+distinct-rank pair together. Its `--samples=N` means N independent, complete
+vector rows in each of three streams (`base`, `residual`, `suit`) for every rank
+group and role; same-rank groups have only `base` and `suit`. The row-local seed
+comes from the user seed or a persisted random nonce, generation, frozen-policy
+hash, rank group, role, stream, and zero-based row index. A resumed fixed-policy
+run can raise N, but cannot lower it; iterative-policy runs pin N and their
+transition settings. Version-4 checkpoints cannot resume version-3 artifacts
+or client-only files. `--no-resume` explicitly starts a new experiment.
+
+The full version-4 file keeps the exact centering constants and unit-weight
+joint first and cross moments in `__metadata__.estimator_state`. Every stream
+row enumerates the eligible remaining physical starters. Its bucket means and
+covariance-aware standard errors are projections of those moments, with the
+shared rank baseline, paired residual, relation correction, flush, and nobs
+accounted separately. The lean client file excludes the moment state, policy
+snapshot, nonce, and producer-only identifiers; it retains the existing mean
+and starter-relation shape. This split does not export a new uncertainty
+sidecar, survey full-table signs, regenerate production assets, or authorize
+a version-4 production run.
+
 Generate the Monte Carlo expected crib points table from the repository root:
 
 ```sh

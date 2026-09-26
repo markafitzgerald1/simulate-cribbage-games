@@ -86,6 +86,13 @@ starter-relation correction. Use that oracle to reject dropped residuals,
 opponent nobs, or sign clamps; do not turn positive flush possibility into a
 claim that every policy or finite sample has a positive measured flush.
 
+For opt-in version-4 generation, test the full checkpoint as the authority:
+complete group rounds, unit-weight joint moments, exact resume compatibility,
+and projections from saved moments. Check both seeded fresh-versus-resumed
+equality and unseeded saved-nonce continuation. A reduced-population identity
+oracle does not measure full-table runtime or achieved standard error. Keep
+weekly version-3 generation unchanged until a separate production decision.
+
 Python backend work must preserve existing validation expectations: unit tests
 through `coverage`, type checks through mypy (checking both
 `simulate_cribbage_games.py` and `artifact_pipeline`), and lint and code
