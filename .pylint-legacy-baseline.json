@@ -1,0 +1,392 @@
+[
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 46,
+    "column": 0,
+    "symbol": "too-few-public-methods",
+    "message-id": "R0903",
+    "message": "Too few public methods (1/2)",
+    "type": "refactor",
+    "obj": "Index"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 159,
+    "column": 0,
+    "symbol": "too-few-public-methods",
+    "message-id": "R0903",
+    "message": "Too few public methods (1/2)",
+    "type": "refactor",
+    "obj": "Hand"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 170,
+    "column": 4,
+    "symbol": "no-else-return",
+    "message-id": "R1705",
+    "message": "Unnecessary \"else\" after \"return\", remove the \"else\" and de-indent the code inside it",
+    "type": "refactor",
+    "obj": "get_player_name"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 418,
+    "column": 12,
+    "symbol": "unnecessary-comprehension",
+    "message-id": "R1721",
+    "message": "Unnecessary use of a comprehension, use list(current_play_play_indices_tuple[-run_length:]) instead.",
+    "type": "refactor",
+    "obj": "cached_get_current_play_run_length"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 439,
+    "column": 8,
+    "symbol": "consider-using-generator",
+    "message-id": "R1728",
+    "message": "Consider using a generator instead 'tuple(card.index for card in current_play_to_31_cards)'",
+    "type": "refactor",
+    "obj": "get_current_play_run_length"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 655,
+    "column": 0,
+    "symbol": "too-many-arguments",
+    "message-id": "R0913",
+    "message": "Too many arguments (33/5)",
+    "type": "refactor",
+    "obj": "simulate_game"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 655,
+    "column": 0,
+    "symbol": "too-many-branches",
+    "message-id": "R0912",
+    "message": "Too many branches (113/12)",
+    "type": "refactor",
+    "obj": "simulate_game"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 655,
+    "column": 0,
+    "symbol": "too-many-locals",
+    "message-id": "R0914",
+    "message": "Too many local variables (96/15)",
+    "type": "refactor",
+    "obj": "simulate_game"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 655,
+    "column": 0,
+    "symbol": "too-many-positional-arguments",
+    "message-id": "R0917",
+    "message": "Too many positional arguments (33/5)",
+    "type": "refactor",
+    "obj": "simulate_game"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 655,
+    "column": 0,
+    "symbol": "too-many-statements",
+    "message-id": "R0915",
+    "message": "Too many statements (298/50)",
+    "type": "refactor",
+    "obj": "simulate_game"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 721,
+    "column": 4,
+    "symbol": "too-many-nested-blocks",
+    "message-id": "R1702",
+    "message": "Too many nested blocks (6/5)",
+    "type": "refactor",
+    "obj": "simulate_game"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 721,
+    "column": 4,
+    "symbol": "too-many-nested-blocks",
+    "message-id": "R1702",
+    "message": "Too many nested blocks (6/5)",
+    "type": "refactor",
+    "obj": "simulate_game"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 721,
+    "column": 4,
+    "symbol": "too-many-nested-blocks",
+    "message-id": "R1702",
+    "message": "Too many nested blocks (6/5)",
+    "type": "refactor",
+    "obj": "simulate_game"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 721,
+    "column": 4,
+    "symbol": "too-many-nested-blocks",
+    "message-id": "R1702",
+    "message": "Too many nested blocks (6/5)",
+    "type": "refactor",
+    "obj": "simulate_game"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 1721,
+    "column": 4,
+    "symbol": "no-else-return",
+    "message-id": "R1705",
+    "message": "Unnecessary \"elif\" after \"return\", remove the leading \"el\" from \"elif\"",
+    "type": "refactor",
+    "obj": "get_skunks"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 1734,
+    "column": 4,
+    "symbol": "no-else-return",
+    "message-id": "R1705",
+    "message": "Unnecessary \"elif\" after \"return\", remove the leading \"el\" from \"elif\"",
+    "type": "refactor",
+    "obj": "game_points"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 1755,
+    "column": 11,
+    "symbol": "consider-using-generator",
+    "message-id": "R1728",
+    "message": "Consider using a generator instead 'sum(len(players_statistics[key]['first_pone_total_points']) for (key, stats) in players_statistics.items())'",
+    "type": "refactor",
+    "obj": "get_length_across_all_keys"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 1809,
+    "column": 0,
+    "symbol": "too-many-arguments",
+    "message-id": "R0913",
+    "message": "Too many arguments (39/5)",
+    "type": "refactor",
+    "obj": "simulate_games"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 1809,
+    "column": 0,
+    "symbol": "too-many-branches",
+    "message-id": "R0912",
+    "message": "Too many branches (42/12)",
+    "type": "refactor",
+    "obj": "simulate_games"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 1809,
+    "column": 0,
+    "symbol": "too-many-locals",
+    "message-id": "R0914",
+    "message": "Too many local variables (105/15)",
+    "type": "refactor",
+    "obj": "simulate_games"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 1809,
+    "column": 0,
+    "symbol": "too-many-positional-arguments",
+    "message-id": "R0917",
+    "message": "Too many positional arguments (39/5)",
+    "type": "refactor",
+    "obj": "simulate_games"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 1809,
+    "column": 0,
+    "symbol": "too-many-statements",
+    "message-id": "R0915",
+    "message": "Too many statements (224/50)",
+    "type": "refactor",
+    "obj": "simulate_games"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 2112,
+    "column": 16,
+    "symbol": "too-many-boolean-expressions",
+    "message-id": "R0916",
+    "message": "Too many boolean expressions in if statement (8/5)",
+    "type": "refactor",
+    "obj": "simulate_games"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 2661,
+    "column": 24,
+    "symbol": "consider-using-generator",
+    "message-id": "R1728",
+    "message": "Consider using a generator instead 'sum(game_score_results_tally.first_pone_wins + game_score_results_tally.first_dealer_wins for game_score_results_tally in start_of_hand_position_results_tallies.values())'",
+    "type": "refactor",
+    "obj": "simulate_games"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 2674,
+    "column": 16,
+    "symbol": "no-else-break",
+    "message-id": "R1723",
+    "message": "Unnecessary \"elif\" after \"break\", remove the leading \"el\" from \"elif\"",
+    "type": "refactor",
+    "obj": "simulate_games"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 2776,
+    "column": 0,
+    "symbol": "inconsistent-return-statements",
+    "message-id": "R1710",
+    "message": "Either all return statements in a function should return an expression, or none of them should.",
+    "type": "refactor",
+    "obj": "find_kept_cards"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 2843,
+    "column": 13,
+    "symbol": "use-a-generator",
+    "message-id": "R1729",
+    "message": "Use a generator instead 'any(dealt_card.index == JACK_INDEX for dealt_card in dealt_cards)'",
+    "type": "refactor",
+    "obj": "neither_flush_nor_nobs_possible"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 2924,
+    "column": 0,
+    "symbol": "too-many-locals",
+    "message-id": "R0914",
+    "message": "Too many local variables (16/15)",
+    "type": "refactor",
+    "obj": "cached_keep_max_post_cut_hand_plus_or_minus_crib_points_ignoring_suit"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 3009,
+    "column": 0,
+    "symbol": "invalid-name",
+    "message-id": "C0103",
+    "message": "Variable name \"DEFAULT_SELECT_PONE_KEPT_CARDS\" doesn't conform to snake_case naming style",
+    "type": "convention",
+    "obj": ""
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 3010,
+    "column": 0,
+    "symbol": "invalid-name",
+    "message-id": "C0103",
+    "message": "Variable name \"DEFAULT_SELECT_DEALER_KEPT_CARDS\" doesn't conform to snake_case naming style",
+    "type": "convention",
+    "obj": ""
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 3144,
+    "column": 0,
+    "symbol": "invalid-name",
+    "message-id": "C0103",
+    "message": "Variable name \"BEST_STATIC_SELECT_PONE_KEPT_CARDS\" doesn't conform to snake_case naming style",
+    "type": "convention",
+    "obj": ""
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 3145,
+    "column": 0,
+    "symbol": "invalid-name",
+    "message-id": "C0103",
+    "message": "Variable name \"BEST_STATIC_SELECT_DEALER_KEPT_CARDS\" doesn't conform to snake_case naming style",
+    "type": "convention",
+    "obj": ""
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 3419,
+    "column": 0,
+    "symbol": "invalid-name",
+    "message-id": "C0103",
+    "message": "Variable name \"DEFAULT_SELECT_PLAY\" doesn't conform to snake_case naming style",
+    "type": "convention",
+    "obj": ""
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 3422,
+    "column": 0,
+    "symbol": "too-many-arguments",
+    "message-id": "R0913",
+    "message": "Too many arguments (15/5)",
+    "type": "refactor",
+    "obj": "play_based_on_simulation"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 3422,
+    "column": 0,
+    "symbol": "too-many-locals",
+    "message-id": "R0914",
+    "message": "Too many local variables (28/15)",
+    "type": "refactor",
+    "obj": "play_based_on_simulation"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 3422,
+    "column": 0,
+    "symbol": "too-many-positional-arguments",
+    "message-id": "R0917",
+    "message": "Too many positional arguments (15/5)",
+    "type": "refactor",
+    "obj": "play_based_on_simulation"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 3590,
+    "column": 0,
+    "symbol": "too-many-arguments",
+    "message-id": "R0913",
+    "message": "Too many arguments (10/5)",
+    "type": "refactor",
+    "obj": "player_select_kept_cards_based_on_simulation"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 3590,
+    "column": 0,
+    "symbol": "too-many-locals",
+    "message-id": "R0914",
+    "message": "Too many local variables (19/15)",
+    "type": "refactor",
+    "obj": "player_select_kept_cards_based_on_simulation"
+  },
+  {
+    "path": "simulate_cribbage_games.py",
+    "line": 3590,
+    "column": 0,
+    "symbol": "too-many-positional-arguments",
+    "message-id": "R0917",
+    "message": "Too many positional arguments (10/5)",
+    "type": "refactor",
+    "obj": "player_select_kept_cards_based_on_simulation"
+  }
+]

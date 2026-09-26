@@ -84,10 +84,13 @@ through `coverage`, type checks through mypy (checking both
 `simulate_cribbage_games.py` and `artifact_pipeline`), and lint and code
 similarity checks. The immutable legacy simulator must pass
 `pylint --persistent=n --disable=all --enable=duplicate-code
-simulate_cribbage_games.py` as a pre-push similarities gate (plain `pylint` on
-the legacy file is advisory, as tracked in #171). Artifact pipeline Python code
-must pass both `pylint --persistent=n artifact_pipeline` and
-`flake8 artifact_pipeline` locally and in CI.
+simulate_cribbage_games.py` as a pre-push similarities gate and
+`python scripts/check_legacy_pylint_ratchet.py` as a pre-push and CI ratchet
+gate that fails on any pylint message beyond the committed baseline in
+`.pylint-legacy-baseline.json` (plain `pylint` on the legacy file remains
+advisory until #37). Artifact pipeline Python code must pass both
+`pylint --persistent=n artifact_pipeline` and `flake8 artifact_pipeline`
+locally and in CI.
 
 Python backend, script, Markdown, and repository-instruction changes should
 also pass `npm run spellcheck`. Treat cspell findings in identifiers as naming
