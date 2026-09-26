@@ -148,6 +148,9 @@ jobs:
       - name: Check artifact pipeline pylint issues
         run: |
           pylint --persistent=n artifact_pipeline
+      - name: Check legacy simulator pylint ratchet
+        run: |
+          python scripts/check_legacy_pylint_ratchet.py
       - name: Check for type errors
         run: |
           mypy simulate_cribbage_games.py
