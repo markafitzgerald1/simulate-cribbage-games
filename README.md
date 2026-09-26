@@ -113,6 +113,26 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 
 ## Artifact Pipeline
 
+The experimental shared-rank crib decomposition is isolated in
+`artifact_pipeline/crib_decomposition.py`. It is an opt-in library for the
+version-4 producer work under issue #135; the scheduled `generate_table.py`
+command still uses its existing version-3 estimator. The library takes a fixed
+opponent-policy scorer as an input, samples separate baseline, rank-residual,
+and joint suit-component streams, and evaluates every remaining physical
+starter for each sampled opponent hand. It does not train a policy, manage a
+checkpoint, export a sidecar, or publish a table.
+
+`artifact_pipeline/test_crib_decomposition.py` compares its exact rational
+component averages against direct enumeration of ordered opponent hands and
+legal starters in a reduced deck. That proves the estimator identities for the
+fixture policy, including conditional starter relations, a negative residual,
+flushes, and opponent-contributed nobs. It does not establish the sign of every
+production bucket, the achieved precision or runtime on the full deck, or
+calibration under a learned opponent policy. Those need the later #135 work.
+An additional full-deck rule test checks every canonical own rank pair, legal
+starter, and two-card crib completion for flush possibility without imposing a
+per-cut sign requirement on the estimator.
+
 Generate the Monte Carlo expected crib points table from the repository root:
 
 ```sh
