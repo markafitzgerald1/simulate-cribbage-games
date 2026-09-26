@@ -1,0 +1,11 @@
+# Runtime dependencies
+diskcache
+runstats
+
+# Development and lint tooling
+black
+coverage
+flake8
+mypy
+pre-commit
+pylint
