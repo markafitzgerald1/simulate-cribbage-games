@@ -74,8 +74,11 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 - Before code changes are pushed or marked ready for review, run at least one
   smoke test or usage example from this README and sanity-check the output.
   Automate that acceptance test when practical.
-- Check for pylint flagged code issues (including code duplication and similarities) in the legacy simulator:
-  `pylint simulate_cribbage_games.py`
+- _Advisory:_ Check for pylint flagged code issues (including code duplication
+  and similarities) in the legacy simulator:
+  `pylint simulate_cribbage_games.py`. This currently exits nonzero on known
+  notices in the immutable legacy file and is not a gate; getting it passing
+  is tracked in #171.
 - Run the pre-push duplicate-code gate for the immutable legacy simulator:
   `pylint --persistent=n --disable=all --enable=duplicate-code simulate_cribbage_games.py`
 - Check for pylint flagged code issues and similarities in the artifact pipeline:
