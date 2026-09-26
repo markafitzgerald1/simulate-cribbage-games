@@ -15,14 +15,12 @@ updates:
           - "*"
         update-types: ["minor", "patch"]
 
-  # Maintain dependencies for pip (requirements.txt)
+  # Maintain dependencies for pip (requirements.in / requirements.txt)
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "weekly"
     groups:
-      pylint-astroid:
-        patterns: ["pylint", "astroid"]
       pip-dependencies:
         patterns:
           - "*"
@@ -54,8 +52,11 @@ updates:
         versions: [">=18.0.0 <=19.3.0"]
       - dependency-name: "@types/react-dom"
         versions: [">=18.0.0 <=19.3.0"]
+      # Bounded to the current release (not >=6.1) so the ignore ages out and
+      # prompts a periodic compatibility re-check. Blocked by
+      # @typescript-eslint/eslint-plugin peer range (<6.1.0).
       - dependency-name: "typescript"
-        versions: [">= 6.1"]
+        versions: [">=6.1.0 <=7.0.2"]
     groups:
       npm-dependencies:
         patterns:
