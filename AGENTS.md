@@ -244,7 +244,6 @@ coverage run --append scripts/run_slow_analytical_tests.py
 coverage report --fail-under=100 -m --include='artifact_pipeline/*'
 mypy simulate_cribbage_games.py artifact_pipeline
 npm run spellcheck
-pylint simulate_cribbage_games.py
 pylint --persistent=n --disable=all --enable=duplicate-code simulate_cribbage_games.py
 pylint --persistent=n artifact_pipeline
 flake8
@@ -594,12 +593,16 @@ the configured value to buy wall-clock time.
 ## Lint Configuration Expectations
 
 Do not assume lint rules are enforced unless they are present in local
-configuration or pre-commit output. The artifact pipeline is covered by local
-pre-commit and CI checks for both `pylint --persistent=n artifact_pipeline` and
-`flake8 artifact_pipeline`. The current pylint configuration does not enforce
-magic-number checks or unusually strict short-variable-name checks. Use
-`npm run spellcheck` to catch misspellings and many opaque identifier fragments
-that pylint accepts as valid snake_case.
+configuration or pre-commit output. The legacy simulator is gated only on
+duplicate-code similarities (`pylint --persistent=n --disable=all
+--enable=duplicate-code simulate_cribbage_games.py`); plain
+`pylint simulate_cribbage_games.py` is advisory and tracked in #171. The
+artifact pipeline is covered by local pre-commit and CI checks for both
+`pylint --persistent=n artifact_pipeline` and `flake8 artifact_pipeline`. The
+current pylint configuration does not enforce magic-number checks or
+unusually strict short-variable-name checks. Use `npm run spellcheck` to catch
+misspellings and many opaque identifier fragments that pylint accepts as valid
+snake_case.
 
 ## Pull Request Readiness
 

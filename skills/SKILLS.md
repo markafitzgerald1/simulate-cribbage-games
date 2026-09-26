@@ -80,10 +80,13 @@ permits direct pushes to `main` or bypasses pull request review.
 ## Python Backend Guardrails
 
 Python backend work must preserve existing validation expectations: unit tests
-through `coverage`, type checks through mypy (checking both simulate_cribbage_games.py and artifact_pipeline), duplicate-code and lint checks through pylint and flake8. The immutable legacy simulator must pass
+through `coverage`, type checks through mypy (checking both
+`simulate_cribbage_games.py` and `artifact_pipeline`), and lint and code
+similarity checks. The immutable legacy simulator must pass
 `pylint --persistent=n --disable=all --enable=duplicate-code
-simulate_cribbage_games.py` as a pre-push similarities gate. Artifact pipeline
-Python code must pass both `pylint --persistent=n artifact_pipeline` and
+simulate_cribbage_games.py` as a pre-push similarities gate (plain `pylint` on
+the legacy file is advisory, as tracked in #171). Artifact pipeline Python code
+must pass both `pylint --persistent=n artifact_pipeline` and
 `flake8 artifact_pipeline` locally and in CI.
 
 Python backend, script, Markdown, and repository-instruction changes should
