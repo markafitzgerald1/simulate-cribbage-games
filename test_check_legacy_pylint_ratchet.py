@@ -207,6 +207,41 @@ class TestCheckLegacyPylintRatchet(unittest.TestCase):
         self.assertTrue("Legacy pylint ratchet passed" in out)
         self.assertEqual(buf_err.getvalue(), "")
 
+    def test_too_few_worsened_notice_fails(self) -> None:
+        """Test a too-few-* notice whose measured count falls fails."""
+        baseline_msg = dict(self.sample_msg_1)
+        worsened_msg = dict(self.sample_msg_1)
+        worsened_msg["message"] = "Too few public methods (0/2)"
+
+        buf_out, buf_err = io.StringIO(), io.StringIO()
+        with redirect_stdout(buf_out), redirect_stderr(buf_err):
+            code = check_ratchet([worsened_msg], [baseline_msg])
+
+        self.assertEqual(code, 1)
+        err = buf_err.getvalue()
+        self.assertTrue("found 1 unexpected message(s)" in err)
+        self.assertTrue("count fell from 1 to 0" in err)
+        self.assertTrue("[too-few-public-methods]" in err)
+
+    def test_too_few_improved_notice_passes_and_prints_info(self) -> None:
+        """Test a too-few-* notice whose measured count rises passes and prints INFO."""
+        baseline_msg = dict(self.sample_msg_1)
+        baseline_msg["message"] = "Too few public methods (1/3)"
+        improved_msg = dict(self.sample_msg_1)
+        improved_msg["message"] = "Too few public methods (2/3)"
+
+        buf_out, buf_err = io.StringIO(), io.StringIO()
+        with redirect_stdout(buf_out), redirect_stderr(buf_err):
+            code = check_ratchet([improved_msg], [baseline_msg])
+
+        self.assertEqual(code, 0)
+        out = buf_out.getvalue()
+        self.assertTrue(
+            "INFO: 1 notice(s) improved over baseline (measured count increased)" in out
+        )
+        self.assertTrue("Legacy pylint ratchet passed" in out)
+        self.assertEqual(buf_err.getvalue(), "")
+
     def test_multi_message_worsened_fails(self) -> None:
         """Test one worsened message among multiple on the same line fails."""
         baseline = [dict(self.sample_nested_block) for _ in range(4)]

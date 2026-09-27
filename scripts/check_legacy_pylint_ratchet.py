@@ -138,26 +138,41 @@ def save_baseline(baseline_path: Path, messages: list[dict[str, Any]]) -> None:
 
 
 def _compare_count_messages(
-    act_msgs: list[dict[str, Any]], base_msgs: list[dict[str, Any]]
-) -> tuple[list[dict[str, Any]], int]:
-    """Compare messages with '(actual/limit)' counts."""
+    act_msgs: list[dict[str, Any]],
+    base_msgs: list[dict[str, Any]],
+    symbol: str,
+) -> tuple[list[dict[str, Any]], int, int]:
+    """Compare messages with '(actual/limit)' counts.
+
+    Returns (unexpected, improved_decreased, improved_increased).
+    """
+    is_min = symbol.startswith("too-few-")
     act_pairs = [(parse_measured_count(m["message"]) or 0, m) for m in act_msgs]
     base_pairs = [(parse_measured_count(m["message"]) or 0, m) for m in base_msgs]
-    act_pairs.sort(key=lambda p: p[0], reverse=True)
-    base_pairs.sort(key=lambda p: p[0], reverse=True)
+    act_pairs.sort(key=lambda p: p[0], reverse=not is_min)
+    base_pairs.sort(key=lambda p: p[0], reverse=not is_min)
 
     unexpected: list[dict[str, Any]] = []
-    improved = 0
+    imp_dec = 0
+    imp_inc = 0
     common_len = min(len(act_pairs), len(base_pairs))
     for i in range(common_len):
         a_count, a_msg = act_pairs[i]
         b_count, _ = base_pairs[i]
-        if a_count > b_count:
-            unexpected.append(
-                dict(a_msg, detail=f"count rose from {b_count} to {a_count}")
-            )
-        elif a_count < b_count:
-            improved += 1
+        if is_min:
+            if a_count < b_count:
+                unexpected.append(
+                    dict(a_msg, detail=f"count fell from {b_count} to {a_count}")
+                )
+            elif a_count > b_count:
+                imp_inc += 1
+        else:
+            if a_count > b_count:
+                unexpected.append(
+                    dict(a_msg, detail=f"count rose from {b_count} to {a_count}")
+                )
+            elif a_count < b_count:
+                imp_dec += 1
 
     if len(act_pairs) > len(base_pairs):
         for _, a_msg in act_pairs[len(base_pairs) :]:
@@ -170,15 +185,15 @@ def _compare_count_messages(
                     ),
                 )
             )
-    return unexpected, improved
+    return unexpected, imp_dec, imp_inc
 
 
 def _compare_key_messages(
     act_msgs: list[dict[str, Any]], base_msgs: list[dict[str, Any]] | None
-) -> tuple[list[dict[str, Any]], int]:
+) -> tuple[list[dict[str, Any]], int, int]:
     """Compare actual messages for a single key against baseline."""
     if base_msgs is None:
-        return list(act_msgs), 0
+        return list(act_msgs), 0, 0
 
     has_counts = any(
         parse_measured_count(m["message"]) is not None for m in base_msgs
@@ -186,10 +201,11 @@ def _compare_key_messages(
 
     if not has_counts:
         if len(act_msgs) > len(base_msgs):
-            return list(act_msgs[len(base_msgs) :]), 0
-        return [], 0
+            return list(act_msgs[len(base_msgs) :]), 0, 0
+        return [], 0, 0
 
-    return _compare_count_messages(act_msgs, base_msgs)
+    symbol = act_msgs[0]["symbol"] if act_msgs else base_msgs[0]["symbol"]
+    return _compare_count_messages(act_msgs, base_msgs, symbol)
 
 
 def _report_failure(unexpected: list[dict[str, Any]]) -> int:
@@ -220,8 +236,9 @@ def check_ratchet(actual: list[dict[str, Any]], baseline: list[dict[str, Any]]) 
     """Compare actual messages against baseline.
 
     Keys by (path, line, symbol). For messages with '(actual/limit)' counts,
-    fails if the measured count rises above the baseline's count. A count
-    decrease (improvement) or resolved notice prints an informational notice.
+    fails if the measured count worsens relative to the baseline (rises for
+    maximum checks, falls for 'too-few-*' minimum checks). A count
+    improvement or resolved notice prints an informational notice.
     """
     baseline_by_key: dict[tuple[str, int, str], list[dict[str, Any]]] = {}
     for item in baseline:
@@ -234,14 +251,16 @@ def check_ratchet(actual: list[dict[str, Any]], baseline: list[dict[str, Any]]) 
         actual_by_key.setdefault(key, []).append(item)
 
     unexpected: list[dict[str, Any]] = []
-    improved_count = 0
+    improved_decreased = 0
+    improved_increased = 0
 
     for key, act_msgs in actual_by_key.items():
-        unexpected_for_key, imp = _compare_key_messages(
+        unexpected_for_key, imp_dec, imp_inc = _compare_key_messages(
             act_msgs, baseline_by_key.get(key)
         )
         unexpected.extend(unexpected_for_key)
-        improved_count += imp
+        improved_decreased += imp_dec
+        improved_increased += imp_inc
 
     cleared_count = sum(
         len(base_msgs) - len(actual_by_key.get(key, []))
@@ -255,10 +274,16 @@ def check_ratchet(actual: list[dict[str, Any]], baseline: list[dict[str, Any]]) 
             "reported (notices resolved). Run with --refresh to ratchet down."
         )
 
-    if improved_count > 0:
+    if improved_decreased > 0:
         print(
-            f"INFO: {improved_count} notice(s) improved over baseline "
+            f"INFO: {improved_decreased} notice(s) improved over baseline "
             "(measured count decreased). Run with --refresh to ratchet down."
+        )
+
+    if improved_increased > 0:
+        print(
+            f"INFO: {improved_increased} notice(s) improved over baseline "
+            "(measured count increased). Run with --refresh to ratchet down."
         )
 
     if unexpected:
