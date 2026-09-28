@@ -137,7 +137,7 @@ def save_baseline(baseline_path: Path, messages: list[dict[str, Any]]) -> None:
         f.write("\n")
 
 
-def _compare_count_messages(
+def compare_count_messages(
     act_msgs: list[dict[str, Any]],
     base_msgs: list[dict[str, Any]],
     symbol: str,
@@ -188,7 +188,7 @@ def _compare_count_messages(
     return unexpected, imp_dec, imp_inc
 
 
-def _compare_key_messages(
+def compare_key_messages(
     act_msgs: list[dict[str, Any]], base_msgs: list[dict[str, Any]] | None
 ) -> tuple[list[dict[str, Any]], int, int]:
     """Compare actual messages for a single key against baseline."""
@@ -205,10 +205,10 @@ def _compare_key_messages(
         return [], 0, 0
 
     symbol = act_msgs[0]["symbol"] if act_msgs else base_msgs[0]["symbol"]
-    return _compare_count_messages(act_msgs, base_msgs, symbol)
+    return compare_count_messages(act_msgs, base_msgs, symbol)
 
 
-def _report_failure(unexpected: list[dict[str, Any]]) -> int:
+def report_failure(unexpected: list[dict[str, Any]]) -> int:
     """Print error diagnostics for unexpected messages and return 1."""
     print(
         f"ERROR: Legacy pylint ratchet failed: found {len(unexpected)} "
@@ -255,7 +255,7 @@ def check_ratchet(actual: list[dict[str, Any]], baseline: list[dict[str, Any]]) 
     improved_increased = 0
 
     for key, act_msgs in actual_by_key.items():
-        unexpected_for_key, imp_dec, imp_inc = _compare_key_messages(
+        unexpected_for_key, imp_dec, imp_inc = compare_key_messages(
             act_msgs, baseline_by_key.get(key)
         )
         unexpected.extend(unexpected_for_key)
@@ -287,7 +287,7 @@ def check_ratchet(actual: list[dict[str, Any]], baseline: list[dict[str, Any]]) 
         )
 
     if unexpected:
-        return _report_failure(unexpected)
+        return report_failure(unexpected)
 
     print(
         f"Legacy pylint ratchet passed: {len(actual)} message(s) reported, "

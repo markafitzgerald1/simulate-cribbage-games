@@ -29,7 +29,16 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Test with unittest and ensure >= 12% coverage
         run: |
-          coverage run && coverage report
+          coverage run
+          cp .coverage .coverage.legacy
+          coverage report
+          coverage report --fail-under=100 -m --include="scripts/check_legacy_pylint_ratchet.py"
+      - name: Upload legacy coverage
+        uses: actions/upload-artifact@v7
+        with:
+          name: artifact-coverage-legacy-${{ matrix.python-version }}
+          path: .coverage.legacy
+          include-hidden-files: true
 
   artifact-fast-tests:
     runs-on: ubuntu-latest
@@ -93,6 +102,7 @@ jobs:
   artifact-coverage:
     runs-on: ubuntu-latest
     needs:
+      - legacy-tests
       - artifact-fast-tests
       - artifact-slow-tests
     strategy:
@@ -114,10 +124,10 @@ jobs:
         with:
           pattern: artifact-coverage-*-${{ matrix.python-version }}
           merge-multiple: true
-      - name: Check artifact pipeline coverage
+      - name: Check artifact pipeline and legacy ratchet coverage
         run: |
-          coverage combine .coverage.fast .coverage.slow-hessel-compat .coverage.slow-zero-weights-coverage .coverage.slow-support-dynamic-hessel .coverage.slow-historical-true-nobs .coverage.slow-historical-flat-nobs
-          coverage report --fail-under=100 -m --include="artifact_pipeline/*"
+          coverage combine .coverage.fast .coverage.slow-hessel-compat .coverage.slow-zero-weights-coverage .coverage.slow-support-dynamic-hessel .coverage.slow-historical-true-nobs .coverage.slow-historical-flat-nobs .coverage.legacy
+          coverage report --fail-under=100 -m --include="artifact_pipeline/*,scripts/check_legacy_pylint_ratchet.py"
 
   lint-and-typecheck:
     runs-on: ubuntu-latest

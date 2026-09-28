@@ -2,22 +2,32 @@
 
 from contextlib import redirect_stderr, redirect_stdout
 import io
+import json
 from pathlib import Path
+import runpy
+import sys
 import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
 
 from scripts.check_legacy_pylint_ratchet import (
+    DEFAULT_BASELINE,
+    DEFAULT_TARGET,
     REPO_ROOT,
     check_ratchet,
+    compare_key_messages,
     load_baseline,
+    main,
     parse_measured_count,
+    report_failure,
     run_pylint,
     save_baseline,
 )
 
 
-class TestCheckLegacyPylintRatchet(unittest.TestCase):
+class TestCheckLegacyPylintRatchet(
+    unittest.TestCase
+):  # pylint: disable=too-many-public-methods
     """Test suite for legacy pylint ratchet check and baseline persistence."""
 
     def setUp(self) -> None:
@@ -50,6 +60,16 @@ class TestCheckLegacyPylintRatchet(unittest.TestCase):
             "message": "Too many nested blocks (6/5)",
             "type": "refactor",
             "obj": "play_hand",
+        }
+        self.sample_no_else_return = {
+            "path": "simulate_cribbage_games.py",
+            "line": 170,
+            "column": 4,
+            "symbol": "no-else-return",
+            "message-id": "R1705",
+            "message": "Unnecessary else after return",
+            "type": "refactor",
+            "obj": "get_player_name",
         }
 
     def test_identical_sets_pass(self) -> None:
@@ -323,6 +343,235 @@ class TestCheckLegacyPylintRatchet(unittest.TestCase):
         self.assertTrue("Error running pylint (exit code 32):" in err_usage)
         self.assertTrue("stdout:\nusage stdout message" in err_usage)
         self.assertTrue("stderr:\nusage stderr message" in err_usage)
+
+    def test_too_few_duplicate_notice_fails(self) -> None:
+        """Test duplicate notice beyond baseline count fails for too-few-*."""
+        baseline = [self.sample_msg_1]
+        actual = [self.sample_msg_1, self.sample_msg_1]
+        buf_out, buf_err = io.StringIO(), io.StringIO()
+        with redirect_stdout(buf_out), redirect_stderr(buf_err):
+            code = check_ratchet(actual, baseline)
+        self.assertEqual(code, 1)
+        err = buf_err.getvalue()
+        self.assertTrue("found 1 unexpected message(s)" in err)
+        self.assertTrue("duplicate notice beyond baseline count" in err)
+
+    def test_run_pylint_absolute_target_in_repo(self) -> None:
+        """Test absolute target path inside repo resolves correctly."""
+        mock_proc = MagicMock(returncode=0, stdout="[]", stderr="")
+        with patch("subprocess.run", return_value=mock_proc) as mock_run:
+            result = run_pylint(REPO_ROOT / "simulate_cribbage_games.py")
+
+        self.assertEqual(result, [])
+        mock_run.assert_called_once()
+        cmd_called = mock_run.call_args[0][0]
+        self.assertEqual(cmd_called[-1], "simulate_cribbage_games.py")
+
+    def test_run_pylint_external_target_fallback(self) -> None:
+        """Test external absolute target falls back when outside repo."""
+        mock_proc = MagicMock(returncode=0, stdout="[]", stderr="")
+        external_path = Path("/nonexistent_external_dir/target.py")
+        with patch("subprocess.run", return_value=mock_proc) as mock_run:
+            result = run_pylint(external_path)
+
+        self.assertEqual(result, [])
+        mock_run.assert_called_once()
+        cmd_called = mock_run.call_args[0][0]
+        self.assertEqual(cmd_called[-1], str(external_path))
+
+    def test_run_pylint_json_decode_error(self) -> None:
+        """Test JSON decode error on invalid pylint output exits with status 2."""
+        mock_proc = MagicMock(returncode=0, stdout="invalid json", stderr="")
+        buf_err = io.StringIO()
+        with patch("subprocess.run", return_value=mock_proc):
+            with redirect_stderr(buf_err), self.assertRaises(SystemExit) as cm:
+                run_pylint(Path("simulate_cribbage_games.py"))
+
+        self.assertEqual(cm.exception.code, 2)
+        err = buf_err.getvalue()
+        self.assertTrue("Failed to parse pylint JSON output:" in err)
+        self.assertTrue("invalid json" in err)
+
+    def test_run_pylint_message_normalization_and_sorting(self) -> None:
+        """Test normalizing raw paths (relative, absolute, external) and sorting."""
+        raw_msgs = [
+            {
+                "path": str(REPO_ROOT / "simulate_cribbage_games.py"),
+                "line": 159,
+                "column": 0,
+                "symbol": "too-few-public-methods",
+                "message-id": "R0903",
+                "message": "Too few public methods (1/2)",
+                "type": "refactor",
+                "obj": "HandHistory",
+            },
+            {
+                "path": "simulate_cribbage_games.py",
+                "line": 46,
+                "column": 0,
+                "symbol": "too-few-public-methods",
+                "message-id": "R0903",
+                "message": "Too few public methods (1/2)",
+                "type": "refactor",
+                "obj": "GameScoreResultsTally",
+            },
+            {
+                "path": "/external/outside/repo/file.py",
+                "line": 10,
+                "column": 0,
+                "symbol": "invalid-name",
+                "message-id": "C0103",
+                "message": "Invalid name",
+                "type": "convention",
+                "obj": "x",
+            },
+        ]
+        mock_proc = MagicMock(
+            returncode=0,
+            stdout=json.dumps(raw_msgs),
+            stderr="",
+        )
+        with patch("subprocess.run", return_value=mock_proc):
+            normalized = run_pylint(Path("simulate_cribbage_games.py"))
+
+        self.assertEqual(len(normalized), 3)
+        self.assertEqual(normalized[0]["path"], "file.py")
+        self.assertEqual(normalized[0]["line"], 10)
+        self.assertEqual(normalized[1]["path"], "simulate_cribbage_games.py")
+        self.assertEqual(normalized[1]["line"], 46)
+        self.assertEqual(normalized[2]["path"], "simulate_cribbage_games.py")
+        self.assertEqual(normalized[2]["line"], 159)
+
+    def test_load_and_save_baseline_relative_path(self) -> None:
+        """Test saving and loading baseline using a relative path."""
+        rel_path = Path("scratch/test_tmp_rel_baseline.json")
+        messages = [self.sample_msg_1]
+        try:
+            save_baseline(rel_path, messages)
+            self.assertTrue((REPO_ROOT / rel_path).is_file())
+            loaded = load_baseline(rel_path)
+            self.assertEqual(loaded, messages)
+        finally:
+            full_path = REPO_ROOT / rel_path
+            if full_path.exists():
+                full_path.unlink()
+
+    def test_non_count_message_matching_and_duplicates(self) -> None:
+        """Test matching and duplicate checks for non-count messages."""
+        baseline = [self.sample_no_else_return]
+        self.assertEqual(check_ratchet([self.sample_no_else_return], baseline), 0)
+
+        actual_duplicate = [self.sample_no_else_return, self.sample_no_else_return]
+        buf_out, buf_err = io.StringIO(), io.StringIO()
+        with redirect_stdout(buf_out), redirect_stderr(buf_err):
+            code = check_ratchet(actual_duplicate, baseline)
+        self.assertEqual(code, 1)
+        self.assertTrue("found 1 unexpected message(s)" in buf_err.getvalue())
+        self.assertTrue("no-else-return" in buf_err.getvalue())
+
+    def test_compare_key_messages_empty_actual(self) -> None:
+        """Test compare_key_messages when actual messages list is empty."""
+        unexpected, imp_dec, imp_inc = compare_key_messages([], [self.sample_msg_1])
+        self.assertEqual(unexpected, [])
+        self.assertEqual(imp_dec, 0)
+        self.assertEqual(imp_inc, 0)
+
+    def test_report_failure_with_and_without_detail(self) -> None:
+        """Test report_failure formatting with and without detail field."""
+        msg_with_detail = dict(self.sample_msg_1)
+        msg_with_detail["detail"] = "custom detail"
+        msg_without_detail = dict(self.sample_msg_2)
+
+        buf_err = io.StringIO()
+        with redirect_stderr(buf_err):
+            code = report_failure([msg_with_detail, msg_without_detail])
+
+        self.assertEqual(code, 1)
+        err = buf_err.getvalue()
+        self.assertTrue("(custom detail)" in err)
+        self.assertTrue(f"[{msg_without_detail['symbol']}]" in err)
+
+    def test_main_check_mode_pass_and_fail(self) -> None:
+        """Test main() in check mode for passing and failing outcomes."""
+        with patch(
+            "scripts.check_legacy_pylint_ratchet.run_pylint",
+            return_value=[self.sample_msg_1, self.sample_msg_2],
+        ), patch.object(
+            sys,
+            "argv",
+            [
+                "check_legacy_pylint_ratchet.py",
+                "--baseline",
+                str(DEFAULT_BASELINE),
+                "--target",
+                str(DEFAULT_TARGET),
+            ],
+        ):
+            buf_out = io.StringIO()
+            with redirect_stdout(buf_out):
+                code = main()
+            self.assertEqual(code, 0)
+
+        unexpected_msg = dict(self.sample_msg_1)
+        unexpected_msg["line"] = 9999
+        with patch(
+            "scripts.check_legacy_pylint_ratchet.run_pylint",
+            return_value=[unexpected_msg],
+        ), patch.object(
+            sys,
+            "argv",
+            ["check_legacy_pylint_ratchet.py", "--baseline", str(DEFAULT_BASELINE)],
+        ):
+            buf_err = io.StringIO()
+            with redirect_stderr(buf_err):
+                code = main()
+            self.assertEqual(code, 1)
+
+    def test_main_refresh_mode(self) -> None:
+        """Test main() with --refresh updates the baseline file."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_baseline = Path(tmp_dir) / "baseline.json"
+            with patch(
+                "scripts.check_legacy_pylint_ratchet.run_pylint",
+                return_value=[self.sample_msg_1],
+            ), patch.object(
+                sys,
+                "argv",
+                [
+                    "check_legacy_pylint_ratchet.py",
+                    "--refresh",
+                    "--baseline",
+                    str(tmp_baseline),
+                ],
+            ):
+                buf_out = io.StringIO()
+                with redirect_stdout(buf_out):
+                    code = main()
+                self.assertEqual(code, 0)
+                self.assertTrue(tmp_baseline.is_file())
+                self.assertTrue("Refreshed baseline at" in buf_out.getvalue())
+                loaded = json.loads(tmp_baseline.read_text(encoding="utf-8"))
+                self.assertEqual(len(loaded), 1)
+
+    def test_run_module_as_main(self) -> None:
+        """Test module execution as main via runpy."""
+        script_path = str(REPO_ROOT / "scripts/check_legacy_pylint_ratchet.py")
+        mock_proc = MagicMock(returncode=0, stdout="[]", stderr="")
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_baseline = Path(tmp_dir) / "baseline.json"
+            with patch("subprocess.run", return_value=mock_proc), patch.object(
+                sys,
+                "argv",
+                [
+                    "check_legacy_pylint_ratchet.py",
+                    "--refresh",
+                    "--baseline",
+                    str(tmp_baseline),
+                ],
+            ), redirect_stdout(io.StringIO()):
+                with self.assertRaises(SystemExit) as cm:
+                    runpy.run_path(script_path, run_name="__main__")
+                self.assertEqual(cm.exception.code, 0)
 
 
 if __name__ == "__main__":

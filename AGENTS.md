@@ -241,7 +241,7 @@ coverage xml
 coverage report
 coverage run -m unittest discover artifact_pipeline
 coverage run --append scripts/run_slow_analytical_tests.py
-coverage report --fail-under=100 -m --include='artifact_pipeline/*'
+coverage report --fail-under=100 -m --include='artifact_pipeline/*,scripts/check_legacy_pylint_ratchet.py'
 mypy simulate_cribbage_games.py artifact_pipeline
 npm run spellcheck
 python scripts/check_legacy_pylint_ratchet.py
