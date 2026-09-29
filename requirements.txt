@@ -64,7 +64,7 @@ pycodestyle==2.15.0
     # via flake8
 pyflakes==4.0.0
     # via flake8
-pylint==4.0.8
+pylint==4.0.9
     # via -r requirements.in
 python-discovery==1.4.3
     # via virtualenv
