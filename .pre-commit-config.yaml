@@ -59,6 +59,13 @@ repos:
         pass_filenames: false
         always_run: true
         stages: [pre-push]
+      - id: pylint-legacy-ratchet
+        name: pylint-legacy-ratchet
+        entry: python scripts/check_legacy_pylint_ratchet.py
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
       - id: flake8-artifact-pipeline
         name: flake8-artifact-pipeline
         entry: flake8 artifact_pipeline
