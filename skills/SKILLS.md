@@ -217,6 +217,13 @@ Artifact pipeline changes that produce statistical tables should include
 focused tests for resume behavior, seeded reproducibility, checkpoint output,
 summary-table formatting, and impossible card states such as suited pairs.
 
+An enumeration oracle for estimator identities can bypass the sampler and
+therefore cannot prove its distribution. Pin each sampler's ordered physical
+population and random operations separately, including the residual stream's
+shuffle after forced inclusion. Seed fixtures must use the contract's exact
+population order. Four-suit toy decks test relation multiplicities that a
+three-suit fixture cannot represent.
+
 When publishing or updating a pull request, avoid force-pushing once review
 comments exist unless a human maintainer explicitly requests rewritten history.
 Attribute AI-written PR prose and comments to the agent alone when a human
