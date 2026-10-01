@@ -388,6 +388,15 @@ Prefer correctness and explainability over apparent playing strength. A strategy
 that wins in anecdotal trials is not acceptable evidence unless the sample,
 comparison baseline, and uncertainty are described.
 
+A test must be able to fail for the bug it names. For a bug fix, write the
+failing test first and show it failing against the unfixed code. For estimator,
+sampler, checkpoint, and CI-gate logic, where a wrong answer ships silently, the
+pull request also names the mutation each new test catches, and the author shows
+the test failing against that mutation in a scratch copy. A test never
+re-implements the logic it tests: it would then agree with a wrong
+implementation. Coverage cannot tell these apart, because a vacuous test
+executes the same lines as a good one.
+
 Near the end of this section, observe these boundaries: do not tune decisions by
 personal cribbage preference, vague "strong play" claims, or opaque AI-generated
 rankings. Do not replace objective simulation with subjective heuristics.
