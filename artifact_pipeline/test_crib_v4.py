@@ -11,10 +11,22 @@ import tempfile
 import unittest
 from argparse import Namespace
 from fractions import Fraction
+from random import Random
 from unittest.mock import patch
 
 from artifact_pipeline import crib_v4, generate_table
-from artifact_pipeline.crib_decomposition import RANK_CATEGORIES, centering_values
+from artifact_pipeline.crib_decomposition import (
+    RANK_CATEGORIES,
+    ROOT,
+    base_observation,
+    bucket_populations,
+    centering_values,
+    reconstruct,
+    residual_observation,
+    sample_hand,
+    suit_observation,
+)
+from artifact_pipeline.test_crib_decomposition import _rank_scores, _scale_crib_scores
 from artifact_pipeline.crib_v4 import (
     _V4Run,
     _bootstrap_policy,
@@ -23,6 +35,7 @@ from artifact_pipeline.crib_v4 import (
     _run_control,
     _sample_round,
     _score_deal,
+    _transition,
 )
 
 PAIRS = ["A_A_Unsuited", "A_2_Suited", "A_2_Unsuited"]
@@ -90,8 +103,8 @@ def write_json(path, payload):
         json.dump(payload, destination)
 
 
-class TestV4Checkpoint(unittest.TestCase):
-    """Exercise the real state machine with a fast fixed scorer fixture."""
+class V4CheckpointFixture(unittest.TestCase):
+    """Share isolated checkpoints and fast scoring across v4 test cases."""
 
     def setUp(self):
         self.directory = tempfile.mkdtemp()
@@ -114,6 +127,10 @@ class TestV4Checkpoint(unittest.TestCase):
         args = run_args(path, target, **changes)
         with contextlib.redirect_stdout(io.StringIO()):
             return crib_v4.run(args, PAIRS if pairs is None else pairs, generate_table)
+
+
+class TestV4Checkpoint(V4CheckpointFixture):
+    """Exercise the real state machine with a fast fixed scorer fixture."""
 
     def test_seeded_twins_and_same_rank_resume_match_fresh(self):
         resumed = self.path("resumed.json")
@@ -544,24 +561,22 @@ class TestV4Checkpoint(unittest.TestCase):
         )
 
     def test_iterative_convergence_and_failure_boundaries(self):
-        converged = self.path("converged.json")
-        self.run_table(
-            converged,
-            2,
-            pairs=["A_A_Unsuited"],
-            max_generations=2,
-            convergence_threshold=1e9,
-        )
-        self.assertEqual(read_json(converged)["__metadata__"]["generation"], 1)
-        not_converged = self.path("not-converged.json")
-        self.run_table(
-            not_converged,
-            2,
-            pairs=["A_A_Unsuited"],
-            max_generations=2,
-            convergence_threshold=0.0,
-        )
-        self.assertEqual(read_json(not_converged)["__metadata__"]["generation"], 1)
+        # A three-generation cap distinguishes convergence at 1 from the cap at 2.
+        for threshold, expected_generation in ((1e9, 1), (0.0, 2)):
+            with self.subTest(threshold=threshold):
+                path = self.path(f"convergence-{threshold}.json")
+                output = self.run_table(
+                    path,
+                    2,
+                    pairs=["A_A_Unsuited"],
+                    max_generations=3,
+                    convergence_threshold=threshold,
+                )
+                self.assertEqual(
+                    output["__metadata__"]["generation"],
+                    expected_generation,
+                    "convergence and hard-cap outcomes must be distinguishable",
+                )
         failing = self.path("failing.json")
         with self.assertRaises(RuntimeError):
             self.run_table(
@@ -609,6 +624,122 @@ class TestV4Checkpoint(unittest.TestCase):
         self.assertEqual(
             read_json(pending)["__metadata__"]["phase"], "transition_pending"
         )
+
+
+class TestV4IntegrationInvariants(V4CheckpointFixture):
+    """Connect v4 projections, policy boundaries, and seeds to their contracts."""
+
+    def test_suited_projections_match_core_with_nonzero_residual(self):
+        """Tie saved v4 means to the core oracle using its seed-43 scorer."""
+        group = _physical_group("A_2", generate_table)
+        centers = centering_values(group, _rank_scores)
+        hands = {
+            stream: sample_hand(group, stream, Random(seed))
+            for stream, seed in (("base", 42), ("residual", 43), ("suit", 44))
+        }
+        observations = (
+            base_observation(group, hands["base"], _scale_crib_scores),
+            residual_observation(group, hands["residual"], _scale_crib_scores),
+            suit_observation(group, hands["suit"], _scale_crib_scores, centers),
+        )
+        self.assertTrue(
+            any(observations[1].values()), "fixture residual must be nonzero"
+        )
+        # Repeat each core fixture row twice so the real checkpoint has N=2.
+        with patch("artifact_pipeline.crib_v4._centers", return_value=centers), patch(
+            "artifact_pipeline.crib_v4._score_deal", return_value=_scale_crib_scores
+        ), patch(
+            "artifact_pipeline.crib_v4.sample_hand",
+            side_effect=lambda _group, stream, _rng: hands[stream],
+        ):
+            output = self.run_table(
+                self.path("oracle-projection.json"),
+                pairs=["A_2_Suited", "A_2_Unsuited"],
+                no_client_output=True,
+            )
+        for cut, relation_name in bucket_populations(group, "Suited"):
+            expected = reconstruct(observations, "Suited", cut, relation_name)
+            actual = output["A_2_Suited"]["Dealer"][generate_table.Index.indices[cut]]
+            if relation_name != ROOT:
+                actual = actual["starter_suit_relation"][relation_name]
+            for category, value in expected.items():
+                with self.subTest(cut=cut, relation=relation_name, category=category):
+                    self.assertEqual(
+                        actual["points"][category]["mu"],
+                        float(value),
+                        "v4 suited means must include the core residual",
+                    )
+            self.assertEqual(actual["mu"], float(expected["total"]))
+
+    def test_transition_resets_moments_under_new_policy(self):
+        """A fresh-versus-resumed comparison cannot by itself detect pooling."""
+        path = self.path("transition-moments.json")
+        current = _V4Run(
+            run_args(path, max_generations=2), ["A_A_Unsuited"], generate_table
+        )
+        current.sample_pass()
+        previous = read_json(path)["__metadata__"]
+        self.assertEqual(previous["generation"], 0)
+        _transition(current.state, generate_table)
+        transitioned = current.checkpoint()["__metadata__"]
+        self.assertEqual(transitioned["generation"], 1)
+        self.assertNotEqual(transitioned["policy_sha256"], previous["policy_sha256"])
+        for roles in transitioned["estimator_state"].values():
+            for role, entry in roles.items():
+                for stream, moments in entry["streams"].items():
+                    with self.subTest(role=role, stream=stream):
+                        self.assertEqual(
+                            moments["count"], 0, "new policy must start with zero rows"
+                        )
+                        self.assertEqual(moments["next_index"], 0)
+                        self.assertEqual(set(moments["sum_x"]), {"0"})
+                        self.assertEqual(moments["sum_xx_upper"], [])
+        current.execute()
+        actual = read_json(path)["__metadata__"]
+        fresh = self.run_table(
+            self.path("transition-fresh.json"),
+            pairs=["A_A_Unsuited"],
+            max_generations=2,
+        )["__metadata__"]
+        self.assertNotEqual(actual["estimator_state"], previous["estimator_state"])
+        self.assertEqual(actual["policy_sha256"], fresh["policy_sha256"])
+        self.assertEqual(actual["generation"], fresh["generation"])
+        self.assertEqual(actual["estimator_state"], fresh["estimator_state"])
+
+    def test_row_seed_identity_and_suit_index_are_golden(self):
+        """Pin the contract's seed JSON through the real sampling-round caller."""
+        current = _V4Run(
+            run_args(self.path("golden-row.json")),
+            ["A_2_Suited", "A_2_Unsuited"],
+            generate_table,
+        )
+        current.state.update(generation=3, policy_sha256="ab" * 32)
+        for moments in current.state["estimator_state"]["A_2"]["Dealer"][
+            "streams"
+        ].values():
+            moments.update(count=7, next_index=7)
+        # These literal fields come from the approved eight-field row identity.
+        prefix = (
+            '["shared-rank-relation-v1",["seed",42],3,"'
+            + "ab" * 32
+            + '","A_2","Dealer",'
+        )
+        with patch("artifact_pipeline.crib_v4.random.Random", wraps=Random) as factory:
+            _sample_round(
+                current.state,
+                ("A_2", "Dealer"),
+                _physical_group("A_2", generate_table),
+                generate_table,
+                None,
+            )
+        self.assertEqual(factory.call_count, 3)
+        for call, stream in zip(factory.call_args_list, ("base", "residual", "suit")):
+            with self.subTest(stream=stream):
+                self.assertEqual(
+                    call.args,
+                    (f'{prefix}"{stream}",7]',),
+                    f"{stream} row seed must preserve all eight fields and index 7",
+                )
 
 
 if __name__ == "__main__":
