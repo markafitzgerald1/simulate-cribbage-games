@@ -25,7 +25,6 @@ from artifact_pipeline.crib_decomposition import (
     suit_observation,
 )
 
-
 JACK = 10
 RANKS = (1, 2, 3, 4, JACK)
 SUITS = (0, 1, 2)
@@ -160,6 +159,13 @@ def _policy_discard(hand):
 
 def _crib_scores(own_discard, hand, starters):
     opponent_discard = _policy_discard(hand)
+    crib = (*own_discard, *opponent_discard)
+    return {starter: _score_crib(crib, starter) for starter in starters}
+
+
+def _scale_crib_scores(own_discard, hand, starters):
+    """Hand-only fixture with a rank change in the Random(43) forced stratum."""
+    opponent_discard = sorted(hand, key=lambda card: (card.suit != 0, -card.index))[:2]
     crib = (*own_discard, *opponent_discard)
     return {starter: _score_crib(crib, starter) for starter in starters}
 
@@ -351,7 +357,7 @@ class TestCribDecomposition(unittest.TestCase):
                 group, sample_hand(group, "base", Random(42)), _crib_scores
             ),
             residual_observation(
-                group, sample_hand(group, "residual", Random(43)), _crib_scores
+                group, sample_hand(group, "residual", Random(43)), _scale_crib_scores
             ),
             suit_observation(
                 group,
@@ -359,6 +365,9 @@ class TestCribDecomposition(unittest.TestCase):
                 _crib_scores,
                 centers,
             ),
+        )
+        self.assertTrue(
+            any(rows[1].values()), "Residual scale must have a nonzero case"
         )
         for row in rows:
             for value in row.values():
