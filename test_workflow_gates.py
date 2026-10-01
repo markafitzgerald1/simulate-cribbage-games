@@ -38,35 +38,6 @@ class TestWorkflowGates(unittest.TestCase):
             f"Jobs missing from ci-passed needs: {all_other_jobs - needs}",
         )
 
-    def test_eval_needs_results_success_and_failure(self) -> None:
-        """Test verification of needs results for success and failure modes."""
-        all_success = {
-            "legacy-tests": {"result": "success"},
-            "artifact-coverage": {"result": "success"},
-        }
-        non_success = [
-            f"{k}: {v['result']}"
-            for k, v in all_success.items()
-            if v.get("result") != "success"
-        ]
-        self.assertEqual(non_success, [])
-
-        with_failure = {
-            "legacy-tests": {"result": "success"},
-            "artifact-coverage": {"result": "failure"},
-            "lint-and-typecheck": {"result": "cancelled"},
-            "frontend-tests-and-build": {"result": "skipped"},
-        }
-        failed = [
-            f"{k}: {v['result']}"
-            for k, v in with_failure.items()
-            if v.get("result") != "success"
-        ]
-        self.assertEqual(len(failed), 3)
-        self.assertTrue("artifact-coverage: failure" in failed)
-        self.assertTrue("lint-and-typecheck: cancelled" in failed)
-        self.assertTrue("frontend-tests-and-build: skipped" in failed)
-
 
 if __name__ == "__main__":
     unittest.main()
