@@ -224,6 +224,12 @@ shuffle after forced inclusion. Seed fixtures must use the contract's exact
 population order. Four-suit toy decks test relation multiplicities that a
 three-suit fixture cannot represent.
 
+Centering terms cancel in expectation, so agreement between averaged estimators
+with and without centering cannot prove the chosen constant. Test individual
+integer rows against `1176*R - h_num`, using independently enumerated center
+numerators and nonzero occupancy shifts. A residual integer-scale fixture must
+contain a nonzero paired rank difference to exercise its `42336/k` factor.
+
 When publishing or updating a pull request, avoid force-pushing once review
 comments exist unless a human maintainer explicitly requests rewritten history.
 Attribute AI-written PR prose and comments to the agent alone when a human
