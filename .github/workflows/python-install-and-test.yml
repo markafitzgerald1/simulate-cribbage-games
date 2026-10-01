@@ -191,8 +191,8 @@ jobs:
         run: |
           wget -q https://github.com/pmd/pmd/releases/download/pmd_releases%2F6.55.0/pmd-bin-6.55.0.zip
           unzip -q pmd-bin-6.55.0.zip
-          ln -s $GITHUB_WORKSPACE/pmd-bin-6.55.0/bin/run.sh $GITHUB_WORKSPACE/pmd-bin-6.55.0/bin/pmd
-          echo "$GITHUB_WORKSPACE/pmd-bin-6.55.0/bin" >> $GITHUB_PATH
+          ln -s "$GITHUB_WORKSPACE/pmd-bin-6.55.0/bin/run.sh" "$GITHUB_WORKSPACE/pmd-bin-6.55.0/bin/pmd"
+          echo "$GITHUB_WORKSPACE/pmd-bin-6.55.0/bin" >> "$GITHUB_PATH"
       - name: Install Node.js dependencies
         run: |
           npm ci
@@ -218,18 +218,32 @@ jobs:
         run: |
           npm run build-webapp
 
-  build:
+  # Stable aggregate gate required by branch protection on main (#177).
+  # When adding a new job to this workflow, add it to the needs list below;
+  # every job in this workflow must gate ci-passed.
+  ci-passed:
     runs-on: ubuntu-latest
+    if: always()
     needs:
       - legacy-tests
+      - artifact-fast-tests
+      - artifact-slow-tests
       - artifact-coverage
       - lint-and-typecheck
       - frontend-tests-and-build
-    strategy:
-      matrix:
-        python-version: ["3.14.4"]
-
     steps:
-      - name: Confirm split validation passed
+      - name: Check required job results
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
         run: |
-          echo "All Python and frontend validation jobs passed."
+          echo "Evaluating required job results from needs context:"
+          echo "$NEEDS_JSON" | jq .
+
+          # Any job whose result is not 'success' (e.g. failure, cancelled, or skipped) fails the aggregate gate.
+          non_success=$(echo "$NEEDS_JSON" | jq -r 'to_entries[] | select(.value.result != "success") | "\(.key): \(.value.result)"')
+          if [ -n "$non_success" ]; then
+            echo "::error::The following required job(s) did not succeed:"
+            echo "$non_success"
+            exit 1
+          fi
+          echo "All required jobs succeeded."
