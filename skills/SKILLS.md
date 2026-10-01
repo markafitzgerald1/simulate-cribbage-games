@@ -79,6 +79,13 @@ permits direct pushes to `main` or bypasses pull request review.
 
 ## Python Backend Guardrails
 
+For issue #135, keep the shared-rank crib decomposition opt-in until a separate
+production decision. Its exact reduced-population oracle proves the component
+identities for a fixed suit-sensitive policy, including the residual and
+starter-relation correction. Use that oracle to reject dropped residuals,
+opponent nobs, or sign clamps; do not turn positive flush possibility into a
+claim that every policy or finite sample has a positive measured flush.
+
 Python backend work must preserve existing validation expectations: unit tests
 through `coverage`, type checks through mypy (checking both
 `simulate_cribbage_games.py` and `artifact_pipeline`), and lint and code
