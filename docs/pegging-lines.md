@@ -67,8 +67,10 @@ missing key/file, or rejected pairing is also unavailable. Measured zeros with
 `n >= 2` remain numeric zero. Always test null explicitly rather than truthiness.
 
 Means are rounded to three decimal places (nearest, ties to even), with at
-most 0.0005 points of rounding error. SEs are rounded to two significant figures,
-which preserves positive tiny SEs instead of rounding them to zero with a fixed
+most 0.0005 points of rounding error. Rounded mean zeros have a positive sign,
+including negative means that round to zero. SEs are rounded to two significant
+figures, which preserves positive tiny SEs instead of rounding them to zero
+with a fixed
 number of decimals. JSON need not retain trailing zeros. Precision applies only
 to this companion; client means and checkpoint statistics retain their existing
 precision. Counts and frequency denominators are never rounded.
@@ -76,9 +78,13 @@ precision. Counts and frequency denominators are never rounded.
 `decode_lines(lines_bytes, means_bytes)` is the reference reader. It checks the
 schema, exact-byte pairing, declared columns/precision, required qualifications,
 frozen-policy provenance, hand/role identities, row widths, legal ranks,
-counts, finite moments and thin-cell nulls. Parse/validation failure means the
-capability is unavailable. Hash downloaded file bytes before parsing or
-serializing again: a whitespace-only means change still rejects the pairing.
+counts, finite moments and thin-cell nulls. Keys must follow canonical rank
+order, and each role's rows must ascend strictly by lead. Non-object documents
+and malformed containers are rejected with `ValueError`, like all other
+parse/validation failures; the capability is unavailable. This verifies the
+digest pairing, not numerical agreement with the means. Hash file bytes before
+parsing or serializing again: a whitespace-only means change still rejects
+the pairing.
 Readers must use `keys`, `roles` and `columns`, rather than inventing an
 independent enumeration. Browser loading and display belong to the trainer.
 
@@ -104,9 +110,11 @@ and client output paths. The generator writes client means first, hashes those
 exact on-disk bytes, then
 writes the minified companion. It prints minified bytes and reproducible gzip
 level-9 bytes (`mtime=0`). These are compression measurements, not browser
-traffic measurements. The workflow validates the companion against its own
-means on bounded PR generation, uploads it, and attaches it in the same existing
-rolling-release publication call. No workflow dispatch is needed for this PR.
+traffic measurements. On bounded PR generation the workflow checks the exact
+means digest and non-empty entries through the reference reader; it does not
+compare conditional means numerically with the means table. It uploads the
+companion and attaches it in the same existing rolling-release publication
+call. No workflow dispatch is needed for this PR.
 The uncertainty sidecar and its exporter contract are unchanged.
 
 ## Size and scope
@@ -119,11 +127,13 @@ actual generated output rather than assuming synthetic compression describes
 sampled policies. A generated bounded run on October 3, 2026 used all 1,820 keys and both roles,
 100 samples per role, seed 42, analytical iteration limits 2/1, one outer and
 one IBR iteration, 25 training samples, one rollout per action and ten policy
-samples. Its frozen policy was non-converged. Measured output:
+samples. Its frozen policy was non-converged. The same saved observations were
+serialized again after publication zero normalization; no sampling or training
+was repeated for this formatting fix. Measured output:
 
 | Payload | Minified bytes | Gzip level 9 bytes |
 | --- | ---: | ---: |
-| Generated first-exchange lines | 497,656 | 123,435 |
+| Generated first-exchange lines | 497,557 | 123,409 |
 
 That output contains 1,854 Pone lead rows, 20,516 Dealer lead rows, and 2,623
 thin rows. This measures the actual generated JSON; it is not a production

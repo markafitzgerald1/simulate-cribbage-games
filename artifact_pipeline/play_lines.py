@@ -70,7 +70,7 @@ class OpeningLines:
             row = [
                 lead,
                 stats.n,
-                round(stats.mean, 3) if stats.n >= 2 else None,
+                round(stats.mean, 3) + 0.0 if stats.n >= 2 else None,
                 float(f"{stats.standard_error:.2g}") if stats.n >= 2 else None,
             ]
             if role == DEALER:
@@ -130,18 +130,20 @@ def _integer(value: Any, lower: int, upper: int) -> bool:
 
 
 def _validate_rows(rows: list[list[Any]], ranks: list[str], role_index: int) -> None:
-    seen = set()
+    if not isinstance(rows, list):
+        raise ValueError("Invalid lines rows array")
+    previous_lead = -1
     for row in rows:
-        if len(row) != (4 if role_index == 0 else 6):
+        if not isinstance(row, list) or len(row) != (4 if role_index == 0 else 6):
             raise ValueError("Invalid lines row width")
         lead, count, mean, error = row[:4]
         if (
             not _integer(lead, 0, 12)
-            or lead in seen
+            or lead <= previous_lead
             or not _integer(count, 1, 2**53 - 1)
         ):
             raise ValueError("Invalid lead or count")
-        seen.add(lead)
+        previous_lead = lead
         if count < 2:
             if mean is not None or error is not None:
                 raise ValueError("Thin cell statistics must be null")
@@ -168,7 +170,16 @@ def _validate_rows(rows: list[list[Any]], ranks: list[str], role_index: int) -> 
 
 def decode_lines(lines_bytes: bytes, means_bytes: bytes) -> dict[str, Any]:
     """Validate pairing and positional cells; rejection means unavailable."""
-    data = json.loads(lines_bytes)
+    try:
+        data = json.loads(lines_bytes)
+        if not isinstance(data, dict):
+            raise ValueError("Lines document must be an object")
+        return _decode_document(data, means_bytes)
+    except (AttributeError, KeyError, TypeError, IndexError, OverflowError) as error:
+        raise ValueError("Malformed lines document") from error
+
+
+def _decode_document(data: dict[str, Any], means_bytes: bytes) -> dict[str, Any]:
     header = {
         "schema": SCHEMA,
         "means_sha256": hashlib.sha256(means_bytes).hexdigest(),
@@ -195,6 +206,12 @@ def decode_lines(lines_bytes: bytes, means_bytes: bytes) -> dict[str, Any]:
     ):
         raise ValueError("Invalid frozen-policy provenance")
     keys, entries = data["keys"], data["entries"]
+    if (
+        not isinstance(keys, list)
+        or not isinstance(entries, list)
+        or any(not isinstance(key, str) for key in keys)
+    ):
+        raise ValueError("Invalid lines key/entry arrays")
     if len(keys) != len(entries) or len(set(keys)) != len(keys):
         raise ValueError("Invalid lines key identities")
     for key, roles in zip(keys, entries):
@@ -202,6 +219,7 @@ def decode_lines(lines_bytes: bytes, means_bytes: bytes) -> dict[str, Any]:
         if (
             len(ranks) != 4
             or any(rank not in RANKS or len(rank) != 1 for rank in ranks)
+            or not isinstance(roles, list)
             or len(roles) != 2
         ):
             raise ValueError("Invalid kept hand or roles")
@@ -209,4 +227,8 @@ def decode_lines(lines_bytes: bytes, means_bytes: bytes) -> dict[str, Any]:
             raise ValueError("Non-canonical kept hand")
         for role_index, rows in enumerate(roles):
             _validate_rows(rows, ranks, role_index)
+    if keys != sorted(
+        keys, key=lambda key: tuple(RANKS.index(rank) for rank in key.split("_"))
+    ):
+        raise ValueError("Lines keys must follow canonical rank order")
     return data

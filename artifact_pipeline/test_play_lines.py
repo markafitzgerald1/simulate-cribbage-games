@@ -3,6 +3,7 @@
 from copy import deepcopy
 import hashlib
 import json
+import math
 import random
 import unittest
 from unittest.mock import patch
@@ -11,6 +12,7 @@ from artifact_pipeline.generate_play_table import (
     GENERATION_METHOD,
     build_client_table,
     generate_play_table,
+    validate_resume_table,
 )
 from artifact_pipeline.pegging import (
     DEALER,
@@ -144,6 +146,100 @@ class TestPlayLines(unittest.TestCase):
         lines.add([0, 1], 1.23458)
         self.assertEqual(lines.rows(PONE), [[0, 2, 1.235, 0.00001]])
         self.assertEqual(OpeningLines().rows(PONE), [])
+
+    def test_publication_normalizes_negative_zero_without_changing_checkpoint(self):
+        lines = OpeningLines()
+        lines.add([0, 1], -0.0004)
+        lines.add([0, 1], -0.0004)
+        before = deepcopy(lines.checkpoint())
+        rows = lines.rows(PONE)
+        self.assertEqual(math.copysign(1, rows[0][2]), 1)
+        self.assertEqual(json.dumps(rows), "[[0, 2, 0.0, 0.0]]")
+        self.assertEqual(lines.checkpoint(), before)
+
+    def test_mode_uses_count_before_rank(self):
+        lines = OpeningLines()
+        for response in (0, 3, 3):
+            lines.add([9, response], 0)
+        self.assertEqual(lines.rows(DEALER), [[9, 3, 0.0, 0.0, 3, 2]])
+
+    def test_publication_sorts_leads_observed_out_of_order(self):
+        lines = OpeningLines()
+        for lead, delta in ((2, 6), (0, 4), (2, 10), (1, 1)):
+            lines.add([lead, 3], delta)
+        self.assertEqual(
+            lines.rows(PONE), [[0, 1, None, None], [1, 1, None, None], [2, 2, 8.0, 2.0]]
+        )
+
+    def test_fractional_checkpoint_preserves_mean_and_central_moment(self):
+        lines = OpeningLines()
+        for delta in (1 / 7, -2 / 11, 4 / 13):
+            lines.add([0, 1], delta)
+        original = deepcopy(lines.deltas[0])
+        saved = json.loads(json.dumps(lines.checkpoint()))
+        self.assertEqual(saved["0"]["mean"], original.mean)
+        self.assertEqual(saved["0"]["moment_2"], original.moment_2)
+        restored = OpeningLines.restore(saved, 3)
+        self.assertEqual(restored.deltas[0], original)
+        lines.add([0, 2], -5 / 17)
+        restored.add([0, 2], -5 / 17)
+        self.assertEqual(restored.checkpoint(), lines.checkpoint())
+
+    def test_resume_rejects_v2_generation_method(self):
+        old = {
+            "__metadata__": {
+                "generation_method": "artifact_pipeline.generate_play_table.v2",
+                "seed": 42,
+            }
+        }
+        with self.assertRaisesRegex(ValueError, "generation method"):
+            validate_resume_table(old, 42)
+
+    def test_reader_rejects_non_object_and_malformed_containers_as_value_error(self):
+        _full, means, data = self.fixture()
+        for document in (
+            None,
+            True,
+            1,
+            "text",
+            [],
+            {},
+            {**data, "qualifications": []},
+            {**data, "provenance": {}},
+            {**data, "keys": None},
+            {**data, "keys": [{}]},
+            {**data, "entries": None},
+            {**data, "keys": {}, "entries": {}},
+            {**data, "entries": [[{}, []]]},
+            {**data, "entries": [[[], {}]]},
+            {**data, "entries": [[None, []]]},
+            {**data, "entries": [[[None], []]]},
+            {**data, "entries": [[[[0, 2, 10**400, 0]], []]]},
+        ):
+            with self.subTest(document=document), self.assertRaises(ValueError):
+                decode_lines(json.dumps(document).encode(), means)
+
+    def test_reader_requires_rank_order_keys_and_ascending_lead_rows(self):
+        _full, means, data = self.fixture()
+        data["keys"] = ["A_A_A_A", "2_2_2_2"]
+        data["entries"] = [
+            [[[0, 2, 0, 0]], [[3, 2, 0, 0, 0, 1]]],
+            [[[1, 2, 0, 0]], [[3, 2, 0, 0, 1, 1]]],
+        ]
+        self.assertEqual(decode_lines(json.dumps(data).encode(), means), data)
+        reversed_keys = {
+            **data,
+            "keys": data["keys"][::-1],
+            "entries": data["entries"][::-1],
+        }
+        with self.assertRaises(ValueError):
+            decode_lines(json.dumps(reversed_keys).encode(), means)
+        _full, means, data = self.fixture()
+        for role_index in (0, 1):
+            broken = deepcopy(data)
+            broken["entries"][0][role_index].reverse()
+            with self.subTest(role_index=role_index), self.assertRaises(ValueError):
+                decode_lines(json.dumps(broken).encode(), means)
 
     def test_rank_order_provenance_and_old_checkpoint_rejection(self):
         full, means, _data = self.fixture()
