@@ -1,101 +1,152 @@
-# Typical first-exchange pegging lines: proposed contract
+# Typical first-exchange pegging lines
 
-Design for issue #176. This document is provisional; no generator changes or
-release assets accompany this initial draft. The dealer conditioning question
-below must be settled before implementation.
+Issue #176 publishes `expected_play_points.lines.json` alongside the play
+means and uncertainty sidecar. It describes what the same frozen policy does
+in the first exchange: Pone's opening card and Dealer's first response.
+Every card has count at most ten, so a Dealer response always exists; there is
+no opening "go" category. No code or action in this PR regenerates the published
+release. Future scheduled generation publishes the new companion.
 
-## Dealer conditioning question
+## Version 1 compact JSON contract
 
-Proposed interpretation: for each opponent opening lead, select the dealer's
-most frequent observed response among simulations with that lead. Its frequency
-uses that lead's simulation count as the denominator. E(deltaP) uses **all**
-simulations with that opponent lead, including less frequent dealer responses.
-It is not E(deltaP) conditional on both the lead and the selected response.
-The issue does not explicitly resolve this distinction. Confirm this
-interpretation before implementing it.
+The UTF-8 file is minified onto one line with a trailing newline. Header fields:
 
-## Artifact and populations
+- `schema`: `expected-play-lines.v1`.
+- `means_sha256`: SHA-256 of the exact accompanying client means file bytes.
+- `ranks`: `A23456789TJQK`; rank indexes are zero-based into this string.
+- `roles`: `["Pone", "Dealer"]`, in this order.
+- `columns`: `[["lead", "n", "mu", "se"],
+  ["lead", "n", "mu", "se", "response", "response_n"]]`.
+- `precision`: `{"mu_decimals": 3, "se_significant_figures": 2}`.
+- `provenance`: generation method, seed, final policy fingerprint and
+  `joint_policy_converged`. The capped production policy is non-converged.
+- `qualifications`: non-empty `policy`, `statistics` and `missing` statements
+  that consumers can quote. They describe observed frozen-policy behavior,
+  exclude optimality and alternative-action claims, exclude policy-learning
+  uncertainty from SE, and explain unavailable statistics.
+- `keys`: canonical kept four-rank keys, stated once in rank order. For example,
+  `A_A_A_A` precedes `A_A_A_2`; order uses the rank string, not ASCII sorting.
+- `entries`: array parallel to `keys`. Each entry is `[pone_rows, dealer_rows]`.
 
-Write a separate minified `expected_play_points.lines.json` with schema
-`expected-play-lines.v1`, `means_sha256`, `provenance`, `qualifications`, and
-`entries`. Entry identities use the existing canonical four-rank keys and
-`Pone`/`Dealer` roles: 1,820 keys times two roles for a complete run.
+A complete run has 1,820 keys and two roles. Bounded runs may contain a subset.
+Each role's rows are sorted by observed opening rank. Only ranks actually
+observed are present. Counts are exact integers. An example entry:
 
-Each role entry contains its total simulation count `n` and a `leads` object
-keyed by opening rank (`A23456789TJQK`). Each available lead record contains:
+```json
+[
+  [[0,3,2.0,2.3],[1,1,null,null],[2,1,null,null]],
+  [[8,3,-1.333,3.5,0,2],[9,2,0.0,0.0,2,1]]
+]
+```
 
-- `n`: simulations with that opening lead.
-- `frequency`: lead count divided by the role entry's total count.
-- `frequency_se`: plug-in binomial SE, sqrt(p * (1 - p) / total count).
-- `delta`: `n`, `mu`, and `se` for the keyed player's complete-hand pegging
-  points minus the opponent's, conditional on that opening lead.
+For Pone, the rows describe the keyed hand's own opening leads. For Dealer,
+lead ranks describe the sampled opponent's opening leads. In both cases `mu`
+is the **whole-hand** keyed player's pegging points minus the opponent's,
+conditional on that opening lead. Dealer's mean includes **every** simulation
+with the lead, including responses other than the mode. It is not a mean
+conditional on the mode too, nor the points scored in just the first exchange.
 
-For Pone, these are the keyed hand's policy-selected opening leads. For Dealer,
-these are the sampled opponent's opening leads; each lead additionally has a
-`response` object with the modal response `rank`, its observed `n`,
-`frequency`, and `frequency_se`. Response frequency divides by the lead count;
-response SE uses that same denominator. Break count ties by rank order and
-document that a tie is not evidence of a uniquely preferred move.
+Dealer publishes one modal response rank and its observed count per lead.
+Resolve count ties by canonical rank order. That tie-break is presentation,
+not evidence that one tied response is better. A response with count one still
+appears. Do not derive response-conditional means from these records.
 
-Require at least two observations to emit a conditional mean and its SE.
-Omit under-sampled lead records, and omit an under-sampled modal response.
-Keep the role's total count unchanged: frequencies need not sum to one when
-records are unavailable. Missing entries, leads, responses, files, and rejected
-digest pairings mean unavailable, never zero. Measured zero remains available.
-These thresholds only make sample SE computable; they do not establish precision.
+Derive frequencies from the counts instead of shipping redundant fields:
 
-## Production and pairing
+- Lead frequency: `n / sum(n over all rows for that role)`.
+- Modal response frequency: `response_n / n` for that Dealer lead.
+- Plug-in frequency SE: `sqrt(p * (1 - p) / denominator)`, using the role total
+  for a lead and that lead's `n` for a response. With denominator below two,
+  the frequency SE is unavailable. This is not a confidence interval or
+  calibrated small-sample accuracy claim.
 
-Observe the first two actual policy selections during the final measurement
-pass that already produces the play means. Accumulate the complete-hand delta
-returned by that same simulation into its opening-lead bucket. Do not replay
-the game, force a lead, reselect a response, consume extra random draws, retrain,
-or export the training action estimates. Preserve mixture and fallback behavior,
-including hands with only one legal rank. Policy inputs remain hidden-information.
+Every observed lead is published, including thin cells. With `n < 2`, `mu`
+and `se` are both explicitly `null`; the count remains available. A missing
+rank is unobserved and unavailable, not measured zero. An empty role array,
+missing key/file, or rejected pairing is also unavailable. Measured zeros with
+`n >= 2` remain numeric zero. Always test null explicitly rather than truthiness.
 
-Save sufficient counts and conditional moments in full-table checkpoints to
-resume without losing attribution. Reject old or incompatible checkpoints that
-lack those statistics rather than treating their previous samples as zero.
-Seeded resumed results must match uninterrupted sampling.
+Means are rounded to three decimal places (nearest, ties to even), with at
+most 0.0005 points of rounding error. SEs are rounded to two significant figures,
+which preserves positive tiny SEs instead of rounding them to zero with a fixed
+number of decimals. JSON need not retain trailing zeros. Precision applies only
+to this companion; client means and checkpoint statistics retain their existing
+precision. Counts and frequency denominators are never rounded.
 
-Write the client means first and hash their exact on-disk bytes with SHA-256.
-Write the lines artifact from that run's final accumulators, carrying the final
-policy fingerprint, seed, generation method, and `joint_policy_converged`.
-The reader must reject a different means digest, including whitespace changes.
-The artifact's qualifications explicitly describe the frozen policy, its
-non-converged status when applicable, observed conditional outcomes rather than
-alternative-action values, and exclusion of policy-learning uncertainty.
+`decode_lines(lines_bytes, means_bytes)` is the reference reader. It checks the
+schema, exact-byte pairing, declared columns/precision, required qualifications,
+frozen-policy provenance, hand/role identities, row widths, legal ranks,
+counts, finite moments and thin-cell nulls. Parse/validation failure means the
+capability is unavailable. Hash downloaded file bytes before parsing or
+serializing again: a whitespace-only means change still rejects the pairing.
+Readers must use `keys`, `roles` and `columns`, rather than inventing an
+independent enumeration. Browser loading and display belong to the trainer.
 
-Wire upload/download and the existing rolling release's single publication
-call to carry the new artifact alongside the play means and uncertainty.
-Bounded pull-request generation exercises this path. Do not dispatch production
-generation or replace existing release assets during this PR.
+## Generation, checkpoints and publication
 
-## Size estimate and exclusions
+`simulate_pegging` records only the first two actual selected ranks in its
+result. It does not replay, force, reselect, or consume extra randomness. The
+same returned complete-hand delta feeds both the play mean and its observed
+opening-lead cell. Mixture, fallback and single-legal-rank selections all pass
+through the existing hidden-information policy interface.
 
-A synthetic full-width JSON fixture uses all 1,820 keys, every distinct own rank
-as a Pone lead (5,915 records), all 13 opponent lead ranks as Dealer (23,660
-records), one response per Dealer lead, and long full-precision numeric values.
-With the proposed named fields it occupies 7,099,498 bytes minified, including
-one trailing newline. This is a conservative design estimate, not a generated
-policy measurement or a transfer/memory budget guarantee. Compression of
-repeated fixture values would misleadingly understate real transfer cost.
+Full-table entries retain unrounded online conditional moments and response
+counts under `opening`. Checkpoints store the second central moment directly,
+so resuming never reconstructs it from rounded published SEs. Generation method
+v3 rejects older checkpoints; missing lead/response counts cannot be filled in
+from whole-hand means. Seeded resumed sampling matches uninterrupted sampling,
+including lead counts, modes and conditional moments. The extra observations
+also appear in intermediate policy tables but publication uses only the final
+measurement pass and final policy fingerprint.
 
-The trainer's current source gate warns above 250 changed lines and fails above
-400; JSON artifacts count in full. A new minified one-line file contributes one
-added line, and replacement contributes one addition plus one deletion. Byte
-size remains a separate consumer concern. No production artifact is vendored in
-this simulator PR. Measure bounded output and the complete synthetic shape
-again after implementation, without regenerating the published release.
+`--lines-output` overrides the companion path; it must differ from the full
+and client output paths. The generator writes client means first, hashes those
+exact on-disk bytes, then
+writes the minified companion. It prints minified bytes and reproducible gzip
+level-9 bytes (`mtime=0`). These are compression measurements, not browser
+traffic measurements. The workflow validates the companion against its own
+means on bounded PR generation, uploads it, and attaches it in the same existing
+rolling-release publication call. No workflow dispatch is needed for this PR.
+The uncertainty sidecar and its exporter contract are unchanged.
 
-Exclude later exchanges, full traces, hidden opponent hands, suit conditioning,
-board-position strategy, per-response conditional means, alternative-action
-comparisons, action optimality claims, confidence thresholds, browser simulation,
-trainer loading/display changes, and modifications to existing client means or
-the uncertainty sidecar contract.
+## Size and scope
 
-Tests must exercise actual generator integration, role-relative delta signs,
-count denominators, conditional means, measured zero versus absence, seeded
-resume, unchanged client means, and digest rejection. In scratch copies, prove
-tests fail when frequency denominators or conditional-mean attribution are
-mutated, and when digest verification is disabled or hashes the wrong bytes.
+The compact shape drops repeated object names, total counts, frequencies and
+frequency SEs. It has at most 5,915 Pone lead rows and 23,660 Dealer lead rows
+across all 1,820 keys. Each Dealer row carries only one response. Fixed numeric
+precision keeps this shape near the requested 1 MB minified budget. Measure
+actual generated output rather than assuming synthetic compression describes
+sampled policies. A generated bounded run on October 3, 2026 used all 1,820 keys and both roles,
+100 samples per role, seed 42, analytical iteration limits 2/1, one outer and
+one IBR iteration, 25 training samples, one rollout per action and ten policy
+samples. Its frozen policy was non-converged. Measured output:
+
+| Payload | Minified bytes | Gzip level 9 bytes |
+| --- | ---: | ---: |
+| Generated first-exchange lines | 497,656 | 123,435 |
+
+That output contains 1,854 Pone lead rows, 20,516 Dealer lead rows, and 2,623
+thin rows. This measures the actual generated JSON; it is not a production
+policy estimate. Larger samples may observe more leads and lengthen counts.
+The complete shape remains bounded by the row counts above.
+
+The trainer's source gate warns above 250 changed lines and fails above 400.
+JSON artifacts count in full; a new minified one-line asset contributes one
+addition, replacement contributes one addition plus one deletion. That is a
+line budget, not a byte or parsed-memory budget. No production artifact is
+vendored in this simulator PR. No sharding is introduced for v1.
+
+Exclude later exchanges, full traces, hidden opponent hands, suits,
+board-position strategy, per-response means or distributions, alternative-action
+comparisons, optimality claims, confidence thresholds, browser simulation,
+trainer loader/display changes, changes to existing client means, and changes
+to the uncertainty contract. A modal-response-only summary cannot explain
+whether the modal response is better than another response.
+
+Tests use unequal counts and independently calculated positive/negative
+whole-hand deltas. They exercise generator attribution, lead and response
+frequency denominators, null versus measured zero, precision, policy calls and
+random state, exact checkpoint moments, seeded resume, unchanged client bytes,
+and digest rejection. Scratch mutation proofs target lead-count attribution,
+conditional-mean attribution and digest verification. Per-response mean
+mutation proofs are outside v1 scope.

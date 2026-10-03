@@ -6,6 +6,7 @@ import argparse
 from collections.abc import Callable
 from copy import deepcopy
 import hashlib
+import gzip
 import json
 import math
 import os
@@ -30,6 +31,7 @@ from artifact_pipeline.analytical_solver import (  # noqa: E402
     get_card_removal_weight,
     run_analytical_ibr,
 )
+from artifact_pipeline.play_lines import OpeningLines, build_lines  # noqa: E402
 from artifact_pipeline.pegging import (  # noqa: E402
     DEALER,
     PONE,
@@ -47,7 +49,8 @@ from artifact_pipeline.pegging import (  # noqa: E402
 
 DEFAULT_OUTPUT_PATH = "expected_play_points.json"
 DEFAULT_CLIENT_OUTPUT_PATH = "expected_play_points.client.json"
-GENERATION_METHOD = "artifact_pipeline.generate_play_table.v2"
+DEFAULT_LINES_OUTPUT_PATH = "expected_play_points.lines.json"
+GENERATION_METHOD = "artifact_pipeline.generate_play_table.v3"
 PHYSICAL_DECK = tuple((rank, suit) for rank in range(13) for suit in range(4))
 
 
@@ -105,6 +108,7 @@ class EntryAccumulators:
 
     delta: RunningStatistics
     players: dict[str, PlayerAccumulators]
+    opening: OpeningLines
 
 
 def selected_discards_to_policy(
@@ -212,6 +216,7 @@ def sample_opponent_keep(
 def _empty_entry_accumulators() -> EntryAccumulators:
     return EntryAccumulators(
         delta=RunningStatistics(),
+        opening=OpeningLines(),
         players={
             role: PlayerAccumulators(
                 total=RunningStatistics(),
@@ -225,6 +230,7 @@ def _empty_entry_accumulators() -> EntryAccumulators:
 def _entry_from_output(entry: Mapping[str, Any]) -> EntryAccumulators:
     return EntryAccumulators(
         delta=RunningStatistics.from_dict(entry),
+        opening=OpeningLines.restore(entry.get("opening", {}), entry["n"]),
         players={
             role: PlayerAccumulators(
                 total=RunningStatistics.from_dict(entry["players"][role]),
@@ -241,7 +247,9 @@ def _entry_from_output(entry: Mapping[str, Any]) -> EntryAccumulators:
 
 
 def _record_result(accumulators: EntryAccumulators, target_role, result) -> None:
-    accumulators.delta.add(result.delta(target_role))
+    delta = result.delta(target_role)
+    accumulators.delta.add(delta)
+    accumulators.opening.add(result.opening, delta)
     for role in ROLES:
         player_accumulators = accumulators.players[role]
         player_accumulators.total.add(result.total(role))
@@ -251,6 +259,7 @@ def _record_result(accumulators: EntryAccumulators, target_role, result) -> None
 
 def _entry_to_output(accumulators: EntryAccumulators) -> dict[str, Any]:
     output: dict[str, Any] = accumulators.delta.to_dict()
+    output["opening"] = accumulators.opening.checkpoint()
     output["players"] = {}
     for role in ROLES:
         player_accumulators = accumulators.players[role]
@@ -564,6 +573,19 @@ def _write_json(path: str, data: Mapping[str, object], compact: bool = False) ->
     os.replace(temporary_path, path)
 
 
+def _write_lines(lines_path: str, means_path: str, full: Mapping[str, Any]) -> None:
+    """Hash the written client bytes and report reproducible companion sizes."""
+    with open(means_path, "rb") as means_file:
+        lines = build_lines(full, means_file.read())
+    _write_json(lines_path, lines, compact=True)
+    with open(lines_path, "rb") as lines_file:
+        lines_bytes = lines_file.read()
+    print(
+        f"Play lines: {len(lines_bytes)} minified bytes; "
+        f"{len(gzip.compress(lines_bytes, 9, mtime=0))} gzip bytes"
+    )
+
+
 def positive_int(value: str) -> int:
     parsed = int(value)
     if parsed <= 0:
@@ -600,6 +622,7 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", default=DEFAULT_OUTPUT_PATH)
     parser.add_argument("--client-output", default=DEFAULT_CLIENT_OUTPUT_PATH)
+    parser.add_argument("--lines-output", default=DEFAULT_LINES_OUTPUT_PATH)
     parser.add_argument("--samples", type=positive_int, default=1000)
     parser.add_argument("--max-samples", type=positive_int)
     parser.add_argument("--target-standard-error", type=positive_float)
@@ -617,7 +640,13 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--hand-limit", type=positive_int)
     parser.add_argument("--no-resume", action="store_true")
     parser.add_argument("--fail-on-non-convergence", action="store_true")
-    return parser.parse_args()
+    args = parser.parse_args()
+    if os.path.realpath(args.lines_output) in {
+        os.path.realpath(args.output),
+        os.path.realpath(args.client_output),
+    }:
+        parser.error("Lines output must be separate from full and client means")
+    return args
 
 
 def main() -> None:
@@ -726,6 +755,7 @@ def main() -> None:
     )
     _write_json(args.output, full_table)
     _write_json(args.client_output, build_client_table(full_table), compact=True)
+    _write_lines(args.lines_output, args.client_output, full_table)
     print(
         f"Generated {len(requested_hands) * len(ROLES)} role entries in "
         f"{args.output} and {args.client_output}"
