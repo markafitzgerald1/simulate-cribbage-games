@@ -253,6 +253,7 @@ class PeggingResult:
 
     players: dict[str, dict[str, float]]
     decisions: list[DecisionTrace] = field(default_factory=list)
+    opening: list[int] = field(default_factory=list)
 
     def total(self, role: str) -> float:
         """Return one player's total pegging points."""
@@ -367,6 +368,7 @@ def simulate_from_state(
     state = initial_state.copy()
     scores = {role: _empty_points() for role in ROLES}
     decisions = []
+    opening: list[int] = []
     first_action = True
     while state.hands[PONE] or state.hands[DEALER]:
         view = state.view()
@@ -381,10 +383,12 @@ def simulate_from_state(
             selected = forced_rank
         else:
             selected = policies[view.role].select_rank(view, rng)
+        if len(opening) < 2:
+            opening.append(selected)
         first_action = False
         if _play_rank(state, selected, scores):
             break
-    return PeggingResult(players=scores, decisions=decisions)
+    return PeggingResult(players=scores, decisions=decisions, opening=opening)
 
 
 def simulate_pegging(

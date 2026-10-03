@@ -15,7 +15,9 @@ from artifact_pipeline.generate_play_table import (
     AnalyticalContext,
     DEALER,
     DEFAULT_CLIENT_OUTPUT_PATH,
+    DEFAULT_LINES_OUTPUT_PATH,
     DEFAULT_OUTPUT_PATH,
+    GENERATION_METHOD,
     DiscardPolicy,
     PONE,
     _format_duration,
@@ -23,6 +25,7 @@ from artifact_pipeline.generate_play_table import (
     _representative_physical_hand,
     _sample_target_deal,
     _write_json,
+    _write_lines,
     build_client_table,
     generate_play_table,
     main,
@@ -42,6 +45,7 @@ from artifact_pipeline.analytical_solver import (
     get_analytical_pairs,
 )
 from artifact_pipeline.pegging import canonical_hand_key, get_canonical_hands
+from artifact_pipeline.play_lines import decode_lines
 
 
 class FirstPolicy:  # pylint: disable=too-few-public-methods
@@ -329,7 +333,7 @@ class TestGeneratePlayTable(unittest.TestCase):
             validate_resume_table(invalid_method, 42)
         invalid_seed = {
             "__metadata__": {
-                "generation_method": "artifact_pipeline.generate_play_table.v2",
+                "generation_method": GENERATION_METHOD,
                 "seed": 1,
             }
         }
@@ -337,7 +341,7 @@ class TestGeneratePlayTable(unittest.TestCase):
             validate_resume_table(invalid_seed, 42)
         invalid_policy = {
             "__metadata__": {
-                "generation_method": "artifact_pipeline.generate_play_table.v2",
+                "generation_method": GENERATION_METHOD,
                 "seed": 42,
                 "policy_fingerprint": "old",
             }
@@ -426,11 +430,37 @@ class TestGeneratePlayTable(unittest.TestCase):
                 compact_path.read_text(encoding="utf-8"), '{"a":2,"b":1}\n'
             )
 
+    def test_written_lines_pair_with_unchanged_client_bytes(self):
+
+        table = generate_play_table(
+            self.discard_policy,
+            self.play_policies,
+            2,
+            42,
+            hands=[(0, 1, 2, 3)],
+            play_policy_fingerprint="first",
+        )
+        table["__metadata__"]["joint_policy_converged"] = False
+        with tempfile.TemporaryDirectory() as directory:
+            means_path = Path(directory) / "means.json"
+            lines_path = Path(directory) / "lines.json"
+            _write_json(str(means_path), build_client_table(table), compact=True)
+            before = means_path.read_bytes()
+            with patch("builtins.print") as report:
+                _write_lines(str(lines_path), str(means_path), table)
+            raw = lines_path.read_bytes()
+            self.assertEqual(before, means_path.read_bytes())
+            data = decode_lines(raw, before)
+            self.assertEqual(data["keys"], ["A_2_3_4"])
+            self.assertEqual(len(raw.splitlines()), 1)
+            self.assertTrue(f"{len(raw)} minified bytes" in report.call_args.args[0])
+
     def test_parse_args_defaults_and_overrides(self):
         with patch("sys.argv", ["generate_play_table.py"]):
             args = _parse_args()
         self.assertEqual(args.output, DEFAULT_OUTPUT_PATH)
         self.assertEqual(args.client_output, DEFAULT_CLIENT_OUTPUT_PATH)
+        self.assertEqual(args.lines_output, DEFAULT_LINES_OUTPUT_PATH)
         with patch(
             "sys.argv",
             [
@@ -446,10 +476,18 @@ class TestGeneratePlayTable(unittest.TestCase):
         self.assertEqual(args.samples, 2)
         self.assertTrue(args.fail_on_non_convergence)
 
+    def test_lines_output_cannot_replace_full_or_client_means(self):
+        for path in (DEFAULT_OUTPUT_PATH, DEFAULT_CLIENT_OUTPUT_PATH):
+            with patch(
+                "sys.argv", ["generate_play_table.py", "--lines-output", path]
+            ), patch("sys.stderr", io.StringIO()), self.assertRaises(SystemExit):
+                _parse_args()
+
     def test_main_smoke_with_bounded_dependencies(self):
         args = argparse.Namespace(
             output="full.json",
             client_output="client.json",
+            lines_output="lines.json",
             samples=1,
             max_samples=None,
             target_standard_error=None,
@@ -491,7 +529,7 @@ class TestGeneratePlayTable(unittest.TestCase):
         checkpoint_json = json.dumps(
             {
                 "__metadata__": {
-                    "generation_method": "artifact_pipeline.generate_play_table.v2",
+                    "generation_method": GENERATION_METHOD,
                     "seed": 42,
                 }
             }
@@ -524,16 +562,21 @@ class TestGeneratePlayTable(unittest.TestCase):
             "artifact_pipeline.generate_play_table.os.path.exists",
             side_effect=(True, False),
         ), patch(
-            "builtins.open", mock_open(read_data=checkpoint_json)
+            "artifact_pipeline.generate_play_table.build_lines", return_value={}
+        ), patch(
+            "artifact_pipeline.generate_play_table.gzip.compress", return_value=b"gzip"
+        ), patch(
+            "builtins.open", mock_open(read_data=checkpoint_json.encode())
         ):
             main()
             main()
-        self.assertEqual(write_json.call_count, 8)
+        self.assertEqual(write_json.call_count, 10)
 
     def test_main_can_fail_on_non_convergence_without_hand_limit(self):
         args = argparse.Namespace(
             output="full.json",
             client_output="client.json",
+            lines_output="lines.json",
             samples=1,
             max_samples=None,
             target_standard_error=None,
