@@ -270,6 +270,29 @@ class TestPlayLines(unittest.TestCase):
             with self.subTest(field=field, value=value), self.assertRaises(ValueError):
                 decode_lines(json.dumps(broken).encode(), means)
 
+    def test_reader_rejects_missing_seed(self):
+        _full, means, data = self.fixture()
+        del data["provenance"]["seed"]
+        with self.assertRaises(ValueError):
+            decode_lines(json.dumps(data).encode(), means)
+
+    def test_reader_rejects_object_and_other_non_integer_seeds(self):
+        _full, means, data = self.fixture()
+        for seed in ({}, {"seed": 42}, [], None, "42", 42.0, True, False):
+            broken = deepcopy(data)
+            broken["provenance"]["seed"] = seed
+            with self.subTest(seed=seed), self.assertRaises(ValueError):
+                decode_lines(json.dumps(broken).encode(), means)
+
+    def test_reader_accepts_integer_seed_without_coercion(self):
+        _full, means, data = self.fixture()
+        for seed in (-1, 0, 42, 2**64):
+            data["provenance"]["seed"] = seed
+            with self.subTest(seed=seed):
+                decoded = decode_lines(json.dumps(data).encode(), means)
+                self.assertEqual(decoded["provenance"]["seed"], seed)
+                self.assertIs(type(decoded["provenance"]["seed"]), int)
+
     def test_reader_rejects_invalid_positional_data(self):
         _full, means, data = self.fixture()
         mutations = [

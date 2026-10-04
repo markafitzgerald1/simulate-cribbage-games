@@ -200,9 +200,14 @@ def _decode_document(data: dict[str, Any], means_bytes: bytes) -> dict[str, Any]
     ):
         raise ValueError("Missing lines qualifications")
     provenance = data["provenance"]
-    if not isinstance(provenance["joint_policy_converged"], bool) or any(
-        not isinstance(provenance[name], str) or not provenance[name]
-        for name in ("policy_fingerprint", "generation_method")
+    if (
+        not isinstance(provenance["seed"], int)
+        or isinstance(provenance["seed"], bool)
+        or not isinstance(provenance["joint_policy_converged"], bool)
+        or any(
+            not isinstance(provenance[name], str) or not provenance[name]
+            for name in ("policy_fingerprint", "generation_method")
+        )
     ):
         raise ValueError("Invalid frozen-policy provenance")
     keys, entries = data["keys"], data["entries"]

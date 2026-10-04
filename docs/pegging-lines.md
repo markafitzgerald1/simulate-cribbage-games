@@ -16,7 +16,10 @@ The UTF-8 file is minified onto one line with a trailing newline. Header fields:
   ["lead", "n", "mu", "se", "response", "response_n"]]`.
 - `precision`: `{"mu_decimals": 3, "se_significant_figures": 2}`.
 - `provenance`: `generation_method`, `seed`, `policy_fingerprint` and
-  `joint_policy_converged` from the final frozen-policy measurement.
+  `joint_policy_converged` from the final frozen-policy measurement. `seed` is
+  required and must be a non-boolean JSON integer. The play generator always
+  uses an integer seed (default 42); unseeded, null and nonce forms are not
+  supported.
 - `qualifications`: non-empty `policy`, `statistics` and `missing` statements
   that consumers can quote. They describe observed frozen-policy behavior,
   exclude optimality and alternative-action claims, exclude policy-learning
