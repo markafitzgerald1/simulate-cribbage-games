@@ -161,6 +161,9 @@ seats, fallback draws, response history across warm training calls, and rollout
 continuations from the sampled trace. A fresh mixture draw mid-hand ignores
 history-conditioned reach. Interpret its gauge as a comparison of whole lines,
 with component-dependent continuations, and retain the production default.
+Uniform training forces one rollout per action to avoid duplicate deterministic
+observations and inflated counts. Equal weights describe top-level draws only;
+prior-average fallbacks route table misses toward earlier components and legacy.
 
 Publication rounding must normalize signed zero without altering checkpoint
 moments. Test modes where count and rank disagree, leads observed out of order,

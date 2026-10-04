@@ -467,49 +467,16 @@ class TestGeneratePlayTable(unittest.TestCase):
                 measure_quality(raw, before),
             )
 
-    def test_parse_args_defaults_and_overrides(self):
+    def test_main_uniform_passes_chain_history(self):
+        self._assert_main_training_chain("uniform-hand")
+
+    def test_main_geometric_default_reaches_final_pass(self):
         with patch("sys.argv", ["generate_play_table.py"]):
-            args = _parse_args()
-        self.assertEqual(args.output, DEFAULT_OUTPUT_PATH)
-        self.assertEqual(args.client_output, DEFAULT_CLIENT_OUTPUT_PATH)
-        self.assertEqual(args.lines_output, DEFAULT_LINES_OUTPUT_PATH)
-        self.assertEqual(args.policy_averaging, "geometric")
-        with patch("sys.argv", ["generate_play_table.py"]), patch(
-            "artifact_pipeline.generate_play_table.os.process_cpu_count", return_value=7
-        ):
-            self.assertEqual(_parse_args().workers, 7)
-        with patch("sys.argv", ["generate_play_table.py"]), patch(
-            "artifact_pipeline.generate_play_table.os.process_cpu_count",
-            return_value=None,
-        ):
-            self.assertEqual(_parse_args().workers, 1)
-        with patch(
-            "sys.argv",
-            [
-                "generate_play_table.py",
-                "--samples=2",
-                "--workers=3",
-                "--max-samples=3",
-                "--target-standard-error=0.2",
-                "--hand-limit=1",
-                "--fail-on-non-convergence",
-                "--policy-averaging=uniform-hand",
-            ],
-        ):
-            args = _parse_args()
-        self.assertEqual(args.samples, 2)
-        self.assertEqual(args.workers, 3)
-        self.assertTrue(args.fail_on_non_convergence)
-        self.assertEqual(args.policy_averaging, "uniform-hand")
+            method = _parse_args().policy_averaging
+        self.assertEqual(method, "geometric")
+        self._assert_main_training_chain(method)
 
-    def test_lines_output_cannot_replace_full_or_client_means(self):
-        for path in (DEFAULT_OUTPUT_PATH, DEFAULT_CLIENT_OUTPUT_PATH):
-            with patch(
-                "sys.argv", ["generate_play_table.py", "--lines-output", path]
-            ), patch("sys.stderr", io.StringIO()), self.assertRaises(SystemExit):
-                _parse_args()
-
-    def test_main_smoke_with_bounded_dependencies(self):
+    def _assert_main_training_chain(self, method):
         args = argparse.Namespace(
             output="full.json",
             client_output="client.json",
@@ -522,7 +489,7 @@ class TestGeneratePlayTable(unittest.TestCase):
             ibr_iterations=1,
             ibr_samples=1,
             rollouts_per_action=1,
-            policy_averaging="uniform-hand",
+            policy_averaging=method,
             outer_iterations=3,
             policy_table_samples=1,
             analytical_max_iterations=1,
@@ -554,6 +521,7 @@ class TestGeneratePlayTable(unittest.TestCase):
                 kwargs["checkpoint"](table)
             return table
 
+        histories = [dict(self.play_policies) for _ in range(8)]
         checkpoint_json = json.dumps(
             {
                 "__metadata__": {
@@ -572,7 +540,7 @@ class TestGeneratePlayTable(unittest.TestCase):
             return_value=self.discard_policy,
         ), patch(
             "artifact_pipeline.generate_play_table.train_iterative_best_response",
-            return_value=(self.play_policies, []),
+            side_effect=[(history, []) for history in histories],
         ) as train_policies, patch(
             "artifact_pipeline.generate_play_table.generate_play_table",
             side_effect=generate_with_checkpoint,
@@ -606,12 +574,20 @@ class TestGeneratePlayTable(unittest.TestCase):
         )
         self.assertTrue(
             all(
-                call.kwargs["averaging"] == "uniform-hand"
-                and call.kwargs["workers"] == 2
+                call.kwargs["averaging"] == method and call.kwargs["workers"] == 2
                 for call in train_policies.call_args_list
             )
         )
-        self.assertEqual(table["__metadata__"]["policy_averaging"], "uniform-hand")
+        self.assertEqual(table["__metadata__"]["policy_averaging"], method)
+        self.assertEqual(train_policies.call_count, 8)
+        for start in (0, 4):
+            calls = train_policies.call_args_list[start : start + 4]
+            self.assertIsNone(calls[0].kwargs["initial_policies"])
+            for index in range(1, 4):
+                self.assertIs(
+                    calls[index].kwargs["initial_policies"],
+                    histories[start + index - 1],
+                )
 
     def test_main_can_fail_on_non_convergence_without_hand_limit(self):
         args = argparse.Namespace(
@@ -668,6 +644,50 @@ class TestGeneratePlayTable(unittest.TestCase):
         ):
             with self.assertRaises(RuntimeError):
                 main()
+
+
+class TestPlayArguments(unittest.TestCase):
+    def test_parse_args_defaults_and_overrides(self):
+        with patch("sys.argv", ["generate_play_table.py"]):
+            args = _parse_args()
+        self.assertEqual(args.output, DEFAULT_OUTPUT_PATH)
+        self.assertEqual(args.client_output, DEFAULT_CLIENT_OUTPUT_PATH)
+        self.assertEqual(args.lines_output, DEFAULT_LINES_OUTPUT_PATH)
+        self.assertEqual(args.policy_averaging, "geometric")
+        with patch("sys.argv", ["generate_play_table.py"]), patch(
+            "artifact_pipeline.generate_play_table.os.process_cpu_count", return_value=7
+        ):
+            self.assertEqual(_parse_args().workers, 7)
+        with patch("sys.argv", ["generate_play_table.py"]), patch(
+            "artifact_pipeline.generate_play_table.os.process_cpu_count",
+            return_value=None,
+        ):
+            self.assertEqual(_parse_args().workers, 1)
+        with patch(
+            "sys.argv",
+            [
+                "generate_play_table.py",
+                "--samples=2",
+                "--workers=3",
+                "--max-samples=3",
+                "--target-standard-error=0.2",
+                "--hand-limit=1",
+                "--fail-on-non-convergence",
+                "--policy-averaging=uniform-hand",
+            ],
+        ):
+            args = _parse_args()
+        self.assertEqual(args.samples, 2)
+        self.assertEqual(args.workers, 3)
+        self.assertTrue(args.fail_on_non_convergence)
+        self.assertEqual(args.policy_averaging, "uniform-hand")
+
+    def test_lines_output_cannot_replace_full_or_client_means(self):
+        for path in (DEFAULT_OUTPUT_PATH, DEFAULT_CLIENT_OUTPUT_PATH):
+            with patch(
+                "sys.argv", ["generate_play_table.py", "--lines-output", path]
+            ), patch("sys.stderr", io.StringIO()), self.assertRaises(SystemExit):
+                _parse_args()
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -74,13 +74,19 @@ The opt-in `--policy-averaging=uniform-hand` instead averages complete response
 strategies: each role independently samples one of its stored components at
 the start of the hand and retains it throughout. History contains the legacy
 heuristic plus every response across outer iterations and the final pass, with
-equal mass per component (seven components per role at current production
-training settings). No burn-in is applied. A response's unsupported states use
+equal mass per **top-level** component (seven per role at current production
+training settings). This is not equal effective mass at each decision: table
+misses route through prior averages toward earlier components and the legacy
+heuristic. No burn-in is applied. A response's unsupported states use
 its frozen prior average: fallback components are also sampled once before the
 hand, retained for that hand, and never reselected at each decision. The trace
 keeps these latent draws for continuation rollouts, preserving the component
 distribution conditional on the observed history instead of drawing afresh
-from the unconditional average mid-hand.
+from the unconditional average mid-hand. Training forces one rollout per action
+in this mode, even when a larger count is requested. Once the trace components
+are frozen, the complete-state continuation is deterministic; repeating it
+adds cost and duplicates observations without adding information. Each sampled
+decision/action contributes once to its statistics, rather than inflating `n`.
 
 Per-decision equal weights would not implement this strategy average: at later
 information states, behavioral averaging requires each component's own reach
@@ -194,7 +200,10 @@ Compare matched settings and report eligibility alongside any apparent gain.
 
 For the opt-in whole-hand average, the opening draw is still independent of the
 hidden deal, but the continuation is correlated with the component that chose
-the lead. Its gauge compares **whole observed lines**, not alternative leads
+the lead. For a given keep, a component's lead is usually deterministic, so
+lead groups are largely component groups; several components can share a lead,
+and unsupported lead states can route through the frozen fallback. Its gauge
+compares **whole observed lines**, not alternative leads
 followed by a common continuation. The formula and thresholds stay unchanged;
 cross-method differences are descriptive policy/line diagnostics, not a causal
 estimate of replacing only the opening card. Qualifications text is unchanged.

@@ -136,10 +136,99 @@ class TestHandPolicyAverage(unittest.TestCase):
             train_rollout_best_response(
                 PONE, original, lambda _rng: ([0, 1, 4, 5], [2, 3, 6, 7]), 1, 2, 42
             )
-        self.assertEqual(continuation.call_count, 4)
+        self.assertEqual(continuation.call_count, 2)
         self.assertTrue(
             all(call.args[1] is effective for call in continuation.call_args_list)
         )
+
+    def test_responder_uses_opponents_current_average(self):
+        observed = []
+
+        def fit(role, policies, *args, **kwargs):
+            response, values = train_rollout_best_response(
+                role, policies, *args, **kwargs
+            )
+            observed.append((role, dict(policies), response))
+            return response, values
+
+        with patch(
+            "artifact_pipeline.pegging.train_rollout_best_response", side_effect=fit
+        ):
+            train_iterative_best_response(
+                lambda _rng: ([0, 1, 2, 3], [4, 5, 6, 7]),
+                2,
+                2,
+                1,
+                42,
+                averaging="uniform-hand",
+            )
+        self.assertEqual([role for role, _, _ in observed], [PONE, DEALER] * 2)
+        for index in range(1, len(observed)):
+            role, snapshot, _response = observed[index]
+            opponent = DEALER if role == PONE else PONE
+            average = snapshot[opponent]
+            self.assertIsInstance(average, UniformHandPolicy)
+            expected = [
+                response
+                for prior_role, _, response in observed[:index]
+                if prior_role == opponent
+            ]
+            self.assertIsInstance(average.policies[0], LegacyHeuristicPolicy)
+            self.assertEqual(list(average.policies[1:]), expected)
+            self.assertIs(average.policies[-1], observed[index - 1][2])
+
+    def test_response_fallback_retains_own_prior_average(self):
+        prior = UniformHandPolicy((LegacyHeuristicPolicy(), EndPolicy(True)))
+        policies = {PONE: prior, DEALER: LegacyHeuristicPolicy()}
+        response, _values = train_rollout_best_response(
+            PONE, policies, lambda _rng: ([0, 1, 2, 3], [4, 5, 6, 7]), 2, 1, 42
+        )
+        self.assertIs(response.fallback, prior)
+        self.assertIsNot(response.fallback, prior.policies[-1])
+
+    def test_uniform_training_caps_every_response_at_one_rollout(self):
+        for method, expected in (("uniform-hand", 1), ("geometric", 4)):
+            with self.subTest(method=method), patch(
+                "artifact_pipeline.pegging.train_rollout_best_response",
+                wraps=train_rollout_best_response,
+            ) as fit:
+                train_iterative_best_response(
+                    lambda _rng: ([0, 1, 2, 3], [4, 5, 6, 7]),
+                    2,
+                    2,
+                    4,
+                    42,
+                    averaging=method,
+                )
+            self.assertEqual(fit.call_count, 4)
+            self.assertEqual(
+                [call.args[4] for call in fit.call_args_list], [expected] * 4
+            )
+        with self.assertRaises(ValueError):
+            train_iterative_best_response(None, 1, 1, 0, 42, averaging="uniform-hand")
+
+    def test_frozen_rollouts_do_not_duplicate_observation_counts(self):
+        policies = {
+            role: UniformHandPolicy((LegacyHeuristicPolicy(), EndPolicy(True)))
+            for role in (PONE, DEALER)
+        }
+        results = []
+        for rollouts in (1, 4):
+            response, values = train_rollout_best_response(
+                PONE,
+                policies,
+                lambda _rng: ([0, 1, 2, 3], [4, 5, 6, 7]),
+                3,
+                rollouts,
+                42,
+            )
+            results.append((response.actions, values))
+            opening = PolicyView(PONE, (0, 1, 2, 3), 0, (), 4, (), ())
+            self.assertEqual(set(values[opening.key()]), {0, 1, 2, 3})
+            self.assertEqual(
+                [value.n for value in values[opening.key()].values()], [3] * 4
+            )
+        self.assertEqual(results[0], results[1])
 
     def test_method_and_hand_policy_validation_and_fingerprint(self):
         with self.assertRaises(ValueError):
