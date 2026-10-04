@@ -560,7 +560,10 @@ loses the posterior implied by the observed history. Independent per-decision
 component draws are not the uniform mixed-strategy average. Its opening gauge
 compares whole lines with correlated continuations, not isolated lead changes.
 Keep this mode opt-in and retain legacy/early responses until burn-in has its
-own measured justification.
+own measured justification. Uniform training uses one rollout per action:
+frozen complete-state continuations repeat identically and must not inflate
+observation counts. Equal weights apply only to top-level components; misses
+route toward earlier components and legacy through prior-average fallbacks.
 
 `generate_play_table.py` uses the analytical `E(h +/- c)` solution as its
 initial discard policy, trains a rank-only hidden-information pegging policy by

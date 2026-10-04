@@ -504,6 +504,10 @@ def train_rollout_best_response(
         raise ValueError(f"Invalid target role: {target_role}")
     if samples <= 0 or rollouts_per_action <= 0:
         raise ValueError("Training sample and rollout counts must be positive")
+    if all(isinstance(policies[role], UniformHandPolicy) for role in ROLES):
+        # Trace components and their fallbacks are frozen: a complete-state
+        # continuation is deterministic, so repeats are not new observations.
+        rollouts_per_action = 1
     rng = random.Random(seed)
     action_values: dict[str, dict[int, RunningStatistics]] = {}
     for sample_index in range(samples):
@@ -564,6 +568,10 @@ def train_iterative_best_response(
         raise ValueError("Mixture weight must be in (0, 1]")
     if averaging not in ("geometric", "uniform-hand"):
         raise ValueError("Unknown policy averaging method")
+    if averaging == "uniform-hand":
+        # Include the deterministic iteration-zero responses, before both seats
+        # have a UniformHandPolicy. Preserve invalid counts for validation below.
+        rollouts_per_action = min(rollouts_per_action, 1)
     policies: dict[str, PeggingPolicy] = dict(
         initial_policies
         if initial_policies is not None

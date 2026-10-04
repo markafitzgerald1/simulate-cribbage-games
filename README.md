@@ -324,9 +324,12 @@ reports best-observed-lead gains with explicit coverage denominators. See
 [the gauge definition and limits](docs/pegging-lines.md#pone-lead-quality-gauge)
 before interpreting a low flag rate or comparing training settings.
 
-For research, `--policy-averaging=uniform-hand` uses an equal-mass response
-history, sampling one component per role per hand with frozen fallbacks. The
-default remains the production geometric per-decision mixture. See the
+For research, `--policy-averaging=uniform-hand` uses a response
+history with equal top-level mass, sampling one component per role per hand with frozen fallbacks. The
+default remains the production geometric per-decision mixture. Uniform training
+forces one rollout per action even if a larger count is requested: frozen
+complete-state continuations are identical, so repeats cannot increase `n`.
+Fallbacks give earlier components and legacy more effective decision mass. See the
 [mixture interpretation](docs/pegging-lines.md#meaning-for-consumers) before
 comparing gauges across these modes; whole-hand mixing correlates the opening
 lead and continuation. No burn-in or production workflow change is implied.

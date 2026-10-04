@@ -1,0 +1,826 @@
+{
+  "source_commit": "83d3e4d8e3df8205ecfcb2d014f8985dd2229413",
+  "source_sha256": "80ad2f988b440dcdb000e2ae9e585da3684b05a025870fc637a999accdc90462",
+  "samples_per_role": 24,
+  "rollouts_per_action": 2,
+  "training": [
+    {
+      "iterations": 2,
+      "seed": 42,
+      "reports": [
+        {
+          "iteration": 1,
+          "role": "Pone",
+          "states": 67,
+          "actions": 194
+        },
+        {
+          "iteration": 1,
+          "role": "Dealer",
+          "states": 66,
+          "actions": 185
+        },
+        {
+          "iteration": 2,
+          "role": "Pone",
+          "states": 65,
+          "actions": 187
+        },
+        {
+          "iteration": 2,
+          "role": "Dealer",
+          "states": 65,
+          "actions": 192
+        }
+      ],
+      "fingerprints": {
+        "Pone": "bd14c5abff677a71defbd857d502224f76ab2085a22907dd2c1184d56c8bf692",
+        "Dealer": "51811d73fe31267dec45b62bd6547a63d69d570399182bc58cc7d3ad33bf1394"
+      }
+    },
+    {
+      "iterations": 1,
+      "seed": 44,
+      "reports": [
+        {
+          "iteration": 1,
+          "role": "Pone",
+          "states": 67,
+          "actions": 190
+        },
+        {
+          "iteration": 1,
+          "role": "Dealer",
+          "states": 61,
+          "actions": 171
+        }
+      ],
+      "fingerprints": {
+        "Pone": "f04d9addcbc6c0a33f10c387bb66e2ab60cb688be14b9e494059c8462056de81",
+        "Dealer": "0aa9ff123d426b001c5d1ef9a4bf120de8ff6532ee9a3a848ea4177e2471842a"
+      }
+    }
+  ],
+  "cases": [
+    {
+      "pone": [
+        6,
+        12,
+        6,
+        0
+      ],
+      "dealer": [
+        4,
+        8,
+        7,
+        6
+      ],
+      "seed": 1000,
+      "players": {
+        "Pone": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 2.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 1.0
+        },
+        "Dealer": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 3.0,
+          "go": 1.0,
+          "last_card": 0.0
+        }
+      },
+      "opening": [
+        0,
+        8
+      ],
+      "rng_state_sha256": "dba713bf61291c22acc6474025fbce5ec8185fe84766c69b6133eaa61b312fa6"
+    },
+    {
+      "pone": [
+        2,
+        9,
+        12,
+        1
+      ],
+      "dealer": [
+        4,
+        1,
+        7,
+        7
+      ],
+      "seed": 1001,
+      "players": {
+        "Pone": {
+          "fifteen": 0.0,
+          "thirty_one": 2.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 0.0
+        },
+        "Dealer": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 1.0
+        }
+      },
+      "opening": [
+        2,
+        7
+      ],
+      "rng_state_sha256": "e554a40346c3829b275e47acd516dd86b39a8e99fbd363cfa87875a100cad6ad"
+    },
+    {
+      "pone": [
+        0,
+        1,
+        12,
+        5
+      ],
+      "dealer": [
+        2,
+        10,
+        4,
+        4
+      ],
+      "seed": 1002,
+      "players": {
+        "Pone": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 0.0
+        },
+        "Dealer": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 1.0,
+          "last_card": 1.0
+        }
+      },
+      "opening": [
+        1,
+        10
+      ],
+      "rng_state_sha256": "faff061dbed1b2ca9e4d1c6412e818ea7560794b77a8023f60cd0f4452b3faf3"
+    },
+    {
+      "pone": [
+        3,
+        9,
+        8,
+        2
+      ],
+      "dealer": [
+        5,
+        9,
+        7,
+        10
+      ],
+      "seed": 1003,
+      "players": {
+        "Pone": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 2.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 0.0
+        },
+        "Dealer": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 1.0,
+          "last_card": 1.0
+        }
+      },
+      "opening": [
+        3,
+        9
+      ],
+      "rng_state_sha256": "52168ade5f4e0863140b032ec5e9e77ee5284e1620175bece7606b44a7d06404"
+    },
+    {
+      "pone": [
+        3,
+        4,
+        1,
+        11
+      ],
+      "dealer": [
+        6,
+        7,
+        2,
+        1
+      ],
+      "seed": 1004,
+      "players": {
+        "Pone": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 2.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 1.0
+        },
+        "Dealer": {
+          "fifteen": 0.0,
+          "thirty_one": 2.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 0.0
+        }
+      },
+      "opening": [
+        3,
+        7
+      ],
+      "rng_state_sha256": "2901c8053ba9fec253973690167648b9ea411aca806d14d2972d4f2c06bf8f03"
+    },
+    {
+      "pone": [
+        9,
+        4,
+        11,
+        5
+      ],
+      "dealer": [
+        11,
+        10,
+        8,
+        0
+      ],
+      "seed": 1005,
+      "players": {
+        "Pone": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 0.0
+        },
+        "Dealer": {
+          "fifteen": 0.0,
+          "thirty_one": 2.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 1.0,
+          "last_card": 0.0
+        }
+      },
+      "opening": [
+        9,
+        8
+      ],
+      "rng_state_sha256": "cae30af1dba5da3ff9b486c944911334d366d36eef7374f0de2dfb5e3c358022"
+    },
+    {
+      "pone": [
+        12,
+        9,
+        1,
+        7
+      ],
+      "dealer": [
+        4,
+        0,
+        0,
+        2
+      ],
+      "seed": 1006,
+      "players": {
+        "Pone": {
+          "fifteen": 2.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 1.0
+        },
+        "Dealer": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 1.0,
+          "last_card": 0.0
+        }
+      },
+      "opening": [
+        1,
+        4
+      ],
+      "rng_state_sha256": "df406134c28e8e68f199ddb12536670742c35fcb112dab939d2f8e54400029f7"
+    },
+    {
+      "pone": [
+        5,
+        2,
+        6,
+        10
+      ],
+      "dealer": [
+        0,
+        1,
+        8,
+        1
+      ],
+      "seed": 1007,
+      "players": {
+        "Pone": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 0.0
+        },
+        "Dealer": {
+          "fifteen": 0.0,
+          "thirty_one": 2.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 1.0
+        }
+      },
+      "opening": [
+        2,
+        8
+      ],
+      "rng_state_sha256": "ab781d5514baffd4fa527367bfc401ecbe7c829b6165d2ee19d3a0d786473995"
+    },
+    {
+      "pone": [
+        3,
+        5,
+        6,
+        2
+      ],
+      "dealer": [
+        3,
+        11,
+        0,
+        1
+      ],
+      "seed": 1008,
+      "players": {
+        "Pone": {
+          "fifteen": 2.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 1.0,
+          "last_card": 0.0
+        },
+        "Dealer": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 2.0,
+          "run": 3.0,
+          "go": 0.0,
+          "last_card": 1.0
+        }
+      },
+      "opening": [
+        3,
+        3
+      ],
+      "rng_state_sha256": "7895bfb238e85dd748b561905c2b0d3ef71d5b2242945319b7b8ec241843bf91"
+    },
+    {
+      "pone": [
+        7,
+        9,
+        5,
+        4
+      ],
+      "dealer": [
+        2,
+        2,
+        10,
+        0
+      ],
+      "seed": 1009,
+      "players": {
+        "Pone": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 0.0
+        },
+        "Dealer": {
+          "fifteen": 2.0,
+          "thirty_one": 2.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 1.0
+        }
+      },
+      "opening": [
+        9,
+        10
+      ],
+      "rng_state_sha256": "820aec2e4dfc05715bea1d7ba12a400dcd648c2f6776033a52c508978c59896e"
+    },
+    {
+      "pone": [
+        9,
+        0,
+        6,
+        7
+      ],
+      "dealer": [
+        12,
+        0,
+        3,
+        7
+      ],
+      "seed": 1010,
+      "players": {
+        "Pone": {
+          "fifteen": 0.0,
+          "thirty_one": 2.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 0.0
+        },
+        "Dealer": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 2.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 1.0
+        }
+      },
+      "opening": [
+        0,
+        0
+      ],
+      "rng_state_sha256": "f013517bc3c115da49f72f85bc094d1188d908befb72031c26974e6ea8b7fc97"
+    },
+    {
+      "pone": [
+        7,
+        8,
+        12,
+        7
+      ],
+      "dealer": [
+        12,
+        8,
+        9,
+        3
+      ],
+      "seed": 1011,
+      "players": {
+        "Pone": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 2.0,
+          "last_card": 0.0
+        },
+        "Dealer": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 2.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 1.0
+        }
+      },
+      "opening": [
+        12,
+        12
+      ],
+      "rng_state_sha256": "f514abca8336981f890fd15120aa3486b4f6b387cd8e5f151566a9df49d6ef72"
+    },
+    {
+      "pone": [
+        7,
+        4,
+        10,
+        8
+      ],
+      "dealer": [
+        12,
+        5,
+        2,
+        6
+      ],
+      "seed": 1012,
+      "players": {
+        "Pone": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 0.0
+        },
+        "Dealer": {
+          "fifteen": 2.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 1.0,
+          "last_card": 1.0
+        }
+      },
+      "opening": [
+        10,
+        5
+      ],
+      "rng_state_sha256": "2729117e0b37cb9a7f79ddffb5c0a908d8c41493413aaf6e6af58fbd1decbd67"
+    },
+    {
+      "pone": [
+        4,
+        4,
+        10,
+        12
+      ],
+      "dealer": [
+        2,
+        10,
+        3,
+        10
+      ],
+      "seed": 1013,
+      "players": {
+        "Pone": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 1.0,
+          "last_card": 0.0
+        },
+        "Dealer": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 2.0,
+          "run": 3.0,
+          "go": 0.0,
+          "last_card": 1.0
+        }
+      },
+      "opening": [
+        10,
+        10
+      ],
+      "rng_state_sha256": "9cf1f42c9023dcbba9115bee94f8a7ca5fc7caa2e1dcaa6af823b5e74515e4bf"
+    },
+    {
+      "pone": [
+        1,
+        9,
+        11,
+        12
+      ],
+      "dealer": [
+        10,
+        8,
+        3,
+        4
+      ],
+      "seed": 1014,
+      "players": {
+        "Pone": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 0.0
+        },
+        "Dealer": {
+          "fifteen": 2.0,
+          "thirty_one": 2.0,
+          "pair": 0.0,
+          "run": 3.0,
+          "go": 0.0,
+          "last_card": 1.0
+        }
+      },
+      "opening": [
+        1,
+        10
+      ],
+      "rng_state_sha256": "bee9a2ebd386c23d5062bba78ae3e5210adc909641e488f43ee2cdb78bea4a80"
+    },
+    {
+      "pone": [
+        3,
+        0,
+        8,
+        11
+      ],
+      "dealer": [
+        0,
+        2,
+        3,
+        0
+      ],
+      "seed": 1015,
+      "players": {
+        "Pone": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 2.0,
+          "run": 0.0,
+          "go": 1.0,
+          "last_card": 0.0
+        },
+        "Dealer": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 8.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 1.0
+        }
+      },
+      "opening": [
+        3,
+        3
+      ],
+      "rng_state_sha256": "0561abab9181b747b6b2b563d386e0065d7a2262252b1cc0fc9826ba11bdc7dd"
+    },
+    {
+      "pone": [
+        5,
+        7,
+        12,
+        4
+      ],
+      "dealer": [
+        6,
+        3,
+        7,
+        0
+      ],
+      "seed": 1016,
+      "players": {
+        "Pone": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 1.0
+        },
+        "Dealer": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 1.0,
+          "last_card": 0.0
+        }
+      },
+      "opening": [
+        12,
+        6
+      ],
+      "rng_state_sha256": "d5f2b6df0c6e30aeae7a4e1582245fc1fd916a9bdf2bdb65fdae42477f4b977f"
+    },
+    {
+      "pone": [
+        8,
+        6,
+        4,
+        5
+      ],
+      "dealer": [
+        4,
+        2,
+        11,
+        8
+      ],
+      "seed": 1017,
+      "players": {
+        "Pone": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 0.0
+        },
+        "Dealer": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 2.0,
+          "run": 0.0,
+          "go": 1.0,
+          "last_card": 1.0
+        }
+      },
+      "opening": [
+        8,
+        8
+      ],
+      "rng_state_sha256": "a167b0f3de7be7970785ef3ac1feef61af2b3648c1a5a56390ff90aa261b754f"
+    },
+    {
+      "pone": [
+        2,
+        1,
+        10,
+        7
+      ],
+      "dealer": [
+        5,
+        3,
+        3,
+        7
+      ],
+      "seed": 1018,
+      "players": {
+        "Pone": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 2.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 0.0
+        },
+        "Dealer": {
+          "fifteen": 0.0,
+          "thirty_one": 2.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 1.0
+        }
+      },
+      "opening": [
+        2,
+        7
+      ],
+      "rng_state_sha256": "db3c67327c09e515416e11fa5cca3cc951c5de02a45dcdd4d172a9028b06706d"
+    },
+    {
+      "pone": [
+        10,
+        0,
+        8,
+        1
+      ],
+      "dealer": [
+        8,
+        3,
+        6,
+        5
+      ],
+      "seed": 1019,
+      "players": {
+        "Pone": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 2.0,
+          "run": 0.0,
+          "go": 1.0,
+          "last_card": 0.0
+        },
+        "Dealer": {
+          "fifteen": 0.0,
+          "thirty_one": 0.0,
+          "pair": 0.0,
+          "run": 0.0,
+          "go": 0.0,
+          "last_card": 1.0
+        }
+      },
+      "opening": [
+        1,
+        8
+      ],
+      "rng_state_sha256": "a0b5f79cfe3aff6ca2b3f2989a23b5a796ace27d5a249c042ddde3844190f82b"
+    }
+  ]
+}
