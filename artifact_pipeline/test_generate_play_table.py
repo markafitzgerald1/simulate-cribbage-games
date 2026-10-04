@@ -474,11 +474,21 @@ class TestGeneratePlayTable(unittest.TestCase):
         self.assertEqual(args.client_output, DEFAULT_CLIENT_OUTPUT_PATH)
         self.assertEqual(args.lines_output, DEFAULT_LINES_OUTPUT_PATH)
         self.assertEqual(args.policy_averaging, "geometric")
+        with patch("sys.argv", ["generate_play_table.py"]), patch(
+            "artifact_pipeline.generate_play_table.os.process_cpu_count", return_value=7
+        ):
+            self.assertEqual(_parse_args().workers, 7)
+        with patch("sys.argv", ["generate_play_table.py"]), patch(
+            "artifact_pipeline.generate_play_table.os.process_cpu_count",
+            return_value=None,
+        ):
+            self.assertEqual(_parse_args().workers, 1)
         with patch(
             "sys.argv",
             [
                 "generate_play_table.py",
                 "--samples=2",
+                "--workers=3",
                 "--max-samples=3",
                 "--target-standard-error=0.2",
                 "--hand-limit=1",
@@ -488,6 +498,7 @@ class TestGeneratePlayTable(unittest.TestCase):
         ):
             args = _parse_args()
         self.assertEqual(args.samples, 2)
+        self.assertEqual(args.workers, 3)
         self.assertTrue(args.fail_on_non_convergence)
         self.assertEqual(args.policy_averaging, "uniform-hand")
 
@@ -504,6 +515,7 @@ class TestGeneratePlayTable(unittest.TestCase):
             client_output="client.json",
             lines_output="lines.json",
             samples=1,
+            workers=2,
             max_samples=None,
             target_standard_error=None,
             seed=42,
@@ -564,7 +576,7 @@ class TestGeneratePlayTable(unittest.TestCase):
         ) as train_policies, patch(
             "artifact_pipeline.generate_play_table.generate_play_table",
             side_effect=generate_with_checkpoint,
-        ), patch(
+        ) as sampling, patch(
             "artifact_pipeline.generate_play_table.refine_discard_policy",
             return_value=(context, 0, 0.0),
         ), patch(
@@ -590,8 +602,12 @@ class TestGeneratePlayTable(unittest.TestCase):
             main()
         self.assertEqual(write_json.call_count, 10)
         self.assertTrue(
+            all(call.kwargs["workers"] == 2 for call in sampling.call_args_list)
+        )
+        self.assertTrue(
             all(
                 call.kwargs["averaging"] == "uniform-hand"
+                and call.kwargs["workers"] == 2
                 for call in train_policies.call_args_list
             )
         )
@@ -603,6 +619,7 @@ class TestGeneratePlayTable(unittest.TestCase):
             client_output="client.json",
             lines_output="lines.json",
             samples=1,
+            workers=2,
             max_samples=None,
             target_standard_error=None,
             seed=42,

@@ -301,6 +301,7 @@ python artifact_pipeline/generate_play_table.py \
   --policy-table-samples=10 \
   --samples=25 \
   --hand-limit=4 \
+  --workers=1 \
   --no-resume \
   --seed=42
 ```
@@ -317,6 +318,20 @@ Production runs resume from `expected_play_points.json` by default. Each sample
 is seeded independently by hand, role, and cumulative sample index, so a resumed
 seeded run produces the same estimates as an uninterrupted run. Pass
 `--no-resume` for a fresh run.
+
+`--workers` defaults to the available process CPU count. Use `--workers=1` for
+serial execution or set a smaller count when sharing a machine. Processes
+evaluate independent hand/role entries and training samples; the parent retains
+the deal RNG stream and replays training observations in serial order. Both
+policy averaging modes preserve the same results across worker counts. Each
+process reports its whole-process peak resident memory to stderr after a pass.
+See [parallel generation](docs/parallel-play-generation.md) for the exact merge,
+checkpoint, timestamp, and memory boundaries.
+
+Play generation method v4 saves raw second moments for every measured scalar.
+It rejects older checkpoints whose SEs cannot recover exact online moments;
+start the first v4 run with `--no-resume`. Client means and the lines schema are
+unchanged.
 
 Each lines companion also produces a Pone lead quality report in the generation
 log and workflow release notes. It screens well-sampled leads at z >= 3 and
@@ -336,7 +351,8 @@ pass the same generator flags to `python scripts/run_pegging_experiment.py
 --directory /tmp/pegging-experiment`. The directory must be empty. This runner
 writes `experiment.json` beside the generated pair without publishing it.
 Counters preserve action results and RNG state; their runtime overhead remains
-part of the measured experiment time.
+part of the measured experiment time. This counter runner defaults to
+`--workers=1` and rejects higher counts because its counters are process-local.
 
 The artifact workflow corroborates the generated table against a small,
 attributed sample of Cribbage Pro's published (empirical human-play) pegging

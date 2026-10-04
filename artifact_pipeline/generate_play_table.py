@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from copy import deepcopy
 import hashlib
 import gzip
@@ -33,6 +33,7 @@ from artifact_pipeline.analytical_solver import (  # noqa: E402
 )
 from artifact_pipeline.play_lines import OpeningLines, build_lines  # noqa: E402
 from artifact_pipeline.play_quality import measure_quality  # noqa: E402
+from artifact_pipeline.process_pool import ordered_process_map  # noqa: E402
 from artifact_pipeline.pegging import (  # noqa: E402
     DEALER,
     PONE,
@@ -51,7 +52,7 @@ from artifact_pipeline.pegging import (  # noqa: E402
 DEFAULT_OUTPUT_PATH = "expected_play_points.json"
 DEFAULT_CLIENT_OUTPUT_PATH = "expected_play_points.client.json"
 DEFAULT_LINES_OUTPUT_PATH = "expected_play_points.lines.json"
-GENERATION_METHOD = "artifact_pipeline.generate_play_table.v3"
+GENERATION_METHOD = "artifact_pipeline.generate_play_table.v4"
 PHYSICAL_DECK = tuple((rank, suit) for rank in range(13) for suit in range(4))
 
 
@@ -228,15 +229,23 @@ def _empty_entry_accumulators() -> EntryAccumulators:
     )
 
 
+def _save_moments(stats: RunningStatistics) -> dict[str, float | int]:
+    return {**stats.to_dict(), "moment_2": stats.moment_2}
+
+
+def _restore_moments(saved: Mapping[str, Any]) -> RunningStatistics:
+    return RunningStatistics(saved["n"], saved["mu"], saved["moment_2"])
+
+
 def _entry_from_output(entry: Mapping[str, Any]) -> EntryAccumulators:
     return EntryAccumulators(
-        delta=RunningStatistics.from_dict(entry),
+        delta=_restore_moments(entry),
         opening=OpeningLines.restore(entry.get("opening", {}), entry["n"]),
         players={
             role: PlayerAccumulators(
-                total=RunningStatistics.from_dict(entry["players"][role]),
+                total=_restore_moments(entry["players"][role]),
                 points={
-                    point_type: RunningStatistics.from_dict(
+                    point_type: _restore_moments(
                         entry["players"][role]["points"][point_type]
                     )
                     for point_type in POINT_TYPES
@@ -259,15 +268,15 @@ def _record_result(accumulators: EntryAccumulators, target_role, result) -> None
 
 
 def _entry_to_output(accumulators: EntryAccumulators) -> dict[str, Any]:
-    output: dict[str, Any] = accumulators.delta.to_dict()
+    output: dict[str, Any] = _save_moments(accumulators.delta)
     output["opening"] = accumulators.opening.checkpoint()
     output["players"] = {}
     for role in ROLES:
         player_accumulators = accumulators.players[role]
         output["players"][role] = {
-            **player_accumulators.total.to_dict(),
+            **_save_moments(player_accumulators.total),
             "points": {
-                point_type: player_accumulators.points[point_type].to_dict()
+                point_type: _save_moments(player_accumulators.points[point_type])
                 for point_type in POINT_TYPES
             },
         }
@@ -340,6 +349,72 @@ def validate_resume_table(
         raise ValueError("Existing play table uses a different play policy")
 
 
+@dataclass(frozen=True)
+class MeasurementContext:
+    """Frozen policies and stopping rule for independent hand/role entries."""
+
+    discard_policy: DiscardPolicy
+    policies: Mapping[str, PeggingPolicy]
+    samples: int
+    seed: int
+    target_standard_error: float | None
+    max_samples: int | None
+
+
+@dataclass(frozen=True)
+class EntryTask:
+    """One entry's identity and exact saved online moments."""
+
+    hand: tuple[int, ...]
+    role: str
+    existing: Mapping[str, Any] | None
+
+
+def _measure_entry(context: MeasurementContext, task: EntryTask) -> dict[str, Any]:
+    accumulators = (
+        _entry_from_output(task.existing)
+        if task.existing is not None
+        else _empty_entry_accumulators()
+    )
+    entry_seed = _entry_seed(context.seed, task.hand, task.role)
+    while accumulators.delta.n < (context.max_samples or context.samples):
+        if accumulators.delta.n >= context.samples and (
+            context.target_standard_error is None
+            or accumulators.delta.standard_error <= context.target_standard_error
+        ):
+            break
+        rng = random.Random(_sample_seed(entry_seed, accumulators.delta.n))
+        opponent_role = other_role(task.role)
+        opponent_keep = sample_opponent_keep(
+            task.hand, opponent_role, context.discard_policy, rng
+        )
+        pone_hand = task.hand if task.role == PONE else opponent_keep
+        dealer_hand = task.hand if task.role == DEALER else opponent_keep
+        result = simulate_pegging(pone_hand, dealer_hand, context.policies, rng)
+        _record_result(accumulators, task.role, result)
+    return _entry_to_output(accumulators)
+
+
+def _entry_tasks(
+    hands: Sequence[tuple[int, ...]], output: Mapping[str, Any]
+) -> Iterator[EntryTask]:
+    for hand in hands:
+        for role in ROLES:
+            yield EntryTask(
+                hand, role, output.get(canonical_hand_key(hand), {}).get(role)
+            )
+
+
+def _measured_entries(
+    context: MeasurementContext, tasks: Iterator[EntryTask], workers: int
+) -> Iterator[dict[str, Any]]:
+    if workers == 1:
+        for task in tasks:
+            yield _measure_entry(context, task)
+    else:
+        yield from ordered_process_map(_measure_entry, context, tasks, workers)
+
+
 def generate_play_table(
     discard_policy: DiscardPolicy,
     policies: Mapping[str, PeggingPolicy],
@@ -352,9 +427,12 @@ def generate_play_table(
     checkpoint: Callable[[Mapping[str, Any]], None] | None = None,
     play_policy_fingerprint: str | None = None,
     checkpoint_frequency: int = 100,
+    workers: int = 1,
 ) -> dict[str, Any]:
     """Generate paired seat and point-type estimates for every requested hand."""
     # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+    if workers <= 0:
+        raise ValueError("Workers must be positive")
     if samples <= 0:
         raise ValueError("Samples must be positive")
     if target_standard_error is not None and target_standard_error <= 0.0:
@@ -397,43 +475,20 @@ def generate_play_table(
         file=sys.stderr,
         flush=True,
     )
-    for hand_index, hand in enumerate(requested_hands):
-        hand_key = canonical_hand_key(hand)
-        role_entries = output.setdefault(hand_key, {})
-        for target_role in ROLES:
-            existing_entry = role_entries.get(target_role)
-            accumulators = (
-                _entry_from_output(existing_entry)
-                if existing_entry is not None
-                else _empty_entry_accumulators()
-            )
-            sample_limit = max_samples or samples
-            # Invariant across the sample loop, so hash the entry seed once.
-            entry_seed = _entry_seed(seed, hand, target_role)
-            while accumulators.delta.n < sample_limit:
-                rng = random.Random(_sample_seed(entry_seed, accumulators.delta.n))
-                opponent_role = other_role(target_role)
-                opponent_keep = sample_opponent_keep(
-                    hand, opponent_role, discard_policy, rng
-                )
-                pone_hand = hand if target_role == PONE else opponent_keep
-                dealer_hand = hand if target_role == DEALER else opponent_keep
-                result = simulate_pegging(pone_hand, dealer_hand, policies, rng)
-                _record_result(accumulators, target_role, result)
-                if (
-                    accumulators.delta.n >= samples
-                    and target_standard_error is not None
-                    and accumulators.delta.standard_error <= target_standard_error
-                ):
-                    break
-                if accumulators.delta.n >= samples and target_standard_error is None:
-                    break
-            role_entries[target_role] = _entry_to_output(accumulators)
-            completed_entry_standard_errors.append(accumulators.delta.standard_error)
+    context = MeasurementContext(
+        discard_policy, policies, samples, seed, target_standard_error, max_samples
+    )
+    entries = _measured_entries(context, _entry_tasks(requested_hands, output), workers)
+    for entry_index, entry in enumerate(entries):
+        hand_index, role_index = divmod(entry_index, len(ROLES))
+        hand_key = canonical_hand_key(requested_hands[hand_index])
+        output.setdefault(hand_key, {})[ROLES[role_index]] = entry
+        completed_entry_standard_errors.append(entry["se"])
+        completed_hand = role_index == len(ROLES) - 1
         at_checkpoint = (hand_index + 1) % checkpoint_frequency == 0 or (
             hand_index + 1 == total_hands
         )
-        if at_checkpoint:
+        if completed_hand and at_checkpoint:
             _maybe_checkpoint(checkpoint, output)
             _log_progress(
                 hand_index + 1,
@@ -629,6 +684,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--output", default=DEFAULT_OUTPUT_PATH)
     parser.add_argument("--client-output", default=DEFAULT_CLIENT_OUTPUT_PATH)
     parser.add_argument("--lines-output", default=DEFAULT_LINES_OUTPUT_PATH)
+    parser.add_argument(
+        "--workers",
+        type=positive_int,
+        default=getattr(os, "process_cpu_count", os.cpu_count)() or 1,
+    )
     parser.add_argument("--samples", type=positive_int, default=1000)
     parser.add_argument("--max-samples", type=positive_int)
     parser.add_argument("--target-standard-error", type=positive_float)
@@ -684,6 +744,7 @@ def main() -> None:
             seed=args.seed,
             initial_policies=policies,
             averaging=args.policy_averaging,
+            workers=args.workers,
         )
         policy_table = generate_play_table(
             discard_policy,
@@ -693,6 +754,7 @@ def main() -> None:
             # reflects policy changes rather than per-iteration sampling noise.
             seed=args.seed,
             hands=requested_hands,
+            workers=args.workers,
         )
         next_context, changed, max_shift = refine_discard_policy(context, policy_table)
         play_shift = maximum_play_shift(previous_policy_table, policy_table)
@@ -731,6 +793,7 @@ def main() -> None:
         seed=args.seed + args.outer_iterations,
         initial_policies=policies,
         averaging=args.policy_averaging,
+        workers=args.workers,
     )
     reports.append({"final_play_ibr": final_ibr_reports})
     final_policy_fingerprint = ":".join(
@@ -757,6 +820,7 @@ def main() -> None:
         checkpoint=checkpoint,
         play_policy_fingerprint=final_policy_fingerprint,
         checkpoint_frequency=args.checkpoint_frequency,
+        workers=args.workers,
     )
     full_table["__metadata__"].update(
         {

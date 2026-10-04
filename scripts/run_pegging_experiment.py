@@ -86,6 +86,11 @@ def count_policy_usage(policies: Mapping[str, Any]) -> Iterator[dict[str, Any]]:
 
 def run_experiment(generation_args: list[str]) -> dict[str, Any]:
     """Run the real generator; no alternate sampling or decision implementation."""
+    # Counters are process-local; reject parallel runs rather than report zeros.
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--workers", type=int, choices=(1,), default=1)
+    parser.parse_known_args(generation_args)
+    generation_args = ["--workers=1", *generation_args]
     stages = []
     usage: dict[str, Any] = {}
     invocations: dict[str, int] = {}

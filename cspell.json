@@ -62,6 +62,12 @@
     "unseeded",
     "winpty",
     "worktree",
-    "worktrees"
+    "worktrees",
+    "getrusage",
+    "initargs",
+    "maxrss",
+    "popleft",
+    "RUSAGE",
+    "Welford"
   ]
 }

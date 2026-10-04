@@ -590,6 +590,17 @@ precision and consumer-contract decision before suit-aware publication.
 Seeded play-table samples are independent by canonical hand, role, and
 cumulative sample index. Preserve this property when changing generation or
 checkpoint behavior so resumed runs remain equivalent to uninterrupted runs.
+Process training must retain the original parent deal RNG stream and global
+sample indices, then replay raw rollout observations in serial order. Merging
+pre-reduced floating-point moments changes bits even when mathematically
+equivalent. Keep alternating response updates sequential. Play method v4 saves
+raw second moments for exact resume and rejects v3 checkpoints; reconstructing
+moments from SE loses precision. Worker count, PID, timing, and peak RSS belong
+in logs rather than result metadata. Full-byte comparisons hold the existing
+wall-clock `generated_at` field fixed; client and lines bytes need no adjustment.
+Use the serial experiment counter runner only with `--workers=1`, because its
+lookup and fallback counters are process-local. See
+[parallel generation](docs/parallel-play-generation.md) for these boundaries.
 The Cribbage Pro comparison runs on every production generation, offline,
 against a small, attributed sample of their published (empirical human-play)
 pegging values vendored in `artifact_pipeline/cribbage_pro_reference.py`

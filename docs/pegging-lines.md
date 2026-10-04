@@ -144,8 +144,9 @@ policy fingerprint.
 Full-table entries retain unrounded online conditional moments and response
 counts under `opening`. Checkpoints store the second central moment directly,
 so resuming never reconstructs it from rounded published SEs. Generation method
-v3 rejects older checkpoints; missing lead/response counts cannot be filled in
-from whole-hand means. Seeded resumed sampling matches uninterrupted sampling,
+v4 also saves raw moments for every absolute-seat scalar and rejects older
+checkpoints. Missing lead/response counts cannot be filled in from whole-hand
+means. Seeded resumed sampling matches uninterrupted sampling,
 including lead counts, modes and conditional moments.
 
 `--lines-output` overrides the companion path; it must differ from the full

@@ -66,6 +66,10 @@ class TestPeggingExperiment(unittest.TestCase):
                     raise RuntimeError("abort")
             self.assertIs(pone.actions, original)
 
+    def test_runner_rejects_parallel_process_local_counters(self):
+        with patch("sys.stderr", io.StringIO()), self.assertRaises(SystemExit):
+            run_experiment(["--workers=2"])
+
     def test_runner_measures_real_sampling_and_validates_generated_pair(self):
         policies, _ = self.policies(True)
 

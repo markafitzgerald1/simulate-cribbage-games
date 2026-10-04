@@ -6,9 +6,10 @@ from dataclasses import dataclass, field
 import hashlib
 import math
 import random
-from typing import Callable, Mapping, Protocol, Sequence
+from typing import Callable, Iterator, Mapping, Protocol, Sequence
 
 from artifact_pipeline.adapter import legacy_select_play_rank
+from artifact_pipeline.process_pool import ordered_process_map
 
 PONE = "Pone"
 DEALER = "Dealer"
@@ -490,6 +491,90 @@ def policy_fingerprint(policy: PeggingPolicy) -> str:
     return hashlib.sha256(repr(payload).encode("utf-8")).hexdigest()
 
 
+@dataclass(frozen=True)
+class RolloutContext:
+    """Frozen training pass shared by all independently seeded samples."""
+
+    target_role: str
+    policies: Mapping[str, PeggingPolicy]
+    rollouts_per_action: int
+    seed: int
+
+
+RolloutObservation = tuple[str, int, float]
+TrainingDeal = tuple[int, Sequence[int], Sequence[int]]
+TRAINING_BATCH_SIZE = 32
+
+
+def _rollout_observations(
+    context: RolloutContext, deal: TrainingDeal
+) -> Iterator[RolloutObservation]:
+    """Evaluate one trace without reducing or changing observation order."""
+    sample_index, pone_hand, dealer_hand = deal
+    result = simulate_pegging(
+        pone_hand,
+        dealer_hand,
+        context.policies,
+        random.Random(_stable_seed(context.seed, "trace", sample_index)),
+        collect_decisions=True,
+    )
+    for decision_index, decision in enumerate(result.decisions):
+        if decision.view.role != context.target_role:
+            continue
+        state_key = decision.view.key()
+        for rank in decision.view.legal_ranks:
+            for rollout_index in range(context.rollouts_per_action):
+                rollout = simulate_from_state(
+                    decision.state,
+                    decision.policies,
+                    random.Random(
+                        _stable_seed(
+                            context.seed,
+                            sample_index,
+                            decision_index,
+                            rollout_index,
+                        )
+                    ),
+                    forced_rank=rank,
+                )
+                yield state_key, rank, rollout.delta(context.target_role)
+
+
+def _rollout_batch(
+    context: RolloutContext, deals: Sequence[TrainingDeal]
+) -> list[RolloutObservation]:
+    return [
+        observation
+        for deal in deals
+        for observation in _rollout_observations(context, deal)
+    ]
+
+
+def _training_batches(
+    deal_sampler: DealSampler, samples: int, seed: int
+) -> Iterator[list[TrainingDeal]]:
+    # Preserve the original deal RNG stream, including arbitrary sampler draws.
+    # Batches and global sample indices never depend on the number of workers.
+    rng = random.Random(seed)
+    for start in range(0, samples, TRAINING_BATCH_SIZE):
+        batch: list[TrainingDeal] = []
+        for sample_index in range(start, min(start + TRAINING_BATCH_SIZE, samples)):
+            pone, dealer = deal_sampler(rng)
+            batch.append((sample_index, tuple(pone), tuple(dealer)))
+        yield batch
+
+
+def _merge_observations(
+    action_values: dict[str, dict[int, RunningStatistics]],
+    observations: Iterator[RolloutObservation] | Sequence[RolloutObservation],
+) -> None:
+    # Replaying raw observations in serial order preserves Welford's exact bits.
+    # Combining pre-reduced shard moments would change floating-point rounding.
+    for state_key, rank, value in observations:
+        values = action_values.setdefault(state_key, {})
+        values.setdefault(rank, RunningStatistics()).add(value)
+
+
 def train_rollout_best_response(
     target_role: str,
     policies: Mapping[str, PeggingPolicy],
@@ -497,45 +582,28 @@ def train_rollout_best_response(
     samples: int,
     rollouts_per_action: int,
     seed: int,
+    workers: int = 1,
 ) -> tuple[TabularPeggingPolicy, dict[str, dict[int, RunningStatistics]]]:
     """Fit one information-state rollout response against frozen policies."""
-    # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     if target_role not in ROLES:
         raise ValueError(f"Invalid target role: {target_role}")
     if samples <= 0 or rollouts_per_action <= 0:
         raise ValueError("Training sample and rollout counts must be positive")
-    rng = random.Random(seed)
+    if workers <= 0:
+        raise ValueError("Workers must be positive")
+    context = RolloutContext(target_role, policies, rollouts_per_action, seed)
     action_values: dict[str, dict[int, RunningStatistics]] = {}
-    for sample_index in range(samples):
-        pone_hand, dealer_hand = deal_sampler(rng)
-        result = simulate_pegging(
-            pone_hand,
-            dealer_hand,
-            policies,
-            random.Random(_stable_seed(seed, "trace", sample_index)),
-            collect_decisions=True,
-        )
-        for decision_index, decision in enumerate(result.decisions):
-            if decision.view.role != target_role:
-                continue
-            state_values = action_values.setdefault(decision.view.key(), {})
-            for rank in decision.view.legal_ranks:
-                rank_values = state_values.setdefault(rank, RunningStatistics())
-                for rollout_index in range(rollouts_per_action):
-                    rollout = simulate_from_state(
-                        decision.state,
-                        decision.policies,
-                        random.Random(
-                            _stable_seed(
-                                seed,
-                                sample_index,
-                                decision_index,
-                                rollout_index,
-                            )
-                        ),
-                        forced_rank=rank,
-                    )
-                    rank_values.add(rollout.delta(target_role))
+    batches = _training_batches(deal_sampler, samples, seed)
+    if workers == 1:
+        for batch in batches:
+            for deal in batch:
+                _merge_observations(action_values, _rollout_observations(context, deal))
+    else:
+        for observations in ordered_process_map(
+            _rollout_batch, context, batches, workers
+        ):
+            _merge_observations(action_values, observations)
     actions = {
         state_key: max(values.items(), key=lambda item: (item[1].mean, -item[0]))[0]
         for state_key, values in action_values.items()
@@ -555,9 +623,10 @@ def train_iterative_best_response(
     mixture_weight: float = 0.5,
     initial_policies: Mapping[str, PeggingPolicy] | None = None,
     averaging: str = "geometric",
+    workers: int = 1,
 ) -> tuple[dict[str, PeggingPolicy], list[dict[str, object]]]:
     """Alternate rollout best responses for Pone and Dealer."""
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
     if iterations <= 0:
         raise ValueError("IBR iterations must be positive")
     if not 0.0 < mixture_weight <= 1.0:
@@ -586,6 +655,7 @@ def train_iterative_best_response(
                 samples_per_role,
                 rollouts_per_action,
                 _stable_seed(seed, iteration, role_index),
+                workers=workers,
             )
             policies[role] = _updated_policy(
                 policies[role],

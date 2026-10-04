@@ -176,6 +176,16 @@ including absolute Pone and Dealer point-type components and the keyed player's
 paired delta. Keep policy views limited to the acting player's cards and public
 history.
 
+For process-based play generation, preserve the parent deal RNG and global
+training sample indices. Replay raw observations in serial order rather than
+combining rounded shard moments. Test both averaging modes, worker-count
+changes, complete checkpoint prefixes, adaptive stopping, and exact raw-moment
+resume. Play method v4 rejects older checkpoints that reconstructed moments
+from SE. Hold the existing wall-clock timestamp fixed when comparing full
+artifact bytes; client and lines bytes compare directly. Report whole-process
+peak RSS separately from result metadata. The existing experiment usage
+counters remain serial; see [parallel generation](../docs/parallel-play-generation.md).
+
 For standalone uncertainty exports, follow
 [the JSON sidecar contract](../docs/uncertainty-sidecars.md). Preserve the exact
 client means bytes and export only their top-level measured statistics, not

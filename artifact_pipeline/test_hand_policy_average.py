@@ -89,7 +89,7 @@ class TestHandPolicyAverage(unittest.TestCase):
     def test_uniform_history_survives_warm_training_calls(self):
         responses = []
 
-        def fit(role, policies, *_args):
+        def fit(role, policies, *_args, **_kwargs):
             response = TabularPeggingPolicy({str(len(responses)): 0}, policies[role])
             responses.append(response)
             return response, {}
