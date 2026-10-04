@@ -23,6 +23,12 @@ if __package__ in (None, ""):  # pragma: no cover
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # pylint: disable=wrong-import-position
+from artifact_pipeline.promotion_gate import (
+    DEFAULT_GATE_DEALS,
+    promotion_gate,
+)  # noqa: E402
+from artifact_pipeline.policy_usage import PolicyUsage  # noqa: E402
+
 from artifact_pipeline.analytical_solver import (  # noqa: E402
     _expected_crib_cut_tables,
     _expected_crib_tables,
@@ -359,6 +365,7 @@ class MeasurementContext:
     seed: int
     target_standard_error: float | None
     max_samples: int | None
+    usage: PolicyUsage | None = None
 
 
 @dataclass(frozen=True)
@@ -371,6 +378,9 @@ class EntryTask:
 
 
 def _measure_entry(context: MeasurementContext, task: EntryTask) -> dict[str, Any]:
+    before = (
+        {r: dict(c) for r, c in context.usage.counts.items()} if context.usage else {}
+    )
     accumulators = (
         _entry_from_output(task.existing)
         if task.existing is not None
@@ -392,7 +402,13 @@ def _measure_entry(context: MeasurementContext, task: EntryTask) -> dict[str, An
         dealer_hand = task.hand if task.role == DEALER else opponent_keep
         result = simulate_pegging(pone_hand, dealer_hand, context.policies, rng)
         _record_result(accumulators, task.role, result)
-    return _entry_to_output(accumulators)
+    entry = _entry_to_output(accumulators)
+    if context.usage is not None:
+        entry["_policy_usage"] = {
+            role: {name: value - before[role][name] for name, value in counts.items()}
+            for role, counts in context.usage.counts.items()
+        }
+    return entry
 
 
 def _entry_tasks(
@@ -428,6 +444,7 @@ def generate_play_table(
     play_policy_fingerprint: str | None = None,
     checkpoint_frequency: int = 100,
     workers: int = 1,
+    observe_policy_usage: bool = False,
 ) -> dict[str, Any]:
     """Generate paired seat and point-type estimates for every requested hand."""
     # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
@@ -475,11 +492,28 @@ def generate_play_table(
         file=sys.stderr,
         flush=True,
     )
+    usage = PolicyUsage(policies) if observe_policy_usage else None
+    if usage is not None:
+        policies = usage.policies
+        output["__metadata__"]["policy_usage"] = {
+            role: {**usage.coverage[role], "lookups": 0, "hits": 0, "legacy": 0}
+            for role in ROLES
+        }
     context = MeasurementContext(
-        discard_policy, policies, samples, seed, target_standard_error, max_samples
+        discard_policy,
+        policies,
+        samples,
+        seed,
+        target_standard_error,
+        max_samples,
+        usage,
     )
     entries = _measured_entries(context, _entry_tasks(requested_hands, output), workers)
     for entry_index, entry in enumerate(entries):
+        counts = entry.pop("_policy_usage", {})
+        for role, observed in counts.items():
+            for name, value in observed.items():
+                output["__metadata__"]["policy_usage"][role][name] += value
         hand_index, role_index = divmod(entry_index, len(ROLES))
         hand_key = canonical_hand_key(requested_hands[hand_index])
         output.setdefault(hand_key, {})[ROLES[role_index]] = entry
@@ -689,6 +723,12 @@ def _parse_args() -> argparse.Namespace:
         type=positive_int,
         default=getattr(os, "process_cpu_count", os.cpu_count)() or 1,
     )
+    parser.add_argument(
+        "--promotion-gate", choices=("off", "report", "enforce"), default="report"
+    )
+    parser.add_argument(
+        "--promotion-gate-deals", type=positive_int, default=DEFAULT_GATE_DEALS
+    )
     parser.add_argument("--samples", type=positive_int, default=1000)
     parser.add_argument("--max-samples", type=positive_int)
     parser.add_argument("--target-standard-error", type=positive_float)
@@ -697,7 +737,9 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--ibr-samples", type=positive_int, default=5000)
     parser.add_argument("--rollouts-per-action", type=positive_int, default=2)
     parser.add_argument(
-        "--policy-averaging", choices=("geometric", "uniform-hand"), default="geometric"
+        "--policy-averaging",
+        choices=("geometric", "uniform-hand", "geometric-hand"),
+        default="geometric",
     )
     parser.add_argument("--outer-iterations", type=positive_int, default=3)
     parser.add_argument("--policy-table-samples", type=positive_int, default=200)
@@ -732,7 +774,7 @@ def main() -> None:
     reports = []
     converged = False
     stable_iterations = 0
-    policies = None
+    policies: Mapping[str, PeggingPolicy] | None = None
     previous_policy_table = None
     for outer_iteration in range(args.outer_iterations):
         discard_policy = selected_discards_to_policy(context.selected_discards)
@@ -796,6 +838,18 @@ def main() -> None:
         workers=args.workers,
     )
     reports.append({"final_play_ibr": final_ibr_reports})
+    policies, gate_report = promotion_gate(
+        policies,
+        args.promotion_gate,
+        args.promotion_gate_deals,
+        args.seed,
+        args.workers,
+    )
+    print(
+        "[promotion-gate] " + json.dumps(gate_report, sort_keys=True),
+        file=sys.stderr,
+        flush=True,
+    )
     final_policy_fingerprint = ":".join(
         policy_fingerprint(policies[role]) for role in ROLES
     )
@@ -805,6 +859,7 @@ def main() -> None:
             existing_table = json.load(checkpoint_file)
 
     def checkpoint(table: Mapping[str, Any]) -> None:
+        table["__metadata__"]["promotion_gate"] = gate_report
         _write_json(args.output, table)
         _write_json(args.client_output, build_client_table(table), compact=True)
 
@@ -826,6 +881,7 @@ def main() -> None:
         {
             "joint_policy_converged": converged,
             "policy_averaging": args.policy_averaging,
+            "promotion_gate": gate_report,
             "outer_iterations": reports,
         }
     )

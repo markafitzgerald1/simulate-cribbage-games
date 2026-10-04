@@ -165,6 +165,14 @@ Uniform training forces one rollout per action to avoid duplicate deterministic
 observations and inflated counts. Equal weights describe top-level draws only;
 prior-average fallbacks route table misses toward earlier components and legacy.
 
+For geometric-hand research, test production geometric weights independently of
+whole-hand correlation, including warm history and frozen fallback draws. For
+promotion calibration, compare paired seat deltas against a duplicate heuristic
+reference, average seats per deal before computing SE, and prove report mode
+preserves measurement while enforce mode records the policy actually selected.
+Process diagnostics must aggregate returned worker observations without changing
+policy inputs, RNG consumption, or client means.
+
 Publication rounding must normalize signed zero without altering checkpoint
 moments. Test modes where count and rank disagree, leads observed out of order,
 and fractional checkpoint moments; integer fixtures hide these mutation gaps.

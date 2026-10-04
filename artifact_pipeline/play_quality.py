@@ -9,11 +9,32 @@ from typing import Any
 from artifact_pipeline.play_lines import decode_lines
 
 
+def _measure_key(
+    pone_rows: list[list[Any]], minimum_lead_count: int, z_threshold: float
+) -> dict[str, Any] | None:
+    rows = [row for row in pone_rows if row[1] >= minimum_lead_count]
+    if len(rows) < 2:
+        return None
+    mode = min(rows, key=lambda row: (-row[1], row[0]))
+    count = sum(row[1] for row in rows)
+    mixture_mean = sum(row[1] * row[2] for row in rows) / count
+    return {
+        "flagged": any(
+            row[2] > mode[2]
+            and row[2] - mode[2] >= z_threshold * math.hypot(row[3], mode[3])
+            for row in rows
+        ),
+        "gain": max(row[2] for row in rows) - mixture_mean,
+        "eligible_samples": count,
+    }
+
+
 def measure_quality(
     lines_bytes: bytes,
     means_bytes: bytes,
     minimum_lead_count: int = 100,
     z_threshold: float = 3.0,
+    include_key_statistics: bool = False,
 ) -> dict[str, Any]:
     """Screen observed Pone lines, including their policy-specific continuations."""
     if (
@@ -29,27 +50,22 @@ def measure_quality(
     ):
         raise ValueError("Require finite positive z")
     lines = decode_lines(lines_bytes, means_bytes)
+    key_statistics = {}
     gains = []
     flagged = 0
     eligible_samples = 0
     observed_samples = 0
-    for pone_rows, _dealer_rows in lines["entries"]:
+    for key, (pone_rows, _dealer_rows) in zip(lines["keys"], lines["entries"]):
         observed_samples += sum(row[1] for row in pone_rows)
-        rows = [row for row in pone_rows if row[1] >= minimum_lead_count]
-        if len(rows) < 2:
+        cell = _measure_key(pone_rows, minimum_lead_count, z_threshold)
+        if cell is None:
             continue
-        mode = min(rows, key=lambda row: (-row[1], row[0]))
-        # Disjoint opening groups; continuations can be correlated with the lead.
-        flagged += any(
-            row[2] > mode[2]
-            and row[2] - mode[2] >= z_threshold * math.hypot(row[3], mode[3])
-            for row in rows
-        )
-        count = sum(row[1] for row in rows)
-        eligible_samples += count
-        mixture_mean = sum(row[1] * row[2] for row in rows) / count
-        gains.append(max(row[2] for row in rows) - mixture_mean)
+        flagged += cell["flagged"]
+        eligible_samples += cell["eligible_samples"]
+        gains.append(cell["gain"])
+        key_statistics[key] = {"flagged": cell["flagged"], "gain": cell["gain"]}
     return {
+        **({"key_statistics": key_statistics} if include_key_statistics else {}),
         "minimum_lead_count": minimum_lead_count,
         "z_threshold": z_threshold,
         "keys_total": len(lines["keys"]),

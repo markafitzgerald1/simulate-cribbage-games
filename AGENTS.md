@@ -565,6 +565,16 @@ frozen complete-state continuations repeat identically and must not inflate
 observation counts. Equal weights apply only to top-level components; misses
 route toward earlier components and legacy through prior-average fallbacks.
 
+Geometric-hand research retains production component weights while freezing one
+complete component per seat per hand; apply the same continuation and duplicate
+rollout invariants as uniform-hand. Promotion calibration pairs three games on
+one uniform rank-only deal and common play seed. Average seat advantages before
+estimating SE so paired covariance is retained; summing seat advantages would
+report twice the per-hand gain. Report mode must preserve measured policies,
+while enforce mode must fingerprint the actual fallback policy before resume
+validation. Worker-local observations must be returned and reduced explicitly;
+parent-only counters silently miss process selections.
+
 `generate_play_table.py` uses the analytical `E(h +/- c)` solution as its
 initial discard policy, trains a rank-only hidden-information pegging policy by
 rollout iterative best response, and refines discards using

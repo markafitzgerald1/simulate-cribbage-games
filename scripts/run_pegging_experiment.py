@@ -23,6 +23,7 @@ from artifact_pipeline.pegging import (  # noqa: E402
     ROLES,
     TabularPeggingPolicy,
     UniformHandPolicy,
+    GeometricHandPolicy,
 )
 from artifact_pipeline.play_quality import measure_quality  # noqa: E402
 
@@ -63,7 +64,9 @@ def count_policy_usage(policies: Mapping[str, Any]) -> Iterator[dict[str, Any]]:
                 counts["entries"] += len(policy.actions)
                 policy.actions = CountedActions(policy.actions, counts)
                 visit(policy.fallback)
-            elif isinstance(policy, (PolicyMixture, UniformHandPolicy)):
+            elif isinstance(
+                policy, (PolicyMixture, UniformHandPolicy, GeometricHandPolicy)
+            ):
                 for component in policy.policies:
                     visit(component)
 
@@ -86,11 +89,6 @@ def count_policy_usage(policies: Mapping[str, Any]) -> Iterator[dict[str, Any]]:
 
 def run_experiment(generation_args: list[str]) -> dict[str, Any]:
     """Run the real generator; no alternate sampling or decision implementation."""
-    # Counters are process-local; reject parallel runs rather than report zeros.
-    parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--workers", type=int, choices=(1,), default=1)
-    parser.parse_known_args(generation_args)
-    generation_args = ["--workers=1", *generation_args]
     stages = []
     usage: dict[str, Any] = {}
     invocations: dict[str, int] = {}
@@ -101,9 +99,9 @@ def run_experiment(generation_args: list[str]) -> dict[str, Any]:
             label = f"{name}_{invocations[name]}"
             start = time.monotonic()
             if name == "sampling" and "checkpoint" in kwargs:
-                with count_policy_usage(args[1]) as counters:
-                    result = function(*args, **kwargs)
-                usage.update(counters)
+                kwargs["observe_policy_usage"] = True
+                result = function(*args, **kwargs)
+                usage.update(result["__metadata__"]["policy_usage"])
                 label = "final_sampling"
             else:
                 result = function(*args, **kwargs)
@@ -121,6 +119,7 @@ def run_experiment(generation_args: list[str]) -> dict[str, Any]:
             ("training", "train_iterative_best_response"),
             ("sampling", "generate_play_table"),
             ("refinement", "refine_discard_policy"),
+            ("promotion_gate", "promotion_gate"),
         ):
             stack.enter_context(
                 patch.object(
@@ -156,6 +155,8 @@ def run_experiment(generation_args: list[str]) -> dict[str, Any]:
                 Path("artifact_pipeline/pegging.py"),
                 Path("artifact_pipeline/generate_play_table.py"),
                 Path("artifact_pipeline/play_quality.py"),
+                Path("artifact_pipeline/promotion_gate.py"),
+                Path("artifact_pipeline/policy_usage.py"),
                 Path("scripts/run_pegging_experiment.py"),
             )
         },

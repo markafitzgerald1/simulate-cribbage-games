@@ -306,6 +306,21 @@ python artifact_pipeline/generate_play_table.py \
   --seed=42
 ```
 
+The promotion gate defaults to `--promotion-gate=report`: after training, it
+compares the trained policies with the legacy heuristic on 200,000 duplicate
+uniform rank-only deals, logs seat advantages and paired standard errors, and
+adds full-table metadata. It leaves the measured policy unchanged. Use
+`--promotion-gate=off` to skip calibration in a quick smoke test, or
+`--promotion-gate-deals=100` for a bounded reporting check. `enforce` selects the
+legacy heuristic for both measured seats unless the trained both-seat advantage
+is positive at z >= 3. See [the gate definition](docs/pegging-lines.md#paired-promotion-gate)
+for its population and provenance boundaries.
+
+The optional `--policy-averaging=geometric-hand` preserves the production
+geometric weights while sampling a complete component per seat per hand.
+Like `uniform-hand`, it freezes prior-average fallbacks and uses one rollout per
+action. The production averaging default remains `geometric`.
+
 The generator starts from the analytical `E(h +/- c)` discard policy, improves
 the rank-only pegging policy through rollout-based iterative best response, and
 then refines discards on `E(h +/- c +/- deltaP)`. The full artifact records

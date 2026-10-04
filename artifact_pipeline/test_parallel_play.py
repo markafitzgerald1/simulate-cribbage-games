@@ -85,7 +85,7 @@ class TestParallelPlay(unittest.TestCase):
                 )
 
     def test_both_averages_training_and_all_artifact_bytes_match(self):
-        for averaging in ("geometric", "uniform-hand"):
+        for averaging in ("geometric", "uniform-hand", "geometric-hand"):
             with self.subTest(averaging=averaging):
                 trained = []
                 sampler = partial(sample_policy_deal, discard_policy=self.discards)

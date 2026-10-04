@@ -483,6 +483,8 @@ class TestGeneratePlayTable(unittest.TestCase):
             lines_output="lines.json",
             samples=1,
             workers=2,
+            promotion_gate="off",
+            promotion_gate_deals=2,
             max_samples=None,
             target_standard_error=None,
             seed=42,
@@ -596,6 +598,8 @@ class TestGeneratePlayTable(unittest.TestCase):
             lines_output="lines.json",
             samples=1,
             workers=2,
+            promotion_gate="off",
+            promotion_gate_deals=2,
             max_samples=None,
             target_standard_error=None,
             seed=42,
@@ -654,6 +658,8 @@ class TestPlayArguments(unittest.TestCase):
         self.assertEqual(args.client_output, DEFAULT_CLIENT_OUTPUT_PATH)
         self.assertEqual(args.lines_output, DEFAULT_LINES_OUTPUT_PATH)
         self.assertEqual(args.policy_averaging, "geometric")
+        self.assertEqual(args.promotion_gate, "report")
+        self.assertEqual(args.promotion_gate_deals, 200_000)
         with patch("sys.argv", ["generate_play_table.py"]), patch(
             "artifact_pipeline.generate_play_table.os.process_cpu_count", return_value=7
         ):
@@ -674,6 +680,8 @@ class TestPlayArguments(unittest.TestCase):
                 "--hand-limit=1",
                 "--fail-on-non-convergence",
                 "--policy-averaging=uniform-hand",
+                "--promotion-gate=enforce",
+                "--promotion-gate-deals=35",
             ],
         ):
             args = _parse_args()
@@ -681,6 +689,8 @@ class TestPlayArguments(unittest.TestCase):
         self.assertEqual(args.workers, 3)
         self.assertTrue(args.fail_on_non_convergence)
         self.assertEqual(args.policy_averaging, "uniform-hand")
+        self.assertEqual(args.promotion_gate, "enforce")
+        self.assertEqual(args.promotion_gate_deals, 35)
 
     def test_lines_output_cannot_replace_full_or_client_means(self):
         for path in (DEFAULT_OUTPUT_PATH, DEFAULT_CLIENT_OUTPUT_PATH):

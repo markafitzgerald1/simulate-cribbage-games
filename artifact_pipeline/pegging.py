@@ -217,10 +217,38 @@ class UniformHandPolicy:
         raise ValueError("Resolve a hand policy at the simulation boundary")
 
 
+@dataclass(frozen=True)
+class GeometricHandPolicy:
+    """Production geometric mass, with a complete component drawn per hand."""
+
+    policies: Sequence[PeggingPolicy]
+    weights: Sequence[float]
+
+    def __post_init__(self) -> None:
+        PolicyMixture(self.policies, self.weights)
+
+    def select_rank(self, view: PolicyView, rng: random.Random) -> int:
+        """Reject a new component draw at an already reached information state."""
+        raise ValueError("Resolve a hand policy at the simulation boundary")
+
+
+HAND_POLICY_TYPES = (UniformHandPolicy, GeometricHandPolicy)
+
+
 def _resolve_hand_policy(policy: PeggingPolicy, rng: random.Random) -> PeggingPolicy:
     """Freeze component and fallback draws without inspecting either hand."""
     if isinstance(policy, UniformHandPolicy):
         return _resolve_hand_policy(rng.choice(policy.policies), rng)
+    if isinstance(policy, GeometricHandPolicy):
+        chosen = rng.random() * sum(policy.weights)
+        cumulative = 0.0
+        selected = policy.policies[-1]
+        for component, weight in zip(policy.policies[:-1], policy.weights[:-1]):
+            cumulative += weight
+            if chosen <= cumulative:
+                selected = component
+                break
+        return _resolve_hand_policy(selected, rng)
     if isinstance(policy, TabularPeggingPolicy):
         return TabularPeggingPolicy(
             policy.actions, _resolve_hand_policy(policy.fallback, rng)
@@ -237,6 +265,13 @@ def _updated_policy(
     if averaging == "uniform-hand":
         history = prior.policies if isinstance(prior, UniformHandPolicy) else (prior,)
         return UniformHandPolicy((*history, response))
+    if averaging == "geometric-hand":
+        history = prior.policies if isinstance(prior, GeometricHandPolicy) else (prior,)
+        weights = prior.weights if isinstance(prior, GeometricHandPolicy) else (1.0,)
+        return GeometricHandPolicy(
+            (*history, response),
+            (*(weight * (1.0 - mixture_weight) for weight in weights), mixture_weight),
+        )
     return PolicyMixture((prior, response), (1.0 - mixture_weight, mixture_weight))
 
 
@@ -409,7 +444,7 @@ def simulate_from_state(
     hand_policies = {
         role: (
             _resolve_hand_policy(policy, rng)
-            if isinstance(policy, UniformHandPolicy)
+            if isinstance(policy, HAND_POLICY_TYPES)
             else policy
         )
         for role, policy in policies.items()
@@ -478,6 +513,12 @@ def policy_fingerprint(policy: PeggingPolicy) -> str:
     elif isinstance(policy, PolicyMixture):
         payload = (
             "mixture-v1",
+            tuple(policy.weights),
+            tuple(policy_fingerprint(item) for item in policy.policies),
+        )
+    elif isinstance(policy, GeometricHandPolicy):
+        payload = (
+            "geometric-hand-v1",
             tuple(policy.weights),
             tuple(policy_fingerprint(item) for item in policy.policies),
         )
@@ -592,7 +633,7 @@ def train_rollout_best_response(
         raise ValueError("Training sample and rollout counts must be positive")
     if workers <= 0:
         raise ValueError("Workers must be positive")
-    if all(isinstance(policies[role], UniformHandPolicy) for role in ROLES):
+    if all(isinstance(policies[role], HAND_POLICY_TYPES) for role in ROLES):
         # Trace components and their fallbacks are frozen: a complete-state
         # continuation is deterministic, so repeats are not new observations.
         rollouts_per_action = 1
@@ -635,9 +676,9 @@ def train_iterative_best_response(
         raise ValueError("IBR iterations must be positive")
     if not 0.0 < mixture_weight <= 1.0:
         raise ValueError("Mixture weight must be in (0, 1]")
-    if averaging not in ("geometric", "uniform-hand"):
+    if averaging not in ("geometric", "uniform-hand", "geometric-hand"):
         raise ValueError("Unknown policy averaging method")
-    if averaging == "uniform-hand":
+    if averaging in ("uniform-hand", "geometric-hand"):
         # Include the deterministic iteration-zero responses, before both seats
         # have a UniformHandPolicy. Preserve invalid counts for validation below.
         rollouts_per_action = min(rollouts_per_action, 1)
@@ -650,7 +691,7 @@ def train_iterative_best_response(
         }
     )
     if averaging == "geometric" and any(
-        isinstance(policy, UniformHandPolicy) for policy in policies.values()
+        isinstance(policy, HAND_POLICY_TYPES) for policy in policies.values()
     ):
         raise ValueError("Cannot resume hand averaging as a per-decision mixture")
     reports = []

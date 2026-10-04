@@ -31,6 +31,18 @@ class TestPlayQuality(unittest.TestCase):
         }
         return measure_quality(json.dumps(document).encode(), b"{}", **kwargs)
 
+    def test_key_statistics_keep_own_eligible_support_and_existing_gauge(self):
+        rows = [
+            [[0, 300, 0, 0.1], [1, 100, 1, 0.2]],
+            [[1, 99, 10, 0], [2, 100, 0, 0.2]],
+        ]
+        original = self.measure(rows)
+        detailed = self.measure(rows, include_key_statistics=True)
+        self.assertEqual(
+            detailed.pop("key_statistics"), {"A_2_3_4": {"flagged": True, "gain": 0.75}}
+        )
+        self.assertEqual(detailed, original)
+
     def test_count_weighted_gain_and_equal_key_population_spread(self):
         # Gains are 1 - (300*0 + 100*1)/400 = .75 and 3 - 2 = 1.
         result = self.measure(

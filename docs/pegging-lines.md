@@ -88,6 +88,14 @@ are frozen, the complete-state continuation is deterministic; repeating it
 adds cost and duplicates observations without adding information. Each sampled
 decision/action contributes once to its statistics, rather than inflating `n`.
 
+The opt-in `--policy-averaging=geometric-hand` uses the same complete-component
+sampling and frozen fallback rules, with geometric top-level weights instead
+of uniform weights. At the default update weight, the newest response has mass
+1/2, the preceding response 1/4, and so on; with six updates the oldest response
+and legacy each have mass 1/64. This isolates hand-level correlation from the
+weighting change. Both hand modes force one rollout per action. Top-level
+weights still do not describe effective action mass after table misses.
+
 Per-decision equal weights would not implement this strategy average: at later
 information states, behavioral averaging requires each component's own reach
 probability. Sampling a complete strategy avoids that calculation; see
@@ -207,3 +215,53 @@ compares **whole observed lines**, not alternative leads
 followed by a common continuation. The formula and thresholds stay unchanged;
 cross-method differences are descriptive policy/line diagnostics, not a causal
 estimate of replacing only the opening card. Qualifications text is unchanged.
+
+
+## Paired promotion gate
+
+After the final training pass and before final artifact measurement,
+`--promotion-gate=report` (the default) evaluates the trained policies against
+`LegacyHeuristicPolicy`. It logs the result and adds `promotion_gate` to the
+full artifact metadata, without changing the policies measured. `off` skips
+the evaluation. `enforce` measures both seats with the legacy heuristic when
+the trained policy's both-seat advantage is not positive at z >= 3. Metadata
+records both trained and measured fingerprints and the policy selected; the
+ordinary artifact and lines fingerprint identifies the policy actually measured.
+The existing discard refinement is retained even if the gate selects legacy
+for final pegging measurement. Lines qualifications are unchanged.
+
+The default is 200,000 independent physical eight-card deals, sampled without
+replacement from four copies of each rank, then split into two four-card keeps.
+This is a uniform keep population, rather than the artifact's discard-policy
+conditional population. `--promotion-gate-deals` overrides the count for bounded
+checks; at least two deals are required when enabled. The default count targets
+SE near 0.01 points or smaller, but the actual SE is always reported.
+
+Each deal is played three times with the same play RNG seed: legacy versus
+legacy, trained Pone versus legacy Dealer, and legacy Pone versus trained
+Dealer. The Pone advantage is its trained delta minus the reference Pone delta;
+the Dealer advantage is its trained delta minus the reference Dealer delta.
+The both-seat advantage **per hand** is their average, not their sum. Estimate
+its SE from these per-deal averages to retain paired covariance. Processes
+return raw pairs in deal order so estimates are reproducible across worker
+counts. Gate randomness is separate from training and artifact measurement.
+A positive mean with zero SE passes; a zero mean does not. These SEs condition
+on the frozen policies and exclude learning uncertainty. Passing on uniform
+keeps does not prove superiority in the artifact population or optimality.
+
+The experiment runner observes table hits and terminal legacy selections inside
+measurement workers and reduces the returned counts in the parent. Observation
+preserves scores, openings and RNG state. Terminal-legacy share divides terminal
+legacy selections by all card selections (table hits plus terminal legacy).
+Coverage counts unique stored states separately from actual decision usage.
+When resuming, usage counts cover newly measured samples only.
+
+For paired gauge comparisons, request `include_key_statistics=True` from
+`measure_quality`. Compare the intersection of eligible **keys**, retaining each
+policy's own qualifying leads. This matches the seed-43 comparison in issue
+#187; it does not impose common lead support. McNemar's signed screening z is
+`(baseline_only - variant_only) / sqrt(baseline_only + variant_only)` without a
+continuity correction. Estimate the SE of the mean gain difference from paired
+per-key differences, rather than combining marginal spreads. Whole-hand lead
+groups remain largely component groups, so these comparisons describe complete
+lines rather than isolated opening-card changes.
