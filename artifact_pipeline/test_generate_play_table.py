@@ -46,6 +46,7 @@ from artifact_pipeline.analytical_solver import (
 )
 from artifact_pipeline.pegging import canonical_hand_key, get_canonical_hands
 from artifact_pipeline.play_lines import decode_lines
+from artifact_pipeline.play_quality import measure_quality
 
 
 class FirstPolicy:  # pylint: disable=too-few-public-methods
@@ -453,7 +454,18 @@ class TestGeneratePlayTable(unittest.TestCase):
             data = decode_lines(raw, before)
             self.assertEqual(data["keys"], ["A_2_3_4"])
             self.assertEqual(len(raw.splitlines()), 1)
-            self.assertTrue(f"{len(raw)} minified bytes" in report.call_args.args[0])
+            messages = [call.args[0] for call in report.call_args_list]
+            self.assertTrue(f"{len(raw)} minified bytes" in messages[0])
+            quality_log = [
+                message
+                for message in messages
+                if message.startswith("Pone lead quality: ")
+            ]
+            self.assertEqual(len(quality_log), 1)
+            self.assertEqual(
+                json.loads(quality_log[0].split(": ", 1)[1]),
+                measure_quality(raw, before),
+            )
 
     def test_parse_args_defaults_and_overrides(self):
         with patch("sys.argv", ["generate_play_table.py"]):
@@ -563,6 +575,8 @@ class TestGeneratePlayTable(unittest.TestCase):
             side_effect=(True, False),
         ), patch(
             "artifact_pipeline.generate_play_table.build_lines", return_value={}
+        ), patch(
+            "artifact_pipeline.generate_play_table.measure_quality", return_value={}
         ), patch(
             "artifact_pipeline.generate_play_table.gzip.compress", return_value=b"gzip"
         ), patch(

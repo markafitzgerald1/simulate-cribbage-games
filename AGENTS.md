@@ -545,6 +545,14 @@ response frequency uses that lead's count. Retain thin cells with counts and
 null mean/SE, and hash exact client means bytes. Published rounded SEs are not
 checkpoint moments. Keep the companion in the same release publication call.
 
+The Pone lead quality gauge reads the exact validated lines/client pair and
+reports eligibility alongside flag rates and best-observed-lead gains. Gains
+condition on leads meeting the minimum count; missing support cannot count as
+good policy quality. Published rounded SEs support an approximate screening
+rule, not a calibrated multiple-comparison or optimality claim. Retain these
+denominators and limits in generation logs and release notes; see
+`docs/pegging-lines.md` for the definition.
+
 `generate_play_table.py` uses the analytical `E(h +/- c)` solution as its
 initial discard policy, trains a rank-only hidden-information pegging policy by
 rollout iterative best response, and refines discards using

@@ -32,6 +32,7 @@ from artifact_pipeline.analytical_solver import (  # noqa: E402
     run_analytical_ibr,
 )
 from artifact_pipeline.play_lines import OpeningLines, build_lines  # noqa: E402
+from artifact_pipeline.play_quality import measure_quality  # noqa: E402
 from artifact_pipeline.pegging import (  # noqa: E402
     DEALER,
     PONE,
@@ -576,13 +577,18 @@ def _write_json(path: str, data: Mapping[str, object], compact: bool = False) ->
 def _write_lines(lines_path: str, means_path: str, full: Mapping[str, Any]) -> None:
     """Hash the written client bytes and report reproducible companion sizes."""
     with open(means_path, "rb") as means_file:
-        lines = build_lines(full, means_file.read())
+        means_bytes = means_file.read()
+        lines = build_lines(full, means_bytes)
     _write_json(lines_path, lines, compact=True)
     with open(lines_path, "rb") as lines_file:
         lines_bytes = lines_file.read()
     print(
         f"Play lines: {len(lines_bytes)} minified bytes; "
         f"{len(gzip.compress(lines_bytes, 9, mtime=0))} gzip bytes"
+    )
+    print(
+        "Pone lead quality: "
+        + json.dumps(measure_quality(lines_bytes, means_bytes), sort_keys=True)
     )
 
 

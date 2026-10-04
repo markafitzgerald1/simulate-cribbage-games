@@ -318,6 +318,12 @@ is seeded independently by hand, role, and cumulative sample index, so a resumed
 seeded run produces the same estimates as an uninterrupted run. Pass
 `--no-resume` for a fresh run.
 
+Each lines companion also produces a Pone lead quality report in the generation
+log and workflow release notes. It screens well-sampled leads at z >= 3 and
+reports best-observed-lead gains with explicit coverage denominators. See
+[the gauge definition and limits](docs/pegging-lines.md#pone-lead-quality-gauge)
+before interpreting a low flag rate or comparing training settings.
+
 The artifact workflow corroborates the generated table against a small,
 attributed sample of Cribbage Pro's published (empirical human-play) pegging
 values. Run it manually with:

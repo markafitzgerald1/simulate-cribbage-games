@@ -150,6 +150,12 @@ actual policy selections without additional randomness, keep unrounded
 checkpoint moments, and validate exact client-byte digest pairing before use.
 Publish this companion in the same release call as its means.
 
+Its Pone quality gauge must expose eligible keys and samples alongside the
+screening rate. Compare gains only with their qualifying-lead support stated;
+zero eligible keys means unavailable, not good policy quality. Keep the report
+derived from the validated published pair in logs and release notes, without
+changing training or interpreting the diagnostic as an optimality proof.
+
 Publication rounding must normalize signed zero without altering checkpoint
 moments. Test modes where count and rank disagree, leads observed out of order,
 and fractional checkpoint moments; integer fixtures hide these mutation gaps.

@@ -157,6 +157,16 @@ jobs:
           name: expected-play-points-lines
           path: expected_play_points.lines.json
 
+      - name: Measure Pone lead quality for release notes
+        run: |
+          python -c 'import json; from pathlib import Path; from artifact_pipeline.play_quality import measure_quality; print(json.dumps(measure_quality(Path("expected_play_points.lines.json").read_bytes(), Path("expected_play_points.client.json").read_bytes()), sort_keys=True))' > play-quality.json
+
+      - name: Upload Pone lead quality report
+        uses: actions/upload-artifact@v7
+        with:
+          name: expected-play-points-quality
+          path: play-quality.json
+
   release-artifact:
     needs: generate-table
     if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
@@ -189,6 +199,15 @@ jobs:
         id: build_timestamp
         run: echo "now=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
 
+      - name: Download Pone lead quality report
+        uses: actions/download-artifact@v8
+        with:
+          name: expected-play-points-quality
+
+      - name: Capture Pone lead quality report
+        id: play_quality
+        run: echo "report=$(cat play-quality.json)" >> "$GITHUB_OUTPUT"
+
       - name: Publish rolling release
         uses: softprops/action-gh-release@v3
         with:
@@ -210,6 +229,12 @@ jobs:
               paired with the client means (see `docs/pegging-lines.md`).
 
             Triggered by: ${{ github.event_name }} on commit ${{ github.sha }}.
+
+            **Pone lead quality gauge** (descriptive screening, not an optimality claim; eligible-key denominator and restricted-mixture gains defined in `docs/pegging-lines.md`):
+
+            ```json
+            ${{ steps.play_quality.outputs.report }}
+            ```
           files: |
             expected_play_points.json
             expected_play_points.client.json

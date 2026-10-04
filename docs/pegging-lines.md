@@ -57,9 +57,16 @@ conditional on that opening lead. Dealer's mean includes **every** simulation
 with the lead, including responses other than the mode. It is not a mean
 conditional on the mode too, nor the points scored in just the first exchange.
 
-The published policy is a `PolicyMixture` of two policies at a fixed training
-weight. A split in lead or modal-response frequency reflects that blend, not
-equilibrium mixing; see
+Each best-response update nests a `PolicyMixture` of the prior policy and the
+new tabular response, with weights 0.5 and 0.5. These nests persist across outer
+iterations and the final training pass. With six updates per role (the current
+production settings), explicit component weights are newest response 1/2,
+then 1/4, 1/8, 1/16, 1/32, 1/64, and the initial legacy heuristic 1/64.
+Each decision draws afresh, including within nested mixtures; it does not pick
+one policy for the whole hand. A tabular response also falls back to its prior
+policy at an unsupported information state, so effective action probabilities
+depend on table coverage. A split in lead or modal-response frequency reflects
+this behavior, not established equilibrium mixing; see
 [#183](https://github.com/markafitzgerald1/simulate-cribbage-games/issues/183).
 
 Dealer publishes one modal response rank and its observed count per lead.
@@ -126,3 +133,40 @@ and client output paths. Write client means first, hash those exact on-disk
 bytes, then write the minified companion. Report minified bytes and reproducible
 gzip level-9 bytes (`mtime=0`). Publish the companion, means and uncertainty
 sidecar in a single rolling-release publication call.
+
+## Pone lead quality gauge
+
+Every written companion is validated against the exact client bytes and measured
+by `measure_quality` in `artifact_pipeline/play_quality.py`. The generation log
+prints its JSON report, and the workflow carries that report into release notes.
+This diagnostic does not change the lines schema or qualifications.
+
+Defaults are a minimum of 100 samples per lead and z >= 3. An eligible key has
+at least two Pone leads meeting that count. Its most frequent lead uses count
+first, then canonical rank order for ties. A key is flagged if any qualifying
+alternative has a positive mean gap and
+`gap >= 3 * sqrt(se_mode**2 + se_alternative**2)`. Both SEs come from the
+published conditional cells; a positive gap with both SEs zero is flagged,
+whereas equal means are not. Dealer rows do not enter the gauge.
+
+`flagged_share` uses eligible keys as its denominator. `keys_total`,
+`keys_eligible`, and `keys_flagged` expose coverage; with no eligible keys the
+share and gain summaries are null, not zero. `observed_samples` counts all Pone
+samples, while `eligible_samples` counts qualifying leads in eligible keys.
+Thin, rare, absent and single-lead cases cannot demonstrate policy quality.
+
+For each eligible key, gain is the largest qualifying lead mean minus the
+count-weighted mean of qualifying leads. It describes the observed mixture
+**restricted to those leads**, not the complete mixture when rare leads are
+excluded. The report gives the equal-key mean, population standard deviation
+and maximum of these gains in points. Keys are not weighted by deal frequency.
+The spread describes variation across keys, not uncertainty in the mean gain.
+
+Pone's initial per-decision draw is independent of the hidden opponent deal
+given its kept ranks. This supports within-policy opening-lead diagnostics;
+Dealer's observed opponent lead does not randomize its own response. The z rule
+is an approximate screening criterion, with rounded published moments and no
+multiple-comparison correction. Selecting the best observed mean biases gain
+upward. Neither statistic proves optimality, exploitability, head-to-head
+strength, policy-learning accuracy, or the effect on the full discard decision.
+Compare matched settings and report eligibility alongside any apparent gain.
