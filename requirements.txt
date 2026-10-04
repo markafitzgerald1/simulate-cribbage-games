@@ -77,5 +77,5 @@ tomlkit==0.15.0
     # via pylint
 typing-extensions==4.16.0
     # via mypy
-virtualenv==21.7.12
+virtualenv==21.7.13
     # via pre-commit
