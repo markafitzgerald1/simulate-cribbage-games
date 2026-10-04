@@ -324,6 +324,20 @@ reports best-observed-lead gains with explicit coverage denominators. See
 [the gauge definition and limits](docs/pegging-lines.md#pone-lead-quality-gauge)
 before interpreting a low flag rate or comparing training settings.
 
+For research, `--policy-averaging=uniform-hand` uses an equal-mass response
+history, sampling one component per role per hand with frozen fallbacks. The
+default remains the production geometric per-decision mixture. See the
+[mixture interpretation](docs/pegging-lines.md#meaning-for-consumers) before
+comparing gauges across these modes; whole-hand mixing correlates the opening
+lead and continuation. No burn-in or production workflow change is implied.
+
+For isolated stage timing and final-measurement table/legacy usage counters,
+pass the same generator flags to `python scripts/run_pegging_experiment.py
+--directory /tmp/pegging-experiment`. The directory must be empty. This runner
+writes `experiment.json` beside the generated pair without publishing it.
+Counters preserve action results and RNG state; their runtime overhead remains
+part of the measured experiment time.
+
 The artifact workflow corroborates the generated table against a small,
 attributed sample of Cribbage Pro's published (empirical human-play) pegging
 values. Run it manually with:

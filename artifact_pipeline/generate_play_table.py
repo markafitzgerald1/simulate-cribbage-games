@@ -636,6 +636,9 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--ibr-iterations", type=positive_int, default=2)
     parser.add_argument("--ibr-samples", type=positive_int, default=5000)
     parser.add_argument("--rollouts-per-action", type=positive_int, default=2)
+    parser.add_argument(
+        "--policy-averaging", choices=("geometric", "uniform-hand"), default="geometric"
+    )
     parser.add_argument("--outer-iterations", type=positive_int, default=3)
     parser.add_argument("--policy-table-samples", type=positive_int, default=200)
     parser.add_argument("--checkpoint-frequency", type=positive_int, default=100)
@@ -680,6 +683,7 @@ def main() -> None:
             rollouts_per_action=args.rollouts_per_action,
             seed=args.seed,
             initial_policies=policies,
+            averaging=args.policy_averaging,
         )
         policy_table = generate_play_table(
             discard_policy,
@@ -726,6 +730,7 @@ def main() -> None:
         rollouts_per_action=args.rollouts_per_action,
         seed=args.seed + args.outer_iterations,
         initial_policies=policies,
+        averaging=args.policy_averaging,
     )
     reports.append({"final_play_ibr": final_ibr_reports})
     final_policy_fingerprint = ":".join(
@@ -756,6 +761,7 @@ def main() -> None:
     full_table["__metadata__"].update(
         {
             "joint_policy_converged": converged,
+            "policy_averaging": args.policy_averaging,
             "outer_iterations": reports,
         }
     )

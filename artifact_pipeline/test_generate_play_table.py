@@ -473,6 +473,7 @@ class TestGeneratePlayTable(unittest.TestCase):
         self.assertEqual(args.output, DEFAULT_OUTPUT_PATH)
         self.assertEqual(args.client_output, DEFAULT_CLIENT_OUTPUT_PATH)
         self.assertEqual(args.lines_output, DEFAULT_LINES_OUTPUT_PATH)
+        self.assertEqual(args.policy_averaging, "geometric")
         with patch(
             "sys.argv",
             [
@@ -482,11 +483,13 @@ class TestGeneratePlayTable(unittest.TestCase):
                 "--target-standard-error=0.2",
                 "--hand-limit=1",
                 "--fail-on-non-convergence",
+                "--policy-averaging=uniform-hand",
             ],
         ):
             args = _parse_args()
         self.assertEqual(args.samples, 2)
         self.assertTrue(args.fail_on_non_convergence)
+        self.assertEqual(args.policy_averaging, "uniform-hand")
 
     def test_lines_output_cannot_replace_full_or_client_means(self):
         for path in (DEFAULT_OUTPUT_PATH, DEFAULT_CLIENT_OUTPUT_PATH):
@@ -507,6 +510,7 @@ class TestGeneratePlayTable(unittest.TestCase):
             ibr_iterations=1,
             ibr_samples=1,
             rollouts_per_action=1,
+            policy_averaging="uniform-hand",
             outer_iterations=3,
             policy_table_samples=1,
             analytical_max_iterations=1,
@@ -557,7 +561,7 @@ class TestGeneratePlayTable(unittest.TestCase):
         ), patch(
             "artifact_pipeline.generate_play_table.train_iterative_best_response",
             return_value=(self.play_policies, []),
-        ), patch(
+        ) as train_policies, patch(
             "artifact_pipeline.generate_play_table.generate_play_table",
             side_effect=generate_with_checkpoint,
         ), patch(
@@ -585,6 +589,13 @@ class TestGeneratePlayTable(unittest.TestCase):
             main()
             main()
         self.assertEqual(write_json.call_count, 10)
+        self.assertTrue(
+            all(
+                call.kwargs["averaging"] == "uniform-hand"
+                for call in train_policies.call_args_list
+            )
+        )
+        self.assertEqual(table["__metadata__"]["policy_averaging"], "uniform-hand")
 
     def test_main_can_fail_on_non_convergence_without_hand_limit(self):
         args = argparse.Namespace(
@@ -598,6 +609,7 @@ class TestGeneratePlayTable(unittest.TestCase):
             ibr_iterations=1,
             ibr_samples=1,
             rollouts_per_action=1,
+            policy_averaging="geometric",
             outer_iterations=1,
             policy_table_samples=1,
             analytical_max_iterations=1,

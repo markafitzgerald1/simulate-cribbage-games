@@ -156,6 +156,12 @@ zero eligible keys means unavailable, not good policy quality. Keep the report
 derived from the validated published pair in logs and release notes, without
 changing training or interpreting the diagnostic as an optimality proof.
 
+For opt-in whole-hand uniform averaging, test component persistence for both
+seats, fallback draws, response history across warm training calls, and rollout
+continuations from the sampled trace. A fresh mixture draw mid-hand ignores
+history-conditioned reach. Interpret its gauge as a comparison of whole lines,
+with component-dependent continuations, and retain the production default.
+
 Publication rounding must normalize signed zero without altering checkpoint
 moments. Test modes where count and rank disagree, leads observed out of order,
 and fractional checkpoint moments; integer fixtures hide these mutation gaps.

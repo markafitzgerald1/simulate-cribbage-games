@@ -201,6 +201,44 @@ class PolicyMixture:
         return self.policies[-1].select_rank(view, rng)
 
 
+@dataclass(frozen=True)
+class UniformHandPolicy:
+    """Equal-mass strategy history, sampled once per seat at the hand boundary."""
+
+    policies: Sequence[PeggingPolicy]
+
+    def __post_init__(self) -> None:
+        if not self.policies:
+            raise ValueError("A hand policy requires at least one component")
+
+    def select_rank(self, view: PolicyView, rng: random.Random) -> int:
+        """Reject independent per-decision sampling of this mixed strategy."""
+        raise ValueError("Resolve a hand policy at the simulation boundary")
+
+
+def _resolve_hand_policy(policy: PeggingPolicy, rng: random.Random) -> PeggingPolicy:
+    """Freeze component and fallback draws without inspecting either hand."""
+    if isinstance(policy, UniformHandPolicy):
+        return _resolve_hand_policy(rng.choice(policy.policies), rng)
+    if isinstance(policy, TabularPeggingPolicy):
+        return TabularPeggingPolicy(
+            policy.actions, _resolve_hand_policy(policy.fallback, rng)
+        )
+    return policy
+
+
+def _updated_policy(
+    prior: PeggingPolicy,
+    response: PeggingPolicy,
+    averaging: str,
+    mixture_weight: float,
+) -> PeggingPolicy:
+    if averaging == "uniform-hand":
+        history = prior.policies if isinstance(prior, UniformHandPolicy) else (prior,)
+        return UniformHandPolicy((*history, response))
+    return PolicyMixture((prior, response), (1.0 - mixture_weight, mixture_weight))
+
+
 @dataclass
 class PeggingState:
     """Complete simulation state; hidden hands are never included in PolicyView."""
@@ -245,6 +283,7 @@ class DecisionTrace:
 
     view: PolicyView
     state: PeggingState
+    policies: Mapping[str, PeggingPolicy]
 
 
 @dataclass
@@ -366,6 +405,14 @@ def simulate_from_state(
 ) -> PeggingResult:
     """Play from an arbitrary state and return only points scored afterward."""
     state = initial_state.copy()
+    hand_policies = {
+        role: (
+            _resolve_hand_policy(policy, rng)
+            if isinstance(policy, UniformHandPolicy)
+            else policy
+        )
+        for role, policy in policies.items()
+    }
     scores = {role: _empty_points() for role in ROLES}
     decisions = []
     opening: list[int] = []
@@ -378,11 +425,11 @@ def simulate_from_state(
             first_action = False
             continue
         if collect_decisions and len(legal_ranks) > 1:
-            decisions.append(DecisionTrace(view=view, state=state.copy()))
+            decisions.append(DecisionTrace(view, state.copy(), hand_policies))
         if first_action and forced_rank is not None:
             selected = forced_rank
         else:
-            selected = policies[view.role].select_rank(view, rng)
+            selected = hand_policies[view.role].select_rank(view, rng)
         if len(opening) < 2:
             opening.append(selected)
         first_action = False
@@ -433,6 +480,11 @@ def policy_fingerprint(policy: PeggingPolicy) -> str:
             tuple(policy.weights),
             tuple(policy_fingerprint(item) for item in policy.policies),
         )
+    elif isinstance(policy, UniformHandPolicy):
+        payload = (
+            "uniform-hand-v1",
+            tuple(policy_fingerprint(item) for item in policy.policies),
+        )
     else:
         payload = (type(policy).__module__, type(policy).__qualname__)
     return hashlib.sha256(repr(payload).encode("utf-8")).hexdigest()
@@ -472,7 +524,7 @@ def train_rollout_best_response(
                 for rollout_index in range(rollouts_per_action):
                     rollout = simulate_from_state(
                         decision.state,
-                        policies,
+                        decision.policies,
                         random.Random(
                             _stable_seed(
                                 seed,
@@ -502,6 +554,7 @@ def train_iterative_best_response(
     seed: int,
     mixture_weight: float = 0.5,
     initial_policies: Mapping[str, PeggingPolicy] | None = None,
+    averaging: str = "geometric",
 ) -> tuple[dict[str, PeggingPolicy], list[dict[str, object]]]:
     """Alternate rollout best responses for Pone and Dealer."""
     # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -509,6 +562,8 @@ def train_iterative_best_response(
         raise ValueError("IBR iterations must be positive")
     if not 0.0 < mixture_weight <= 1.0:
         raise ValueError("Mixture weight must be in (0, 1]")
+    if averaging not in ("geometric", "uniform-hand"):
+        raise ValueError("Unknown policy averaging method")
     policies: dict[str, PeggingPolicy] = dict(
         initial_policies
         if initial_policies is not None
@@ -517,6 +572,10 @@ def train_iterative_best_response(
             DEALER: LegacyHeuristicPolicy(),
         }
     )
+    if averaging == "geometric" and any(
+        isinstance(policy, UniformHandPolicy) for policy in policies.values()
+    ):
+        raise ValueError("Cannot resume hand averaging as a per-decision mixture")
     reports = []
     for iteration in range(iterations):
         for role_index, role in enumerate(ROLES):
@@ -528,10 +587,11 @@ def train_iterative_best_response(
                 rollouts_per_action,
                 _stable_seed(seed, iteration, role_index),
             )
-            prior = policies[role]
-            policies[role] = PolicyMixture(
-                policies=(prior, response),
-                weights=(1.0 - mixture_weight, mixture_weight),
+            policies[role] = _updated_policy(
+                policies[role],
+                response,
+                averaging,
+                mixture_weight,
             )
             reports.append(
                 {

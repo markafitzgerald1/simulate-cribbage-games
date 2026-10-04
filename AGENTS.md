@@ -553,6 +553,15 @@ rule, not a calibrated multiple-comparison or optimality claim. Retain these
 denominators and limits in generation logs and release notes; see
 `docs/pegging-lines.md` for the definition.
 
+Uniform response averaging for research samples one component per role per
+hand, including frozen prior-average fallbacks. Retain the sampled policies in
+training traces and their continuation rollouts: resampling at a reached state
+loses the posterior implied by the observed history. Independent per-decision
+component draws are not the uniform mixed-strategy average. Its opening gauge
+compares whole lines with correlated continuations, not isolated lead changes.
+Keep this mode opt-in and retain legacy/early responses until burn-in has its
+own measured justification.
+
 `generate_play_table.py` uses the analytical `E(h +/- c)` solution as its
 initial discard policy, trains a rank-only hidden-information pegging policy by
 rollout iterative best response, and refines discards using

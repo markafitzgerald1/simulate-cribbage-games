@@ -57,7 +57,8 @@ conditional on that opening lead. Dealer's mean includes **every** simulation
 with the lead, including responses other than the mode. It is not a mean
 conditional on the mode too, nor the points scored in just the first exchange.
 
-Each best-response update nests a `PolicyMixture` of the prior policy and the
+With the default `--policy-averaging=geometric`, each update nests a
+`PolicyMixture` of the prior policy and the
 new tabular response, with weights 0.5 and 0.5. These nests persist across outer
 iterations and the final training pass. With six updates per role (the current
 production settings), explicit component weights are newest response 1/2,
@@ -68,6 +69,25 @@ policy at an unsupported information state, so effective action probabilities
 depend on table coverage. A split in lead or modal-response frequency reflects
 this behavior, not established equilibrium mixing; see
 [#183](https://github.com/markafitzgerald1/simulate-cribbage-games/issues/183).
+
+The opt-in `--policy-averaging=uniform-hand` instead averages complete response
+strategies: each role independently samples one of its stored components at
+the start of the hand and retains it throughout. History contains the legacy
+heuristic plus every response across outer iterations and the final pass, with
+equal mass per component (seven components per role at current production
+training settings). No burn-in is applied. A response's unsupported states use
+its frozen prior average: fallback components are also sampled once before the
+hand, retained for that hand, and never reselected at each decision. The trace
+keeps these latent draws for continuation rollouts, preserving the component
+distribution conditional on the observed history instead of drawing afresh
+from the unconditional average mid-hand.
+
+Per-decision equal weights would not implement this strategy average: at later
+information states, behavioral averaging requires each component's own reach
+probability. Sampling a complete strategy avoids that calculation; see
+[Heinrich, Lanctot and Silver (2015)](https://proceedings.mlr.press/v37/heinrich15.html).
+Our rollout responses remain approximate and sparse, so this sampling rule
+does not establish fictitious-play convergence or optimality in this model.
 
 Dealer publishes one modal response rank and its observed count per lead.
 Resolve count ties by canonical rank order. That tie-break is presentation,
@@ -170,3 +190,10 @@ multiple-comparison correction. Selecting the best observed mean biases gain
 upward. Neither statistic proves optimality, exploitability, head-to-head
 strength, policy-learning accuracy, or the effect on the full discard decision.
 Compare matched settings and report eligibility alongside any apparent gain.
+
+For the opt-in whole-hand average, the opening draw is still independent of the
+hidden deal, but the continuation is correlated with the component that chose
+the lead. Its gauge compares **whole observed lines**, not alternative leads
+followed by a common continuation. The formula and thresholds stay unchanged;
+cross-method differences are descriptive policy/line diagnostics, not a causal
+estimate of replacing only the opening card. Qualifications text is unchanged.

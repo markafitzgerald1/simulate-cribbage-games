@@ -15,7 +15,7 @@ def measure_quality(
     minimum_lead_count: int = 100,
     z_threshold: float = 3.0,
 ) -> dict[str, Any]:
-    """Compare sampled Pone leads; retain denominators and unavailable values."""
+    """Screen observed Pone lines, including their policy-specific continuations."""
     if (
         not isinstance(minimum_lead_count, int)
         or isinstance(minimum_lead_count, bool)
@@ -39,7 +39,7 @@ def measure_quality(
         if len(rows) < 2:
             continue
         mode = min(rows, key=lambda row: (-row[1], row[0]))
-        # Disjoint randomized lead groups: use both conditional sample SEs.
+        # Disjoint opening groups; continuations can be correlated with the lead.
         flagged += any(
             row[2] > mode[2]
             and row[2] - mode[2] >= z_threshold * math.hypot(row[3], mode[3])
