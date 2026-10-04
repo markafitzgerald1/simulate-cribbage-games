@@ -147,6 +147,16 @@ jobs:
           name: expected-play-points-uncertainty
           path: expected_play_points.uncertainty.json
 
+      - name: Validate opening lines
+        run: |
+          python -c 'from pathlib import Path; from artifact_pipeline.play_lines import decode_lines; data = decode_lines(Path("expected_play_points.lines.json").read_bytes(), Path("expected_play_points.client.json").read_bytes()); import sys; sys.exit(0 if data["entries"] else "Lines carry no entries")'
+
+      - name: Upload opening lines
+        uses: actions/upload-artifact@v7
+        with:
+          name: expected-play-points-lines
+          path: expected_play_points.lines.json
+
   release-artifact:
     needs: generate-table
     if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
@@ -170,6 +180,11 @@ jobs:
         with:
           name: expected-play-points-uncertainty
 
+      - name: Download opening lines
+        uses: actions/download-artifact@v8
+        with:
+          name: expected-play-points-lines
+
       - name: Capture build timestamp
         id: build_timestamp
         run: echo "now=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
@@ -191,12 +206,15 @@ jobs:
             - `expected_play_points.uncertainty.json`: reported marginal
               uncertainty sidecar for the client means (see
               `docs/uncertainty-sidecars.md`).
+            - `expected_play_points.lines.json`: observed first-exchange lines
+              paired with the client means (see `docs/pegging-lines.md`).
 
             Triggered by: ${{ github.event_name }} on commit ${{ github.sha }}.
           files: |
             expected_play_points.json
             expected_play_points.client.json
             expected_play_points.uncertainty.json
+            expected_play_points.lines.json
           make_latest: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -538,6 +538,13 @@ assets; it is not a promise that a deliberate generation change will preserve
 them, and a dispatch after such a change must turn the check off.
 
 The expected-play pipeline is separate from the expected-crib pipeline.
+Its [opening-lines companion](docs/pegging-lines.md) observes the first two
+actual selections in the final frozen-policy measurement simulations. Dealer
+delta means condition on the opponent lead, including every response; modal
+response frequency uses that lead's count. Retain thin cells with counts and
+null mean/SE, and hash exact client means bytes. Published rounded SEs are not
+checkpoint moments. Keep the companion in the same release publication call.
+
 `generate_play_table.py` uses the analytical `E(h +/- c)` solution as its
 initial discard policy, trains a rank-only hidden-information pegging policy by
 rollout iterative best response, and refines discards using

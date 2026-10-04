@@ -119,6 +119,13 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 
 ## Artifact Pipeline
 
+Expected-play generation also writes the compact
+[first-exchange lines companion](docs/pegging-lines.md), describing the same
+frozen policy as the play means and paired to their exact bytes. Observed thin
+cells retain counts with null conditional mean/SE; missing data is unavailable,
+never zero. Generation prints its minified and gzip sizes. The workflow
+publishes it beside the means in the same rolling-release call.
+
 The experimental shared-rank crib decomposition is isolated in
 `artifact_pipeline/crib_decomposition.py`. It is an opt-in library for the
 version-4 producer work under issue #135; the scheduled `generate_table.py`
