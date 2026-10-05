@@ -222,23 +222,42 @@ class UniformHandPolicy:
 
 def _resolve_hand_policy(policy: PeggingPolicy, rng: random.Random) -> PeggingPolicy:
     """Freeze component and fallback draws without inspecting either hand."""
+    return _resolve_policy_graph(policy, rng, {}, {})
+
+
+def _resolve_policy_graph(
+    policy: PeggingPolicy,
+    rng: random.Random,
+    traits: dict[int, PolicyGraphTraits | None],
+    resolved: dict[int, PeggingPolicy],
+) -> PeggingPolicy:
+    """Resolve each shared node once, so one seat draws a node's component once."""
+    identity = id(policy)
+    if identity in resolved:
+        return resolved[identity]
+    result = policy
     if isinstance(policy, UniformHandPolicy):
-        return _resolve_hand_policy(rng.choice(policy.policies), rng)
-    if isinstance(policy, TabularPeggingPolicy):
-        return TabularPeggingPolicy(
-            policy.actions, _resolve_hand_policy(policy.fallback, rng)
+        result = _resolve_policy_graph(
+            rng.choice(policy.policies), rng, traits, resolved
         )
-    if (
+    elif isinstance(policy, TabularPeggingPolicy):
+        result = TabularPeggingPolicy(
+            policy.actions,
+            _resolve_policy_graph(policy.fallback, rng, traits, resolved),
+        )
+    elif (
         isinstance(policy, PolicyMixture)
-        and classify_policy_graph(policy).has_hand_average
+        and _classify_policy_graph(policy, traits).has_hand_average
     ):
-        return PolicyMixture(
+        result = PolicyMixture(
             tuple(
-                _resolve_hand_policy(component, rng) for component in policy.policies
+                _resolve_policy_graph(component, rng, traits, resolved)
+                for component in policy.policies
             ),
             policy.weights,
         )
-    return policy
+    resolved[identity] = result
+    return result
 
 
 def _updated_policy(

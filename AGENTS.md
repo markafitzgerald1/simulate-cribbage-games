@@ -571,7 +571,8 @@ seats use known deterministic continuations, including asymmetric arrangements.
 Custom continuations and decision mixtures retain requested repeats; preserve
 production geometric streams and traces without hand averages. Direct response
 fitting resolves hand averages beneath decision mixtures without changing their
-per-decision randomness. Shared graph classification must have linear cost.
+per-decision randomness. Shared graph classification and per-hand resolution must have linear cost: a
+shared node resolves once per seat per hand and every reference reuses it.
 Equal weights apply only to top-level components; misses
 route toward earlier components and legacy through prior-average fallbacks.
 

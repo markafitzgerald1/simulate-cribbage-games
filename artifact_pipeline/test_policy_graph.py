@@ -17,12 +17,37 @@ from artifact_pipeline.pegging import (
     train_rollout_best_response,
     classify_policy_graph,
     _classify_policy_graph,
+    _resolve_hand_policy,
 )
 
 
 class StochasticPolicy:  # pylint: disable=too-few-public-methods
     def select_rank(self, view, rng):
         return rng.choice(view.legal_ranks)
+
+
+class ReadCountingSequence(tuple):
+    """A component list that records every time its owner looks inside it."""
+
+    reads = 0
+
+    def __iter__(self):
+        self.reads += 1
+        return super().__iter__()
+
+    def __getitem__(self, index):
+        self.reads += 1
+        return super().__getitem__(index)
+
+
+def shared_mixture_dag(depth):
+    legacy = LegacyHeuristicPolicy()
+    node = UniformHandPolicy(ReadCountingSequence((legacy, legacy)))
+    nodes = [node]
+    for _ in range(depth):
+        node = PolicyMixture(ReadCountingSequence((node, node)), (0.5, 0.5))
+        nodes.append(node)
+    return nodes
 
 
 def graph_shapes():
@@ -164,6 +189,19 @@ class TestPolicyGraph(unittest.TestCase):
                 42,
                 initial_policies={PONE: cyclic, DEALER: policy},
             )
+
+    def test_resolution_expands_each_shared_node_once_per_classification_and_draw(
+        self,
+    ):
+        nodes = shared_mixture_dag(8)
+        resolved = _resolve_hand_policy(nodes[-1], random.Random(7))
+        self.assertEqual([node.policies.reads <= 2 for node in nodes], [True] * 9)
+        level = resolved
+        for _ in range(8):
+            self.assertIsInstance(level, PolicyMixture)
+            self.assertIs(level.policies[0], level.policies[1])
+            level = level.policies[0]
+        self.assertIsInstance(level, LegacyHeuristicPolicy)
 
     def test_stochastic_uniform_warm_starts_retain_actual_observations(self):
         observations = []
