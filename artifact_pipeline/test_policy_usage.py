@@ -24,7 +24,7 @@ from artifact_pipeline.test_generate_play_table import all_first_four_policy
 from artifact_pipeline.test_hand_policy_average import EndPolicy
 
 
-class LastRankLegacy(LegacyHeuristicPolicy):
+class LastRankLegacy(LegacyHeuristicPolicy):  # pylint: disable=too-few-public-methods
     def __init__(self):
         self.calls = 0
 
@@ -34,7 +34,7 @@ class LastRankLegacy(LegacyHeuristicPolicy):
         return view.legal_ranks[-1] if view.legal_ranks else -1
 
 
-class FirstComponentMixture(PolicyMixture):
+class FirstComponentMixture(PolicyMixture):  # pylint: disable=too-few-public-methods
     def select_rank(self, view, rng):
         return self.policies[0].select_rank(view, rng)
 
