@@ -161,14 +161,18 @@ seats, fallback draws, response history across warm training calls, and rollout
 continuations from the sampled trace. A fresh mixture draw mid-hand ignores
 history-conditioned reach. Interpret its gauge as a comparison of whole lines,
 with component-dependent continuations, and retain the production default.
-Uniform training forces one rollout per action to avoid duplicate deterministic
-observations and inflated counts. Equal weights describe top-level draws only;
+Cap rollouts after freezing hand averages only when both resolved seats have
+known deterministic continuations, avoiding duplicate observations and inflated
+counts. Classify complete graphs with identity memoization, including table
+fallbacks, all mixture components, and unknown custom continuations. Equal weights describe top-level draws only;
 prior-average fallbacks route table misses toward earlier components and legacy.
 For direct fitting, test either asymmetric hand/deterministic seat arrangement,
 inspect resolved continuations, and retain repeats for custom or stochastic
 strategies and the production geometric stream.
-Reject per-decision mixtures in uniform warm starts, including sparse table
-fallbacks; they do not become complete frozen strategies by being wrapped.
+Reject per-decision mixtures in hand-mode warm starts and hand averages in
+geometric warm starts, including nested table fallbacks and mixtures. Validate
+before sampling; the direct response API can freeze hand averages beneath
+mixtures while retaining their per-decision randomness.
 Experiment runners must import the pipeline after entering their isolated
 working directory, because legacy cache construction happens during import.
 Use the generator parser's resolved output paths for artifact reads and hashes.

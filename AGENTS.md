@@ -563,11 +563,15 @@ loses the posterior implied by the observed history. Independent per-decision
 component draws are not the uniform mixed-strategy average. Its opening gauge
 compares whole lines with correlated continuations, not isolated lead changes.
 Keep this mode opt-in and retain legacy/early responses until burn-in has its
-own measured justification. Uniform training uses one rollout per action:
-frozen complete-state continuations repeat identically and must not inflate
-observation counts. Direct response fitting caps asymmetric hand/deterministic
-traces when both resolved seats use known deterministic continuations; custom
-or stochastic continuations retain repeats, as do production geometric traces.
+own measured justification. Classify complete policy graphs recursively,
+including all table fallbacks and mixture components. Reject hand averages in
+geometric warm starts and decision mixtures in hand-mode warm starts before
+sampling. After freezing a hand average, cap rollouts only when both resolved
+seats use known deterministic continuations, including asymmetric arrangements.
+Custom continuations and decision mixtures retain requested repeats; preserve
+production geometric streams and traces without hand averages. Direct response
+fitting resolves hand averages beneath decision mixtures without changing their
+per-decision randomness. Shared graph classification must have linear cost.
 Equal weights apply only to top-level components; misses
 route toward earlier components and legacy through prior-average fallbacks.
 

@@ -187,8 +187,8 @@ class TestHandPolicyAverage(unittest.TestCase):
         self.assertIs(response.fallback, prior)
         self.assertIsNot(response.fallback, prior.policies[-1])
 
-    def test_uniform_training_caps_every_response_at_one_rollout(self):
-        for method, expected in (("uniform-hand", 1), ("geometric", 4)):
+    def test_training_preserves_requested_rollouts_until_trace_resolution(self):
+        for method in ("uniform-hand", "geometric"):
             with self.subTest(method=method), patch(
                 "artifact_pipeline.pegging.train_rollout_best_response",
                 wraps=train_rollout_best_response,
@@ -202,9 +202,7 @@ class TestHandPolicyAverage(unittest.TestCase):
                     averaging=method,
                 )
             self.assertEqual(fit.call_count, 4)
-            self.assertEqual(
-                [call.args[4] for call in fit.call_args_list], [expected] * 4
-            )
+            self.assertEqual([call.args[4] for call in fit.call_args_list], [4] * 4)
         with self.assertRaises(ValueError):
             train_iterative_best_response(None, 1, 1, 0, 42, averaging="uniform-hand")
 

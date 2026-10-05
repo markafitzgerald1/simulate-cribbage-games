@@ -51,7 +51,7 @@ class TestGeometricHand(unittest.TestCase):
             policies, _ = train_iterative_best_response(
                 None, 1, 1, 4, 43, averaging="geometric-hand", initial_policies=policies
             )
-        self.assertEqual([c.args[4] for c in fitting.call_args_list], [1] * 6)
+        self.assertEqual([c.args[4] for c in fitting.call_args_list], [4] * 6)
         for role in (PONE, DEALER):
             history = policies[role]
             self.assertEqual(history.weights, (1 / 8, 1 / 8, 1 / 4, 1 / 2))

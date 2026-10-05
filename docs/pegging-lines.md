@@ -82,18 +82,29 @@ its frozen prior average: fallback components are also sampled once before the
 hand, retained for that hand, and never reselected at each decision. The trace
 keeps these latent draws for continuation rollouts, preserving the component
 distribution conditional on the observed history instead of drawing afresh
-from the unconditional average mid-hand. Training forces one rollout per action
-in this mode, even when a larger count is requested. Once the trace components
-are frozen, the complete-state continuation is deterministic; repeating it
-adds cost and duplicates observations without adding information. Each sampled
-decision/action contributes once to its statistics, rather than inflating `n`.
+from the unconditional average mid-hand. A recursive policy-graph classifier
+inspects table fallbacks and all mixture components before warm-start training.
+Geometric training rejects hand averages anywhere in its initial graph; hand
+averaging rejects per-decision mixtures anywhere in that graph. Direct response
+fitting freezes hand averages even beneath per-decision mixtures, retaining the
+mixture's stochastic decision draws.
+
+After a hand average is frozen, training caps each decision/action at one
+rollout only when both resolved continuations are known deterministic built-in
+strategies. This avoids duplicate observations and inflated `n`. Custom
+continuations and per-decision mixtures retain the requested repetitions,
+including asymmetric seats. Production geometric streams, and traces without
+hand averages, retain their requested rollout count. The research CLI requests
+one rollout per action; the direct API inspects the actual frozen continuation
+rather than assuming determinism from the selected averaging mode.
 
 The opt-in `--policy-averaging=geometric-hand` uses the same complete-component
 sampling and frozen fallback rules, with geometric top-level weights instead
 of uniform weights. At the default update weight, the newest response has mass
 1/2, the preceding response 1/4, and so on; with six updates the oldest response
 and legacy each have mass 1/64. This isolates hand-level correlation from the
-weighting change. Both hand modes force one rollout per action. Top-level
+weighting change. Both hand modes apply the resolved-continuation rollout cap
+described above. Top-level
 weights still do not describe effective action mass after table misses.
 
 Per-decision equal weights would not implement this strategy average: at later

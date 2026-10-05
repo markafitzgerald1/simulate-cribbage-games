@@ -342,8 +342,10 @@ the historical serial cost model; no new production runtime is claimed.
 
 The optional `--policy-averaging=geometric-hand` preserves the production
 geometric weights while sampling a complete component per seat per hand.
-Like `uniform-hand`, it freezes prior-average fallbacks and uses one rollout per
-action. The production averaging default remains `geometric`.
+Like `uniform-hand`, it freezes prior-average fallbacks and caps duplicate
+rollouts only when both resolved continuations are known deterministic. Custom
+stochastic continuations retain requested repeats. The production averaging
+default remains `geometric`.
 
 The generator starts from the analytical `E(h +/- c)` discard policy, improves
 the rank-only pegging policy through rollout-based iterative best response, and
@@ -382,13 +384,13 @@ before interpreting a low flag rate or comparing training settings.
 
 For research, `--policy-averaging=uniform-hand` uses a response
 history with equal top-level mass, sampling one component per role per hand with frozen fallbacks. The
-default remains the production geometric per-decision mixture. Uniform training
-forces one rollout per action even if a larger count is requested: frozen
-complete-state continuations are identical, so repeats cannot increase `n`.
-Direct response fitting also caps an asymmetric uniform/deterministic trace
-when both resolved seats have built-in deterministic continuations. Custom or
-stochastic continuations retain repeats; production geometric traces are
-unchanged.
+default remains the production geometric per-decision mixture. Training caps
+rollouts only when a hand average has been frozen and both resolved seats have
+known deterministic continuations, including asymmetric seats and nested table
+fallbacks. Custom continuations and decision mixtures retain requested repeats;
+production geometric streams remain unchanged. A recursive graph classifier
+rejects hand averages anywhere in geometric warm starts, and rejects decision
+mixtures anywhere in either hand-mode warm start, before sampling.
 Fallbacks give earlier components and legacy more effective decision mass. See the
 [mixture interpretation](docs/pegging-lines.md#meaning-for-consumers) before
 comparing gauges across these modes; whole-hand mixing correlates the opening
