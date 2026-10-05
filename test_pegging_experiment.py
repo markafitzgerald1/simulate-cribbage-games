@@ -200,6 +200,45 @@ print(json.dumps({"before": before, "opened": opened}))
             self.assertEqual(observed["before"], [])
             self.assertEqual(observed["opened"], [str(target.resolve())])
 
+    def test_report_path_collisions_fail_before_sampling_or_writes(self):
+        original_directory = Path.cwd()
+        with tempfile.TemporaryDirectory() as directory:
+            try:
+                os.chdir(directory)
+                Path("experiment.json").write_text("sentinel", encoding="utf-8")
+                for flag in ("--output", "--client-output", "--lines-output"):
+                    for path in (
+                        "experiment.json",
+                        "./experiment.json",
+                        str(Path(directory) / "experiment.json"),
+                    ):
+                        with self.subTest(flag=flag, path=path), patch.object(
+                            generator,
+                            "main",
+                            side_effect=AssertionError(
+                                "generator ran with a colliding report path"
+                            ),
+                        ) as sample:
+                            with self.assertRaisesRegex(ValueError, "report path"):
+                                run_experiment([flag, path])
+                            sample.assert_not_called()
+                            self.assertEqual(
+                                Path("experiment.json").read_text(encoding="utf-8"),
+                                "sentinel",
+                            )
+                Path("alias.json").symlink_to("experiment.json")
+                with patch.object(
+                    generator,
+                    "main",
+                    side_effect=AssertionError(
+                        "generator ran with a colliding report path"
+                    ),
+                ) as sample, self.assertRaisesRegex(ValueError, "report path"):
+                    run_experiment(["--output=alias.json"])
+                sample.assert_not_called()
+            finally:
+                os.chdir(original_directory)
+
 
 if __name__ == "__main__":
     unittest.main()

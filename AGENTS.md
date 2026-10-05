@@ -553,6 +553,9 @@ rule, not a calibrated multiple-comparison or optimality claim. Retain these
 denominators and limits in generation logs and release notes; see
 `docs/pegging-lines.md` for the definition.
 
+The experiment report path `experiment.json` is reserved. Reject artifact-output
+aliases of that path before invoking generation, including symlink aliases.
+
 Uniform response averaging for research samples one component per role per
 hand, including frozen prior-average fallbacks. Retain the sampled policies in
 training traces and their continuation rollouts: resampling at a reached state

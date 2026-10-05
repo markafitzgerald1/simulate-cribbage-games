@@ -338,6 +338,8 @@ For isolated stage timing and final-measurement table/legacy usage counters,
 pass the same generator flags to `python scripts/run_pegging_experiment.py
 --directory /tmp/pegging-experiment`. The directory must be empty. This runner
 writes `experiment.json` beside the generated pair without publishing it.
+That report path is reserved: output aliases, including symlinks, are rejected
+before the generator runs.
 Counters preserve action results and RNG state; their runtime overhead remains
 part of the measured experiment time.
 

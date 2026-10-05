@@ -83,6 +83,15 @@ def run_experiment(generation_args: list[str]) -> dict[str, Any]:
     measure_quality = import_module("artifact_pipeline.play_quality").measure_quality
     with patch.object(sys, "argv", ["generate_play_table.py", *generation_args]):
         resolved_args = generator._parse_args()
+    if Path("experiment.json").resolve() in {
+        Path(path).resolve()
+        for path in (
+            resolved_args.output,
+            resolved_args.client_output,
+            resolved_args.lines_output,
+        )
+    }:
+        raise ValueError("Artifact outputs must be separate from the report path")
     stages = []
     usage: dict[str, Any] = {}
     invocations: dict[str, int] = {}
