@@ -227,6 +227,10 @@ the evaluation. `enforce` measures both seats with the legacy heuristic when
 the trained policy's both-seat advantage is not positive at z >= 3. Metadata
 records both trained and measured fingerprints and the policy selected; the
 ordinary artifact and lines fingerprint identifies the policy actually measured.
+Enforced legacy checkpoints also retain a `training_context_fingerprint` of
+the trained policies and the opponent-discard mapping. Resuming rejects a
+different or missing context: identical legacy policies do not imply identical
+conditional sampling populations.
 The existing discard refinement is retained even if the gate selects legacy
 for final pegging measurement. Lines qualifications are unchanged.
 

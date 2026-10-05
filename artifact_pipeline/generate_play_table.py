@@ -26,6 +26,7 @@ if __package__ in (None, ""):  # pragma: no cover
 from artifact_pipeline.promotion_gate import (
     DEFAULT_GATE_DEALS,
     promotion_gate,
+    validate_promotion_resume,
 )  # noqa: E402
 from artifact_pipeline.policy_usage import PolicyUsage  # noqa: E402
 
@@ -760,6 +761,35 @@ def _parse_args() -> argparse.Namespace:
     return args
 
 
+def _apply_promotion_gate(
+    policies: Mapping[str, PeggingPolicy],
+    discard_policy: DiscardPolicy,
+    args: argparse.Namespace,
+) -> tuple[Mapping[str, PeggingPolicy], dict[str, Any]]:
+    """Select measured policies while retaining full enforced-resume identity."""
+    policies, gate_report = promotion_gate(
+        policies,
+        args.promotion_gate,
+        args.promotion_gate_deals,
+        args.seed,
+        args.workers,
+    )
+    gate_report["training_context_fingerprint"] = hashlib.sha256(
+        repr(
+            (
+                gate_report["trained_policy_fingerprint"],
+                tuple(sorted(discard_policy.kept_by_role_and_hand.items())),
+            )
+        ).encode("utf-8")
+    ).hexdigest()
+    print(
+        "[promotion-gate] " + json.dumps(gate_report, sort_keys=True),
+        file=sys.stderr,
+        flush=True,
+    )
+    return policies, gate_report
+
+
 def main() -> None:
     """Train policies, refine discards, and write full and lean artifacts."""
     # pylint: disable=too-many-locals
@@ -838,18 +868,7 @@ def main() -> None:
         workers=args.workers,
     )
     reports.append({"final_play_ibr": final_ibr_reports})
-    policies, gate_report = promotion_gate(
-        policies,
-        args.promotion_gate,
-        args.promotion_gate_deals,
-        args.seed,
-        args.workers,
-    )
-    print(
-        "[promotion-gate] " + json.dumps(gate_report, sort_keys=True),
-        file=sys.stderr,
-        flush=True,
-    )
+    policies, gate_report = _apply_promotion_gate(policies, discard_policy, args)
     final_policy_fingerprint = ":".join(
         policy_fingerprint(policies[role]) for role in ROLES
     )
@@ -857,6 +876,7 @@ def main() -> None:
     if not args.no_resume and os.path.exists(args.output):
         with open(args.output, encoding="utf-8") as checkpoint_file:
             existing_table = json.load(checkpoint_file)
+        validate_promotion_resume(existing_table, gate_report)
 
     def checkpoint(table: Mapping[str, Any]) -> None:
         table["__metadata__"]["promotion_gate"] = gate_report

@@ -119,3 +119,21 @@ def promotion_gate(
             policy_fingerprint(measured[r]) for r in ROLES
         ),
     }
+
+
+def validate_promotion_resume(
+    existing: Mapping[str, Any], current: Mapping[str, Any]
+) -> None:
+    """Legacy fallback must not collapse distinct learning/discard contexts."""
+    if current["mode"] != "enforce" or current["measured_policy"] != "legacy-heuristic":
+        return
+    expected = current.get("training_context_fingerprint")
+    previous = existing.get("__metadata__", {}).get("promotion_gate")
+    if (
+        not expected
+        or not isinstance(previous, dict)
+        or previous.get("training_context_fingerprint") != expected
+    ):
+        raise ValueError(
+            "Cannot resume promotion fallback from a different training/discard context"
+        )

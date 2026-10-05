@@ -166,11 +166,15 @@ observations and inflated counts. Equal weights describe top-level draws only;
 prior-average fallbacks route table misses toward earlier components and legacy.
 
 For geometric-hand research, test production geometric weights independently of
-whole-hand correlation, including warm history and frozen fallback draws. For
+whole-hand correlation, including warm history and frozen fallback draws.
+Stored weights and fingerprints do not prove weighted selection; test draw
+boundaries that distinguish uniform from weighted sampling. For
 promotion calibration, compare paired seat deltas against a duplicate heuristic
 reference, average seats per deal before computing SE, and prove report mode
 preserves measurement while enforce mode records the policy actually selected.
-Process diagnostics must aggregate returned worker observations without changing
+If enforcement selects legacy, retain the trained-policy and discard-context
+identity for resume checks; a common fallback fingerprint can hide a changed
+sampling population. Process diagnostics must aggregate returned worker observations without changing
 policy inputs, RNG consumption, or client means.
 
 Publication rounding must normalize signed zero without altering checkpoint
