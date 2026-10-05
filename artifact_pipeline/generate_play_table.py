@@ -40,7 +40,12 @@ from artifact_pipeline.analytical_solver import (  # noqa: E402
 )
 from artifact_pipeline.play_lines import OpeningLines, build_lines  # noqa: E402
 from artifact_pipeline.play_quality import measure_quality  # noqa: E402
-from artifact_pipeline.process_pool import ordered_process_map  # noqa: E402
+from artifact_pipeline.process_pool import (  # noqa: E402
+    default_worker_count,
+    max_process_workers,
+    ordered_process_map,
+    validate_worker_count,
+)
 from artifact_pipeline.pegging import (  # noqa: E402
     DEALER,
     PONE,
@@ -449,8 +454,7 @@ def generate_play_table(
 ) -> dict[str, Any]:
     """Generate paired seat and point-type estimates for every requested hand."""
     # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
-    if workers <= 0:
-        raise ValueError("Workers must be positive")
+    validate_worker_count(workers)
     if samples <= 0:
         raise ValueError("Samples must be positive")
     if target_standard_error is not None and target_standard_error <= 0.0:
@@ -689,6 +693,16 @@ def positive_int(value: str) -> int:
     return parsed
 
 
+def worker_count(value: str) -> int:
+    parsed = positive_int(value)
+    maximum = max_process_workers()
+    if maximum is not None and parsed > maximum:
+        raise argparse.ArgumentTypeError(
+            f"Value cannot exceed {maximum} on this platform"
+        )
+    return parsed
+
+
 def positive_float(value: str) -> float:
     parsed = float(value)
     if parsed <= 0.0 or not math.isfinite(parsed):
@@ -721,8 +735,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--lines-output", default=DEFAULT_LINES_OUTPUT_PATH)
     parser.add_argument(
         "--workers",
-        type=positive_int,
-        default=getattr(os, "process_cpu_count", os.cpu_count)() or 1,
+        type=worker_count,
+        default=default_worker_count(),
     )
     parser.add_argument(
         "--promotion-gate", choices=("off", "report", "enforce"), default="report"

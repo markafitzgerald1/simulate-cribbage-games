@@ -257,6 +257,19 @@ class TestParallelPlay(unittest.TestCase):
         observations = _rollout_batch(context, [(33, (0, 1, 2, 3), (4, 5, 6, 7))])
         self.assertGreater(len(observations), 0)
 
+    def test_library_entry_points_reject_more_workers_than_windows_allows(self):
+        policies = {role: LegacyHeuristicPolicy() for role in ROLES}
+        with patch.object(process_pool.sys, "platform", "win32"), patch.object(
+            process_pool, "ProcessPoolExecutor"
+        ) as executor:
+            with self.assertRaisesRegex(ValueError, "cannot exceed 61"):
+                generate_play_table(self.discards, policies, 1, 2, hands=[], workers=62)
+            with self.assertRaisesRegex(ValueError, "cannot exceed 61"):
+                train_rollout_best_response(
+                    PONE, policies, varied_deal, 1, 1, 2, workers=62
+                )
+            executor.assert_not_called()
+
     def test_workers_one_never_opens_a_pool_and_invalid_counts_fail(self):
         policies = {role: LegacyHeuristicPolicy() for role in ROLES}
         for workers in (0, -1):
@@ -277,7 +290,7 @@ class TestParallelPlay(unittest.TestCase):
                 self.discards, policies, 1, 2, hands=self.hands, workers=1
             )
 
-    def test_worker_reports_whole_process_peak_memory_and_propagates_failure(self):
+    def test_worker_reports_pre_serialization_peak_memory_and_propagates_failure(self):
         with patch.object(process_pool, "_WORKER_STATE", None):
             with self.assertRaisesRegex(RuntimeError, "no pass snapshot"):
                 _worker_job(1)
@@ -299,7 +312,8 @@ class TestParallelPlay(unittest.TestCase):
                 [10, 11, 12],
             )
         self.assertEqual(
-            "peak RSS" in stderr.getvalue(), process_pool.resource is not None
+            "peak RSS before result serialization" in stderr.getvalue(),
+            process_pool.resource is not None,
         )
         self.assertNotIn(f"pid {os.getpid()}:", stderr.getvalue())
         with self.assertRaisesRegex(ValueError, "failed worker sample"):
@@ -347,8 +361,11 @@ class TestParallelPlay(unittest.TestCase):
             self.assertEqual(kwargs["mp_context"].get_start_method(), "spawn")
             self.assertEqual(kwargs["initargs"], (add_task, 9))
             self.assertIs(kwargs["initializer"], _initialize_worker)
-            self.assertTrue("pid 7: peak RSS 2.0 MiB" in stderr.getvalue())
-            self.assertTrue("pid 8: peak RSS 3.0 MiB" in stderr.getvalue())
+            for line in (
+                "pid 7: peak RSS before result serialization 2.0 MiB",
+                "pid 8: peak RSS before result serialization 3.0 MiB",
+            ):
+                self.assertTrue(line in stderr.getvalue())
             self.assertEqual(
                 list(process_pool.ordered_process_map(add_task, 9, [], 3)), []
             )

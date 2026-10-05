@@ -231,8 +231,8 @@ changes, complete checkpoint prefixes, adaptive stopping, and exact raw-moment
 resume. Play method v4 rejects older checkpoints that reconstructed moments
 from SE. Hold the existing wall-clock timestamp fixed when comparing full
 artifact bytes; client and lines bytes compare directly. Report whole-process
-peak RSS separately from artifact metadata. Experiment usage counters return
-worker observations for parent reduction; see
+peak RSS before result serialization separately from artifact metadata.
+Experiment usage counters return worker observations for parent reduction; see
 [parallel generation](../docs/parallel-play-generation.md).
 
 For standalone uncertainty exports, follow
@@ -322,9 +322,10 @@ legacy `simulate_cribbage_games.py` dependency. Do not replace mathematical
 simulation with subjective heuristics. Do not build on untested legacy behavior
 or skip end-to-end smoke coverage for code changes.
 
-Worker RSS is optional diagnostics. Guard the Unix-only `resource` import,
-represent unavailable measurements explicitly, and omit RSS output when the
-platform cannot supply it. Ordered results must remain identical without it.
+Worker RSS is optional diagnostics, sampled before result serialization. Guard
+the Unix-only `resource` import, represent unavailable measurements explicitly,
+and omit RSS output when the platform cannot supply it. Ordered results must
+remain identical without it.
 
 Frozen hand-mode rollout caps belong to the resolved trace, including either
 asymmetric seat arrangement. Built-in legacy and tabular continuations with

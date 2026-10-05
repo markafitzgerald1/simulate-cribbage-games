@@ -9,7 +9,10 @@ import random
 from typing import Callable, Iterator, Mapping, Protocol, Sequence
 
 from artifact_pipeline.adapter import legacy_select_play_rank
-from artifact_pipeline.process_pool import ordered_process_map
+from artifact_pipeline.process_pool import (
+    ordered_process_map,
+    validate_worker_count,
+)
 
 PONE = "Pone"
 DEALER = "Dealer"
@@ -235,35 +238,63 @@ class GeometricHandPolicy:
 HAND_POLICY_TYPES = (UniformHandPolicy, GeometricHandPolicy)
 
 
+def _draw_component(
+    policies: Sequence[PeggingPolicy], weights: Sequence[float], rng: random.Random
+) -> PeggingPolicy:
+    chosen = rng.random() * sum(weights)
+    cumulative = 0.0
+    for component, weight in zip(policies[:-1], weights[:-1]):
+        cumulative += weight
+        if chosen <= cumulative:
+            return component
+    return policies[-1]
+
+
 def _resolve_hand_policy(policy: PeggingPolicy, rng: random.Random) -> PeggingPolicy:
     """Freeze component and fallback draws without inspecting either hand."""
+    return _resolve_policy_graph(policy, rng, {}, {})
+
+
+def _resolve_policy_graph(
+    policy: PeggingPolicy,
+    rng: random.Random,
+    traits: dict[int, PolicyGraphTraits | None],
+    resolved: dict[int, PeggingPolicy],
+) -> PeggingPolicy:
+    """Resolve each shared node once, so one seat draws a node's component once."""
+    identity = id(policy)
+    if identity in resolved:
+        return resolved[identity]
+    result = policy
     if isinstance(policy, UniformHandPolicy):
-        return _resolve_hand_policy(rng.choice(policy.policies), rng)
-    if isinstance(policy, GeometricHandPolicy):
-        chosen = rng.random() * sum(policy.weights)
-        cumulative = 0.0
-        selected = policy.policies[-1]
-        for component, weight in zip(policy.policies[:-1], policy.weights[:-1]):
-            cumulative += weight
-            if chosen <= cumulative:
-                selected = component
-                break
-        return _resolve_hand_policy(selected, rng)
-    if isinstance(policy, TabularPeggingPolicy):
-        return TabularPeggingPolicy(
-            policy.actions, _resolve_hand_policy(policy.fallback, rng)
+        result = _resolve_policy_graph(
+            rng.choice(policy.policies), rng, traits, resolved
         )
-    if (
+    elif isinstance(policy, GeometricHandPolicy):
+        result = _resolve_policy_graph(
+            _draw_component(policy.policies, policy.weights, rng),
+            rng,
+            traits,
+            resolved,
+        )
+    elif isinstance(policy, TabularPeggingPolicy):
+        result = TabularPeggingPolicy(
+            policy.actions,
+            _resolve_policy_graph(policy.fallback, rng, traits, resolved),
+        )
+    elif (
         isinstance(policy, PolicyMixture)
-        and classify_policy_graph(policy).has_hand_average
+        and _classify_policy_graph(policy, traits).has_hand_average
     ):
-        return PolicyMixture(
+        result = PolicyMixture(
             tuple(
-                _resolve_hand_policy(component, rng) for component in policy.policies
+                _resolve_policy_graph(component, rng, traits, resolved)
+                for component in policy.policies
             ),
             policy.weights,
         )
-    return policy
+    resolved[identity] = result
+    return result
 
 
 def _updated_policy(
@@ -703,8 +734,7 @@ def train_rollout_best_response(
         raise ValueError(f"Invalid target role: {target_role}")
     if samples <= 0 or rollouts_per_action <= 0:
         raise ValueError("Training sample and rollout counts must be positive")
-    if workers <= 0:
-        raise ValueError("Workers must be positive")
+    validate_worker_count(workers)
     context = RolloutContext(target_role, policies, rollouts_per_action, seed)
     action_values: dict[str, dict[int, RunningStatistics]] = {}
     batches = _training_batches(deal_sampler, samples, seed)

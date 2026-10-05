@@ -571,7 +571,8 @@ seats use known deterministic continuations, including asymmetric arrangements.
 Custom continuations and decision mixtures retain requested repeats; preserve
 production geometric streams and traces without hand averages. Direct response
 fitting resolves hand averages beneath decision mixtures without changing their
-per-decision randomness. Shared graph classification must have linear cost.
+per-decision randomness. Shared graph classification and per-hand resolution must have linear cost: a
+shared node resolves once per seat per hand and every reference reuses it.
 Equal weights apply only to top-level components; misses
 route toward earlier components and legacy through prior-average fallbacks.
 
@@ -632,12 +633,12 @@ sample indices, then replay raw rollout observations in serial order. Merging
 pre-reduced floating-point moments changes bits even when mathematically
 equivalent. Keep alternating response updates sequential. Play method v4 saves
 raw second moments for exact resume and rejects v3 checkpoints; reconstructing
-moments from SE loses precision. Worker count, PID, timing, and peak RSS belong
-in logs rather than result metadata. Full-byte comparisons hold the existing
-wall-clock `generated_at` field fixed; client and lines bytes need no adjustment.
-The experiment runner defaults to one worker unless overridden and records the
-resolved count. Its native lookup and fallback counters are returned by workers
-and reduced in the parent. See
+moments from SE loses precision. Worker count, PID, timing, and peak RSS before
+result serialization belong in logs rather than result metadata. Full-byte
+comparisons hold the existing wall-clock `generated_at` field fixed; client and
+lines bytes need no adjustment. The experiment runner defaults to one worker
+unless overridden and records the resolved count. Its native lookup and fallback
+counters are returned by workers and reduced in the parent. See
 [parallel generation](docs/parallel-play-generation.md) for these boundaries.
 The Cribbage Pro comparison runs on every production generation, offline,
 against a small, attributed sample of their published (empirical human-play)

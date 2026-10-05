@@ -361,13 +361,16 @@ hand, role, and cumulative sample index, so a resumed seeded run produces the
 same estimates as an uninterrupted run. Pass
 `--no-resume` for a fresh run.
 
-`--workers` defaults to the available process CPU count. Use `--workers=1` for
-serial execution or set a smaller count when sharing a machine. Processes
+`--workers` defaults to the available process CPU count, capped at 61 on
+Windows, which is the most its process pool accepts; an explicit larger count
+is rejected there. Use `--workers=1` for serial execution or set a smaller
+count when sharing a machine. Processes
 evaluate independent hand/role entries and training samples; the parent retains
 the deal RNG stream and replays training observations in serial order. All three
 policy averaging modes preserve the same results across worker counts. Each
-process reports its whole-process peak resident memory to stderr after a pass
-when the platform provides `resource`; RSS diagnostics are omitted elsewhere.
+process reports its whole-process peak resident memory, sampled before result
+serialization, to stderr after a pass when the platform provides `resource`;
+RSS diagnostics are omitted elsewhere.
 See [parallel generation](docs/parallel-play-generation.md) for the exact merge,
 checkpoint, timestamp, and memory boundaries.
 

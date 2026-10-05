@@ -692,6 +692,38 @@ class TestPlayArguments(unittest.TestCase):
         self.assertEqual(args.promotion_gate, "enforce")
         self.assertEqual(args.promotion_gate_deals, 35)
 
+    def test_default_and_explicit_workers_respect_the_platform_maximum(self):
+        cpu_count = "artifact_pipeline.generate_play_table.os.process_cpu_count"
+        for platform, default in (("win32", 61), ("linux", 96), ("darwin", 96)):
+            with self.subTest(platform=platform), patch(
+                "sys.argv", ["generate_play_table.py"]
+            ), patch(cpu_count, return_value=96), patch(
+                "artifact_pipeline.process_pool.sys.platform", platform
+            ):
+                self.assertEqual(_parse_args().workers, default)
+        with patch(cpu_count, return_value=8), patch(
+            "artifact_pipeline.process_pool.sys.platform", "win32"
+        ), patch("sys.argv", ["generate_play_table.py"]):
+            self.assertEqual(_parse_args().workers, 8)
+        for platform, requested, accepted in (
+            ("win32", 61, True),
+            ("win32", 62, False),
+            ("linux", 62, True),
+        ):
+            with self.subTest(platform=platform, requested=requested), patch(
+                "artifact_pipeline.process_pool.sys.platform", platform
+            ), patch(
+                "sys.argv", ["generate_play_table.py", f"--workers={requested}"]
+            ), patch(
+                "sys.stderr", io.StringIO()
+            ) as stderr:
+                if accepted:
+                    self.assertEqual(_parse_args().workers, requested)
+                else:
+                    with self.assertRaises(SystemExit):
+                        _parse_args()
+                    self.assertRegex(stderr.getvalue(), "cannot exceed 61")
+
     def test_lines_output_cannot_replace_full_or_client_means(self):
         for path in (DEFAULT_OUTPUT_PATH, DEFAULT_CLIENT_OUTPUT_PATH):
             with patch(
