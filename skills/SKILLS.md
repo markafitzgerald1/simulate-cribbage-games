@@ -200,8 +200,8 @@ changes, complete checkpoint prefixes, adaptive stopping, and exact raw-moment
 resume. Play method v4 rejects older checkpoints that reconstructed moments
 from SE. Hold the existing wall-clock timestamp fixed when comparing full
 artifact bytes; client and lines bytes compare directly. Report whole-process
-peak RSS separately from result metadata. The existing experiment usage
-counters remain serial; see [parallel generation](../docs/parallel-play-generation.md).
+peak RSS before result serialization separately from result metadata. The
+existing experiment usage counters remain serial; see [parallel generation](../docs/parallel-play-generation.md).
 
 For standalone uncertainty exports, follow
 [the JSON sidecar contract](../docs/uncertainty-sidecars.md). Preserve the exact
@@ -290,6 +290,7 @@ legacy `simulate_cribbage_games.py` dependency. Do not replace mathematical
 simulation with subjective heuristics. Do not build on untested legacy behavior
 or skip end-to-end smoke coverage for code changes.
 
-Worker RSS is optional diagnostics. Guard the Unix-only `resource` import,
-represent unavailable measurements explicitly, and omit RSS output when the
-platform cannot supply it. Ordered results must remain identical without it.
+Worker RSS is optional diagnostics, sampled before result serialization. Guard
+the Unix-only `resource` import, represent unavailable measurements explicitly,
+and omit RSS output when the platform cannot supply it. Ordered results must
+remain identical without it.

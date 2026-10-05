@@ -608,9 +608,10 @@ sample indices, then replay raw rollout observations in serial order. Merging
 pre-reduced floating-point moments changes bits even when mathematically
 equivalent. Keep alternating response updates sequential. Play method v4 saves
 raw second moments for exact resume and rejects v3 checkpoints; reconstructing
-moments from SE loses precision. Worker count, PID, timing, and peak RSS belong
-in logs rather than result metadata. Full-byte comparisons hold the existing
-wall-clock `generated_at` field fixed; client and lines bytes need no adjustment.
+moments from SE loses precision. Worker count, PID, timing, and peak RSS before
+result serialization belong in logs rather than result metadata. Full-byte
+comparisons hold the existing wall-clock `generated_at` field fixed; client and
+lines bytes need no adjustment.
 Use the serial experiment counter runner only with `--workers=1`, because its
 lookup and fallback counters are process-local. See
 [parallel generation](docs/parallel-play-generation.md) for these boundaries.

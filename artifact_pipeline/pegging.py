@@ -9,7 +9,10 @@ import random
 from typing import Callable, Iterator, Mapping, Protocol, Sequence
 
 from artifact_pipeline.adapter import legacy_select_play_rank
-from artifact_pipeline.process_pool import ordered_process_map
+from artifact_pipeline.process_pool import (
+    ordered_process_map,
+    validate_worker_count,
+)
 
 PONE = "Pone"
 DEALER = "Dealer"
@@ -660,8 +663,7 @@ def train_rollout_best_response(
         raise ValueError(f"Invalid target role: {target_role}")
     if samples <= 0 or rollouts_per_action <= 0:
         raise ValueError("Training sample and rollout counts must be positive")
-    if workers <= 0:
-        raise ValueError("Workers must be positive")
+    validate_worker_count(workers)
     context = RolloutContext(target_role, policies, rollouts_per_action, seed)
     action_values: dict[str, dict[int, RunningStatistics]] = {}
     batches = _training_batches(deal_sampler, samples, seed)

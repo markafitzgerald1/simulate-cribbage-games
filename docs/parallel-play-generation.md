@@ -1,8 +1,10 @@
 # Parallel play-table generation
 
 `generate_play_table.py --workers N` uses spawned processes. The CLI defaults to
-`os.process_cpu_count()` (or one if unavailable); library calls default to one
-for compatibility with existing serial callers. `--workers=1` uses no pool.
+`os.process_cpu_count()` (or one if unavailable), capped at 61 on Windows, where
+the process pool rejects more; an explicit larger count fails before any work
+starts, in the CLI and in library calls alike. Library calls default to one for
+compatibility with existing serial callers. `--workers=1` uses no pool.
 Use an explicit count on a shared machine. Both `geometric` and `uniform-hand`
 policy averaging use the same process boundary.
 
@@ -57,10 +59,14 @@ worker counts, PIDs, timings, and memory reports never enter result metadata.
 Each worker receives one frozen policy/discard snapshot per pass. At most twice
 the worker count of tasks are pending in the ordered map. Fixed training batch
 size bounds the raw-observation lists in flight; final measurement returns one
-entry rather than every simulated hand. After a pass, stderr reports peak RSS
-for every process that completed work. This is whole-process resident memory,
-including Python, imports, policy snapshots, and working data; Linux KiB and
-macOS bytes are normalized to MiB. It is not an incremental policy-size estimate.
+entry rather than every simulated hand. After a pass, stderr reports, for
+every process that completed work, the largest whole-process resident memory
+sampled at the end of its tasks and labeled "peak RSS before result
+serialization". The sample is taken before the pool pickles and queues each
+result, so growth from serializing a large result is not included and the
+figure can understate a worker's true peak. It includes Python, imports, policy
+snapshots, and working data; Linux KiB and macOS bytes are normalized to MiB. It
+is not an incremental policy-size estimate.
 
 Spawn startup, snapshot serialization, IPC, ordered observation replay, and the
 sequential analytical/refinement stages limit speedup, especially on tiny runs.
@@ -78,5 +84,5 @@ legacy fallback usage; deeper training requires measurement, and faster
 generation does not itself justify a new production policy or sample count.
 
 The Unix-only `resource` module is optional. On platforms without it, worker
-results and ordering are preserved, peak RSS is unavailable, and memory
+results and ordering are preserved, the pre-serialization peak is unavailable, and memory
 reporting is omitted. This does not restrict serial execution or library imports.
