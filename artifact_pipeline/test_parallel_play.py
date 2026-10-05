@@ -1,8 +1,10 @@
 """Exact serial/process equivalence, ordered merges, and resume regressions."""
 
 import io
+import importlib.util
 import json
 import os
+import sys
 import unittest
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -122,11 +124,11 @@ class TestParallelPlay(unittest.TestCase):
                             play_policy_fingerprint=fingerprint,
                             workers=workers,
                         )
-                    if workers > 1:
-                        self.assertTrue("[play-workers]" in stderr.getvalue())
-                        self.assertNotIn(f"pid {os.getpid()}:", stderr.getvalue())
-                    else:
-                        self.assertNotIn("[play-workers]", stderr.getvalue())
+                    self.assertEqual(
+                        "[play-workers]" in stderr.getvalue(),
+                        workers > 1 and process_pool.resource is not None,
+                    )
+                    self.assertNotIn(f"pid {os.getpid()}:", stderr.getvalue())
                     table["__metadata__"].update(
                         joint_policy_converged=False,
                         policy_averaging=averaging,
@@ -283,9 +285,10 @@ class TestParallelPlay(unittest.TestCase):
             value, pid, peak = _worker_job(3)
             self.assertEqual(value, 12)
             self.assertEqual(pid, os.getpid())
-            self.assertGreater(peak, 0)
-        with patch.object(process_pool.resource, "getrusage") as usage:
-            usage.return_value.ru_maxrss = 123
+            self.assertEqual(peak is None, process_pool.resource is None)
+            self.assertTrue(peak is None or peak > 0)
+        with patch.object(process_pool, "resource", Mock()) as resource:
+            resource.getrusage.return_value.ru_maxrss = 123
             for platform, expected in (("darwin", 123), ("linux", 123 * 1024)):
                 with patch.object(process_pool.sys, "platform", platform):
                     self.assertEqual(_peak_rss_bytes(), expected)
@@ -295,7 +298,9 @@ class TestParallelPlay(unittest.TestCase):
                 list(process_pool.ordered_process_map(add_task, 9, [1, 2, 3], 2)),
                 [10, 11, 12],
             )
-        self.assertTrue("peak RSS" in stderr.getvalue())
+        self.assertEqual(
+            "peak RSS" in stderr.getvalue(), process_pool.resource is not None
+        )
         self.assertNotIn(f"pid {os.getpid()}:", stderr.getvalue())
         with self.assertRaisesRegex(ValueError, "failed worker sample"):
             list(process_pool.ordered_process_map(fail_task, None, [0], 2))
@@ -347,6 +352,32 @@ class TestParallelPlay(unittest.TestCase):
             self.assertEqual(
                 list(process_pool.ordered_process_map(add_task, 9, [], 3)), []
             )
+
+    def test_resource_unavailable_keeps_results_without_rss_reporting(self):
+        spec = importlib.util.spec_from_file_location(
+            "pool_without_resource", process_pool.__file__
+        )
+        module = importlib.util.module_from_spec(spec)
+        with patch.dict(sys.modules, {"resource": None}):
+            spec.loader.exec_module(module)
+        getattr(module, "_initialize_worker")(add_task, 9)
+        self.assertEqual(getattr(module, "_worker_job")(3), (12, os.getpid(), None))
+        with patch.object(module, "ProcessPoolExecutor") as executor, patch(
+            "sys.stderr", io.StringIO()
+        ) as stderr:
+            pool = executor.return_value.__enter__.return_value
+
+            def submit(_function, task):
+                future = Mock()
+                future.result.return_value = (9 + task, 7, None)
+                return future
+
+            pool.submit.side_effect = submit
+            self.assertEqual(
+                list(module.ordered_process_map(add_task, 9, [1, 2, 3], 2)),
+                [10, 11, 12],
+            )
+            self.assertEqual(stderr.getvalue(), "")
 
 
 if __name__ == "__main__":  # pragma: no cover

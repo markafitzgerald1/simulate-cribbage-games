@@ -280,3 +280,7 @@ requirements, remove quality checks, add broad ignore comments, or refactor the
 legacy `simulate_cribbage_games.py` dependency. Do not replace mathematical
 simulation with subjective heuristics. Do not build on untested legacy behavior
 or skip end-to-end smoke coverage for code changes.
+
+Worker RSS is optional diagnostics. Guard the Unix-only `resource` import,
+represent unavailable measurements explicitly, and omit RSS output when the
+platform cannot supply it. Ordered results must remain identical without it.

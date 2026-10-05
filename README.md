@@ -324,7 +324,8 @@ serial execution or set a smaller count when sharing a machine. Processes
 evaluate independent hand/role entries and training samples; the parent retains
 the deal RNG stream and replays training observations in serial order. Both
 policy averaging modes preserve the same results across worker counts. Each
-process reports its whole-process peak resident memory to stderr after a pass.
+process reports its whole-process peak resident memory to stderr after a pass
+when the platform provides `resource`; RSS diagnostics are omitted elsewhere.
 See [parallel generation](docs/parallel-play-generation.md) for the exact merge,
 checkpoint, timestamp, and memory boundaries.
 
