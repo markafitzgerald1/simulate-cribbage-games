@@ -792,34 +792,49 @@ def _apply_promotion_gate(
     return policies, gate_report
 
 
-def main() -> None:
-    """Train policies, refine discards, and write full and lean artifacts."""
-    # pylint: disable=too-many-locals
-    args = _parse_args()
-    context = solve_initial_discard_policy(
-        args.analytical_max_iterations,
-        args.full_hand_policy_max_iterations,
-    )
-    requested_hands = get_canonical_hands()
-    if args.hand_limit is not None:
-        requested_hands = requested_hands[: args.hand_limit]
-    reports = []
+def _refinement_report(
+    context: AnalyticalContext,
+    refinement: tuple[AnalyticalContext, int, float],
+    play_shift: float,
+) -> dict[str, Any]:
+    _, changed, max_shift = refinement
+    return {
+        "changed_discards": changed,
+        "changed_discard_fraction": changed / len(context.selected_discards),
+        "max_crib_shift": max_shift,
+        # The first shift is infinite; JSON stores unavailable shifts as null.
+        "max_play_shift": play_shift if math.isfinite(play_shift) else None,
+    }
+
+
+def _run_outer_passes(
+    context: AnalyticalContext,
+    args: argparse.Namespace,
+    requested_hands: Sequence[tuple[int, ...]],
+    fixed_policies: Mapping[str, PeggingPolicy] | None = None,
+) -> tuple[AnalyticalContext, Mapping[str, PeggingPolicy], list[dict[str, Any]], bool]:
+    """Refine discards with trained responses or one fixed measured play model."""
+    reports: list[dict[str, Any]] = []
     converged = False
     stable_iterations = 0
-    policies: Mapping[str, PeggingPolicy] | None = None
+    policies = fixed_policies
     previous_policy_table = None
     for outer_iteration in range(args.outer_iterations):
         discard_policy = selected_discards_to_policy(context.selected_discards)
-        policies, ibr_reports = train_iterative_best_response(
-            partial(sample_policy_deal, discard_policy=discard_policy),
-            iterations=args.ibr_iterations,
-            samples_per_role=args.ibr_samples,
-            rollouts_per_action=args.rollouts_per_action,
-            seed=args.seed,
-            initial_policies=policies,
-            averaging=args.policy_averaging,
-            workers=args.workers,
-        )
+        if fixed_policies is None:
+            policies, ibr_reports = train_iterative_best_response(
+                partial(sample_policy_deal, discard_policy=discard_policy),
+                iterations=args.ibr_iterations,
+                samples_per_role=args.ibr_samples,
+                rollouts_per_action=args.rollouts_per_action,
+                seed=args.seed,
+                initial_policies=policies,
+                averaging=args.policy_averaging,
+                workers=args.workers,
+            )
+        else:
+            policies = fixed_policies
+            ibr_reports = []
         policy_table = generate_play_table(
             discard_policy,
             policies,
@@ -830,34 +845,58 @@ def main() -> None:
             hands=requested_hands,
             workers=args.workers,
         )
-        next_context, changed, max_shift = refine_discard_policy(context, policy_table)
-        play_shift = maximum_play_shift(previous_policy_table, policy_table)
-        changed_fraction = changed / len(context.selected_discards)
+        refinement = refine_discard_policy(context, policy_table)
+        report = _refinement_report(
+            context, refinement, maximum_play_shift(previous_policy_table, policy_table)
+        )
         reports.append(
             {
                 "outer_iteration": outer_iteration + 1,
-                "changed_discards": changed,
-                "changed_discard_fraction": changed_fraction,
-                "max_crib_shift": max_shift,
-                # math.inf on the first iteration would serialize as the
-                # non-standard JSON token "Infinity"; store null instead.
-                "max_play_shift": (play_shift if math.isfinite(play_shift) else None),
+                **report,
                 "play_ibr": ibr_reports,
             }
         )
-        context = next_context
+        context = refinement[0]
         previous_policy_table = policy_table
-        if changed_fraction <= 0.001 and play_shift <= 0.01:
+        if (
+            report["changed_discard_fraction"] <= 0.001
+            and report["max_play_shift"] is not None
+            and report["max_play_shift"] <= 0.01
+        ):
             stable_iterations += 1
         else:
             stable_iterations = 0
         if stable_iterations >= 2:
             converged = True
             break
-    if args.fail_on_non_convergence and not converged:
-        raise RuntimeError("Joint discard/play policy did not converge")
     if policies is None:  # pragma: no cover
         raise AssertionError("At least one outer iteration is required")
+    return context, policies, reports, converged
+
+
+def main() -> None:
+    """Train policies, refine discards, and write full and lean artifacts."""
+    # pylint: disable=too-many-locals
+    args = _parse_args()
+    initial_context = solve_initial_discard_policy(
+        args.analytical_max_iterations,
+        args.full_hand_policy_max_iterations,
+    )
+    requested_hands = get_canonical_hands()
+    if args.hand_limit is not None:
+        requested_hands = requested_hands[: args.hand_limit]
+    context, policies, reports, converged = _run_outer_passes(
+        initial_context, args, requested_hands
+    )
+    if (
+        args.promotion_gate != "enforce"
+        and args.fail_on_non_convergence
+        and not converged
+    ):
+        raise RuntimeError("Joint discard/play policy did not converge")
+    refinement_policy_fingerprint = ":".join(
+        policy_fingerprint(policies[role]) for role in ROLES
+    )
     discard_policy = selected_discards_to_policy(context.selected_discards)
     policies, final_ibr_reports = train_iterative_best_response(
         partial(sample_policy_deal, discard_policy=discard_policy),
@@ -871,6 +910,32 @@ def main() -> None:
     )
     reports.append({"final_play_ibr": final_ibr_reports})
     policies, gate_report = _apply_promotion_gate(policies, discard_policy, args)
+    if args.promotion_gate == "enforce":
+        refinement_reports = reports[:-1]
+        refinement_method = "trained-ibr-v1"
+        if gate_report["measured_policy"] == "legacy-heuristic":
+            # Rebuild from the analytical starting point, without trained deltas.
+            context, policies, refinement_reports, converged = _run_outer_passes(
+                initial_context, args, requested_hands, fixed_policies=policies
+            )
+            discard_policy = selected_discards_to_policy(context.selected_discards)
+            refinement_policy_fingerprint = gate_report["measured_policy_fingerprint"]
+            refinement_method = "fixed-play-v1"
+        gate_report["discard_refinement"] = {
+            "method": refinement_method,
+            "policy": gate_report["measured_policy"],
+            "policy_fingerprint": refinement_policy_fingerprint,
+            "discard_policy_fingerprint": hashlib.sha256(
+                repr(
+                    tuple(sorted(discard_policy.kept_by_role_and_hand.items()))
+                ).encode("utf-8")
+            ).hexdigest(),
+            "initialization": "analytical",
+            "converged": converged,
+            "outer_iterations": refinement_reports,
+        }
+        if args.fail_on_non_convergence and not converged:
+            raise RuntimeError("Joint discard/play policy did not converge")
     final_policy_fingerprint = ":".join(
         policy_fingerprint(policies[role]) for role in ROLES
     )

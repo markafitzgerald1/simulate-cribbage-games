@@ -183,7 +183,11 @@ class TestPromotionIntegration(unittest.TestCase):
                 ):
                     generator.main()
                 full = json.loads(Path(directory, "full.json").read_bytes())
-            self.assertEqual(events, ["train", "sample", "train", "gate", "sample"])
+            self.assertEqual(
+                events,
+                ["train", "sample", "train", "gate"]
+                + ["sample"] * (2 if mode == "enforce" else 1),
+            )
             gate.assert_called_once_with(trained, 2, 42, 2)
             measured, kwargs = sampled[-1]
             self.assertIs(sampled[0][0], trained)

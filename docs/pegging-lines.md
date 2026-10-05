@@ -231,8 +231,8 @@ Enforced legacy checkpoints also retain a `training_context_fingerprint` of
 the trained policies and the opponent-discard mapping. Resuming rejects a
 different or missing context: identical legacy policies do not imply identical
 conditional sampling populations.
-The existing discard refinement is retained even if the gate selects legacy
-for final pegging measurement. Lines qualifications are unchanged.
+Failed enforcement rebuilds discard refinement with the selected heuristic
+before final measurement, as described below. Lines qualifications are unchanged.
 
 The default is 200,000 independent physical eight-card deals, sampled without
 replacement from four copies of each rank, then split into two four-card keeps.
@@ -283,3 +283,20 @@ one rollout per action. Stochastic mixtures and unrecognized custom components
 retain requested repeats; sampling a component does not prove its internal
 selector is deterministic. The production geometric observation stream is
 retained. Both hand-mode warm starts reject per-decision mixture fallbacks.
+
+When enforcement selects legacy, discard refinement restarts from the saved
+analytical solution with heuristic play fixed in both seats. It uses the same
+policy-table samples, seed, workers, outer-iteration cap, and two-consecutive-step
+convergence test as the trained outer loop. Final measurement uses those refined
+keeps and the same heuristic. `joint_policy_converged` then describes this
+fallback refinement, which may remain false at the configured cap.
+
+Enforce-only `promotion_gate.discard_refinement` records the method, pegging
+policy/fingerprint, actual discard fingerprint, analytical initialization,
+convergence, and refinement iterations. Top-level `outer_iterations` retains the
+original training history. Passing enforcement records the existing trained
+refinement history; the final trained IBR still follows that refinement. Failed
+enforcement rejects resumes without matching training and actual refinement
+identities, including pre-fix fallback checkpoints. Report/off artifacts retain
+their previous bytes. The gate's paired evaluation and qualifications are
+unchanged.

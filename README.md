@@ -313,7 +313,12 @@ adds full-table metadata. It leaves the measured policy unchanged. Use
 `--promotion-gate=off` to skip calibration in a quick smoke test, or
 `--promotion-gate-deals=100` for a bounded reporting check. `enforce` selects the
 legacy heuristic for both measured seats unless the trained both-seat advantage
-is positive at z >= 3. See [the gate definition](docs/pegging-lines.md#paired-promotion-gate)
+is positive at z >= 3. A failed enforced gate restarts discard refinement from
+the analytical solution with heuristic play fixed in both seats, using the same
+outer-iteration cap and convergence rules. Enforce provenance identifies the
+refinement model and actual opponent keeps; old inconsistent fallback
+checkpoints cannot resume. `report` and `off` retain their previous artifact
+bytes. See [the gate definition](docs/pegging-lines.md#paired-promotion-gate)
 for its population and provenance boundaries.
 
 The optional `--policy-averaging=geometric-hand` preserves the production

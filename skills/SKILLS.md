@@ -179,7 +179,12 @@ reference, average seats per deal before computing SE, and prove report mode
 preserves measurement while enforce mode records the policy actually selected.
 If enforcement selects legacy, retain the trained-policy and discard-context
 identity for resume checks; a common fallback fingerprint can hide a changed
-sampling population. Process diagnostics must aggregate returned worker observations without changing
+sampling population. A failed enforced gate must restart discard refinement
+from the analytical context using the selected heuristic in both seats. Reuse
+the outer-loop convergence rules and cap, persist the actual discard/refinement
+identity in checkpoints, and reject old inconsistent resumes. Pin report/off
+full/client/lines byte fingerprints independently of the modified source.
+Process diagnostics must aggregate returned worker observations without changing
 policy inputs, RNG consumption, or client means.
 
 Publication rounding must normalize signed zero without altering checkpoint

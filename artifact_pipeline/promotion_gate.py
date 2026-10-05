@@ -121,6 +121,19 @@ def promotion_gate(
     }
 
 
+def _refinement_identity(report: Mapping[str, Any]) -> tuple[Any, ...] | None:
+    refinement = report.get("discard_refinement")
+    if not isinstance(refinement, dict):
+        return None
+    fields = ("method", "policy_fingerprint", "discard_policy_fingerprint")
+    identity = tuple(refinement.get(field) for field in fields)
+    return (
+        identity
+        if all(isinstance(value, str) and value for value in identity)
+        else None
+    )
+
+
 def validate_promotion_resume(
     existing: Mapping[str, Any], current: Mapping[str, Any]
 ) -> None:
@@ -129,10 +142,13 @@ def validate_promotion_resume(
         return
     expected = current.get("training_context_fingerprint")
     previous = existing.get("__metadata__", {}).get("promotion_gate")
+    refinement = _refinement_identity(current)
     if (
         not expected
         or not isinstance(previous, dict)
         or previous.get("training_context_fingerprint") != expected
+        or refinement is None
+        or _refinement_identity(previous) != refinement
     ):
         raise ValueError(
             "Cannot resume promotion fallback from a different training/discard context"

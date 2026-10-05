@@ -572,7 +572,13 @@ one uniform rank-only deal and common play seed. Average seat advantages before
 estimating SE so paired covariance is retained; summing seat advantages would
 report twice the per-hand gain. Report mode must preserve measured policies,
 while enforce mode must fingerprint the actual fallback policy before resume
-validation. Worker-local observations must be returned and reduced explicitly;
+validation. When enforcement selects the heuristic, restart discard refinement
+from the analytical context with that same heuristic fixed in both seats. Use
+the existing outer-iteration cap and convergence thresholds, and report actual
+fallback convergence. Persist the refinement policy and actual discard
+fingerprint in full/checkpoint provenance; reject fallback resumes lacking that
+identity. Preserve report/off artifact bytes and the gate evaluation population.
+Worker-local observations must be returned and reduced explicitly;
 parent-only counters silently miss process selections.
 
 `generate_play_table.py` uses the analytical `E(h +/- c)` solution as its
