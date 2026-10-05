@@ -76,3 +76,7 @@ for matched, held-out training experiments measured by issue #187's quality
 gauge and coverage diagnostics. The current evidence identifies substantial
 legacy fallback usage; deeper training requires measurement, and faster
 generation does not itself justify a new production policy or sample count.
+
+The Unix-only `resource` module is optional. On platforms without it, worker
+results and ordering are preserved, peak RSS is unavailable, and memory
+reporting is omitted. This does not restrict serial execution or library imports.

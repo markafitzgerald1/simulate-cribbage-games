@@ -7,6 +7,7 @@ from unittest.mock import patch
 from artifact_pipeline.pegging import (
     DEALER,
     PONE,
+    PolicyMixture,
     DecisionTrace,
     PeggingResult,
     PeggingState,
@@ -263,6 +264,28 @@ class TestHandPolicyAverage(unittest.TestCase):
                     initial_policies={PONE: mixed, DEALER: mixed},
                     averaging=method,
                 )
+
+    def test_uniform_rejects_per_decision_warm_starts_before_training(self):
+        mixture = PolicyMixture((LegacyHeuristicPolicy(), EndPolicy(True)), (0.5, 0.5))
+        for warm in (
+            mixture,
+            TabularPeggingPolicy({}, mixture),
+            UniformHandPolicy((TabularPeggingPolicy({}, mixture),)),
+        ):
+            with self.subTest(warm=type(warm).__name__), patch(
+                "artifact_pipeline.pegging.train_rollout_best_response"
+            ) as fit:
+                with self.assertRaisesRegex(ValueError, "per-decision"):
+                    train_iterative_best_response(
+                        None,
+                        1,
+                        1,
+                        1,
+                        42,
+                        initial_policies={PONE: warm, DEALER: LegacyHeuristicPolicy()},
+                        averaging="uniform-hand",
+                    )
+                fit.assert_not_called()
 
 
 if __name__ == "__main__":  # pragma: no cover

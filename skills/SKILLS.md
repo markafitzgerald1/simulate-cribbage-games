@@ -164,6 +164,11 @@ with component-dependent continuations, and retain the production default.
 Uniform training forces one rollout per action to avoid duplicate deterministic
 observations and inflated counts. Equal weights describe top-level draws only;
 prior-average fallbacks route table misses toward earlier components and legacy.
+Reject per-decision mixtures in uniform warm starts, including sparse table
+fallbacks; they do not become complete frozen strategies by being wrapped.
+Experiment runners must import the pipeline after entering their isolated
+working directory, because legacy cache construction happens during import.
+Use the generator parser's resolved output paths for artifact reads and hashes.
 
 For geometric-hand research, test production geometric weights independently of
 whole-hand correlation, including warm history and frozen fallback draws.
@@ -287,3 +292,7 @@ requirements, remove quality checks, add broad ignore comments, or refactor the
 legacy `simulate_cribbage_games.py` dependency. Do not replace mathematical
 simulation with subjective heuristics. Do not build on untested legacy behavior
 or skip end-to-end smoke coverage for code changes.
+
+Worker RSS is optional diagnostics. Guard the Unix-only `resource` import,
+represent unavailable measurements explicitly, and omit RSS output when the
+platform cannot supply it. Ordered results must remain identical without it.
