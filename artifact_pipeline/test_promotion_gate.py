@@ -2,6 +2,7 @@
 
 import math
 import json
+import io
 import tempfile
 from pathlib import Path
 import random
@@ -9,6 +10,7 @@ import unittest
 from unittest.mock import patch
 
 from artifact_pipeline import generate_play_table as generator
+from artifact_pipeline.generate_play_table import _parse_args
 from artifact_pipeline.pegging import (
     PONE,
     DEALER,
@@ -199,6 +201,38 @@ class TestPromotionIntegration(unittest.TestCase):
                 full["__metadata__"]["promotion_gate"]["measured_policy_fingerprint"],
                 kwargs["play_policy_fingerprint"],
             )
+
+    def test_enabled_gate_minimum_is_rejected_before_analytical_training(self):
+        for mode in ("report", "enforce"):
+            with self.subTest(mode=mode), patch(
+                "sys.argv",
+                [
+                    "generate_play_table.py",
+                    "--promotion-gate=" + mode,
+                    "--promotion-gate-deals=1",
+                ],
+            ), patch.object(
+                generator,
+                "solve_initial_discard_policy",
+                side_effect=AssertionError("training started"),
+            ) as solve, patch(
+                "sys.stderr", io.StringIO()
+            ) as stderr:
+                with self.assertRaises(SystemExit) as error:
+                    generator.main()
+                self.assertEqual(error.exception.code, 2)
+                solve.assert_not_called()
+                self.assertTrue("at least 2" in stderr.getvalue())
+        for mode, deals in (("off", 1), ("report", 2), ("enforce", 2)):
+            with patch(
+                "sys.argv",
+                [
+                    "generate_play_table.py",
+                    "--promotion-gate=" + mode,
+                    "--promotion-gate-deals=" + str(deals),
+                ],
+            ):
+                self.assertEqual(_parse_args().promotion_gate_deals, deals)
 
 
 if __name__ == "__main__":

@@ -26,6 +26,21 @@ from artifact_pipeline.pegging import (
 from scripts.run_pegging_experiment import REPO_ROOT, count_policy_usage, run_experiment
 
 
+def write_empty_artifacts():
+    args = generator._parse_args()
+    full = {
+        "__metadata__": {
+            "seed": 42,
+            "joint_policy_converged": False,
+            "generation_method": "test",
+            "policy_fingerprint": "test",
+        }
+    }
+    generator._write_json(args.output, full)
+    generator._write_json(args.client_output, {"fixture": 1}, compact=True)
+    generator._write_lines(args.lines_output, args.client_output, full)
+
+
 class TestPeggingExperiment(unittest.TestCase):
     def policies(self, hand_average):
         view = PolicyView(PONE, (0, 1, 2, 3), 0, (), 4, (), ())
@@ -119,20 +134,6 @@ class TestPeggingExperiment(unittest.TestCase):
                 os.chdir(original_directory)
 
     def test_forwarded_output_paths_drive_report_and_hashes(self):
-        def fake_main():
-            args = generator._parse_args()
-            full = {
-                "__metadata__": {
-                    "seed": 42,
-                    "joint_policy_converged": False,
-                    "generation_method": "test",
-                    "policy_fingerprint": "test",
-                }
-            }
-            generator._write_json(args.output, full)
-            generator._write_json(args.client_output, {"fixture": 1}, compact=True)
-            generator._write_lines(args.lines_output, args.client_output, full)
-
         original_directory = Path.cwd()
         with tempfile.TemporaryDirectory() as directory:
             try:
@@ -145,7 +146,7 @@ class TestPeggingExperiment(unittest.TestCase):
                     "--lines-output",
                     names[2],
                 ]
-                with patch.object(generator, "main", fake_main):
+                with patch.object(generator, "main", write_empty_artifacts):
                     report = run_experiment(flags)
                 self.assertEqual(set(report["sha256"]), set(names))
                 self.assertEqual(report["metadata"]["seed"], 42)
@@ -199,6 +200,30 @@ print(json.dumps({"before": before, "opened": opened}))
             observed = json.loads(completed.stdout)
             self.assertEqual(observed["before"], [])
             self.assertEqual(observed["opened"], [str(target.resolve())])
+
+    def test_runner_defaults_to_one_worker_and_records_overrides(self):
+        original_directory = Path.cwd()
+        for flags, expected in (([], 1), (["--workers=3"], 3), (["--workers", "4"], 4)):
+            with self.subTest(flags=flags), tempfile.TemporaryDirectory() as directory:
+                try:
+                    os.chdir(directory)
+                    observed = []
+
+                    def fake_main():
+                        observed.append(generator._parse_args().workers)
+                        write_empty_artifacts()
+
+                    with patch.object(
+                        generator.os, "process_cpu_count", return_value=8
+                    ), patch.object(generator, "main", fake_main), redirect_stdout(
+                        io.StringIO()
+                    ):
+                        report = run_experiment(flags)
+                    self.assertEqual(observed, [expected])
+                    self.assertEqual(report["resolved_workers"], expected)
+                    self.assertEqual(report["arguments"][0], "--workers=1")
+                finally:
+                    os.chdir(original_directory)
 
 
 if __name__ == "__main__":

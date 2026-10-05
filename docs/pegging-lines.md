@@ -269,3 +269,17 @@ continuity correction. Estimate the SE of the mean gain difference from paired
 per-key differences, rather than combining marginal spreads. Whole-hand lead
 groups remain largely component groups, so these comparisons describe complete
 lines rather than isolated opening-card changes.
+
+The experiment runner defaults to one worker unless `--workers` is supplied;
+`experiment.json` records `resolved_workers` and effective arguments. This is
+separate from the generator CLI's process CPU default. Enabled promotion gates
+reject fewer than two deals during parsing, before analytical solving or
+training.
+
+For direct response fitting with hand strategies, inspect the resolved trace's
+continuations, including sparse fallbacks and either asymmetric seat arrangement.
+Built-in legacy/tabular continuations that are deterministic in both seats use
+one rollout per action. Stochastic mixtures and unrecognized custom components
+retain requested repeats; sampling a component does not prove its internal
+selector is deterministic. The production geometric observation stream is
+retained. Both hand-mode warm starts reject per-decision mixture fallbacks.

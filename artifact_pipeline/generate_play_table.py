@@ -753,6 +753,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--no-resume", action="store_true")
     parser.add_argument("--fail-on-non-convergence", action="store_true")
     args = parser.parse_args()
+    if args.promotion_gate != "off" and args.promotion_gate_deals < 2:
+        parser.error("--promotion-gate-deals must be at least 2 for an enabled gate")
     if os.path.realpath(args.lines_output) in {
         os.path.realpath(args.output),
         os.path.realpath(args.client_output),

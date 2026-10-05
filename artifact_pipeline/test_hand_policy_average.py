@@ -121,7 +121,7 @@ class TestHandPolicyAverage(unittest.TestCase):
 
     def test_rollout_continuations_keep_trace_component_posterior(self):
         state = PeggingState({PONE: [0, 1], DEALER: [2, 3]}, public_history=[4, 5])
-        effective = {PONE: EndPolicy(False), DEALER: EndPolicy(True)}
+        effective = {PONE: LegacyHeuristicPolicy(), DEALER: TabularPeggingPolicy({})}
         trace = DecisionTrace(state.view(), state, effective)
         original = {
             role: UniformHandPolicy((EndPolicy(False), EndPolicy(True)))
@@ -210,7 +210,7 @@ class TestHandPolicyAverage(unittest.TestCase):
 
     def test_frozen_rollouts_do_not_duplicate_observation_counts(self):
         policies = {
-            role: UniformHandPolicy((LegacyHeuristicPolicy(), EndPolicy(True)))
+            role: UniformHandPolicy((LegacyHeuristicPolicy(), TabularPeggingPolicy({})))
             for role in (PONE, DEALER)
         }
         results = []

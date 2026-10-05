@@ -371,7 +371,9 @@ pass the same generator flags to `python scripts/run_pegging_experiment.py
 writes `experiment.json` beside the generated pair without publishing it.
 Counters preserve action results and RNG state; their runtime overhead remains
 part of the measured experiment time. This counter runner defaults to
-`--workers=1` and rejects higher counts because its counters are process-local.
+`--workers=1` unless explicitly overridden. Its report records
+`resolved_workers` alongside the effective arguments; worker-local counters are
+returned and reduced in the parent.
 
 The artifact workflow corroborates the generated table against a small,
 attributed sample of Cribbage Pro's published (empirical human-play) pegging

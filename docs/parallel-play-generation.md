@@ -3,8 +3,8 @@
 `generate_play_table.py --workers N` uses spawned processes. The CLI defaults to
 `os.process_cpu_count()` (or one if unavailable); library calls default to one
 for compatibility with existing serial callers. `--workers=1` uses no pool.
-Use an explicit count on a shared machine. Both `geometric` and `uniform-hand`
-policy averaging use the same process boundary.
+Use an explicit count on a shared machine. The `geometric`, `uniform-hand`, and
+`geometric-hand` averaging modes use the same process boundary.
 
 ## Independent work and exact reduction
 
@@ -50,7 +50,8 @@ All measured full-artifact fields, training reports, and fingerprints do too.
 The existing `generated_at` field records wall-clock time and naturally differs
 between independent invocations. Full-byte tests hold that field fixed; a
 comparison of ordinary CLI runs must normalize that field alone. Execution
-worker counts, PIDs, timings, and memory reports never enter result metadata.
+worker counts, PIDs, timings, and memory reports never enter table metadata.
+The experiment runner records the resolved worker count in its separate report.
 
 ## Memory and performance measurements
 
@@ -66,10 +67,10 @@ Spawn startup, snapshot serialization, IPC, ordered observation replay, and the
 sequential analytical/refinement stages limit speedup, especially on tiny runs.
 Use a bounded but substantive workload at 1, 2, 4, and 8 workers, preserve all
 training/sample settings, record end-to-end and stage wall times, and compare
-the actual written files. The serial usage-counter runner
-`scripts/run_pegging_experiment.py` rejects parallel counts: its process-local
-counters cannot measure child decisions. Parallel timing should call the real
-generator without those counters.
+the actual written files. The usage-counter runner
+`scripts/run_pegging_experiment.py` defaults to one worker and accepts explicit
+parallel counts. Worker-local observations are returned and reduced in the
+parent; `experiment.json` records the resolved worker count.
 
 Parallelism preserves policy quality at fixed settings. Use freed time first
 for matched, held-out training experiments measured by issue #187's quality

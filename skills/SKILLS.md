@@ -203,8 +203,9 @@ changes, complete checkpoint prefixes, adaptive stopping, and exact raw-moment
 resume. Play method v4 rejects older checkpoints that reconstructed moments
 from SE. Hold the existing wall-clock timestamp fixed when comparing full
 artifact bytes; client and lines bytes compare directly. Report whole-process
-peak RSS separately from result metadata. The existing experiment usage
-counters remain serial; see [parallel generation](../docs/parallel-play-generation.md).
+peak RSS separately from artifact metadata. Experiment usage counters return
+worker observations for parent reduction; see
+[parallel generation](../docs/parallel-play-generation.md).
 
 For standalone uncertainty exports, follow
 [the JSON sidecar contract](../docs/uncertainty-sidecars.md). Preserve the exact
@@ -296,3 +297,12 @@ or skip end-to-end smoke coverage for code changes.
 Worker RSS is optional diagnostics. Guard the Unix-only `resource` import,
 represent unavailable measurements explicitly, and omit RSS output when the
 platform cannot supply it. Ordered results must remain identical without it.
+
+Frozen hand-mode rollout caps belong to the resolved trace, including either
+asymmetric seat arrangement. Built-in legacy and tabular continuations with
+deterministic fallbacks count each decision/action once; decision mixtures and
+unrecognized custom continuations retain the requested repeat count. Preserve
+the production geometric stream. Reject per-decision warm-start fallbacks in
+both hand modes. The experiment runner defaults to one worker unless overridden
+and records the resolved count. Enabled promotion gates reject fewer than two
+deals during argument parsing, before analytical work or training.

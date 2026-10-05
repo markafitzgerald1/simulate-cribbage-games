@@ -11,6 +11,8 @@ from artifact_pipeline.pegging import (
     LegacyHeuristicPolicy,
     TabularPeggingPolicy,
     PolicyView,
+    PolicyMixture,
+    UniformHandPolicy,
     policy_fingerprint,
     simulate_pegging,
     simulate_from_state,
@@ -147,7 +149,7 @@ class TestGeometricHand(unittest.TestCase):
     def test_direct_training_one_rollout_no_count_inflation(self):
         policies = {
             seat: GeometricHandPolicy(
-                (LegacyHeuristicPolicy(), EndPolicy(True)), (0.25, 0.75)
+                (LegacyHeuristicPolicy(), TabularPeggingPolicy({})), (0.25, 0.75)
             )
             for seat in (PONE, DEALER)
         }
@@ -165,3 +167,28 @@ class TestGeometricHand(unittest.TestCase):
             opening = PolicyView(PONE, (0, 1, 2, 3), 0, (), 4, (), ())
             self.assertEqual([v.n for v in moments[opening.key()].values()], [3] * 4)
         self.assertEqual(values[0], values[1])
+
+
+class TestHandWarmStarts(unittest.TestCase):
+    def test_both_hand_modes_reject_per_decision_geometric_fallbacks(self):
+        mixture = PolicyMixture((LegacyHeuristicPolicy(), EndPolicy(True)), (0.5, 0.5))
+        warm = GeometricHandPolicy((TabularPeggingPolicy({}, mixture),), (1.0,))
+        for mode in ("uniform-hand", "geometric-hand"):
+            for policy in (mixture, warm, UniformHandPolicy((warm,))):
+                with self.subTest(mode=mode, policy=type(policy).__name__), patch(
+                    "artifact_pipeline.pegging.train_rollout_best_response"
+                ) as fit:
+                    with self.assertRaisesRegex(ValueError, "per-decision"):
+                        train_iterative_best_response(
+                            None,
+                            1,
+                            1,
+                            1,
+                            42,
+                            averaging=mode,
+                            initial_policies={
+                                PONE: policy,
+                                DEALER: LegacyHeuristicPolicy(),
+                            },
+                        )
+                    fit.assert_not_called()

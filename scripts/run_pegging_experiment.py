@@ -85,6 +85,8 @@ def count_policy_usage(policies: Mapping[str, Any]) -> Iterator[dict[str, Any]]:
 
 def run_experiment(generation_args: list[str]) -> dict[str, Any]:
     """Run the real generator; no alternate sampling or decision implementation."""
+    # The runner has its own serial default; later explicit flags override it.
+    generation_args = ["--workers=1", *generation_args]
     # Legacy cache construction happens on import, after main has changed cwd.
     generator = import_module("artifact_pipeline.generate_play_table")
     measure_quality = import_module("artifact_pipeline.play_quality").measure_quality
@@ -140,6 +142,7 @@ def run_experiment(generation_args: list[str]) -> dict[str, Any]:
     full = json.loads(Path(names[0]).read_bytes())
     report = {
         "arguments": generation_args,
+        "resolved_workers": resolved_args.workers,
         "elapsed_seconds": elapsed,
         "stages": stages,
         "policy_usage": usage,

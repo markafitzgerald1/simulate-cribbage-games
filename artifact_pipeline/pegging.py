@@ -547,10 +547,23 @@ TrainingDeal = tuple[int, Sequence[int], Sequence[int]]
 TRAINING_BATCH_SIZE = 32
 
 
+def _deterministic_continuation(policy: PeggingPolicy) -> bool:
+    """Recognize deterministic built-in strategies after hand/fallback draws."""
+    if isinstance(policy, LegacyHeuristicPolicy):
+        return True
+    if isinstance(policy, TabularPeggingPolicy):
+        return _deterministic_continuation(policy.fallback)
+    # Decision mixtures and arbitrary external policies may consume randomness.
+    return False
+
+
 def _rollout_observations(
     context: RolloutContext, deal: TrainingDeal
 ) -> Iterator[RolloutObservation]:
     """Evaluate one trace without reducing or changing observation order."""
+    hand_strategy = any(
+        isinstance(policy, HAND_POLICY_TYPES) for policy in context.policies.values()
+    )
     sample_index, pone_hand, dealer_hand = deal
     result = simulate_pegging(
         pone_hand,
@@ -562,9 +575,16 @@ def _rollout_observations(
     for decision_index, decision in enumerate(result.decisions):
         if decision.view.role != context.target_role:
             continue
+        # Preserve production geometric observation streams; cap frozen hand
+        # research continuations only when both resolved seats are deterministic.
+        rollouts = context.rollouts_per_action
+        if hand_strategy and all(
+            _deterministic_continuation(policy) for policy in decision.policies.values()
+        ):
+            rollouts = 1
         state_key = decision.view.key()
         for rank in decision.view.legal_ranks:
-            for rollout_index in range(context.rollouts_per_action):
+            for rollout_index in range(rollouts):
                 rollout = simulate_from_state(
                     decision.state,
                     decision.policies,
@@ -633,10 +653,6 @@ def train_rollout_best_response(
         raise ValueError("Training sample and rollout counts must be positive")
     if workers <= 0:
         raise ValueError("Workers must be positive")
-    if all(isinstance(policies[role], HAND_POLICY_TYPES) for role in ROLES):
-        # Trace components and their fallbacks are frozen: a complete-state
-        # continuation is deterministic, so repeats are not new observations.
-        rollouts_per_action = 1
     context = RolloutContext(target_role, policies, rollouts_per_action, seed)
     action_values: dict[str, dict[int, RunningStatistics]] = {}
     batches = _training_batches(deal_sampler, samples, seed)
@@ -665,7 +681,7 @@ def _contains_decision_mixture(policy: PeggingPolicy) -> bool:
         return True
     if isinstance(policy, TabularPeggingPolicy):
         return _contains_decision_mixture(policy.fallback)
-    if isinstance(policy, UniformHandPolicy):
+    if isinstance(policy, HAND_POLICY_TYPES):
         return any(_contains_decision_mixture(part) for part in policy.policies)
     return False
 
@@ -705,7 +721,7 @@ def train_iterative_best_response(
         isinstance(policy, HAND_POLICY_TYPES) for policy in policies.values()
     ):
         raise ValueError("Cannot resume hand averaging as a per-decision mixture")
-    if averaging == "uniform-hand" and any(
+    if averaging in ("uniform-hand", "geometric-hand") and any(
         _contains_decision_mixture(policy) for policy in policies.values()
     ):
         raise ValueError("Cannot resume per-decision mixtures as hand averaging")
