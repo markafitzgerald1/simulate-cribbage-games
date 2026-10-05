@@ -406,14 +406,7 @@ def simulate_from_state(
 ) -> PeggingResult:
     """Play from an arbitrary state and return only points scored afterward."""
     state = initial_state.copy()
-    hand_policies = {
-        role: (
-            _resolve_hand_policy(policies[role], rng)
-            if isinstance(policies[role], UniformHandPolicy)
-            else policies[role]
-        )
-        for role in ROLES
-    }
+    hand_policies = {role: _resolve_hand_policy(policies[role], rng) for role in ROLES}
     scores = {role: _empty_points() for role in ROLES}
     decisions = []
     opening: list[int] = []
