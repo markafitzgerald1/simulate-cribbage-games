@@ -196,13 +196,7 @@ class PolicyMixture:
             raise ValueError("Policy mixture weights must be non-negative")
 
     def select_rank(self, view: PolicyView, rng: random.Random) -> int:
-        chosen = rng.random() * sum(self.weights)
-        cumulative = 0.0
-        for policy, weight in zip(self.policies[:-1], self.weights[:-1]):
-            cumulative += weight
-            if chosen <= cumulative:
-                return policy.select_rank(view, rng)
-        return self.policies[-1].select_rank(view, rng)
+        return _draw_component(self.policies, self.weights, rng).select_rank(view, rng)
 
 
 @dataclass(frozen=True)
@@ -241,13 +235,17 @@ HAND_POLICY_TYPES = (UniformHandPolicy, GeometricHandPolicy)
 def _draw_component(
     policies: Sequence[PeggingPolicy], weights: Sequence[float], rng: random.Random
 ) -> PeggingPolicy:
+    """Draw by cumulative mass; a component without mass is never selected."""
     chosen = rng.random() * sum(weights)
     cumulative = 0.0
-    for component, weight in zip(policies[:-1], weights[:-1]):
-        cumulative += weight
-        if chosen <= cumulative:
-            return component
-    return policies[-1]
+    selected = policies[0]
+    for component, weight in zip(policies, weights):
+        if weight > 0.0:
+            selected = component
+            cumulative += weight
+            if chosen <= cumulative:
+                break
+    return selected
 
 
 def _resolve_hand_policy(policy: PeggingPolicy, rng: random.Random) -> PeggingPolicy:
