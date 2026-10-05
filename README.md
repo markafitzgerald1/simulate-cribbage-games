@@ -315,8 +315,19 @@ adds full-table metadata. It leaves the measured policy unchanged. Use
 legacy heuristic for both measured seats unless the trained both-seat advantage
 is positive at z >= 3. A failed enforced gate restarts discard refinement from
 the analytical solution with heuristic play fixed in both seats, using the same
-outer-iteration cap and convergence rules. Enforce provenance identifies the
-refinement model and actual opponent keeps; old inconsistent fallback
+outer-iteration cap and convergence rules. At the production two-pass cap,
+fallback convergence is always false; the first pass has no previous shift and
+two consecutive stable shifts require at least three passes. A heuristic
+measurement has one Pone lead per key, so the gauge has zero eligible keys and
+null share/gains. Top-level `outer_iterations` retains the discarded trained
+history; the actual fallback history is under
+`promotion_gate.discard_refinement.outer_iterations`. Enforce provenance
+identifies the refinement model and actual opponent keeps. Enforced
+full/checkpoint artifacts,
+opening lines, and uncertainty sidecars carry scalar `measured_policy` and
+`policy_averaging` (null for heuristic measurements); release notes name the gate
+outcome and actual measured policy. Requested training averaging remains in
+`promotion_gate.training_policy_averaging`. Old inconsistent fallback
 checkpoints cannot resume. `report` and `off` retain their previous artifact
 bytes. See [the gate definition](docs/pegging-lines.md#paired-promotion-gate)
 for its population and provenance boundaries.
@@ -351,7 +362,7 @@ same estimates as an uninterrupted run. Pass
 `--workers` defaults to the available process CPU count. Use `--workers=1` for
 serial execution or set a smaller count when sharing a machine. Processes
 evaluate independent hand/role entries and training samples; the parent retains
-the deal RNG stream and replays training observations in serial order. Both
+the deal RNG stream and replays training observations in serial order. All three
 policy averaging modes preserve the same results across worker counts. Each
 process reports its whole-process peak resident memory to stderr after a pass
 when the platform provides `resource`; RSS diagnostics are omitted elsewhere.

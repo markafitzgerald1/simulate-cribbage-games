@@ -294,14 +294,28 @@ analytical solution with heuristic play fixed in both seats. It uses the same
 policy-table samples, seed, workers, outer-iteration cap, and two-consecutive-step
 convergence test as the trained outer loop. Final measurement uses those refined
 keeps and the same heuristic. `joint_policy_converged` then describes this
-fallback refinement, which may remain false at the configured cap.
+fallback refinement. At the production two-pass cap it is always false: the
+first pass has no prior table shift, and two consecutive stable shifts need at
+least three passes.
 
 Enforce-only `promotion_gate.discard_refinement` records the method, pegging
 policy/fingerprint, actual discard fingerprint, analytical initialization,
 convergence, and refinement iterations. Top-level `outer_iterations` retains the
-original training history. Passing enforcement records the existing trained
-refinement history; the final trained IBR still follows that refinement. Failed
+discarded trained-path history when enforcement selects legacy; the actual
+rebuild history is `promotion_gate.discard_refinement.outer_iterations`. Passing
+enforcement records the existing trained refinement history; the final trained IBR still follows that refinement. Failed
 enforcement rejects resumes without matching training and actual refinement
 identities, including pre-fix fallback checkpoints. Report/off artifacts retain
 their previous bytes. The gate's paired evaluation and qualifications are
 unchanged.
+
+Enforced artifacts also record top-level scalar `measured_policy` and actual
+`policy_averaging`: null when the heuristic is measured, otherwise the selected
+training mode. Checkpoints, opening-lines provenance, and uncertainty sidecars
+retain those fields. Requested training averaging is kept separately under
+`promotion_gate.training_policy_averaging`. These additive fields preserve v1
+reader compatibility and leave qualifications unchanged. Report/off artifacts
+keep their previous bytes. Release notes state the gate outcome and actual
+measured policy. Because the deterministic heuristic has exactly one Pone lead
+per key, its opening gauge has zero eligible keys and null share/gain summaries;
+that unavailable comparison is not evidence of optimality.

@@ -189,6 +189,14 @@ from the analytical context using the selected heuristic in both seats. Reuse
 the outer-loop convergence rules and cap, persist the actual discard/refinement
 identity in checkpoints, and reject old inconsistent resumes. Pin report/off
 full/client/lines byte fingerprints independently of the modified source.
+Enforced checkpoints, lines and sidecars must name the measured policy and
+actual averaging as additive scalar provenance (null averaging for legacy).
+Retain requested training averaging in nested gate metadata. Test the release
+body against captured gate outcome and actual policy, without dispatching.
+Distinguish the discarded trained outer history from the nested fallback
+refinement history. The production two-pass cap cannot establish two consecutive
+stable shifts; deterministic heuristic measurements have zero eligible gauge
+keys and null share/gains.
 Scheduled and dispatched play publication explicitly sets
 `--promotion-gate=enforce --workers=4`; preserve all other production settings
 and the CLI's `report` gate default. Pin the publication flags and unchanged
@@ -214,7 +222,7 @@ history.
 
 For process-based play generation, preserve the parent deal RNG and global
 training sample indices. Replay raw observations in serial order rather than
-combining rounded shard moments. Test both averaging modes, worker-count
+combining rounded shard moments. Test all three averaging modes, worker-count
 changes, complete checkpoint prefixes, adaptive stopping, and exact raw-moment
 resume. Play method v4 rejects older checkpoints that reconstructed moments
 from SE. Hold the existing wall-clock timestamp fixed when comparing full

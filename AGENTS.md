@@ -566,8 +566,8 @@ Keep this mode opt-in and retain legacy/early responses until burn-in has its
 own measured justification. Uniform training uses one rollout per action:
 frozen complete-state continuations repeat identically and must not inflate
 observation counts. Direct response fitting caps asymmetric hand/deterministic
-traces when both resolved seats use known deterministic continuations; custom or stochastic
-continuations retain repeats, as do production geometric traces.
+traces when both resolved seats use known deterministic continuations; custom
+or stochastic continuations retain repeats, as do production geometric traces.
 Equal weights apply only to top-level components; misses
 route toward earlier components and legacy through prior-average fallbacks.
 
@@ -584,6 +584,14 @@ the existing outer-iteration cap and convergence thresholds, and report actual
 fallback convergence. Persist the refinement policy and actual discard
 fingerprint in full/checkpoint provenance; reject fallback resumes lacking that
 identity. Preserve report/off artifact bytes and the gate evaluation population.
+For enforced artifacts, persist scalar `measured_policy` and actual
+`policy_averaging` (null for legacy), including checkpoints, lines and sidecars.
+Release notes name the gate outcome and measured policy. The trained path remains
+in top-level `outer_iterations`; a fallback rebuild is recorded under
+`promotion_gate.discard_refinement.outer_iterations`. At the production
+two-pass cap, fallback convergence is always false: two stable shifts require
+at least three passes. A deterministic heuristic supplies one lead per key,
+so its gauge has zero eligible keys and null share/gains.
 Worker-local observations must be returned and reduced explicitly;
 parent-only counters silently miss process selections.
 
@@ -623,8 +631,9 @@ raw second moments for exact resume and rejects v3 checkpoints; reconstructing
 moments from SE loses precision. Worker count, PID, timing, and peak RSS belong
 in logs rather than result metadata. Full-byte comparisons hold the existing
 wall-clock `generated_at` field fixed; client and lines bytes need no adjustment.
-Use the serial experiment counter runner only with `--workers=1`, because its
-lookup and fallback counters are process-local. See
+The experiment runner defaults to one worker unless overridden and records the
+resolved count. Its native lookup and fallback counters are returned by workers
+and reduced in the parent. See
 [parallel generation](docs/parallel-play-generation.md) for these boundaries.
 The Cribbage Pro comparison runs on every production generation, offline,
 against a small, attributed sample of their published (empirical human-play)

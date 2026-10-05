@@ -99,13 +99,23 @@ def build_lines(full: Mapping[str, Any], means_bytes: bytes) -> dict[str, Any]:
         ],
         "precision": {"mu_decimals": 3, "se_significant_figures": 2},
         "provenance": {
-            name: metadata[name]
-            for name in (
-                "generation_method",
-                "seed",
-                "policy_fingerprint",
-                "joint_policy_converged",
-            )
+            **{
+                name: metadata[name]
+                for name in (
+                    "generation_method",
+                    "seed",
+                    "policy_fingerprint",
+                    "joint_policy_converged",
+                )
+            },
+            **(
+                {
+                    "measured_policy": metadata["measured_policy"],
+                    "policy_averaging": metadata["policy_averaging"],
+                }
+                if "measured_policy" in metadata
+                else {}
+            ),
         },
         "qualifications": QUALIFICATIONS,
         "keys": keys,

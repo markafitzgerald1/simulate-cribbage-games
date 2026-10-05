@@ -211,6 +211,27 @@ jobs:
         id: play_quality
         run: echo "report=$(cat play-quality.json)" >> "$GITHUB_OUTPUT"
 
+      - name: Capture promotion gate outcome
+        id: play_promotion
+        run: |
+          python - <<'PYTHON'
+          import json
+          import os
+          from pathlib import Path
+
+          metadata = json.loads(Path("expected_play_points.json").read_bytes())["__metadata__"]
+          gate = metadata["promotion_gate"]
+          outputs = {
+              "outcome": "passed" if gate["passed"] else "failed",
+              "measured_policy": metadata["measured_policy"],
+              "policy_averaging": metadata["policy_averaging"] or "none",
+              "both_seat_advantage": json.dumps(gate["both_seats"], sort_keys=True),
+          }
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              for name, value in outputs.items():
+                  output.write(f"{name}={value}\n")
+          PYTHON
+
       - name: Publish rolling release
         uses: softprops/action-gh-release@v3
         with:
@@ -232,6 +253,10 @@ jobs:
               paired with the client means (see `docs/pegging-lines.md`).
 
             Triggered by: ${{ github.event_name }} on commit ${{ github.sha }}.
+
+            **Promotion gate:** ${{ steps.play_promotion.outputs.outcome }}. Measured policy: `${{ steps.play_promotion.outputs.measured_policy }}`; averaging: `${{ steps.play_promotion.outputs.policy_averaging }}`.
+
+            Both-seat trained advantage per hand (`n`, `mu`, `se`): `${{ steps.play_promotion.outputs.both_seat_advantage }}`.
 
             **Pone lead quality gauge** (descriptive screening, not an optimality claim; eligible-key denominator and restricted-mixture gains defined in `docs/pegging-lines.md`):
 

@@ -41,6 +41,12 @@ Consumers should turn a missing or rejected sidecar into an unavailable
 capability, not a measured zero. A rolling-release race must not combine a new
 means file with an old sidecar.
 
+Enforced play artifacts carry scalar `measured_policy` and actual
+`policy_averaging` into sidecar provenance. Heuristic measurements use null
+averaging; requested training averaging remains in the full artifact's nested
+gate metadata, which the scalar-only exporter does not copy. These additive v1
+fields preserve the existing qualifications and report/off artifact bytes.
+
 ## Publication
 
 Each generation workflow exports its sidecar in the same job that writes the

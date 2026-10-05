@@ -910,7 +910,17 @@ def main() -> None:
     )
     reports.append({"final_play_ibr": final_ibr_reports})
     policies, gate_report = _apply_promotion_gate(policies, discard_policy, args)
+    measurement_provenance: dict[str, Any] = {}
     if args.promotion_gate == "enforce":
+        gate_report["training_policy_averaging"] = args.policy_averaging
+        measurement_provenance = {
+            "measured_policy": gate_report["measured_policy"],
+            "policy_averaging": (
+                None
+                if gate_report["measured_policy"] == "legacy-heuristic"
+                else args.policy_averaging
+            ),
+        }
         refinement_reports = reports[:-1]
         refinement_method = "trained-ibr-v1"
         if gate_report["measured_policy"] == "legacy-heuristic":
@@ -947,6 +957,7 @@ def main() -> None:
 
     def checkpoint(table: Mapping[str, Any]) -> None:
         table["__metadata__"]["promotion_gate"] = gate_report
+        table["__metadata__"].update(measurement_provenance)
         _write_json(args.output, table)
         _write_json(args.client_output, build_client_table(table), compact=True)
 
@@ -970,6 +981,7 @@ def main() -> None:
             "policy_averaging": args.policy_averaging,
             "promotion_gate": gate_report,
             "outer_iterations": reports,
+            **measurement_provenance,
         }
     )
     _write_json(args.output, full_table)
