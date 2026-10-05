@@ -407,11 +407,11 @@ def simulate_from_state(
     state = initial_state.copy()
     hand_policies = {
         role: (
-            _resolve_hand_policy(policy, rng)
-            if isinstance(policy, UniformHandPolicy)
-            else policy
+            _resolve_hand_policy(policies[role], rng)
+            if isinstance(policies[role], UniformHandPolicy)
+            else policies[role]
         )
-        for role, policy in policies.items()
+        for role in ROLES
     }
     scores = {role: _empty_points() for role in ROLES}
     decisions = []
