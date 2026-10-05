@@ -2,9 +2,12 @@
 
 from contextlib import redirect_stdout, redirect_stderr
 import io
+import json
 import os
 from pathlib import Path
 import random
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -20,7 +23,7 @@ from artifact_pipeline.pegging import (
     PolicyView,
     simulate_pegging,
 )
-from scripts.run_pegging_experiment import count_policy_usage, run_experiment
+from scripts.run_pegging_experiment import REPO_ROOT, count_policy_usage, run_experiment
 
 
 class TestPeggingExperiment(unittest.TestCase):
@@ -118,6 +121,88 @@ class TestPeggingExperiment(unittest.TestCase):
                 )
             finally:
                 os.chdir(original_directory)
+
+    def test_forwarded_output_paths_drive_report_and_hashes(self):
+        def fake_main():
+            args = generator._parse_args()
+            full = {
+                "__metadata__": {
+                    "seed": 42,
+                    "joint_policy_converged": False,
+                    "generation_method": "test",
+                    "policy_fingerprint": "test",
+                }
+            }
+            generator._write_json(args.output, full)
+            generator._write_json(args.client_output, {"fixture": 1}, compact=True)
+            generator._write_lines(args.lines_output, args.client_output, full)
+
+        original_directory = Path.cwd()
+        with tempfile.TemporaryDirectory() as directory:
+            try:
+                os.chdir(directory)
+                names = ("custom.full.json", "custom.client.json", "custom.lines.json")
+                flags = [
+                    "--output",
+                    names[0],
+                    "--client-output=" + names[1],
+                    "--lines-output",
+                    names[2],
+                ]
+                with patch.object(generator, "main", fake_main):
+                    report = run_experiment(flags)
+                self.assertEqual(set(report["sha256"]), set(names))
+                self.assertEqual(report["metadata"]["seed"], 42)
+                self.assertEqual(report["gauge"]["keys_total"], 0)
+                self.assertFalse(Path("expected_play_points.json").exists())
+            finally:
+                os.chdir(original_directory)
+
+    def test_import_waits_for_experiment_directory_before_opening_cache(self):
+        # A fresh interpreter is essential: other tests already imported legacy.
+        probe = """
+import json
+import os
+from pathlib import Path
+import sys
+import diskcache
+original_cache = diskcache.Cache
+opened = []
+def record_cache(*args, **kwargs):
+    opened.append(str(Path.cwd()))
+    return original_cache(sys.argv[2])
+diskcache.Cache = record_cache
+from scripts import run_pegging_experiment as runner
+before = list(opened)
+os.chdir(sys.argv[1])
+try:
+    runner.run_experiment(["--invalid-generator-option"])
+except SystemExit as error:
+    assert error.code == 2
+else:
+    raise AssertionError("Invalid generator option was accepted")
+print(json.dumps({"before": before, "opened": opened}))
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "experiment"
+            target.mkdir()
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "-c",
+                    probe,
+                    str(target),
+                    str(Path(directory) / "cache"),
+                ],
+                cwd=directory,
+                env={**os.environ, "PYTHONPATH": str(REPO_ROOT)},
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            observed = json.loads(completed.stdout)
+            self.assertEqual(observed["before"], [])
+            self.assertEqual(observed["opened"], [str(target.resolve())])
 
 
 if __name__ == "__main__":

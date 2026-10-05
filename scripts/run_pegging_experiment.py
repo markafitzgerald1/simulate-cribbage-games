@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from contextlib import contextmanager, ExitStack
 import hashlib
+from importlib import import_module
 import json
 from pathlib import Path
 import shelve
@@ -15,16 +16,6 @@ from unittest.mock import patch
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
-
-from artifact_pipeline import generate_play_table as generator  # noqa: E402
-from artifact_pipeline.pegging import (  # noqa: E402
-    LegacyHeuristicPolicy,
-    PolicyMixture,
-    ROLES,
-    TabularPeggingPolicy,
-    UniformHandPolicy,
-)
-from artifact_pipeline.play_quality import measure_quality  # noqa: E402
 
 
 class CountedActions(dict[str, int]):
@@ -44,9 +35,10 @@ class CountedActions(dict[str, int]):
 @contextmanager
 def count_policy_usage(policies: Mapping[str, Any]) -> Iterator[dict[str, Any]]:
     """Instrument the final frozen measurement, then restore every action table."""
+    pegging = import_module("artifact_pipeline.pegging")
     usage: dict[str, Any] = {}
     restored = []
-    for role in ROLES:
+    for role in pegging.ROLES:
         counts = {"lookups": 0, "hits": 0, "legacy": 0, "tables": 0, "entries": 0}
         usage[role] = counts
         seen: set[int] = set()
@@ -56,28 +48,28 @@ def count_policy_usage(policies: Mapping[str, Any]) -> Iterator[dict[str, Any]]:
             if id(policy) in seen:
                 return
             seen.add(id(policy))
-            if isinstance(policy, TabularPeggingPolicy):
+            if isinstance(policy, pegging.TabularPeggingPolicy):
                 restored.append((policy, policy.actions))
                 states.update(policy.actions)
                 counts["tables"] += 1
                 counts["entries"] += len(policy.actions)
                 policy.actions = CountedActions(policy.actions, counts)
                 visit(policy.fallback)
-            elif isinstance(policy, (PolicyMixture, UniformHandPolicy)):
+            elif isinstance(policy, (pegging.PolicyMixture, pegging.UniformHandPolicy)):
                 for component in policy.policies:
                     visit(component)
 
         visit(policies[role])
         counts["distinct_stored_states"] = len(states)
 
-    legacy_select = LegacyHeuristicPolicy.select_rank
+    legacy_select = pegging.LegacyHeuristicPolicy.select_rank
 
     def counted_legacy(policy, view, rng):
         usage[view.role]["legacy"] += 1
         return legacy_select(policy, view, rng)
 
     try:
-        with patch.object(LegacyHeuristicPolicy, "select_rank", counted_legacy):
+        with patch.object(pegging.LegacyHeuristicPolicy, "select_rank", counted_legacy):
             yield usage
     finally:
         for policy, actions in restored:
@@ -91,6 +83,11 @@ def run_experiment(generation_args: list[str]) -> dict[str, Any]:
     parser.add_argument("--workers", type=int, choices=(1,), default=1)
     parser.parse_known_args(generation_args)
     generation_args = ["--workers=1", *generation_args]
+    # Legacy cache construction happens on import, after main has changed cwd.
+    generator = import_module("artifact_pipeline.generate_play_table")
+    measure_quality = import_module("artifact_pipeline.play_quality").measure_quality
+    with patch.object(sys, "argv", ["generate_play_table.py", *generation_args]):
+        resolved_args = generator._parse_args()
     stages = []
     usage: dict[str, Any] = {}
     invocations: dict[str, int] = {}
@@ -133,9 +130,9 @@ def run_experiment(generation_args: list[str]) -> dict[str, Any]:
         generator.main()
     elapsed = time.monotonic() - start
     names = (
-        "expected_play_points.json",
-        "expected_play_points.client.json",
-        "expected_play_points.lines.json",
+        resolved_args.output,
+        resolved_args.client_output,
+        resolved_args.lines_output,
     )
     full = json.loads(Path(names[0]).read_bytes())
     report = {
