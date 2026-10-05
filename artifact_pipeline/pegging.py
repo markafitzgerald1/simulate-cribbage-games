@@ -550,6 +550,17 @@ def train_rollout_best_response(
     )
 
 
+def _contains_decision_mixture(policy: PeggingPolicy) -> bool:
+    """Reject stochastic decision mixtures hidden in hand-strategy fallbacks."""
+    if isinstance(policy, PolicyMixture):
+        return True
+    if isinstance(policy, TabularPeggingPolicy):
+        return _contains_decision_mixture(policy.fallback)
+    if isinstance(policy, UniformHandPolicy):
+        return any(_contains_decision_mixture(part) for part in policy.policies)
+    return False
+
+
 def train_iterative_best_response(
     deal_sampler: DealSampler,
     iterations: int,
@@ -584,6 +595,10 @@ def train_iterative_best_response(
         isinstance(policy, UniformHandPolicy) for policy in policies.values()
     ):
         raise ValueError("Cannot resume hand averaging as a per-decision mixture")
+    if averaging == "uniform-hand" and any(
+        _contains_decision_mixture(policy) for policy in policies.values()
+    ):
+        raise ValueError("Cannot resume per-decision mixtures as hand averaging")
     reports = []
     for iteration in range(iterations):
         for role_index, role in enumerate(ROLES):
