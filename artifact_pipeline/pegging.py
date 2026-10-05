@@ -224,6 +224,16 @@ def _resolve_hand_policy(policy: PeggingPolicy, rng: random.Random) -> PeggingPo
         return TabularPeggingPolicy(
             policy.actions, _resolve_hand_policy(policy.fallback, rng)
         )
+    if (
+        isinstance(policy, PolicyMixture)
+        and classify_policy_graph(policy).has_hand_average
+    ):
+        return PolicyMixture(
+            tuple(
+                _resolve_hand_policy(component, rng) for component in policy.policies
+            ),
+            policy.weights,
+        )
     return policy
 
 
@@ -492,14 +502,52 @@ def _policy_fingerprint(policy: PeggingPolicy, fingerprints: dict[int, str]) -> 
     return digest
 
 
-def _deterministic_continuation(policy: PeggingPolicy) -> bool:
-    """Recognize deterministic built-in strategies after hand/fallback draws."""
-    if isinstance(policy, LegacyHeuristicPolicy):
-        return True
+@dataclass(frozen=True)
+class PolicyGraphTraits:
+    """Conservative properties of all reachable built-in policy continuations."""
+
+    has_hand_average: bool
+    deterministic_after_freezing: bool
+    has_decision_mixture: bool
+
+
+def classify_policy_graph(policy: PeggingPolicy) -> PolicyGraphTraits:
+    """Inspect shared graph nodes once; unknown continuations remain stochastic."""
+    return _classify_policy_graph(policy, {})
+
+
+def _classify_policy_graph(
+    policy: PeggingPolicy, traits: dict[int, PolicyGraphTraits | None]
+) -> PolicyGraphTraits:
+    identity = id(policy)
+    if identity in traits:
+        cached = traits[identity]
+        if cached is None:
+            raise ValueError("Policy graphs cannot contain cycles")
+        return cached
+    traits[identity] = None
+    hand_average = isinstance(policy, UniformHandPolicy)
+    decision_mixture = isinstance(policy, PolicyMixture)
+    children: Sequence[PeggingPolicy]
     if isinstance(policy, TabularPeggingPolicy):
-        return _deterministic_continuation(policy.fallback)
-    # Decision mixtures and arbitrary external policies may consume randomness.
-    return False
+        children = (policy.fallback,)
+    elif isinstance(policy, (UniformHandPolicy, PolicyMixture)):
+        children = policy.policies
+    else:
+        children = ()
+    child_traits = [_classify_policy_graph(child, traits) for child in children]
+    result = PolicyGraphTraits(
+        hand_average or any(child.has_hand_average for child in child_traits),
+        not decision_mixture
+        and (
+            isinstance(policy, (LegacyHeuristicPolicy, TabularPeggingPolicy))
+            or hand_average
+        )
+        and all(child.deterministic_after_freezing for child in child_traits),
+        decision_mixture or any(child.has_decision_mixture for child in child_traits),
+    )
+    traits[identity] = result
+    return result
 
 
 def train_rollout_best_response(
@@ -517,7 +565,7 @@ def train_rollout_best_response(
     if samples <= 0 or rollouts_per_action <= 0:
         raise ValueError("Training sample and rollout counts must be positive")
     hand_strategy = any(
-        isinstance(policy, UniformHandPolicy) for policy in policies.values()
+        classify_policy_graph(policy).has_hand_average for policy in policies.values()
     )
     rng = random.Random(seed)
     action_values: dict[str, dict[int, RunningStatistics]] = {}
@@ -535,7 +583,7 @@ def train_rollout_best_response(
                 continue
             rollouts = rollouts_per_action
             if hand_strategy and all(
-                _deterministic_continuation(policy)
+                classify_policy_graph(policy).deterministic_after_freezing
                 for policy in decision.policies.values()
             ):
                 rollouts = 1
@@ -567,17 +615,6 @@ def train_rollout_best_response(
     )
 
 
-def _contains_decision_mixture(policy: PeggingPolicy) -> bool:
-    """Reject stochastic decision mixtures hidden in hand-strategy fallbacks."""
-    if isinstance(policy, PolicyMixture):
-        return True
-    if isinstance(policy, TabularPeggingPolicy):
-        return _contains_decision_mixture(policy.fallback)
-    if isinstance(policy, UniformHandPolicy):
-        return any(_contains_decision_mixture(part) for part in policy.policies)
-    return False
-
-
 def train_iterative_best_response(
     deal_sampler: DealSampler,
     iterations: int,
@@ -596,10 +633,6 @@ def train_iterative_best_response(
         raise ValueError("Mixture weight must be in (0, 1]")
     if averaging not in ("geometric", "uniform-hand"):
         raise ValueError("Unknown policy averaging method")
-    if averaging == "uniform-hand":
-        # Include the deterministic iteration-zero responses, before both seats
-        # have a UniformHandPolicy. Preserve invalid counts for validation below.
-        rollouts_per_action = min(rollouts_per_action, 1)
     policies: dict[str, PeggingPolicy] = dict(
         initial_policies
         if initial_policies is not None
@@ -609,11 +642,12 @@ def train_iterative_best_response(
         }
     )
     if averaging == "geometric" and any(
-        isinstance(policy, UniformHandPolicy) for policy in policies.values()
+        classify_policy_graph(policy).has_hand_average for policy in policies.values()
     ):
         raise ValueError("Cannot resume hand averaging as a per-decision mixture")
     if averaging == "uniform-hand" and any(
-        _contains_decision_mixture(policy) for policy in policies.values()
+        classify_policy_graph(policy).has_decision_mixture
+        for policy in policies.values()
     ):
         raise ValueError("Cannot resume per-decision mixtures as hand averaging")
     reports = []
