@@ -82,11 +82,21 @@ its frozen prior average: fallback components are also sampled once before the
 hand, retained for that hand, and never reselected at each decision. The trace
 keeps these latent draws for continuation rollouts, preserving the component
 distribution conditional on the observed history instead of drawing afresh
-from the unconditional average mid-hand. Training forces one rollout per action
-in this mode, even when a larger count is requested. Once the trace components
-are frozen, the complete-state continuation is deterministic; repeating it
-adds cost and duplicates observations without adding information. Each sampled
-decision/action contributes once to its statistics, rather than inflating `n`.
+from the unconditional average mid-hand. A recursive policy-graph classifier
+inspects table fallbacks and all mixture components before warm-start training.
+Geometric training rejects hand averages anywhere in its initial graph; hand
+averaging rejects per-decision mixtures anywhere in that graph. Direct response
+fitting freezes hand averages even beneath per-decision mixtures, retaining the
+mixture's stochastic decision draws.
+
+After a hand average is frozen, training caps each decision/action at one
+rollout only when both resolved continuations are known deterministic built-in
+strategies. This avoids duplicate observations and inflated `n`. Custom
+continuations and per-decision mixtures retain the requested repetitions,
+including asymmetric seats. Production geometric streams, and traces without
+hand averages, retain their requested rollout count. The research CLI requests
+one rollout per action; the direct API inspects the actual frozen continuation
+rather than assuming determinism from the selected averaging mode.
 
 Per-decision equal weights would not implement this strategy average: at later
 information states, behavioral averaging requires each component's own reach
