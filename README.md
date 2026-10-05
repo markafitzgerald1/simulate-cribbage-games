@@ -374,6 +374,10 @@ history with equal top-level mass, sampling one component per role per hand with
 default remains the production geometric per-decision mixture. Uniform training
 forces one rollout per action even if a larger count is requested: frozen
 complete-state continuations are identical, so repeats cannot increase `n`.
+Direct response fitting also caps an asymmetric uniform/deterministic trace
+when both resolved seats have built-in deterministic continuations. Custom or
+stochastic continuations retain repeats; production geometric traces are
+unchanged.
 Fallbacks give earlier components and legacy more effective decision mass. See the
 [mixture interpretation](docs/pegging-lines.md#meaning-for-consumers) before
 comparing gauges across these modes; whole-hand mixing correlates the opening
@@ -384,6 +388,8 @@ For isolated stage timing and final-measurement table/legacy usage counters,
 pass the same generator flags to `python scripts/run_pegging_experiment.py
 --directory /tmp/pegging-experiment`. The directory must be empty. This runner
 writes `experiment.json` beside the generated pair without publishing it.
+That report path is reserved: output aliases, including symlinks, are rejected
+before the generator runs.
 Counters preserve action results and RNG state; their runtime overhead remains
 part of the measured experiment time. This counter runner defaults to
 `--workers=1` unless explicitly overridden. Its report records

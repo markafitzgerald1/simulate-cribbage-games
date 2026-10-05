@@ -164,11 +164,16 @@ with component-dependent continuations, and retain the production default.
 Uniform training forces one rollout per action to avoid duplicate deterministic
 observations and inflated counts. Equal weights describe top-level draws only;
 prior-average fallbacks route table misses toward earlier components and legacy.
+For direct fitting, test either asymmetric hand/deterministic seat arrangement,
+inspect resolved continuations, and retain repeats for custom or stochastic
+strategies and the production geometric stream.
 Reject per-decision mixtures in uniform warm starts, including sparse table
 fallbacks; they do not become complete frozen strategies by being wrapped.
 Experiment runners must import the pipeline after entering their isolated
 working directory, because legacy cache construction happens during import.
 Use the generator parser's resolved output paths for artifact reads and hashes.
+Reserve the experiment report path; reject colliding artifact paths, including
+relative, absolute, and symlink aliases, before sampling or writing outputs.
 
 For geometric-hand research, test production geometric weights independently of
 whole-hand correlation, including warm history and frozen fallback draws.

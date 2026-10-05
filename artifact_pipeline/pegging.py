@@ -443,11 +443,11 @@ def simulate_from_state(
     state = initial_state.copy()
     hand_policies = {
         role: (
-            _resolve_hand_policy(policy, rng)
-            if isinstance(policy, HAND_POLICY_TYPES)
-            else policy
+            _resolve_hand_policy(policies[role], rng)
+            if isinstance(policies[role], HAND_POLICY_TYPES)
+            else policies[role]
         )
-        for role, policy in policies.items()
+        for role in ROLES
     }
     scores = {role: _empty_points() for role in ROLES}
     decisions = []
@@ -501,35 +501,44 @@ def _stable_seed(*parts: object) -> int:
 
 
 def policy_fingerprint(policy: PeggingPolicy) -> str:
-    """Return a stable digest for resume-compatibility checks."""
+    """Return a stable digest, hashing each shared object once per call."""
+    return _policy_fingerprint(policy, {})
+
+
+def _policy_fingerprint(policy: PeggingPolicy, fingerprints: dict[int, str]) -> str:
+    identity = id(policy)
+    if identity in fingerprints:
+        return fingerprints[identity]
     if isinstance(policy, LegacyHeuristicPolicy):
         payload: object = ("legacy-heuristic-v1",)
     elif isinstance(policy, TabularPeggingPolicy):
         payload = (
             "tabular-v1",
             tuple(sorted(policy.actions.items())),
-            policy_fingerprint(policy.fallback),
+            _policy_fingerprint(policy.fallback, fingerprints),
         )
     elif isinstance(policy, PolicyMixture):
         payload = (
             "mixture-v1",
             tuple(policy.weights),
-            tuple(policy_fingerprint(item) for item in policy.policies),
+            tuple(_policy_fingerprint(item, fingerprints) for item in policy.policies),
         )
     elif isinstance(policy, GeometricHandPolicy):
         payload = (
             "geometric-hand-v1",
             tuple(policy.weights),
-            tuple(policy_fingerprint(item) for item in policy.policies),
+            tuple(_policy_fingerprint(item, fingerprints) for item in policy.policies),
         )
     elif isinstance(policy, UniformHandPolicy):
         payload = (
             "uniform-hand-v1",
-            tuple(policy_fingerprint(item) for item in policy.policies),
+            tuple(_policy_fingerprint(item, fingerprints) for item in policy.policies),
         )
     else:
         payload = (type(policy).__module__, type(policy).__qualname__)
-    return hashlib.sha256(repr(payload).encode("utf-8")).hexdigest()
+    digest = hashlib.sha256(repr(payload).encode("utf-8")).hexdigest()
+    fingerprints[identity] = digest
+    return digest
 
 
 @dataclass(frozen=True)
