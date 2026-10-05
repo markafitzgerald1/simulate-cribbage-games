@@ -591,6 +591,8 @@ fingerprint in full/checkpoint provenance; reject fallback resumes lacking that
 identity. Preserve report/off artifact bytes and the gate evaluation population.
 For enforced artifacts, persist scalar `measured_policy` and actual
 `policy_averaging` (null for legacy), including checkpoints, lines and sidecars.
+Readers validate the pair, not each field alone: legacy requires null averaging,
+trained requires a known averaging name, and older documents carry neither.
 Release notes name the gate outcome and measured policy. The trained path remains
 in top-level `outer_iterations`; a fallback rebuild is recorded under
 `promotion_gate.discard_refinement.outer_iterations`. At the production

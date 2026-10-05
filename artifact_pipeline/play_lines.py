@@ -8,6 +8,7 @@ import json
 import math
 from typing import Any, Mapping
 
+from artifact_pipeline.export_uncertainty import validate_measured_policy
 from artifact_pipeline.pegging import DEALER, ROLES, RunningStatistics
 
 SCHEMA = "expected-play-lines.v1"
@@ -220,6 +221,7 @@ def _decode_document(data: dict[str, Any], means_bytes: bytes) -> dict[str, Any]
         )
     ):
         raise ValueError("Invalid frozen-policy provenance")
+    validate_measured_policy(provenance, averaging_without_policy=False)
     keys, entries = data["keys"], data["entries"]
     if (
         not isinstance(keys, list)

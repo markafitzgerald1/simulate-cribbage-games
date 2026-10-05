@@ -381,6 +381,47 @@ class TestExportUncertainty(unittest.TestCase):
             change(mutated)
             with self.assertRaises(ValueError):
                 exporter.decode_sidecar(encoded(mutated), encoded(means))
+        for fields, accepted in (
+            ({"policy_averaging": "geometric"}, True),
+            ({"measured_policy": "legacy-heuristic", "policy_averaging": None}, True),
+            (
+                {"measured_policy": "trained", "policy_averaging": "geometric-hand"},
+                True,
+            ),
+            ({"policy_averaging": "other"}, False),
+            ({"policy_averaging": None}, False),
+            ({"measured_policy": "trained"}, False),
+            ({"measured_policy": "trained", "policy_averaging": None}, False),
+            (
+                {
+                    "measured_policy": "legacy-heuristic",
+                    "policy_averaging": "geometric",
+                },
+                False,
+            ),
+            ({"measured_policy": "legacy-heuristic"}, False),
+            ({"measured_policy": "other", "policy_averaging": None}, False),
+        ):
+            declared, declared_means = fixture("play")
+            declared["__metadata__"].update(fields)
+            with self.subTest(fields=fields):
+                if accepted:
+                    sidecar = exporter.build_sidecar(
+                        "play", encoded(declared), encoded(declared_means)
+                    )
+                    self.assertEqual(
+                        sidecar["provenance"], {**good["provenance"], **fields}
+                    )
+                    exporter.decode_sidecar(encoded(sidecar), encoded(declared_means))
+                else:
+                    with self.assertRaisesRegex(ValueError, "measured policy"):
+                        exporter.build_sidecar(
+                            "play", encoded(declared), encoded(declared_means)
+                        )
+                    mutated = copy.deepcopy(good)
+                    mutated["provenance"].update(fields)
+                    with self.assertRaisesRegex(ValueError, "measured policy"):
+                        exporter.decode_sidecar(encoded(mutated), encoded(means))
         for field in ("policy_fingerprint", "joint_policy_converged"):
             incomplete, incomplete_means = fixture("play")
             incomplete["__metadata__"].pop(field)

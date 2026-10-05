@@ -270,6 +270,44 @@ class TestPlayLines(unittest.TestCase):
             with self.subTest(field=field, value=value), self.assertRaises(ValueError):
                 decode_lines(json.dumps(broken).encode(), means)
 
+    def test_reader_validates_measured_policy_as_a_paired_scalar_contract(self):
+        _full, means, data = self.fixture()
+        valid = (
+            {},
+            {"measured_policy": "legacy-heuristic", "policy_averaging": None},
+            {"measured_policy": "trained", "policy_averaging": "geometric"},
+            {"measured_policy": "trained", "policy_averaging": "uniform-hand"},
+            {"measured_policy": "trained", "policy_averaging": "geometric-hand"},
+        )
+        invalid = (
+            {"measured_policy": "trained"},
+            {"measured_policy": "legacy-heuristic"},
+            {"policy_averaging": "geometric"},
+            {"policy_averaging": None},
+            {"measured_policy": "legacy-heuristic", "policy_averaging": "geometric"},
+            {"measured_policy": "legacy-heuristic", "policy_averaging": {}},
+            {"measured_policy": "trained", "policy_averaging": None},
+            {"measured_policy": "trained", "policy_averaging": "other"},
+            {"measured_policy": "trained", "policy_averaging": ["geometric"]},
+            {"measured_policy": "trained", "policy_averaging": {"geometric": 1}},
+            {"measured_policy": "unknown", "policy_averaging": None},
+            {"measured_policy": {"name": "trained"}, "policy_averaging": "geometric"},
+            {"measured_policy": ["trained"], "policy_averaging": "geometric"},
+            {"measured_policy": None, "policy_averaging": None},
+        )
+        for fields, accepted in [(v, True) for v in valid] + [
+            (v, False) for v in invalid
+        ]:
+            candidate = deepcopy(data)
+            candidate["provenance"].update(fields)
+            encoded = json.dumps(candidate).encode()
+            with self.subTest(fields=fields):
+                if accepted:
+                    self.assertEqual(decode_lines(encoded, means), candidate)
+                else:
+                    with self.assertRaisesRegex(ValueError, "measured policy"):
+                        decode_lines(encoded, means)
+
     def test_reader_rejects_missing_seed(self):
         _full, means, data = self.fixture()
         del data["provenance"]["seed"]

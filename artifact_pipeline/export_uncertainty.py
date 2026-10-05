@@ -169,6 +169,37 @@ def _statistics(table: str, source: dict[str, Any]) -> dict[str, Any] | None:
     return {"reported_marginal_se": values.pop("se"), **values}
 
 
+HEURISTIC_POLICY = "legacy-heuristic"
+TRAINED_POLICY = "trained"
+AVERAGING_MODES = ("geometric", "uniform-hand", "geometric-hand")
+
+
+def validate_measured_policy(
+    provenance: dict[str, Any], *, averaging_without_policy: bool
+) -> None:
+    """Require the measured-policy pair to agree; older documents omit both.
+
+    Runs that do not enforce the promotion gate record only the requested
+    averaging, so a reader of those documents passes
+    ``averaging_without_policy`` while a reader of enforced-only documents
+    does not. This lives here because the exporter is run as a script and
+    cannot import its sibling modules.
+    """
+    has_averaging = "policy_averaging" in provenance
+    averaging = provenance.get("policy_averaging")
+    if "measured_policy" not in provenance:
+        if has_averaging and (
+            not averaging_without_policy or averaging not in AVERAGING_MODES
+        ):
+            raise ValueError("Invalid measured policy provenance")
+        return
+    policy = provenance["measured_policy"]
+    heuristic = policy == HEURISTIC_POLICY and averaging is None
+    trained = policy == TRAINED_POLICY and averaging in AVERAGING_MODES
+    if not (has_averaging and (heuristic or trained)):
+        raise ValueError("Invalid measured policy provenance")
+
+
 def _validate_provenance(table: str, provenance: dict[str, Any]) -> None:
     for value in provenance.values():
         if isinstance(value, (dict, list)):
@@ -181,6 +212,7 @@ def _validate_provenance(table: str, provenance: dict[str, Any]) -> None:
             raise ValueError("Invalid play policy fingerprint")
         if not isinstance(provenance.get("joint_policy_converged"), bool):
             raise ValueError("Invalid play convergence status")
+        validate_measured_policy(provenance, averaging_without_policy=True)
 
 
 def build_sidecar(table: str, full_bytes: bytes, means_bytes: bytes) -> dict[str, Any]:

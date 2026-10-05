@@ -46,6 +46,10 @@ Enforced play artifacts carry scalar `measured_policy` and actual
 averaging; requested training averaging remains in the full artifact's nested
 gate metadata, which the scalar-only exporter does not copy. These additive v1
 fields preserve the existing qualifications and report/off artifact bytes.
+Readers validate them as a pair: `legacy-heuristic` requires null averaging,
+`trained` requires `geometric`, `uniform-hand`, or `geometric-hand`, and a
+document predating the pair carries neither. Report/off runs record only the
+requested averaging, which must then be one of those names.
 
 ## Publication
 

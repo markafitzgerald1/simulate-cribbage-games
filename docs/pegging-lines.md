@@ -325,7 +325,11 @@ Enforced artifacts also record top-level scalar `measured_policy` and actual
 training mode. Checkpoints, opening-lines provenance, and uncertainty sidecars
 retain those fields. Requested training averaging is kept separately under
 `promotion_gate.training_policy_averaging`. These additive fields preserve v1
-reader compatibility and leave qualifications unchanged. Report/off artifacts
+reader compatibility and leave qualifications unchanged. The lines reader
+requires the two fields together with the same pairing as the sidecar reader
+(null averaging for the heuristic, a known averaging name when trained) and
+rejects non-scalar or unknown values; an older document carries neither.
+Report/off artifacts
 keep their previous bytes. Release notes state the gate outcome and actual
 measured policy. Because the deterministic heuristic has exactly one Pone lead
 per key, its opening gauge has zero eligible keys and null share/gain summaries;
