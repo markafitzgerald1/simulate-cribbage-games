@@ -1,0 +1,119 @@
+{
+  "source_commit": "a775cff92a21d7f0c921dd3529d7f7e798f2d6d3",
+  "source_pegging_sha256": "e9bb6ea52056678ba858060d3e18ccae83529c4a16472ad6fcd3888cbc1fce1b",
+  "oracle": {
+    "training_reports": [
+      [
+        {
+          "iteration": 1,
+          "role": "Pone",
+          "states": 67,
+          "actions": 194
+        },
+        {
+          "iteration": 1,
+          "role": "Dealer",
+          "states": 66,
+          "actions": 185
+        },
+        {
+          "iteration": 2,
+          "role": "Pone",
+          "states": 65,
+          "actions": 187
+        },
+        {
+          "iteration": 2,
+          "role": "Dealer",
+          "states": 65,
+          "actions": 192
+        }
+      ],
+      [
+        {
+          "iteration": 1,
+          "role": "Pone",
+          "states": 66,
+          "actions": 193
+        },
+        {
+          "iteration": 1,
+          "role": "Dealer",
+          "states": 65,
+          "actions": 182
+        },
+        {
+          "iteration": 2,
+          "role": "Pone",
+          "states": 63,
+          "actions": 182
+        },
+        {
+          "iteration": 2,
+          "role": "Dealer",
+          "states": 65,
+          "actions": 192
+        }
+      ],
+      [
+        {
+          "iteration": 1,
+          "role": "Pone",
+          "states": 67,
+          "actions": 190
+        },
+        {
+          "iteration": 1,
+          "role": "Dealer",
+          "states": 61,
+          "actions": 171
+        },
+        {
+          "iteration": 2,
+          "role": "Pone",
+          "states": 62,
+          "actions": 174
+        },
+        {
+          "iteration": 2,
+          "role": "Dealer",
+          "states": 64,
+          "actions": 182
+        }
+      ]
+    ],
+    "gate": {
+      "mode": "enforce",
+      "seed": 42,
+      "population": "uniform-physical-eight-card-keeps-rank-only-v1",
+      "z_threshold": 3.0,
+      "Pone": {
+        "n": 64,
+        "mu": 0.0,
+        "se": 0.0
+      },
+      "Dealer": {
+        "n": 64,
+        "mu": 0.0,
+        "se": 0.0
+      },
+      "both_seats": {
+        "n": 64,
+        "mu": 0.0,
+        "se": 0.0
+      },
+      "passed": false,
+      "measured_policy": "legacy-heuristic",
+      "trained_policy_fingerprint": "df84613ac97feec377dd6e93f1d261577ba0551110f00d4b286b6779090d17df:7daabc9f5b8dcf2bcf61f0c6c4bf30fa84bef516d242614e90cf3076ff44e72a",
+      "measured_policy_fingerprint": "0990840fad19dc81a53cdeb45cb02ecb257934309ab81457a5191ab9a2411bb5:0990840fad19dc81a53cdeb45cb02ecb257934309ab81457a5191ab9a2411bb5"
+    },
+    "trained_traces_sha256": "0e7e5fed0828f87603d1f98b1772787752470fa63f685085a9f09d748fd4b348",
+    "measured_traces_sha256": "b35a2d95791ee3f60bfe11f74178d576b4f843a5cc17c9c3f4ec72c015d2a9c0",
+    "artifact_sha256": {
+      "full": "b4f56bf6f79068bd7d5c7bacb4a2d597499102f8012921c7c7d21d9ce8bedc57",
+      "client": "194959e75568febfdb680fe14835a161a6d00dc0507c4f3b209ddaed6fd6a544",
+      "lines": "a706662eb1a20666164f72922bc353b7e5105bca1c0e95d69aec2f53431b3157",
+      "sidecar": "4df18a02c3c508dcb70e4aa084ad182ee1f95845fc4279c84373a43ede60b172"
+    }
+  }
+}
