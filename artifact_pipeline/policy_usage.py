@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator, Mapping
+from copy import copy
 from dataclasses import dataclass
 import random
 from typing import Any
@@ -44,13 +45,22 @@ class ObservedActions(Mapping[str, int]):
 
 @dataclass
 class ObservedLegacyPolicy(LegacyHeuristicPolicy):
-    """Observe the terminal fallback while executing the exact legacy adapter."""
+    """Count terminal-fallback use while delegating to the original instance."""
 
     counts: dict[str, int]
+    delegate: LegacyHeuristicPolicy
 
     def select_rank(self, view: PolicyView, rng: random.Random) -> int:
         self.counts["legacy"] += 1
-        return super().select_rank(view, rng)
+        return self.delegate.select_rank(view, rng)
+
+
+def _with_components(policy: Any, **fields: Any) -> Any:
+    """Copy the original instance so subclass type, state and methods survive."""
+    clone = copy(policy)
+    for name, value in fields.items():
+        object.__setattr__(clone, name, value)
+    return clone
 
 
 class PolicyUsage:  # pylint: disable=too-few-public-methods
@@ -80,17 +90,19 @@ class PolicyUsage:  # pylint: disable=too-few-public-methods
                 states.update(policy.actions)
                 coverage["tables"] += 1
                 coverage["entries"] += len(policy.actions)
-                observed: PeggingPolicy = TabularPeggingPolicy(
-                    ObservedActions(policy.actions, counts), visit(policy.fallback)
+                observed: PeggingPolicy = _with_components(
+                    policy,
+                    actions=ObservedActions(policy.actions, counts),
+                    fallback=visit(policy.fallback),
                 )
             elif isinstance(policy, LegacyHeuristicPolicy):
-                observed = ObservedLegacyPolicy(counts)
-            elif isinstance(policy, (PolicyMixture, GeometricHandPolicy)):
-                observed = type(policy)(
-                    tuple(visit(p) for p in policy.policies), policy.weights
+                observed = ObservedLegacyPolicy(counts, policy)
+            elif isinstance(
+                policy, (PolicyMixture, GeometricHandPolicy, UniformHandPolicy)
+            ):
+                observed = _with_components(
+                    policy, policies=tuple(visit(p) for p in policy.policies)
                 )
-            elif isinstance(policy, UniformHandPolicy):
-                observed = UniformHandPolicy(tuple(visit(p) for p in policy.policies))
             else:
                 observed = policy
             memo[id(policy)] = observed

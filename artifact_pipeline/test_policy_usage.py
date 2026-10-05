@@ -24,7 +24,48 @@ from artifact_pipeline.test_generate_play_table import all_first_four_policy
 from artifact_pipeline.test_hand_policy_average import EndPolicy
 
 
+class LastRankLegacy(LegacyHeuristicPolicy):
+    def __init__(self):
+        self.calls = 0
+
+    def select_rank(self, view, rng):
+        del rng
+        self.calls += 1
+        return view.legal_ranks[-1] if view.legal_ranks else -1
+
+
+class FirstComponentMixture(PolicyMixture):
+    def select_rank(self, view, rng):
+        return self.policies[0].select_rank(view, rng)
+
+
 class TestPolicyUsage(unittest.TestCase):
+    def test_custom_subclasses_keep_their_own_behavior_when_observed(self):
+        legacy = LastRankLegacy()
+        for root in (
+            legacy,
+            FirstComponentMixture((legacy, LegacyHeuristicPolicy()), (0.5, 0.5)),
+            TabularPeggingPolicy({}, legacy),
+        ):
+            policies = {PONE: root, DEALER: LegacyHeuristicPolicy()}
+            usage = PolicyUsage(policies)
+            for seed in range(10):
+                rng, observed_rng = random.Random(seed), random.Random(seed)
+                legacy.calls = 0
+                plain = simulate_pegging((0, 1, 2, 3), (4, 5, 6, 7), policies, rng)
+                direct_calls = legacy.calls
+                legacy.calls = 0
+                observed = simulate_pegging(
+                    (0, 1, 2, 3), (4, 5, 6, 7), usage.policies, observed_rng
+                )
+                with self.subTest(root=type(root).__name__, seed=seed):
+                    self.assertEqual(
+                        (plain.players, plain.opening, rng.getstate()),
+                        (observed.players, observed.opening, observed_rng.getstate()),
+                    )
+                    self.assertEqual(legacy.calls, direct_calls)
+            self.assertGreater(usage.counts[PONE]["legacy"], 0)
+
     def test_mapping_delegation_and_unknown_policy(self):
         counts = {"lookups": 0, "hits": 0}
         mapping = ObservedActions({"zero": 0}, counts)
