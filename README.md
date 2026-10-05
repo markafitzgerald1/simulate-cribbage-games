@@ -321,6 +321,14 @@ checkpoints cannot resume. `report` and `off` retain their previous artifact
 bytes. See [the gate definition](docs/pegging-lines.md#paired-promotion-gate)
 for its population and provenance boundaries.
 
+Scheduled and dispatched play publication explicitly uses
+`--promotion-gate=enforce --workers=4` for the four-vCPU Ubuntu runner. It ships
+heuristic-generated `E(deltaP)` when the trained policy fails promotion, with
+discards rebuilt for heuristic play. The CLI default remains `report`; production
+averaging, training settings, 13,000 final samples per role entry, seed 42, and
+`--no-resume` are unchanged. Promotion and fallback refinement add work beyond
+the historical serial cost model; no new production runtime is claimed.
+
 The optional `--policy-averaging=geometric-hand` preserves the production
 geometric weights while sampling a complete component per seat per hand.
 Like `uniform-hand`, it freezes prior-average fallbacks and uses one rollout per
@@ -334,9 +342,10 @@ absolute Pone and Dealer totals broken down into fifteens, thirty-ones, pairs,
 runs, go, and last-card points. The lean client artifact retains only those
 means.
 
-Production runs resume from `expected_play_points.json` by default. Each sample
-is seeded independently by hand, role, and cumulative sample index, so a resumed
-seeded run produces the same estimates as an uninterrupted run. Pass
+The CLI resumes from `expected_play_points.json` by default; the production
+workflow explicitly uses `--no-resume`. Each sample is seeded independently by
+hand, role, and cumulative sample index, so a resumed seeded run produces the
+same estimates as an uninterrupted run. Pass
 `--no-resume` for a fresh run.
 
 `--workers` defaults to the available process CPU count. Use `--workers=1` for
@@ -368,7 +377,8 @@ complete-state continuations are identical, so repeats cannot increase `n`.
 Fallbacks give earlier components and legacy more effective decision mass. See the
 [mixture interpretation](docs/pegging-lines.md#meaning-for-consumers) before
 comparing gauges across these modes; whole-hand mixing correlates the opening
-lead and continuation. No burn-in or production workflow change is implied.
+lead and continuation. This research mode keeps production averaging unchanged
+and does not apply burn-in.
 
 For isolated stage timing and final-measurement table/legacy usage counters,
 pass the same generator flags to `python scripts/run_pegging_experiment.py

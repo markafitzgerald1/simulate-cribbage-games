@@ -630,27 +630,33 @@ role-relative deltas diverge grossly from the reference (sign flip,
 scaling/offset bug). Keep a small representative sample rather than the full
 table, and do not add a live network fetch back into the pipeline.
 
-Runtime was measured end to end on the current code, single-threaded on an
-Apple M2 laptop. Fixed setup -- the analytical seed, rollout
-best-response training, and the per-outer policy tables -- is about 16 minutes,
+The historical runtime model was measured before promotion gating and enforced
+heuristic discard rebuilding, single-threaded on an Apple M2 laptop. It is not a
+runtime bound for the current four-worker enforced production run. Fixed setup
+-- the analytical seed, rollout best-response training, and per-outer policy
+tables -- was about 16 minutes,
 and the final sampling phase adds about 0.47 seconds per `--samples` step across
 all 3,640 seat entries (roughly 7,750 pegging simulations per second). So
 `T_local ~= 16 min + 0.47 s * samples`. The GitHub-hosted runner measured about
 1.6x slower than that laptop, consistent across both an exact analytical test
 shard and the sampling-heavy fast suite (each isolated from checkout and
 install), so multiply the local figure by ~1.6 for the real run and by ~2.5 for
-a paranoid bound. The CI figures below are the operative ones; the local number
-is only the measurement source behind that multiplier.
+a historical conservative estimate. These figures do not include the gate or
+fallback refinement and are not a current CI runtime guarantee.
 
 The scheduled workflow runs a deliberately time-capped single pass
 (`--ibr-samples=30000`, `--samples=13000`, two outer and two IBR iterations, no
 `--target-standard-error`, no `--max-samples`, no `--fail-on-non-convergence`,
-and `--no-resume`). At `--samples=13000` the local run is about 118 minutes,
-i.e. about 3.1 hours on the CI runner and about 4.9 hours at the paranoid 2.5x
--- inside the six-hour cap and the job's 330-minute `timeout-minutes`. The
-per-entry standard error is about 2.7 / sqrt(samples), near 0.024. The emitted
-artifact records `joint_policy_converged: false`; that is expected for the
-capped run and is not a failure.
+and `--no-resume`). Production explicitly adds `--promotion-gate=enforce` and
+`--workers=4` for the four-vCPU Ubuntu runner; the CLI gate default remains
+`report`. A failed gate ships heuristic-generated `E(deltaP)` after rebuilding
+discards for heuristic play. Every other production setting and the 330-minute
+job timeout stay unchanged. The former serial model at 13,000 samples predicted
+about 118 minutes locally, 3.1 hours with the measured runner multiplier, or
+4.9 hours at 2.5x; enforced four-worker runtime must be measured separately.
+The historical per-entry SE estimate is about 2.7 / sqrt(samples), near 0.024.
+The artifact records actual convergence; `joint_policy_converged: false` is
+expected at the two-outer-pass cap and is not a failure.
 
 Each sampling pass (the per-outer policy tables and the final pass) emits a
 progress heartbeat to stderr -- a start line plus `hand X/Y` lines at every
@@ -658,12 +664,11 @@ checkpoint with elapsed, remaining, and median standard error -- so a long run
 is observable rather than silent. The rollout-IBR training phases stay quiet.
 
 Raising `--samples` tightens the SE (and `--ibr-samples` improves policy quality
-at a fixed setup cost): about 16,000 samples still finishes under the cap at the
-paranoid 2.5x. Beyond that -- for example a tight `--target-standard-error=0.02`
-goal, near 18,000 samples, which fits at the measured speed but approaches the
-cap if a runner is much slower -- adopt the resume-across-runs checkpoint design
-above rather than risk a single-job timeout. Do not silently cut samples below
-the configured value to buy wall-clock time.
+at a fixed setup cost). The former serial model placed about 16,000 samples
+under the cap at 2.5x; do not extend that bound to enforced four-worker runs.
+For tighter precision, measure the added gate/refinement costs and adopt the
+resume-across-runs checkpoint design above if a single-job timeout is likely.
+Do not silently cut samples below the configured value to buy wall-clock time.
 
 ## Lint Configuration Expectations
 

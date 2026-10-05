@@ -26,9 +26,9 @@ concurrency:
 jobs:
   generate-table:
     runs-on: ubuntu-latest
-    # Hard stop well under the 6 h Actions ceiling: the capped run finishes in
-    # ~3-5 h, so 330 min fails fast (and clearly) if a runner is far slower than
-    # measured, rather than letting the job be silently killed at 6 h.
+    # Preserve the 330 min hard stop below the 6 h Actions ceiling. The former
+    # serial timing model below excludes promotion and fallback refinement;
+    # enforced four-worker production runtime has not yet been measured.
     timeout-minutes: 330
     permissions:
       contents: read
@@ -66,7 +66,8 @@ jobs:
             --seed=42
 
       # Single-run, time-capped production generation -- no resume-across-runs.
-      # Cost model measured on this code (Apple M2 laptop, single-threaded):
+      # Historical cost model (Apple M2 laptop, single-threaded, before the
+      # promotion gate and enforced discard rebuild; not a current runtime bound):
       # fixed setup (analytical + IBR + policy tables) is ~16 min and the final
       # sampling adds ~0.47 s per --samples step over the 1820-hand table, so
       # T_local ~= 16 min + 0.47 s * samples. At --samples=13000 that is ~118 min
@@ -89,6 +90,8 @@ jobs:
             --rollouts-per-action=2 \
             --policy-table-samples=200 \
             --samples=13000 \
+            --promotion-gate=enforce \
+            --workers=4 \
             --no-resume \
             --seed=42
 

@@ -184,6 +184,12 @@ from the analytical context using the selected heuristic in both seats. Reuse
 the outer-loop convergence rules and cap, persist the actual discard/refinement
 identity in checkpoints, and reject old inconsistent resumes. Pin report/off
 full/client/lines byte fingerprints independently of the modified source.
+Scheduled and dispatched play publication explicitly sets
+`--promotion-gate=enforce --workers=4`; preserve all other production settings
+and the CLI's `report` gate default. Pin the publication flags and unchanged
+bounded PR command in unit tests without executing generation. Historical serial
+runtime estimates exclude promotion and fallback refinement; no current bound
+follows from them. Do not dispatch production generation for validation.
 Process diagnostics must aggregate returned worker observations without changing
 policy inputs, RNG consumption, or client means.
 

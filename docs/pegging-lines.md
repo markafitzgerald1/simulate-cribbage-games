@@ -234,6 +234,11 @@ conditional sampling populations.
 Failed enforcement rebuilds discard refinement with the selected heuristic
 before final measurement, as described below. Lines qualifications are unchanged.
 
+Scheduled and dispatched production generation explicitly uses
+`--promotion-gate=enforce --workers=4`, shipping heuristic-generated deltas when
+promotion fails. This overrides the CLI's `report` default only in the production
+step; the other production settings and bounded PR command are unchanged.
+
 The default is 200,000 independent physical eight-card deals, sampled without
 replacement from four copies of each rank, then split into two four-card keeps.
 This is a uniform keep population, rather than the artifact's discard-policy
