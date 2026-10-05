@@ -88,6 +88,38 @@ class TestGeometricHand(unittest.TestCase):
                 None, 1, 1, 1, 42, initial_policies={PONE: mixed, DEALER: mixed}
             )
 
+    def test_draw_boundaries_follow_weights_instead_of_uniform_components(self):
+        for draw, expected in (
+            (0, 0),
+            (0.249, 0),
+            (0.25, 0),
+            (0.251, 1),
+            (0.49, 1),
+            (0.75, 1),
+            (0.999, 1),
+        ):
+            with self.subTest(draw=draw):
+                first, last = EndPolicy(False), EndPolicy(True)
+                mixed = GeometricHandPolicy((first, last), (0.25, 0.75))
+                rng = DrawRng([draw])
+                result = simulate_pegging(
+                    (0, 1, 2, 3),
+                    (4, 5, 6, 7),
+                    {PONE: mixed, DEALER: EndPolicy(False)},
+                    rng,
+                    collect_decisions=True,
+                )
+                self.assertEqual(rng.count, 1)
+                self.assertEqual(result.opening[0], 0 if expected == 0 else 3)
+                self.assertEqual(len((first, last)[expected].calls), 4)
+                self.assertEqual((first, last)[1 - expected].calls, [])
+                self.assertTrue(
+                    all(
+                        trace.policies[PONE] is (first, last)[expected]
+                        for trace in result.decisions
+                    )
+                )
+
     def test_components_independent_seats_fallbacks_frozen_and_trace_posterior(self):
         first, last = EndPolicy(False), EndPolicy(True)
         prior = GeometricHandPolicy((first, last), (0.25, 0.75))
