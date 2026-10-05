@@ -499,6 +499,16 @@ def _policy_fingerprint(policy: PeggingPolicy, fingerprints: dict[int, str]) -> 
     return digest
 
 
+def _deterministic_continuation(policy: PeggingPolicy) -> bool:
+    """Recognize deterministic built-in strategies after hand/fallback draws."""
+    if isinstance(policy, LegacyHeuristicPolicy):
+        return True
+    if isinstance(policy, TabularPeggingPolicy):
+        return _deterministic_continuation(policy.fallback)
+    # Decision mixtures and arbitrary external policies may consume randomness.
+    return False
+
+
 def train_rollout_best_response(
     target_role: str,
     policies: Mapping[str, PeggingPolicy],
@@ -513,10 +523,9 @@ def train_rollout_best_response(
         raise ValueError(f"Invalid target role: {target_role}")
     if samples <= 0 or rollouts_per_action <= 0:
         raise ValueError("Training sample and rollout counts must be positive")
-    if all(isinstance(policies[role], UniformHandPolicy) for role in ROLES):
-        # Trace components and their fallbacks are frozen: a complete-state
-        # continuation is deterministic, so repeats are not new observations.
-        rollouts_per_action = 1
+    hand_strategy = any(
+        isinstance(policy, UniformHandPolicy) for policy in policies.values()
+    )
     rng = random.Random(seed)
     action_values: dict[str, dict[int, RunningStatistics]] = {}
     for sample_index in range(samples):
@@ -531,10 +540,16 @@ def train_rollout_best_response(
         for decision_index, decision in enumerate(result.decisions):
             if decision.view.role != target_role:
                 continue
+            rollouts = rollouts_per_action
+            if hand_strategy and all(
+                _deterministic_continuation(policy)
+                for policy in decision.policies.values()
+            ):
+                rollouts = 1
             state_values = action_values.setdefault(decision.view.key(), {})
             for rank in decision.view.legal_ranks:
                 rank_values = state_values.setdefault(rank, RunningStatistics())
-                for rollout_index in range(rollouts_per_action):
+                for rollout_index in range(rollouts):
                     rollout = simulate_from_state(
                         decision.state,
                         decision.policies,

@@ -329,6 +329,10 @@ history with equal top-level mass, sampling one component per role per hand with
 default remains the production geometric per-decision mixture. Uniform training
 forces one rollout per action even if a larger count is requested: frozen
 complete-state continuations are identical, so repeats cannot increase `n`.
+Direct response fitting also caps an asymmetric uniform/deterministic trace
+when both resolved seats have built-in deterministic continuations. Custom or
+stochastic continuations retain repeats; production geometric traces are
+unchanged.
 Fallbacks give earlier components and legacy more effective decision mass. See the
 [mixture interpretation](docs/pegging-lines.md#meaning-for-consumers) before
 comparing gauges across these modes; whole-hand mixing correlates the opening

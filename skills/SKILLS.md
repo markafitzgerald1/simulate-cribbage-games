@@ -164,6 +164,9 @@ with component-dependent continuations, and retain the production default.
 Uniform training forces one rollout per action to avoid duplicate deterministic
 observations and inflated counts. Equal weights describe top-level draws only;
 prior-average fallbacks route table misses toward earlier components and legacy.
+For direct fitting, test either asymmetric hand/deterministic seat arrangement,
+inspect resolved continuations, and retain repeats for custom or stochastic
+strategies and the production geometric stream.
 Reject per-decision mixtures in uniform warm starts, including sparse table
 fallbacks; they do not become complete frozen strategies by being wrapped.
 Experiment runners must import the pipeline after entering their isolated
