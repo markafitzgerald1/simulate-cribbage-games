@@ -197,6 +197,11 @@ class TestEnforcedDiscards(unittest.TestCase):
             provenance,
         )
         self.assertEqual(provenance["policy"], "legacy-heuristic")
+        # Known digest of both measured (0, 1, 1, 2) keeps; analytical keeps differ.
+        self.assertEqual(
+            provenance["discard_policy_fingerprint"],
+            "3b1de804bb6b0b8e15d8bae6f03abfb734c2338623993e495234904f5575e1bc",
+        )
         self.assertEqual(provenance["initialization"], "analytical")
         self.assertTrue(provenance["converged"])
         self.assertEqual(len(provenance["outer_iterations"]), 4)

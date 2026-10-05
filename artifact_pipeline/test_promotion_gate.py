@@ -58,6 +58,8 @@ class TestPromotionGate(unittest.TestCase):
             self.assertIsInstance(group[0][2][DEALER], LegacyHeuristicPolicy)
             self.assertIs(group[1][2][PONE], policies[PONE])
             self.assertIs(group[2][2][DEALER], policies[DEALER])
+            self.assertIs(group[1][2][DEALER], group[0][2][DEALER])
+            self.assertIs(group[2][2][PONE], group[0][2][PONE])
         self.assertNotEqual(calls[0][3], calls[3][3])
         for role in (PONE, DEALER):
             self.assertEqual(report[role]["n"], 4)
