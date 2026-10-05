@@ -408,11 +408,11 @@ def simulate_from_state(
     state = initial_state.copy()
     hand_policies = {
         role: (
-            _resolve_hand_policy(policy, rng)
-            if isinstance(policy, UniformHandPolicy)
-            else policy
+            _resolve_hand_policy(policies[role], rng)
+            if isinstance(policies[role], UniformHandPolicy)
+            else policies[role]
         )
-        for role, policy in policies.items()
+        for role in ROLES
     }
     scores = {role: _empty_points() for role in ROLES}
     decisions = []
@@ -466,29 +466,48 @@ def _stable_seed(*parts: object) -> int:
 
 
 def policy_fingerprint(policy: PeggingPolicy) -> str:
-    """Return a stable digest for resume-compatibility checks."""
+    """Return a stable digest, hashing each shared object once per call."""
+    return _policy_fingerprint(policy, {})
+
+
+def _policy_fingerprint(policy: PeggingPolicy, fingerprints: dict[int, str]) -> str:
+    identity = id(policy)
+    if identity in fingerprints:
+        return fingerprints[identity]
     if isinstance(policy, LegacyHeuristicPolicy):
         payload: object = ("legacy-heuristic-v1",)
     elif isinstance(policy, TabularPeggingPolicy):
         payload = (
             "tabular-v1",
             tuple(sorted(policy.actions.items())),
-            policy_fingerprint(policy.fallback),
+            _policy_fingerprint(policy.fallback, fingerprints),
         )
     elif isinstance(policy, PolicyMixture):
         payload = (
             "mixture-v1",
             tuple(policy.weights),
-            tuple(policy_fingerprint(item) for item in policy.policies),
+            tuple(_policy_fingerprint(item, fingerprints) for item in policy.policies),
         )
     elif isinstance(policy, UniformHandPolicy):
         payload = (
             "uniform-hand-v1",
-            tuple(policy_fingerprint(item) for item in policy.policies),
+            tuple(_policy_fingerprint(item, fingerprints) for item in policy.policies),
         )
     else:
         payload = (type(policy).__module__, type(policy).__qualname__)
-    return hashlib.sha256(repr(payload).encode("utf-8")).hexdigest()
+    digest = hashlib.sha256(repr(payload).encode("utf-8")).hexdigest()
+    fingerprints[identity] = digest
+    return digest
+
+
+def _deterministic_continuation(policy: PeggingPolicy) -> bool:
+    """Recognize deterministic built-in strategies after hand/fallback draws."""
+    if isinstance(policy, LegacyHeuristicPolicy):
+        return True
+    if isinstance(policy, TabularPeggingPolicy):
+        return _deterministic_continuation(policy.fallback)
+    # Decision mixtures and arbitrary external policies may consume randomness.
+    return False
 
 
 @dataclass(frozen=True)
@@ -510,6 +529,9 @@ def _rollout_observations(
     context: RolloutContext, deal: TrainingDeal
 ) -> Iterator[RolloutObservation]:
     """Evaluate one trace without reducing or changing observation order."""
+    hand_strategy = any(
+        isinstance(policy, UniformHandPolicy) for policy in context.policies.values()
+    )
     sample_index, pone_hand, dealer_hand = deal
     result = simulate_pegging(
         pone_hand,
@@ -521,9 +543,14 @@ def _rollout_observations(
     for decision_index, decision in enumerate(result.decisions):
         if decision.view.role != context.target_role:
             continue
+        rollouts = context.rollouts_per_action
+        if hand_strategy and all(
+            _deterministic_continuation(policy) for policy in decision.policies.values()
+        ):
+            rollouts = 1
         state_key = decision.view.key()
         for rank in decision.view.legal_ranks:
-            for rollout_index in range(context.rollouts_per_action):
+            for rollout_index in range(rollouts):
                 rollout = simulate_from_state(
                     decision.state,
                     decision.policies,
@@ -592,10 +619,6 @@ def train_rollout_best_response(
         raise ValueError("Training sample and rollout counts must be positive")
     if workers <= 0:
         raise ValueError("Workers must be positive")
-    if all(isinstance(policies[role], UniformHandPolicy) for role in ROLES):
-        # Trace components and their fallbacks are frozen: a complete-state
-        # continuation is deterministic, so repeats are not new observations.
-        rollouts_per_action = 1
     context = RolloutContext(target_role, policies, rollouts_per_action, seed)
     action_values: dict[str, dict[int, RunningStatistics]] = {}
     batches = _training_batches(deal_sampler, samples, seed)

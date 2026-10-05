@@ -553,6 +553,9 @@ rule, not a calibrated multiple-comparison or optimality claim. Retain these
 denominators and limits in generation logs and release notes; see
 `docs/pegging-lines.md` for the definition.
 
+The experiment report path `experiment.json` is reserved. Reject artifact-output
+aliases of that path before invoking generation, including symlink aliases.
+
 Uniform response averaging for research samples one component per role per
 hand, including frozen prior-average fallbacks. Retain the sampled policies in
 training traces and their continuation rollouts: resampling at a reached state
@@ -562,7 +565,10 @@ compares whole lines with correlated continuations, not isolated lead changes.
 Keep this mode opt-in and retain legacy/early responses until burn-in has its
 own measured justification. Uniform training uses one rollout per action:
 frozen complete-state continuations repeat identically and must not inflate
-observation counts. Equal weights apply only to top-level components; misses
+observation counts. Direct response fitting caps asymmetric hand/deterministic
+traces when both resolved seats use known deterministic continuations; custom or stochastic
+continuations retain repeats, as do production geometric traces.
+Equal weights apply only to top-level components; misses
 route toward earlier components and legacy through prior-average fallbacks.
 
 `generate_play_table.py` uses the analytical `E(h +/- c)` solution as its
