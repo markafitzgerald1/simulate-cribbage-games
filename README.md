@@ -313,6 +313,19 @@ absolute Pone and Dealer totals broken down into fifteens, thirty-ones, pairs,
 runs, go, and last-card points. The lean client artifact retains only those
 means.
 
+After the final training pass and before the final measurement, the generator
+runs a promotion gate that compares the trained pegging policies with the
+legacy heuristic they started from. Each of `--promotion-gate-deals` deals
+(default 200,000; uniformly dealt rank-only keeps) is played three times with
+the same play seed: heuristic against heuristic, trained Pone against the
+heuristic Dealer, and the heuristic Pone against the trained Dealer. The report
+gives each seat's advantage in points per hand and the both-seat average, whose
+standard error is taken over per-deal averages; it passes when that average is
+positive and at least three standard errors. `--promotion-gate=report`, the
+default, logs the report and stores it under `__metadata__.promotion_gate` in
+the full table without changing any measured value; `--promotion-gate=off`
+skips it.
+
 Production runs resume from `expected_play_points.json` by default. Each sample
 is seeded independently by hand, role, and cumulative sample index, so a resumed
 seeded run produces the same estimates as an uninterrupted run. Pass

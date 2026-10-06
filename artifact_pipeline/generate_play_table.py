@@ -46,6 +46,12 @@ from artifact_pipeline.pegging import (  # noqa: E402
     simulate_pegging,
     train_iterative_best_response,
 )
+from artifact_pipeline.promotion_gate import (  # noqa: E402
+    DEFAULT_GATE_DEALS,
+    MINIMUM_GATE_DEALS,
+    describe_promotion,
+    evaluate_promotion,
+)
 
 DEFAULT_OUTPUT_PATH = "expected_play_points.json"
 DEFAULT_CLIENT_OUTPUT_PATH = "expected_play_points.client.json"
@@ -640,13 +646,36 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--hand-limit", type=positive_int)
     parser.add_argument("--no-resume", action="store_true")
     parser.add_argument("--fail-on-non-convergence", action="store_true")
+    parser.add_argument("--promotion-gate", choices=("off", "report"), default="report")
+    parser.add_argument(
+        "--promotion-gate-deals", type=positive_int, default=DEFAULT_GATE_DEALS
+    )
     args = parser.parse_args()
+    if args.promotion_gate != "off" and args.promotion_gate_deals < MINIMUM_GATE_DEALS:
+        parser.error(
+            f"--promotion-gate-deals must be at least {MINIMUM_GATE_DEALS} "
+            "when the gate is enabled"
+        )
     if os.path.realpath(args.lines_output) in {
         os.path.realpath(args.output),
         os.path.realpath(args.client_output),
     }:
         parser.error("Lines output must be separate from full and client means")
     return args
+
+
+def promotion_gate_metadata(
+    policies: Mapping[str, PeggingPolicy], args: argparse.Namespace
+) -> dict[str, Any]:
+    """Run the enabled gate on the final trained policies and log its report."""
+    if args.promotion_gate == "off":
+        return {}
+    report = {
+        "mode": args.promotion_gate,
+        **evaluate_promotion(policies, args.promotion_gate_deals, args.seed),
+    }
+    print(describe_promotion(report), file=sys.stderr, flush=True)
+    return {"promotion_gate": report}
 
 
 def main() -> None:
@@ -722,6 +751,7 @@ def main() -> None:
         initial_policies=policies,
     )
     reports.append({"final_play_ibr": final_ibr_reports})
+    gate_metadata = promotion_gate_metadata(policies, args)
     final_policy_fingerprint = ":".join(
         policy_fingerprint(policies[role]) for role in ROLES
     )
@@ -731,6 +761,7 @@ def main() -> None:
             existing_table = json.load(checkpoint_file)
 
     def checkpoint(table: Mapping[str, Any]) -> None:
+        table["__metadata__"].update(gate_metadata)
         _write_json(args.output, table)
         _write_json(args.client_output, build_client_table(table), compact=True)
 
@@ -751,6 +782,7 @@ def main() -> None:
         {
             "joint_policy_converged": converged,
             "outer_iterations": reports,
+            **gate_metadata,
         }
     )
     _write_json(args.output, full_table)
