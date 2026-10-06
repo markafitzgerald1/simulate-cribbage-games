@@ -176,7 +176,7 @@ def _statistics(table: str, source: dict[str, Any]) -> dict[str, Any] | None:
 
 def validate_measured_policy(provenance: dict[str, Any]) -> None:
     """Accept documents that predate the field; a present one must name the
-    policy whose fingerprint the document carries."""
+    policy whose fingerprint the document carries and identify the discard policy."""
     if "measured_policy" not in provenance:
         return
     heuristic = f"{LEGACY_HEURISTIC_FINGERPRINT}:{LEGACY_HEURISTIC_FINGERPRINT}"
@@ -187,6 +187,9 @@ def validate_measured_policy(provenance: dict[str, Any]) -> None:
     )
     if provenance["measured_policy"] != expected:
         raise ValueError("Invalid measured pegging policy")
+    discard_fingerprint = provenance.get("discard_policy_fingerprint")
+    if not isinstance(discard_fingerprint, str) or not discard_fingerprint:
+        raise ValueError("Invalid discard policy fingerprint")
 
 
 def _validate_provenance(table: str, provenance: dict[str, Any]) -> None:

@@ -22,9 +22,11 @@ The UTF-8 file is minified onto one line with a trailing newline. Header fields:
   supported. Documents from `--promotion-gate=enforce` runs also carry
   `measured_policy`: `trained`, or `legacy-heuristic` when the trained policy
   failed the promotion gate and both seats were measured with the legacy
-  heuristic. Readers accept its absence, which is how older and report-mode
-  documents look, and reject a value that disagrees with `policy_fingerprint`:
-  `legacy-heuristic` exactly when both seats carry the heuristic's fingerprint.
+  heuristic, and `discard_policy_fingerprint` of the measured keeps. Readers
+  accept their absence, which is how older and report-mode documents look, and
+  reject a value that disagrees with `policy_fingerprint`: `legacy-heuristic`
+  exactly when both seats carry the heuristic's fingerprint, or an invalid
+  discard policy fingerprint when `measured_policy` is present.
 - `qualifications`: non-empty `policy`, `statistics` and `missing` statements
   that consumers can quote. They describe observed frozen-policy behavior,
   exclude optimality and alternative-action claims, exclude policy-learning
