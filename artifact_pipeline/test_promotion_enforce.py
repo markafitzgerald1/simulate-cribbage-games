@@ -26,7 +26,7 @@ from artifact_pipeline.pegging import (
     LegacyHeuristicPolicy,
     policy_fingerprint,
 )
-from artifact_pipeline.play_lines import decode_lines
+from artifact_pipeline.play_lines import build_lines, decode_lines
 from artifact_pipeline.test_generate_play_table import FirstPolicy
 from artifact_pipeline.test_promotion_gate import (
     CONTEXT,
@@ -253,6 +253,13 @@ class TestFailedEnforce(unittest.TestCase):
         sidecar["provenance"].pop("discard_policy_fingerprint", None)
         decode_lines(json.dumps(lines).encode(), outputs["client"])
         decode_sidecar(encode_json(sidecar), outputs["client"])
+
+        full = json.loads(outputs["full"])
+        del full["__metadata__"]["discard_policy_fingerprint"]
+        lines_data = build_lines(full, outputs["client"])
+        self.assertFalse("discard_policy_fingerprint" in lines_data["provenance"])
+        with self.assertRaisesRegex(ValueError, "Invalid discard policy fingerprint"):
+            decode_lines(encode_json(lines_data), outputs["client"])
 
     def test_points_at_the_refinement_it_measured(self):
         self.assertEqual(
