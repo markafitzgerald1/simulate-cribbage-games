@@ -397,7 +397,13 @@ def generate_play_table(
         )
     output: dict[str, Any] = deepcopy(dict(existing_table)) if existing_table else {}
     output["__metadata__"] = {
-        **output.get("__metadata__", {}),
+        # A keeps fingerprint carried from an enforced table is dropped, then
+        # restored below only when this run supplies one.
+        **{
+            name: value
+            for name, value in output.get("__metadata__", {}).items()
+            if name != "discard_policy_fingerprint"
+        },
         **{
             "generation_method": GENERATION_METHOD,
             "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -705,8 +711,9 @@ def promotion_gate_metadata(
 def apply_promotion_metadata(
     metadata: dict[str, Any], gate_metadata: Mapping[str, Any]
 ) -> None:
-    """Replace any gate report a resumed table carries with this run's."""
-    metadata.pop("promotion_gate", None)
+    """Replace any gate labels a resumed table carries with this run's."""
+    for name in ("promotion_gate", "measured_policy", "measured_discard_refinement"):
+        metadata.pop(name, None)
     metadata.update(gate_metadata)
 
 
@@ -855,6 +862,12 @@ def main() -> None:
         require_convergence(args, converged)
         promotion_metadata["measured_policy"] = (
             "trained" if fallback is None else "legacy-heuristic"
+        )
+        # The top-level outer_iterations always hold the trained passes.
+        promotion_metadata["measured_discard_refinement"] = (
+            "outer_iterations"
+            if fallback is None
+            else "promotion_gate.discard_refinement"
         )
         discard_fingerprint = discard_keeps_fingerprint(discard_policy)
     final_policy_fingerprint = ":".join(

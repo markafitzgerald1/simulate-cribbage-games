@@ -339,10 +339,14 @@ the discards and the measurement use one pegging model. The rebuild's passes
 are recorded under `__metadata__.promotion_gate.discard_refinement`, and
 `joint_policy_converged` and `--fail-on-non-convergence` then refer to it;
 the top-level `outer_iterations` still record the trained passes that the
-gate rejected. Enforced tables carry a top-level `measured_policy` (`trained`
-or `legacy-heuristic`), which the opening-lines and uncertainty-sidecar
-provenance repeat, and a `discard_policy_fingerprint` of the measured keeps
-that a resumed run must match.
+gate rejected, and the top-level `measured_discard_refinement` names which of
+the two records produced the measured keeps. Enforced tables carry a top-level
+`measured_policy` (`trained` or `legacy-heuristic`), which the opening-lines
+and uncertainty-sidecar provenance repeat and their readers check against
+`policy_fingerprint` (`legacy-heuristic` exactly when both seats carry the
+heuristic's fingerprint), and a `discard_policy_fingerprint` of the measured
+keeps that a resumed run must match. A report or off run that resumes an
+enforced table drops all of these labels.
 
 Production runs resume from `expected_play_points.json` by default. Each sample
 is seeded independently by hand, role, and cumulative sample index, so a resumed

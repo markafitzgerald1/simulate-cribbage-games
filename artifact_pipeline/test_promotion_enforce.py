@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from artifact_pipeline import generate_play_table as generator
 from artifact_pipeline.export_uncertainty import (
+    LEGACY_HEURISTIC_FINGERPRINT,
     build_sidecar,
     decode_sidecar,
     encode_json,
@@ -208,7 +209,7 @@ class TestFailedEnforce(unittest.TestCase):
         full["__metadata__"]["measured_policy"] = "heuristic"
         with self.assertRaisesRegex(ValueError, "measured pegging policy"):
             build_sidecar("play", encode_json(full), outputs["client"])
-        for value in ("trained", "legacy-heuristic", "absent"):
+        for value in ("legacy-heuristic", "absent"):
             if value == "absent":
                 del lines["provenance"]["measured_policy"]
                 del sidecar["provenance"]["measured_policy"]
@@ -217,6 +218,79 @@ class TestFailedEnforce(unittest.TestCase):
                 sidecar["provenance"]["measured_policy"] = value
             decode_lines(json.dumps(lines).encode(), outputs["client"])
             decode_sidecar(encode_json(sidecar), outputs["client"])
+
+    def test_points_at_the_refinement_it_measured(self):
+        self.assertEqual(
+            self.enforced.metadata["measured_discard_refinement"],
+            "promotion_gate.discard_refinement",
+        )
+
+
+class TestMeasuredPolicyMatchesFingerprint(unittest.TestCase):
+    def test_label_must_agree_with_the_policy_fingerprint(self):
+        self.assertEqual(
+            LEGACY_HEURISTIC_FINGERPRINT,
+            policy_fingerprint(LegacyHeuristicPolicy()),
+        )
+        failed = EnforcedRun(passed=False, arguments=["--promotion-gate=enforce"])
+        passed = EnforcedRun(passed=True, arguments=["--promotion-gate=enforce"])
+        self.assertEqual(
+            passed.metadata["measured_discard_refinement"], "outer_iterations"
+        )
+        for run, wrong in ((failed, "trained"), (passed, "legacy-heuristic")):
+            outputs = run.outputs
+            decode_lines(outputs["lines"], outputs["client"])
+            sidecar = build_sidecar("play", outputs["full"], outputs["client"])
+            lines = json.loads(outputs["lines"])
+            lines["provenance"]["measured_policy"] = wrong
+            sidecar["provenance"]["measured_policy"] = wrong
+            with self.subTest(wrong=wrong):
+                with self.assertRaisesRegex(ValueError, "measured pegging policy"):
+                    decode_lines(json.dumps(lines).encode(), outputs["client"])
+                with self.assertRaisesRegex(ValueError, "measured pegging policy"):
+                    decode_sidecar(encode_json(sidecar), outputs["client"])
+
+
+class TestResumeAcrossModes(unittest.TestCase):
+    def test_report_and_off_drop_enforced_labels_from_a_resumed_table(self):
+        def passing_gate(_policies, deals, seed):
+            seat = {"n": deals, "mu": 0.5, "se": 0.1}
+            return {
+                "deals": deals,
+                "seed": seed,
+                PONE: seat,
+                DEALER: seat,
+                "both_seats": seat,
+                "passed": True,
+            }
+
+        gate = patch.object(generator, "evaluate_promotion", passing_gate)
+        enforced_only = (
+            "measured_policy",
+            "discard_policy_fingerprint",
+            "measured_discard_refinement",
+        )
+        for mode in ("report", "off"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
+                first, _ = run_bounded_generation(
+                    directory, ["--promotion-gate=enforce"], gate
+                )
+                self.assertTrue(
+                    all(
+                        name in json.loads(first["full"])["__metadata__"]
+                        for name in enforced_only
+                    )
+                )
+                outputs, _ = run_bounded_generation(
+                    directory, [f"--promotion-gate={mode}"], gate, resume=True
+                )
+                metadata = json.loads(outputs["full"])["__metadata__"]
+                self.assertFalse(any(name in metadata for name in enforced_only))
+                self.assertEqual(
+                    metadata.get("promotion_gate", {}).get("mode", "off"), mode
+                )
+                lines = decode_lines(outputs["lines"], outputs["client"])
+                self.assertFalse("measured_policy" in lines["provenance"])
 
 
 class TestEnforceAgainstReport(unittest.TestCase):
