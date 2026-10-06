@@ -82,7 +82,9 @@ snapshots, policy tables and training histories are excluded. In particular,
 play retains its policy fingerprint and `joint_policy_converged: false`.
 Play documents from enforced generation also retain `measured_policy`
 (`trained` or `legacy-heuristic`) and `discard_policy_fingerprint`; readers
-reject any other `measured_policy` value and accept its absence.
+accept an absent `measured_policy` but reject one that disagrees with
+`policy_fingerprint`: `legacy-heuristic` exactly when both seats carry the
+legacy heuristic's fingerprint, `trained` otherwise.
 
 `statistic` is `reported_marginal_se`. Crib `n_semantics` is `sum_weights`;
 play uses `simulation_count`. `cross_bucket_covariance`, `policy_uncertainty`

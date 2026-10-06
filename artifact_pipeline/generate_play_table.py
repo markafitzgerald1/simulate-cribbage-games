@@ -397,7 +397,13 @@ def generate_play_table(
         )
     output: dict[str, Any] = deepcopy(dict(existing_table)) if existing_table else {}
     output["__metadata__"] = {
-        **output.get("__metadata__", {}),
+        # A keeps fingerprint carried from an enforced table is dropped, then
+        # restored below only when this run supplies one.
+        **{
+            name: value
+            for name, value in output.get("__metadata__", {}).items()
+            if name != "discard_policy_fingerprint"
+        },
         **{
             "generation_method": GENERATION_METHOD,
             "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -702,6 +708,15 @@ def promotion_gate_metadata(
     return {"promotion_gate": report}
 
 
+def apply_promotion_metadata(
+    metadata: dict[str, Any], gate_metadata: Mapping[str, Any]
+) -> None:
+    """Replace any gate labels a resumed table carries with this run's."""
+    for name in ("promotion_gate", "measured_policy", "measured_discard_refinement"):
+        metadata.pop(name, None)
+    metadata.update(gate_metadata)
+
+
 def refine_discards(
     context: AnalyticalContext,
     args: argparse.Namespace,
@@ -848,6 +863,12 @@ def main() -> None:
         promotion_metadata["measured_policy"] = (
             "trained" if fallback is None else "legacy-heuristic"
         )
+        # The top-level outer_iterations always hold the trained passes.
+        promotion_metadata["measured_discard_refinement"] = (
+            "outer_iterations"
+            if fallback is None
+            else "promotion_gate.discard_refinement"
+        )
         discard_fingerprint = discard_keeps_fingerprint(discard_policy)
     final_policy_fingerprint = ":".join(
         policy_fingerprint(policies[role]) for role in ROLES
@@ -858,7 +879,7 @@ def main() -> None:
             existing_table = json.load(checkpoint_file)
 
     def checkpoint(table: Mapping[str, Any]) -> None:
-        table["__metadata__"].update(promotion_metadata)
+        apply_promotion_metadata(table["__metadata__"], promotion_metadata)
         _write_json(args.output, table)
         _write_json(args.client_output, build_client_table(table), compact=True)
 
@@ -877,12 +898,9 @@ def main() -> None:
         discard_policy_fingerprint=discard_fingerprint,
     )
     full_table["__metadata__"].update(
-        {
-            "joint_policy_converged": converged,
-            "outer_iterations": reports,
-            **promotion_metadata,
-        }
+        {"joint_policy_converged": converged, "outer_iterations": reports}
     )
+    apply_promotion_metadata(full_table["__metadata__"], promotion_metadata)
     _write_json(args.output, full_table)
     _write_json(args.client_output, build_client_table(full_table), compact=True)
     _write_lines(args.lines_output, args.client_output, full_table)

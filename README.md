@@ -316,15 +316,18 @@ means.
 After the final training pass and before the final measurement, the generator
 runs a promotion gate that compares the trained pegging policies with the
 legacy heuristic they started from. Each of `--promotion-gate-deals` deals
-(default 200,000; uniformly dealt rank-only keeps) is played three times with
-the same play seed: heuristic against heuristic, trained Pone against the
-heuristic Dealer, and the heuristic Pone against the trained Dealer. The report
+(default 200,000) gives each seat a uniformly random rank-only four-card hand,
+not the hands the discard policy keeps; that is the design approved in #187,
+which judges play strength across all hands, so the gate's population differs
+from the published table's. Each deal is played three times with the same play
+seed: heuristic against heuristic, trained Pone against the heuristic Dealer,
+and the heuristic Pone against the trained Dealer. The report
 gives each seat's advantage in points per hand and the both-seat average, whose
 standard error is taken over per-deal averages; it passes when that average is
 positive and at least three standard errors. `--promotion-gate=report`, the
 default, logs the report and stores it under `__metadata__.promotion_gate` in
 the full table without changing any measured value; `--promotion-gate=off`
-skips it.
+skips it and drops any gate report a resumed table carried.
 
 `--promotion-gate=enforce` acts on the result. When the trained policies pass,
 it measures exactly what report mode measures and adds the labels described
@@ -336,10 +339,14 @@ the discards and the measurement use one pegging model. The rebuild's passes
 are recorded under `__metadata__.promotion_gate.discard_refinement`, and
 `joint_policy_converged` and `--fail-on-non-convergence` then refer to it;
 the top-level `outer_iterations` still record the trained passes that the
-gate rejected. Enforced tables carry a top-level `measured_policy` (`trained`
-or `legacy-heuristic`), which the opening-lines and uncertainty-sidecar
-provenance repeat, and a `discard_policy_fingerprint` of the measured keeps
-that a resumed run must match.
+gate rejected, and the top-level `measured_discard_refinement` names which of
+the two records produced the measured keeps. Enforced tables carry a top-level
+`measured_policy` (`trained` or `legacy-heuristic`), which the opening-lines
+and uncertainty-sidecar provenance repeat and their readers check against
+`policy_fingerprint` (`legacy-heuristic` exactly when both seats carry the
+heuristic's fingerprint), and a `discard_policy_fingerprint` of the measured
+keeps that a resumed run must match. A report or off run that resumes an
+enforced table drops all of these labels.
 
 The weekly production workflow (`generate-play-artifact.yml`) runs with
 `--promotion-gate=enforce`, so the released table is measured with whichever

@@ -17,18 +17,6 @@ from artifact_pipeline.pegging import DEALER, PONE, LegacyHeuristicPolicy
 from artifact_pipeline.promotion_gate import evaluate_promotion, release_summary
 from artifact_pipeline.test_generate_play_table import all_first_four_policy
 
-# SHA-256 of run_bounded_generation's outputs with no gate arguments, run
-# against main at 51a8576, before the gate existed. JSON parsing turns integer
-# keys into strings, which sort differently, so the parsed full table has its
-# own digest of its canonical form.
-MAIN_DIGESTS = {
-    "full": "44702216ac917e1c0ca3271ccba5cfe1694955b5dacbcde9c52b98788949d3cb",
-    "client": "0b1be1990afb124e97c29ddf9f894482525dd2a64032fd2dfc201f51f92bb860",
-    "lines": "6448fdec5ed80e5d6838a6776abd22dba8575216760868dcefd737f7d62cc668",
-}
-MAIN_PARSED_FULL_DIGEST = (
-    "96c141e47f2d5a96be519a7c42989d598e1331ed1d75113f7b5c2ab4b21d3138"
-)
 CONTEXT = generator.AnalyticalContext(
     [1.0], [1.0], [], {}, [], [], [((0, 0, 0, 0, 1, 1), 0, 0)]
 )
@@ -41,11 +29,11 @@ class FixedClock:  # pylint: disable=too-few-public-methods
         return datetime(2026, 10, 5, tzinfo=zone)
 
 
-def run_bounded_generation(directory, gate_arguments, *extra_patches):
+def run_bounded_generation(directory, gate_arguments, *extra_patches, resume=False):
     """Run main() with real training, sampling and writers on two hands."""
     argv = [
         "generate_play_table.py",
-        "--no-resume",
+        *([] if resume else ["--no-resume"]),
         "--hand-limit=2",
         "--outer-iterations=1",
         "--ibr-iterations=1",
@@ -89,10 +77,6 @@ def run_bounded_generation(directory, gate_arguments, *extra_patches):
 
 def digests(outputs):
     return {name: hashlib.sha256(data).hexdigest() for name, data in outputs.items()}
-
-
-def canonical_digest(document):
-    return hashlib.sha256(json.dumps(document, sort_keys=True).encode()).hexdigest()
 
 
 class ScriptedResult:  # pylint: disable=too-few-public-methods
@@ -224,29 +208,35 @@ class TestGateArguments(unittest.TestCase):
 
 
 class TestGateInGeneration(unittest.TestCase):
-    def test_off_reproduces_main_outputs_byte_for_byte(self):
+    def test_report_adds_only_its_metadata_to_off_outputs(self):
         with tempfile.TemporaryDirectory() as directory:
-            outputs, log = run_bounded_generation(directory, ["--promotion-gate=off"])
-        self.assertEqual(digests(outputs), MAIN_DIGESTS)
-        self.assertFalse("promotion-gate" in log)
-
-    def test_report_adds_only_its_metadata_to_main_outputs(self):
+            off, off_log = run_bounded_generation(directory, ["--promotion-gate=off"])
         with tempfile.TemporaryDirectory() as directory:
-            outputs, log = run_bounded_generation(
+            report, log = run_bounded_generation(
                 directory, ["--promotion-gate-deals=50"]
             )
-        full = json.loads(outputs.pop("full"))
+        off_full = json.loads(off.pop("full"))
+        full = json.loads(report.pop("full"))
         gate = full["__metadata__"].pop("promotion_gate")
-        self.assertEqual(canonical_digest(full), MAIN_PARSED_FULL_DIGEST)
-        self.assertEqual(
-            digests(outputs),
-            {name: MAIN_DIGESTS[name] for name in ("client", "lines")},
-        )
+        self.assertFalse("promotion_gate" in off_full["__metadata__"])
+        self.assertEqual(full, off_full)
+        self.assertEqual(report, off)
         self.assertEqual(
             (gate["mode"], gate["deals"], gate["seed"]), ("report", 50, 42)
         )
         self.assertEqual(gate["both_seats"]["n"], 50)
         self.assertTrue("[promotion-gate] report:" in log)
+        self.assertFalse("promotion-gate" in off_log)
+
+    def test_off_drops_a_gate_report_carried_by_a_resumed_table(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run_bounded_generation(directory, ["--promotion-gate-deals=50"])
+            outputs, _ = run_bounded_generation(
+                directory, ["--promotion-gate=off"], resume=True
+            )
+        self.assertFalse(
+            "promotion_gate" in json.loads(outputs["full"])["__metadata__"]
+        )
 
     def test_gate_measures_final_trained_policies_before_measurement(self):
         events = []

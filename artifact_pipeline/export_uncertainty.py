@@ -30,7 +30,11 @@ QUALIFICATIONS = {
     "scope": "No policy-learning or model uncertainty; no global or "
     "twin-difference noise floor; missing is unavailable, not zero.",
 }
-MEASURED_POLICIES = ("trained", "legacy-heuristic")
+# The legacy heuristic's policy fingerprint: pegging.policy_fingerprint hashes
+# this fixed payload, and the exporter may not import the pegging module.
+LEGACY_HEURISTIC_FINGERPRINT = hashlib.sha256(
+    repr(("legacy-heuristic-v1",)).encode("utf-8")
+).hexdigest()
 
 
 def _object(value: Any) -> dict[str, Any]:
@@ -171,11 +175,17 @@ def _statistics(table: str, source: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def validate_measured_policy(provenance: dict[str, Any]) -> None:
-    """Accept documents that predate the field; a present one must be known."""
-    if (
-        "measured_policy" in provenance
-        and provenance["measured_policy"] not in MEASURED_POLICIES
-    ):
+    """Accept documents that predate the field; a present one must name the
+    policy whose fingerprint the document carries."""
+    if "measured_policy" not in provenance:
+        return
+    heuristic = f"{LEGACY_HEURISTIC_FINGERPRINT}:{LEGACY_HEURISTIC_FINGERPRINT}"
+    expected = (
+        "legacy-heuristic"
+        if provenance.get("policy_fingerprint") == heuristic
+        else "trained"
+    )
+    if provenance["measured_policy"] != expected:
         raise ValueError("Invalid measured pegging policy")
 
 
