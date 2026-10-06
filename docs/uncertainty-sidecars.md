@@ -80,6 +80,9 @@ The UTF-8 document has `schema: "expected-points-uncertainty.v1"`, `table`
 Provenance retains every scalar item from the full artifact's metadata;
 snapshots, policy tables and training histories are excluded. In particular,
 play retains its policy fingerprint and `joint_policy_converged: false`.
+Play documents from enforced generation also retain `measured_policy`
+(`trained` or `legacy-heuristic`) and `discard_policy_fingerprint`; readers
+reject any other `measured_policy` value and accept its absence.
 
 `statistic` is `reported_marginal_se`. Crib `n_semantics` is `sum_weights`;
 play uses `simulation_count`. `cross_bucket_covariance`, `policy_uncertainty`

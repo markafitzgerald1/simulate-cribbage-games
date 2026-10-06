@@ -19,7 +19,11 @@ The UTF-8 file is minified onto one line with a trailing newline. Header fields:
   `joint_policy_converged` from the final frozen-policy measurement. `seed` is
   required and must be a non-boolean JSON integer. The play generator always
   uses an integer seed (default 42); unseeded, null and nonce forms are not
-  supported.
+  supported. Documents from `--promotion-gate=enforce` runs also carry
+  `measured_policy`: `trained`, or `legacy-heuristic` when the trained policy
+  failed the promotion gate and both seats were measured with the legacy
+  heuristic. Readers reject any other value and accept its absence, which is
+  how older and report-mode documents look.
 - `qualifications`: non-empty `policy`, `statistics` and `missing` statements
   that consumers can quote. They describe observed frozen-policy behavior,
   exclude optimality and alternative-action claims, exclude policy-learning
@@ -61,6 +65,9 @@ The published policy is a `PolicyMixture` of two policies at a fixed training
 weight. A split in lead or modal-response frequency reflects that blend, not
 equilibrium mixing; see
 [#183](https://github.com/markafitzgerald1/simulate-cribbage-games/issues/183).
+When `measured_policy` is `legacy-heuristic`, both seats play the
+deterministic legacy heuristic, which picks a lead from Pone's own cards
+alone, so each Pone key shows one lead.
 
 Dealer publishes one modal response rank and its observed count per lead.
 Resolve count ties by canonical rank order. That tie-break is presentation,

@@ -326,6 +326,21 @@ default, logs the report and stores it under `__metadata__.promotion_gate` in
 the full table without changing any measured value; `--promotion-gate=off`
 skips it.
 
+`--promotion-gate=enforce` acts on the result. When the trained policies pass,
+it measures exactly what report mode measures and adds the labels described
+below. When they fail, the
+generator rebuilds the opponent discard policy from the analytical starting
+point, refining it with play tables measured under the legacy heuristic in
+both seats, and then measures E(deltaP) with the heuristic in both seats, so
+the discards and the measurement use one pegging model. The rebuild's passes
+are recorded under `__metadata__.promotion_gate.discard_refinement`, and
+`joint_policy_converged` and `--fail-on-non-convergence` then refer to it;
+the top-level `outer_iterations` still record the trained passes that the
+gate rejected. Enforced tables carry a top-level `measured_policy` (`trained`
+or `legacy-heuristic`), which the opening-lines and uncertainty-sidecar
+provenance repeat, and a `discard_policy_fingerprint` of the measured keeps
+that a resumed run must match.
+
 Production runs resume from `expected_play_points.json` by default. Each sample
 is seeded independently by hand, role, and cumulative sample index, so a resumed
 seeded run produces the same estimates as an uninterrupted run. Pass

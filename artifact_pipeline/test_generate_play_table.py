@@ -594,6 +594,8 @@ class TestGeneratePlayTable(unittest.TestCase):
             fail_on_non_convergence=True,
             no_resume=False,
             checkpoint_frequency=1,
+            promotion_gate="report",
+            promotion_gate_deals=2,
         )
         context = AnalyticalContext(
             dealer_table=[1.0],

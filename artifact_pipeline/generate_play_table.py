@@ -37,6 +37,7 @@ from artifact_pipeline.pegging import (  # noqa: E402
     PONE,
     POINT_TYPES,
     ROLES,
+    LegacyHeuristicPolicy,
     PeggingPolicy,
     RunningStatistics,
     canonical_hand_key,
@@ -327,12 +328,19 @@ def _log_progress(
     )
 
 
+def discard_keeps_fingerprint(discard_policy: DiscardPolicy) -> str:
+    """Return a stable digest of every role's kept ranks for every deal."""
+    keeps = sorted(discard_policy.kept_by_role_and_hand.items())
+    return hashlib.sha256(repr(keeps).encode("utf-8")).hexdigest()
+
+
 def validate_resume_table(
     existing_table: Mapping[str, Any],
     seed: int,
     expected_policy_fingerprint: str | None = None,
+    expected_discard_fingerprint: str | None = None,
 ) -> None:
-    """Reject checkpoints produced by an incompatible method or seed."""
+    """Reject checkpoints produced by an incompatible method, seed or policy."""
     metadata = existing_table.get("__metadata__", {})
     if metadata.get("generation_method") != GENERATION_METHOD:
         raise ValueError("Existing play table uses an incompatible generation method")
@@ -343,6 +351,11 @@ def validate_resume_table(
         and metadata.get("policy_fingerprint") != expected_policy_fingerprint
     ):
         raise ValueError("Existing play table uses a different play policy")
+    if (
+        expected_discard_fingerprint is not None
+        and metadata.get("discard_policy_fingerprint") != expected_discard_fingerprint
+    ):
+        raise ValueError("Existing play table uses different discard keeps")
 
 
 def generate_play_table(
@@ -357,6 +370,7 @@ def generate_play_table(
     checkpoint: Callable[[Mapping[str, Any]], None] | None = None,
     play_policy_fingerprint: str | None = None,
     checkpoint_frequency: int = 100,
+    discard_policy_fingerprint: str | None = None,
 ) -> dict[str, Any]:
     """Generate paired seat and point-type estimates for every requested hand."""
     # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
@@ -378,7 +392,9 @@ def generate_play_table(
         raise ValueError("Checkpoint frequency must be positive")
     requested_hands = list(hands if hands is not None else get_canonical_hands())
     if existing_table is not None:
-        validate_resume_table(existing_table, seed, play_policy_fingerprint)
+        validate_resume_table(
+            existing_table, seed, play_policy_fingerprint, discard_policy_fingerprint
+        )
     output: dict[str, Any] = deepcopy(dict(existing_table)) if existing_table else {}
     output["__metadata__"] = {
         **output.get("__metadata__", {}),
@@ -391,6 +407,12 @@ def generate_play_table(
             "max_samples": max_samples or samples,
             "hand_count": len(requested_hands),
             "policy_fingerprint": play_policy_fingerprint,
+            # Enforced runs only, so report and off outputs stay unchanged.
+            **(
+                {"discard_policy_fingerprint": discard_policy_fingerprint}
+                if discard_policy_fingerprint is not None
+                else {}
+            ),
         },
     }
     total_hands = len(requested_hands)
@@ -646,7 +668,9 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--hand-limit", type=positive_int)
     parser.add_argument("--no-resume", action="store_true")
     parser.add_argument("--fail-on-non-convergence", action="store_true")
-    parser.add_argument("--promotion-gate", choices=("off", "report"), default="report")
+    parser.add_argument(
+        "--promotion-gate", choices=("off", "report", "enforce"), default="report"
+    )
     parser.add_argument(
         "--promotion-gate-deals", type=positive_int, default=DEFAULT_GATE_DEALS
     )
@@ -678,32 +702,32 @@ def promotion_gate_metadata(
     return {"promotion_gate": report}
 
 
-def main() -> None:
-    """Train policies, refine discards, and write full and lean artifacts."""
+def refine_discards(
+    context: AnalyticalContext,
+    args: argparse.Namespace,
+    requested_hands: Sequence[tuple[int, ...]],
+    fixed_policies: Mapping[str, PeggingPolicy] | None = None,
+) -> tuple[AnalyticalContext, Mapping[str, PeggingPolicy], list[dict[str, Any]], bool]:
+    """Refine discards against trained pegging, or one fixed pegging model."""
     # pylint: disable=too-many-locals
-    args = _parse_args()
-    context = solve_initial_discard_policy(
-        args.analytical_max_iterations,
-        args.full_hand_policy_max_iterations,
-    )
-    requested_hands = get_canonical_hands()
-    if args.hand_limit is not None:
-        requested_hands = requested_hands[: args.hand_limit]
     reports = []
     converged = False
     stable_iterations = 0
-    policies = None
+    policies: Mapping[str, PeggingPolicy] | None = None
     previous_policy_table = None
     for outer_iteration in range(args.outer_iterations):
         discard_policy = selected_discards_to_policy(context.selected_discards)
-        policies, ibr_reports = train_iterative_best_response(
-            partial(sample_policy_deal, discard_policy=discard_policy),
-            iterations=args.ibr_iterations,
-            samples_per_role=args.ibr_samples,
-            rollouts_per_action=args.rollouts_per_action,
-            seed=args.seed,
-            initial_policies=policies,
-        )
+        if fixed_policies is None:
+            policies, ibr_reports = train_iterative_best_response(
+                partial(sample_policy_deal, discard_policy=discard_policy),
+                iterations=args.ibr_iterations,
+                samples_per_role=args.ibr_samples,
+                rollouts_per_action=args.rollouts_per_action,
+                seed=args.seed,
+                initial_policies=policies,
+            )
+        else:
+            policies, ibr_reports = fixed_policies, []
         policy_table = generate_play_table(
             discard_policy,
             policies,
@@ -737,10 +761,67 @@ def main() -> None:
         if stable_iterations >= 2:
             converged = True
             break
-    if args.fail_on_non_convergence and not converged:
-        raise RuntimeError("Joint discard/play policy did not converge")
     if policies is None:  # pragma: no cover
         raise AssertionError("At least one outer iteration is required")
+    return context, policies, reports, converged
+
+
+def require_convergence(args: argparse.Namespace, converged: bool) -> None:
+    """Fail when asked to and the refinement that is measured did not converge."""
+    if args.fail_on_non_convergence and not converged:
+        raise RuntimeError("Joint discard/play policy did not converge")
+
+
+def heuristic_fallback(
+    gate: dict[str, Any],
+    analytical_context: AnalyticalContext,
+    args: argparse.Namespace,
+    requested_hands: Sequence[tuple[int, ...]],
+) -> tuple[Mapping[str, PeggingPolicy], AnalyticalContext, bool] | None:
+    """After a failed gate, refine and measure with the heuristic in both seats.
+
+    Refinement restarts from the analytical policy, whose discards carry no
+    trained pegging deltas, so the discards and the measurement use one
+    pegging model. Returns None when the gate passed.
+    """
+    if gate["passed"]:
+        return None
+    print(
+        "[promotion-gate] enforce: the trained policy did not pass; refining "
+        "discards from the analytical policy and measuring with the legacy "
+        "heuristic in both seats",
+        file=sys.stderr,
+        flush=True,
+    )
+    heuristic = {role: LegacyHeuristicPolicy() for role in ROLES}
+    context, policies, reports, converged = refine_discards(
+        analytical_context, args, requested_hands, fixed_policies=heuristic
+    )
+    gate["discard_refinement"] = {
+        "policy": "legacy-heuristic",
+        "initialization": "analytical",
+        "converged": converged,
+        "outer_iterations": reports,
+    }
+    return policies, context, converged
+
+
+def main() -> None:
+    """Train policies, refine discards, and write full and lean artifacts."""
+    # pylint: disable=too-many-locals
+    args = _parse_args()
+    analytical_context = solve_initial_discard_policy(
+        args.analytical_max_iterations,
+        args.full_hand_policy_max_iterations,
+    )
+    requested_hands = get_canonical_hands()
+    if args.hand_limit is not None:
+        requested_hands = requested_hands[: args.hand_limit]
+    context, policies, reports, converged = refine_discards(
+        analytical_context, args, requested_hands
+    )
+    if args.promotion_gate != "enforce":
+        require_convergence(args, converged)
     discard_policy = selected_discards_to_policy(context.selected_discards)
     policies, final_ibr_reports = train_iterative_best_response(
         partial(sample_policy_deal, discard_policy=discard_policy),
@@ -751,7 +832,23 @@ def main() -> None:
         initial_policies=policies,
     )
     reports.append({"final_play_ibr": final_ibr_reports})
-    gate_metadata = promotion_gate_metadata(policies, args)
+    promotion_metadata = promotion_gate_metadata(policies, args)
+    discard_fingerprint = None
+    if args.promotion_gate == "enforce":
+        fallback = heuristic_fallback(
+            promotion_metadata["promotion_gate"],
+            analytical_context,
+            args,
+            requested_hands,
+        )
+        if fallback is not None:
+            policies, context, converged = fallback
+            discard_policy = selected_discards_to_policy(context.selected_discards)
+        require_convergence(args, converged)
+        promotion_metadata["measured_policy"] = (
+            "trained" if fallback is None else "legacy-heuristic"
+        )
+        discard_fingerprint = discard_keeps_fingerprint(discard_policy)
     final_policy_fingerprint = ":".join(
         policy_fingerprint(policies[role]) for role in ROLES
     )
@@ -761,7 +858,7 @@ def main() -> None:
             existing_table = json.load(checkpoint_file)
 
     def checkpoint(table: Mapping[str, Any]) -> None:
-        table["__metadata__"].update(gate_metadata)
+        table["__metadata__"].update(promotion_metadata)
         _write_json(args.output, table)
         _write_json(args.client_output, build_client_table(table), compact=True)
 
@@ -777,12 +874,13 @@ def main() -> None:
         checkpoint=checkpoint,
         play_policy_fingerprint=final_policy_fingerprint,
         checkpoint_frequency=args.checkpoint_frequency,
+        discard_policy_fingerprint=discard_fingerprint,
     )
     full_table["__metadata__"].update(
         {
             "joint_policy_converged": converged,
             "outer_iterations": reports,
-            **gate_metadata,
+            **promotion_metadata,
         }
     )
     _write_json(args.output, full_table)

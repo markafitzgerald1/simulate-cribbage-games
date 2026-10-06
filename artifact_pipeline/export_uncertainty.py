@@ -30,6 +30,7 @@ QUALIFICATIONS = {
     "scope": "No policy-learning or model uncertainty; no global or "
     "twin-difference noise floor; missing is unavailable, not zero.",
 }
+MEASURED_POLICIES = ("trained", "legacy-heuristic")
 
 
 def _object(value: Any) -> dict[str, Any]:
@@ -169,6 +170,15 @@ def _statistics(table: str, source: dict[str, Any]) -> dict[str, Any] | None:
     return {"reported_marginal_se": values.pop("se"), **values}
 
 
+def validate_measured_policy(provenance: dict[str, Any]) -> None:
+    """Accept documents that predate the field; a present one must be known."""
+    if (
+        "measured_policy" in provenance
+        and provenance["measured_policy"] not in MEASURED_POLICIES
+    ):
+        raise ValueError("Invalid measured pegging policy")
+
+
 def _validate_provenance(table: str, provenance: dict[str, Any]) -> None:
     for value in provenance.values():
         if isinstance(value, (dict, list)):
@@ -181,6 +191,7 @@ def _validate_provenance(table: str, provenance: dict[str, Any]) -> None:
             raise ValueError("Invalid play policy fingerprint")
         if not isinstance(provenance.get("joint_policy_converged"), bool):
             raise ValueError("Invalid play convergence status")
+        validate_measured_policy(provenance)
 
 
 def build_sidecar(table: str, full_bytes: bytes, means_bytes: bytes) -> dict[str, Any]:

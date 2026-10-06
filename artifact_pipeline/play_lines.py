@@ -8,6 +8,7 @@ import json
 import math
 from typing import Any, Mapping
 
+from artifact_pipeline.export_uncertainty import validate_measured_policy
 from artifact_pipeline.pegging import DEALER, ROLES, RunningStatistics
 
 SCHEMA = "expected-play-lines.v1"
@@ -88,6 +89,18 @@ def build_lines(full: Mapping[str, Any], means_bytes: bytes) -> dict[str, Any]:
         key=lambda key: tuple(RANKS.index(rank) for rank in key.split("_")),
     )
     metadata = full["__metadata__"]
+    provenance = {
+        name: metadata[name]
+        for name in (
+            "generation_method",
+            "seed",
+            "policy_fingerprint",
+            "joint_policy_converged",
+        )
+    }
+    # Enforced runs only; older and report-mode documents carry no such field.
+    if "measured_policy" in metadata:
+        provenance["measured_policy"] = metadata["measured_policy"]
     return {
         "schema": SCHEMA,
         "means_sha256": hashlib.sha256(means_bytes).hexdigest(),
@@ -98,15 +111,7 @@ def build_lines(full: Mapping[str, Any], means_bytes: bytes) -> dict[str, Any]:
             ["lead", "n", "mu", "se", "response", "response_n"],
         ],
         "precision": {"mu_decimals": 3, "se_significant_figures": 2},
-        "provenance": {
-            name: metadata[name]
-            for name in (
-                "generation_method",
-                "seed",
-                "policy_fingerprint",
-                "joint_policy_converged",
-            )
-        },
+        "provenance": provenance,
         "qualifications": QUALIFICATIONS,
         "keys": keys,
         "entries": [
@@ -210,6 +215,7 @@ def _decode_document(data: dict[str, Any], means_bytes: bytes) -> dict[str, Any]
         )
     ):
         raise ValueError("Invalid frozen-policy provenance")
+    validate_measured_policy(provenance)
     keys, entries = data["keys"], data["entries"]
     if (
         not isinstance(keys, list)
