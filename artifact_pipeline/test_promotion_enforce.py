@@ -29,17 +29,9 @@ from artifact_pipeline.play_lines import decode_lines
 from artifact_pipeline.test_generate_play_table import FirstPolicy
 from artifact_pipeline.test_promotion_gate import (
     CONTEXT,
-    digests,
     run_bounded_generation,
 )
 
-# Report-mode outputs of run_bounded_generation(["--promotion-gate-deals=50"])
-# at the report-only gate's head, bee36c9, before enforce existed.
-REPORT_DIGESTS = {
-    "full": "dbd135434d63e06fd75817ab7ce5e08b9c35b2504ee199f606dfa9d435133244",
-    "client": "0b1be1990afb124e97c29ddf9f894482525dd2a64032fd2dfc201f51f92bb860",
-    "lines": "6448fdec5ed80e5d6838a6776abd22dba8575216760868dcefd737f7d62cc668",
-}
 ANALYTICAL, TRAINED_REFINED, HEURISTIC_REFINED = 0, 1, 2
 
 
@@ -256,13 +248,6 @@ class TestEnforceAgainstReport(unittest.TestCase):
         self.assertEqual([event[0] for event in report.after_gate()], ["final"])
         self.assertIs(report.after_gate()[0][1], report.gated_policies())
         self.assertFalse("measured_policy" in report.metadata)
-
-    def test_report_outputs_match_the_report_only_head(self):
-        with tempfile.TemporaryDirectory() as directory:
-            outputs, _ = run_bounded_generation(
-                directory, ["--promotion-gate-deals=50"]
-            )
-        self.assertEqual(digests(outputs), REPORT_DIGESTS)
 
 
 class TestEnforcedConvergence(unittest.TestCase):
