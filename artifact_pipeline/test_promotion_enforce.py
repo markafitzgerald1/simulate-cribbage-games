@@ -113,7 +113,7 @@ class EnforcedRun:  # pylint: disable=too-few-public-methods
         with tempfile.TemporaryDirectory() as directory:
             self.outputs, self.log = run_bounded_generation(
                 directory,
-                ["--promotion-gate-deals=2", "--outer-iterations=2", *arguments],
+                ["--promotion-gate-deals=1000", "--outer-iterations=2", *arguments],
                 patch.object(generator, "generate_play_table", sample),
                 patch.object(generator, "refine_discard_policy", refine),
                 patch.object(generator, "evaluate_promotion", gate),
@@ -188,6 +188,10 @@ class TestFailedEnforce(unittest.TestCase):
         )
         for provenance in (lines["provenance"], sidecar["provenance"]):
             self.assertEqual(provenance["measured_policy"], "legacy-heuristic")
+            self.assertEqual(
+                provenance["discard_policy_fingerprint"],
+                discard_keeps_fingerprint(DISCARD_POLICIES[HEURISTIC_REFINED]),
+            )
         self.assertTrue("legacy heuristic" in self.enforced.log)
 
     def test_validators_reject_malformed_measured_policies(self):
@@ -218,6 +222,37 @@ class TestFailedEnforce(unittest.TestCase):
                 sidecar["provenance"]["measured_policy"] = value
             decode_lines(json.dumps(lines).encode(), outputs["client"])
             decode_sidecar(encode_json(sidecar), outputs["client"])
+
+    def test_validators_require_valid_discard_policy_fingerprint(self):
+        outputs = self.enforced.outputs
+        for bad_value in (None, "", 1, True, ["fp"], {"fp": 1}):
+            lines = json.loads(outputs["lines"])
+            sidecar = build_sidecar("play", outputs["full"], outputs["client"])
+            if bad_value is None:
+                lines["provenance"].pop("discard_policy_fingerprint", None)
+                sidecar["provenance"].pop("discard_policy_fingerprint", None)
+            else:
+                lines["provenance"]["discard_policy_fingerprint"] = bad_value
+                sidecar["provenance"]["discard_policy_fingerprint"] = bad_value
+            with self.subTest(bad_value=bad_value):
+                with self.assertRaisesRegex(
+                    ValueError, "Invalid discard policy fingerprint"
+                ):
+                    decode_lines(json.dumps(lines).encode(), outputs["client"])
+                with self.assertRaisesRegex(
+                    ValueError,
+                    "Invalid discard policy fingerprint|scalar values only",
+                ):
+                    decode_sidecar(encode_json(sidecar), outputs["client"])
+        # Absence of discard_policy_fingerprint is valid when measured_policy is absent.
+        lines = json.loads(outputs["lines"])
+        sidecar = build_sidecar("play", outputs["full"], outputs["client"])
+        del lines["provenance"]["measured_policy"]
+        del sidecar["provenance"]["measured_policy"]
+        lines["provenance"].pop("discard_policy_fingerprint", None)
+        sidecar["provenance"].pop("discard_policy_fingerprint", None)
+        decode_lines(json.dumps(lines).encode(), outputs["client"])
+        decode_sidecar(encode_json(sidecar), outputs["client"])
 
     def test_points_at_the_refinement_it_measured(self):
         self.assertEqual(
@@ -315,6 +350,10 @@ class TestEnforceAgainstReport(unittest.TestCase):
         self.assertFalse("discard_policy_fingerprint" in report_metadata)
         lines = json.loads(enforced.outputs["lines"])
         self.assertEqual(lines["provenance"].pop("measured_policy"), "trained")
+        self.assertEqual(
+            lines["provenance"].pop("discard_policy_fingerprint"),
+            discard_keeps_fingerprint(DISCARD_POLICIES[TRAINED_REFINED]),
+        )
         self.assertEqual(lines, json.loads(report.outputs["lines"]))
 
     def test_report_does_not_act_on_a_failed_gate(self):

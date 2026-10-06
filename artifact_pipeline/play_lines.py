@@ -101,6 +101,10 @@ def build_lines(full: Mapping[str, Any], means_bytes: bytes) -> dict[str, Any]:
     # Enforced runs only; older and report-mode documents carry no such field.
     if "measured_policy" in metadata:
         provenance["measured_policy"] = metadata["measured_policy"]
+        if "discard_policy_fingerprint" in metadata:
+            provenance["discard_policy_fingerprint"] = metadata[
+                "discard_policy_fingerprint"
+            ]
     return {
         "schema": SCHEMA,
         "means_sha256": hashlib.sha256(means_bytes).hexdigest(),

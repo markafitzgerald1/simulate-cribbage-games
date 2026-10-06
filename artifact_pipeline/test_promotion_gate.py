@@ -5,6 +5,7 @@ from datetime import datetime
 import hashlib
 import io
 import json
+import math
 from pathlib import Path
 import random
 import tempfile
@@ -125,9 +126,9 @@ class TestEvaluatePromotion(unittest.TestCase):
     trained = {PONE: object(), DEALER: object()}
 
     def test_each_trained_seat_faces_the_heuristic_on_one_shared_deal(self):
-        _, calls = scripted_gate(self.trained, [(0, 0, 0)] * 4, 4)
-        self.assertEqual(len(calls), 12)
-        for deal in range(4):
+        _, calls = scripted_gate(self.trained, [(0, 0, 0)] * 1000, 1000)
+        self.assertEqual(len(calls), 3000)
+        for deal in range(1000):
             group = calls[deal * 3 : deal * 3 + 3]
             self.assertEqual(len({call[:2] for call in group}), 1)
             self.assertEqual(len({repr(call[3]) for call in group}), 1)
@@ -135,14 +136,19 @@ class TestEvaluatePromotion(unittest.TestCase):
                 [game_name(call[2], self.trained) for call in group],
                 [((), (PONE, DEALER)), ((PONE,), (DEALER,)), ((DEALER,), (PONE,))],
             )
-        self.assertEqual(len({repr(call[3]) for call in calls}), 4)
+        self.assertEqual(len({repr(call[3]) for call in calls}), 1000)
 
     def test_seat_signs_and_both_seat_error_from_per_deal_averages(self):
         # Pone gains 1 and 3, Dealer gains 3 and 1: every per-deal average is 2.
-        report, _ = scripted_gate(self.trained, [(5, 6, 2), (-4, -1, -5)], 2)
-        self.assertEqual(report[PONE], {"n": 2, "mu": 2.0, "se": 1.0})
-        self.assertEqual(report[DEALER], {"n": 2, "mu": 2.0, "se": 1.0})
-        self.assertEqual(report["both_seats"], {"n": 2, "mu": 2.0, "se": 0.0})
+        report, _ = scripted_gate(self.trained, [(5, 6, 2), (-4, -1, -5)] * 500, 1000)
+        pone_se = math.sqrt(1 / 999)
+        self.assertEqual(report[PONE]["n"], 1000)
+        self.assertEqual(report[PONE]["mu"], 2.0)
+        self.assertAlmostEqual(report[PONE]["se"], pone_se)
+        self.assertEqual(report[DEALER]["n"], 1000)
+        self.assertEqual(report[DEALER]["mu"], 2.0)
+        self.assertAlmostEqual(report[DEALER]["se"], pone_se)
+        self.assertEqual(report["both_seats"], {"n": 1000, "mu": 2.0, "se": 0.0})
         self.assertTrue(report["passed"])
 
     def test_passes_only_on_a_positive_mean_at_three_standard_errors(self):
@@ -156,39 +162,44 @@ class TestEvaluatePromotion(unittest.TestCase):
             (1.0, 0.0, True),
         ):
             # Each seat gains mean -/+ error, so the per-deal averages do too.
-            scripted = [(0, gain, -gain) for gain in (mean - error, mean + error)]
+            delta = error * math.sqrt(999)
+            scripted = [(0, gain, -gain) for gain in (mean - delta, mean + delta)] * 500
             with self.subTest(mean=mean, error=error):
-                report, _ = scripted_gate(self.trained, scripted, 2)
-                self.assertEqual(report["both_seats"]["mu"], mean)
+                report, _ = scripted_gate(self.trained, scripted, 1000)
+                self.assertAlmostEqual(report["both_seats"]["mu"], mean)
                 self.assertAlmostEqual(report["both_seats"]["se"], error)
                 self.assertIs(report["passed"], passed)
 
-    def test_rejects_fewer_than_two_deals(self):
-        with self.assertRaisesRegex(ValueError, "at least 2 deals"):
-            evaluate_promotion(self.trained, 1, 42)
+    def test_rejects_fewer_than_one_thousand_deals(self):
+        for deals in (1, 2, 999):
+            with self.subTest(deals=deals):
+                with self.assertRaisesRegex(ValueError, "at least 1,000 deals"):
+                    evaluate_promotion(self.trained, deals, 42)
 
     def test_heuristic_against_itself_has_no_advantage(self):
         heuristic = {role: LegacyHeuristicPolicy() for role in (PONE, DEALER)}
-        report = evaluate_promotion(heuristic, 20, 42)
+        report = evaluate_promotion(heuristic, 1000, 42)
         for label in (PONE, DEALER, "both_seats"):
-            self.assertEqual(report[label], {"n": 20, "mu": 0.0, "se": 0.0})
+            self.assertEqual(report[label], {"n": 1000, "mu": 0.0, "se": 0.0})
         self.assertFalse(report["passed"])
 
 
 class TestGateArguments(unittest.TestCase):
-    def test_enabled_gate_rejects_one_deal_before_any_solving(self):
-        argv = ["generate_play_table.py", "--promotion-gate-deals=1"]
-        with patch("sys.argv", argv), patch(
-            "sys.stderr", io.StringIO()
-        ) as stderr, patch.object(
-            generator, "solve_initial_discard_policy"
-        ) as solve, self.assertRaises(
-            SystemExit
-        ) as error:
-            generator.main()
-        self.assertEqual(error.exception.code, 2)
-        solve.assert_not_called()
-        self.assertTrue("at least 2" in stderr.getvalue())
+    def test_enabled_gate_rejects_fewer_than_one_thousand_deals(self):
+        for deals in (1, 2, 999):
+            with self.subTest(deals=deals):
+                argv = ["generate_play_table.py", f"--promotion-gate-deals={deals}"]
+                with patch("sys.argv", argv), patch(
+                    "sys.stderr", io.StringIO()
+                ) as stderr, patch.object(
+                    generator, "solve_initial_discard_policy"
+                ) as solve, self.assertRaises(
+                    SystemExit
+                ) as error:
+                    generator.main()
+                self.assertEqual(error.exception.code, 2)
+                solve.assert_not_called()
+                self.assertTrue("at least 1,000" in stderr.getvalue())
 
     def test_defaults_and_off_mode_accept_any_positive_count(self):
         with patch("sys.argv", ["generate_play_table.py"]):
@@ -198,7 +209,8 @@ class TestGateArguments(unittest.TestCase):
         )
         for arguments in (
             ["--promotion-gate=off", "--promotion-gate-deals=1"],
-            ["--promotion-gate-deals=2"],
+            ["--promotion-gate=off", "--promotion-gate-deals=2"],
+            ["--promotion-gate-deals=1000"],
         ):
             with patch("sys.argv", ["generate_play_table.py", *arguments]):
                 args = generator._parse_args()  # pylint: disable=protected-access
@@ -213,7 +225,7 @@ class TestGateInGeneration(unittest.TestCase):
             off, off_log = run_bounded_generation(directory, ["--promotion-gate=off"])
         with tempfile.TemporaryDirectory() as directory:
             report, log = run_bounded_generation(
-                directory, ["--promotion-gate-deals=50"]
+                directory, ["--promotion-gate-deals=1000"]
             )
         off_full = json.loads(off.pop("full"))
         full = json.loads(report.pop("full"))
@@ -222,15 +234,15 @@ class TestGateInGeneration(unittest.TestCase):
         self.assertEqual(full, off_full)
         self.assertEqual(report, off)
         self.assertEqual(
-            (gate["mode"], gate["deals"], gate["seed"]), ("report", 50, 42)
+            (gate["mode"], gate["deals"], gate["seed"]), ("report", 1000, 42)
         )
-        self.assertEqual(gate["both_seats"]["n"], 50)
+        self.assertEqual(gate["both_seats"]["n"], 1000)
         self.assertTrue("[promotion-gate] report:" in log)
         self.assertFalse("promotion-gate" in off_log)
 
     def test_off_drops_a_gate_report_carried_by_a_resumed_table(self):
         with tempfile.TemporaryDirectory() as directory:
-            run_bounded_generation(directory, ["--promotion-gate-deals=50"])
+            run_bounded_generation(directory, ["--promotion-gate-deals=1000"])
             outputs, _ = run_bounded_generation(
                 directory, ["--promotion-gate=off"], resume=True
             )
@@ -311,7 +323,7 @@ class TestGateInGeneration(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             run_bounded_generation(
                 directory,
-                ["--promotion-gate-deals=50"],
+                ["--promotion-gate-deals=1000"],
                 patch.object(generator, "train_iterative_best_response", train),
                 patch.object(generator, "sample_policy_deal", training_deal),
                 patch.object(pegging, "simulate_from_state", training_play),
@@ -319,7 +331,7 @@ class TestGateInGeneration(unittest.TestCase):
             )
         self.assertGreater(len(training["deals"]), 0)
         self.assertGreater(len(training["states"]), 0)
-        self.assertEqual(len(set(gate["states"])), 50)
+        self.assertEqual(len(set(gate["states"])), 1000)
         self.assertTrue(set(gate["deals"]).isdisjoint(training["deals"]))
         self.assertTrue(set(gate["states"]).isdisjoint(training["states"]))
 

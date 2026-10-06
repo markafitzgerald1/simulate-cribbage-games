@@ -504,7 +504,7 @@ class TestGeneratePlayTable(unittest.TestCase):
             no_resume=False,
             checkpoint_frequency=1,
             promotion_gate="off",
-            promotion_gate_deals=2,
+            promotion_gate_deals=1000,
         )
         context = AnalyticalContext(
             dealer_table=[1.0],

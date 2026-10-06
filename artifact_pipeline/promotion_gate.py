@@ -17,7 +17,7 @@ from artifact_pipeline.pegging import (
 )
 
 DEFAULT_GATE_DEALS = 200_000
-MINIMUM_GATE_DEALS = 2
+MINIMUM_GATE_DEALS = 1_000
 Z_THRESHOLD = 3.0
 # Uniformly random four-card hands for each seat, not the discard policy's
 # keeps: the approved #187 design measures play strength on every hand rather
@@ -57,7 +57,7 @@ def evaluate_promotion(
     """
     if deals < MINIMUM_GATE_DEALS:
         raise ValueError(
-            f"The promotion gate needs at least {MINIMUM_GATE_DEALS} deals"
+            f"The promotion gate needs at least {MINIMUM_GATE_DEALS:,} deals"
         )
     heuristic = LegacyHeuristicPolicy()
     games: dict[str, Mapping[str, PeggingPolicy]] = {

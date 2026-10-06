@@ -678,12 +678,18 @@ def _parse_args() -> argparse.Namespace:
         "--promotion-gate", choices=("off", "report", "enforce"), default="report"
     )
     parser.add_argument(
-        "--promotion-gate-deals", type=positive_int, default=DEFAULT_GATE_DEALS
+        "--promotion-gate-deals",
+        type=positive_int,
+        default=DEFAULT_GATE_DEALS,
+        help=(
+            f"Deals to evaluate in the promotion gate (default {DEFAULT_GATE_DEALS:,}; "
+            f"minimum {MINIMUM_GATE_DEALS:,} when enabled)"
+        ),
     )
     args = parser.parse_args()
     if args.promotion_gate != "off" and args.promotion_gate_deals < MINIMUM_GATE_DEALS:
         parser.error(
-            f"--promotion-gate-deals must be at least {MINIMUM_GATE_DEALS} "
+            f"--promotion-gate-deals must be at least {MINIMUM_GATE_DEALS:,} "
             "when the gate is enabled"
         )
     if os.path.realpath(args.lines_output) in {
