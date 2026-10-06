@@ -14,7 +14,7 @@ from unittest.mock import patch
 from artifact_pipeline import generate_play_table as generator
 from artifact_pipeline import pegging, promotion_gate
 from artifact_pipeline.pegging import DEALER, PONE, LegacyHeuristicPolicy
-from artifact_pipeline.promotion_gate import evaluate_promotion
+from artifact_pipeline.promotion_gate import evaluate_promotion, release_summary
 from artifact_pipeline.test_generate_play_table import all_first_four_policy
 
 # SHA-256 of run_bounded_generation's outputs with no gate arguments, run
@@ -332,6 +332,47 @@ class TestGateInGeneration(unittest.TestCase):
         self.assertEqual(len(set(gate["states"])), 50)
         self.assertTrue(set(gate["deals"]).isdisjoint(training["deals"]))
         self.assertTrue(set(gate["states"]).isdisjoint(training["states"]))
+
+
+class TestReleaseSummary(unittest.TestCase):
+    report = {
+        "mode": "enforce",
+        "deals": 200_000,
+        "passed": False,
+        PONE: {"n": 200_000, "mu": -0.13039, "se": 0.00484},
+        DEALER: {"n": 200_000, "mu": -0.17466, "se": 0.00435},
+        "both_seats": {"n": 200_000, "mu": -0.15252, "se": 0.00296},
+    }
+
+    def test_failed_enforce_names_the_heuristic_and_every_advantage(self):
+        summary = release_summary(
+            {"measured_policy": "legacy-heuristic", "promotion_gate": self.report}
+        )
+        self.assertEqual(
+            summary,
+            "**Promotion gate (enforce):** did not pass. E(deltaP) was measured with "
+            "the legacy heuristic in both seats, with opponent discards refined "
+            "under the same heuristic.\n\nTrained minus legacy heuristic, points "
+            "per hand (mean +/- standard error) over 200000 duplicate deals: both "
+            "seats -0.1525 +/- 0.0030; Pone -0.1304 +/- 0.0048; Dealer -0.1747 +/- "
+            "0.0043.",
+        )
+
+    def test_trained_measurement_and_missing_gate(self):
+        passed = {**self.report, "mode": "report", "passed": True}
+        self.assertTrue(
+            release_summary({"promotion_gate": passed}).startswith(
+                "**Promotion gate (report):** passed. E(deltaP) was measured with "
+                "the trained pegging policies."
+            )
+        )
+        self.assertEqual(
+            release_summary({"measured_policy": "trained"}),
+            "**Promotion gate:** not run. E(deltaP) was measured with the trained "
+            "pegging policies.",
+        )
+        with self.assertRaises(KeyError):
+            release_summary({"measured_policy": "heuristic"})
 
 
 if __name__ == "__main__":
