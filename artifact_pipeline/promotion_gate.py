@@ -19,7 +19,10 @@ from artifact_pipeline.pegging import (
 DEFAULT_GATE_DEALS = 200_000
 MINIMUM_GATE_DEALS = 2
 Z_THRESHOLD = 3.0
-GATE_POPULATION = "uniform-physical-eight-card-keeps-rank-only-v1"
+# Uniformly random four-card hands for each seat, not the discard policy's
+# keeps: the approved #187 design measures play strength on every hand rather
+# than on the hands one discard policy keeps.
+GATE_POPULATION = "uniform-random-four-card-hands-rank-only-v1"
 BOTH_SEATS = "both_seats"
 GateDeal = tuple[tuple[int, ...], tuple[int, ...], int]
 

@@ -678,6 +678,14 @@ def promotion_gate_metadata(
     return {"promotion_gate": report}
 
 
+def apply_promotion_metadata(
+    metadata: dict[str, Any], gate_metadata: Mapping[str, Any]
+) -> None:
+    """Replace any gate report a resumed table carries with this run's."""
+    metadata.pop("promotion_gate", None)
+    metadata.update(gate_metadata)
+
+
 def main() -> None:
     """Train policies, refine discards, and write full and lean artifacts."""
     # pylint: disable=too-many-locals
@@ -761,7 +769,7 @@ def main() -> None:
             existing_table = json.load(checkpoint_file)
 
     def checkpoint(table: Mapping[str, Any]) -> None:
-        table["__metadata__"].update(gate_metadata)
+        apply_promotion_metadata(table["__metadata__"], gate_metadata)
         _write_json(args.output, table)
         _write_json(args.client_output, build_client_table(table), compact=True)
 
@@ -779,12 +787,9 @@ def main() -> None:
         checkpoint_frequency=args.checkpoint_frequency,
     )
     full_table["__metadata__"].update(
-        {
-            "joint_policy_converged": converged,
-            "outer_iterations": reports,
-            **gate_metadata,
-        }
+        {"joint_policy_converged": converged, "outer_iterations": reports}
     )
+    apply_promotion_metadata(full_table["__metadata__"], gate_metadata)
     _write_json(args.output, full_table)
     _write_json(args.client_output, build_client_table(full_table), compact=True)
     _write_lines(args.lines_output, args.client_output, full_table)
