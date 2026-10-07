@@ -554,6 +554,17 @@ client artifact recursively strips `n` and `se` while retaining those means.
 Do not expose hidden opponent cards to policy inputs or move rollout decisions
 into the browser.
 
+The promotion gate (`artifact_pipeline/promotion_gate.py`) plays each gate deal
+three times on one play seed so the trained and heuristic seats are compared
+on identical cards and draws, and averages the two seats within a deal before
+estimating the both-seat standard error, which keeps the covariance the shared
+deal induces. Its deal and play streams carry their own label so they cannot
+coincide with training or measurement streams from the same `--seed`. Report
+mode must leave every measured value unchanged. When checking that, compare
+parsed documents rather than re-serialized bytes: JSON turns the opening
+lines' integer response keys into strings, which sort differently, so loading
+and rewriting an unchanged full play table does not reproduce its bytes.
+
 Expected opponent hand points conditional on a user's known six-card deal are
 invariant across that user's 15 discard choices: all six known cards are removed
 from the opponent-deal and starter populations regardless of which two enter the
