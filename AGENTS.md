@@ -565,6 +565,16 @@ parsed documents rather than re-serialized bytes: JSON turns the opening
 lines' integer response keys into strings, which sort differently, so loading
 and rewriting an unchanged full play table does not reproduce its bytes.
 
+`--promotion-gate=enforce` must never publish a table whose discards and
+measurement come from different pegging models. When the gate fails, the
+fallback restarts discard refinement from the analytical context, not from the
+trained-refined one, because that context's discards already carry the trained
+policy's deltas; it refines with heuristic play tables only and measures the
+heuristic on the keeps that refinement produced. Only enforced runs write
+`measured_policy` and `discard_policy_fingerprint`, which keeps report and off
+outputs byte-identical; readers therefore treat an absent `measured_policy` as
+an older or report-mode document, never as an error.
+
 Expected opponent hand points conditional on a user's known six-card deal are
 invariant across that user's 15 discard choices: all six known cards are removed
 from the opponent-deal and starter populations regardless of which two enter the
