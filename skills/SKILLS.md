@@ -164,6 +164,15 @@ including absolute Pone and Dealer point-type components and the keyed player's
 paired delta. Keep policy views limited to the acting player's cards and public
 history.
 
+For opening-book research, key an override on the complete opening information
+state, including role, remaining-card counts and empty public history. A zero
+count alone also matches later sequence resets. Screen leads with statistics
+of paired whole-hand deltas on shared hidden deals, then evaluate the frozen
+book on the independent promotion-gate stream. With only Pone overrides,
+Dealer's candidate-seat advantage is exactly zero and the both-seat gate
+advantage is half Pone's; passing does not establish improved Dealer play or
+validate each selected entry independently.
+
 Production play generation runs `--promotion-gate=enforce`: when the trained
 pegging policies do not beat the legacy heuristic on the duplicate-deal gate,
 the release is measured with the heuristic, with opponent discards refined
