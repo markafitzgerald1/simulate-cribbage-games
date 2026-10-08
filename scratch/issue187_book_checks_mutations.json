@@ -1,0 +1,122 @@
+[
+  {
+    "mutation": "unpaired_absolute",
+    "test": "test_confirmation_pairs_frozen_choices_and_independent_streams",
+    "before": "values.add(deltas[selected] - deltas[baseline])",
+    "after": "values.add(deltas[selected])",
+    "caught": true,
+    "exit_code": 1
+  },
+  {
+    "mutation": "reuse_training_stream",
+    "test": "test_confirmation_pairs_frozen_choices_and_independent_streams",
+    "before": "FRESH_LABEL = \"issue-187-pone-confirmation-v1\"",
+    "after": "FRESH_LABEL = \"issue-187-pone-opening-book-v1\"",
+    "caught": true,
+    "exit_code": 1
+  },
+  {
+    "mutation": "repeat_play_seed",
+    "test": "test_confirmation_pairs_frozen_choices_and_independent_streams",
+    "before": "_stable_seed(seed, FRESH_LABEL, \"play\", hand, index)",
+    "after": "_stable_seed(seed, FRESH_LABEL, \"play\", hand, 0)",
+    "caught": true,
+    "exit_code": 1
+  },
+  {
+    "mutation": "exclusive_validation_threshold",
+    "test": "test_fresh_two_se_screen_inclusive_positive_and_without_training_borrowing",
+    "before": "values.mean >= VALIDATION_Z * values.standard_error",
+    "after": "values.mean > VALIDATION_Z * values.standard_error",
+    "caught": true,
+    "exit_code": 1
+  },
+  {
+    "mutation": "wrong_control_choice",
+    "test": "test_rejected_controls_freeze_best_original_alternative_and_never_install",
+    "before": "jobs.append((row, best[\"lead\"], samples, seed, \"rejected-control\"))",
+    "after": "jobs.append((row, row[\"heuristic_lead\"], samples, seed, \"rejected-control\"))",
+    "caught": true,
+    "exit_code": 1
+  },
+  {
+    "mutation": "ignore_fresh_screen",
+    "test": "test_rejected_controls_freeze_best_original_alternative_and_never_install",
+    "before": "row[\"override\"] if row[\"key\"] in retained else None",
+    "after": "row[\"override\"] if row[\"override\"] is not None else None",
+    "caught": true,
+    "exit_code": 1
+  },
+  {
+    "mutation": "reverse_shrinkage",
+    "test": "test_shrinkage_summary_has_correct_sign_counts_and_quantiles",
+    "before": "differences = [new - old for new, old in zip(fresh, original)]",
+    "after": "differences = [old - new for new, old in zip(fresh, original)]",
+    "caught": true,
+    "exit_code": 1
+  },
+  {
+    "mutation": "reverse_gate_gain",
+    "test": "test_book_comparison_keeps_shared_cards_seeds_sign_and_paired_error",
+    "before": "gain = candidate_result.delta(PONE) - reference_result.delta(PONE)",
+    "after": "gain = reference_result.delta(PONE) - candidate_result.delta(PONE)",
+    "caught": true,
+    "exit_code": 1
+  },
+  {
+    "mutation": "lose_shared_deal_covariance",
+    "test": "test_book_comparison_keeps_shared_cards_seeds_sign_and_paired_error",
+    "before": "estimates[BOTH_SEATS].add(gain / 2)",
+    "after": "estimates[BOTH_SEATS].add(candidate_result.delta(PONE) / 2)",
+    "caught": true,
+    "exit_code": 1
+  },
+  {
+    "mutation": "wrong_pair_tie",
+    "test": "test_pair_rule_is_one_initial_pone_rule_with_fixed_multiple_pair_tie",
+    "before": "return pairs[0]",
+    "after": "return pairs[-1]",
+    "caught": true,
+    "exit_code": 1
+  },
+  {
+    "mutation": "override_resets_and_dealer",
+    "test": "test_pair_rule_is_one_initial_pone_rule_with_fixed_multiple_pair_tie",
+    "before": "if len(view.own_remaining) == 4 and view == opening_book.opening_view(\n            view.own_remaining\n        ):",
+    "after": "if len(view.own_remaining) == 4:",
+    "caught": true,
+    "exit_code": 1
+  },
+  {
+    "mutation": "face_value_as_count",
+    "test": "test_feature_counts_overlap_and_face_cards_never_count_above_ten",
+    "before": "\"lead_count_above_ten\": rank_count(lead) > 10",
+    "after": "\"lead_count_above_ten\": lead > 9",
+    "caught": true,
+    "exit_code": 1
+  },
+  {
+    "mutation": "count_only_selected_tests",
+    "test": "test_cli_orders_stages_checks_digests_and_counts_all_alternatives",
+    "before": "tests = sum(len(row[\"candidates\"]) - 1 for row in original_rows)",
+    "after": "tests = sum(row[\"override\"] is not None for row in original_rows)",
+    "caught": true,
+    "exit_code": 1
+  },
+  {
+    "mutation": "ignore_book_hash",
+    "test": "test_cli_orders_stages_checks_digests_and_counts_all_alternatives",
+    "before": "if report[\"evidence_sha256\"] != opening_book.evidence_digest(report[\"hands\"]):",
+    "after": "if False:",
+    "caught": true,
+    "exit_code": 1
+  },
+  {
+    "mutation": "ignore_confirmation_hash",
+    "test": "test_cli_orders_stages_checks_digests_and_counts_all_alternatives",
+    "before": "if confirmation[\"evidence_sha256\"] != opening_book.evidence_digest(\n            confirmation[\"confirmations\"]\n        ):",
+    "after": "if False:",
+    "caught": true,
+    "exit_code": 1
+  }
+]

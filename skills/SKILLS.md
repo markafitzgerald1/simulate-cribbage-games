@@ -173,6 +173,14 @@ Dealer's candidate-seat advantage is exactly zero and the both-seat gate
 advantage is half Pone's; passing does not establish improved Dealer play or
 validate each selected entry independently.
 
+Confirm exploratory opening-book entries by re-estimating the frozen selected
+actions on a separately labeled opponent stream, with the confirmation screen
+fixed before observing it. Count every tested alternative for a nominal null
+threshold benchmark, and distinguish that benchmark from a measured false
+discovery rate. Compare restricted and original books using per-deal paired
+differences; their separate marginal standard errors cannot recover the
+comparison's shared-deal covariance.
+
 Production play generation runs `--promotion-gate=enforce`: when the trained
 pegging policies do not beat the legacy heuristic on the duplicate-deal gate,
 the release is measured with the heuristic, with opponent discards refined
