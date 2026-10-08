@@ -349,6 +349,14 @@ heuristic's fingerprint), and a `discard_policy_fingerprint` of the measured
 keeps that a resumed run must match. A report or off run that resumes an
 enforced table drops all of these labels.
 
+The weekly production workflow (`generate-play-artifact.yml`) runs with
+`--promotion-gate=enforce`, so the released table is measured with whichever
+pegging player passed: the trained policies, or the legacy heuristic when they
+lose to it. Its release notes state the gate outcome, the measured policy and
+the trained-minus-heuristic advantages per seat and for both seats. The bounded
+pull-request run stays in report mode and writes the same summary, so every
+pull request exercises it.
+
 Production runs resume from `expected_play_points.json` by default. Each sample
 is seeded independently by hand, role, and cumulative sample index, so a resumed
 seeded run produces the same estimates as an uninterrupted run. Pass

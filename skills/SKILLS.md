@@ -164,6 +164,14 @@ including absolute Pone and Dealer point-type components and the keyed player's
 paired delta. Keep policy views limited to the acting player's cards and public
 history.
 
+Production play generation runs `--promotion-gate=enforce`: when the trained
+pegging policies do not beat the legacy heuristic on the duplicate-deal gate,
+the release is measured with the heuristic, with opponent discards refined
+under that same heuristic, and `measured_policy` says so in the full table,
+the lines and the sidecar. Keep discards and measurement on one pegging model,
+keep report and off outputs byte-identical, and keep the release notes stating
+the gate outcome. See `AGENTS.md`, "Artifact Pipeline And Statistical Tables".
+
 For standalone uncertainty exports, follow
 [the JSON sidecar contract](../docs/uncertainty-sidecars.md). Preserve the exact
 client means bytes and export only their top-level measured statistics, not

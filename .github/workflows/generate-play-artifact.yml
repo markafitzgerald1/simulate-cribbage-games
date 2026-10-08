@@ -89,6 +89,7 @@ jobs:
             --rollouts-per-action=2 \
             --policy-table-samples=200 \
             --samples=13000 \
+            --promotion-gate=enforce \
             --no-resume \
             --seed=42
 
@@ -157,6 +158,20 @@ jobs:
           name: expected-play-points-lines
           path: expected_play_points.lines.json
 
+      # Not gated on the event, like the export: the bounded pull-request run
+      # writes the same gate metadata in report mode, so every pull request
+      # exercises the summary the release notes quote.
+      - name: Summarize promotion gate
+        run: |
+          python -c 'import json; from artifact_pipeline.promotion_gate import release_summary; print(release_summary(json.load(open("expected_play_points.json"))["__metadata__"]))' > expected_play_points.gate.md
+          cat expected_play_points.gate.md
+
+      - name: Upload promotion gate summary
+        uses: actions/upload-artifact@v7
+        with:
+          name: expected-play-points-gate
+          path: expected_play_points.gate.md
+
   release-artifact:
     needs: generate-table
     if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
@@ -185,9 +200,23 @@ jobs:
         with:
           name: expected-play-points-lines
 
+      - name: Download promotion gate summary
+        uses: actions/download-artifact@v8
+        with:
+          name: expected-play-points-gate
+
       - name: Capture build timestamp
         id: build_timestamp
         run: echo "now=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
+
+      - name: Capture promotion gate summary
+        id: gate_summary
+        run: |
+          {
+            echo "text<<GATE_SUMMARY_EOF"
+            cat expected_play_points.gate.md
+            echo "GATE_SUMMARY_EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Publish rolling release
         uses: softprops/action-gh-release@v3
@@ -198,6 +227,8 @@ jobs:
             This release contains the latest rank-only expected pegging table.
 
             **Last generated (UTC):** ${{ steps.build_timestamp.outputs.now }}
+
+            ${{ steps.gate_summary.outputs.text }}
 
             - `expected_play_points.json`: paired sampling statistics and
               point-type details.

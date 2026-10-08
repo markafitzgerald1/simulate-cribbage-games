@@ -101,3 +101,31 @@ def describe_promotion(report: Mapping[str, Any]) -> str:
         f"[promotion-gate] {report['mode']}: trained minus heuristic points per "
         f"hand over {report['deals']} deals: {seats}; passed: {report['passed']}"
     )
+
+
+MEASURED_DESCRIPTIONS = {
+    "trained": "the trained pegging policies",
+    "legacy-heuristic": (
+        "the legacy heuristic in both seats, with opponent discards refined "
+        "under the same heuristic"
+    ),
+}
+
+
+def release_summary(metadata: Mapping[str, Any]) -> str:
+    """State the gate outcome, the measured policy and the advantage as Markdown."""
+    measured = MEASURED_DESCRIPTIONS[metadata.get("measured_policy", "trained")]
+    gate = metadata.get("promotion_gate")
+    if gate is None:
+        return f"**Promotion gate:** not run. E(deltaP) was measured with {measured}."
+    seats = "; ".join(
+        f"{label.replace('_', ' ')} {gate[label]['mu']:+.4f} +/- "
+        f"{gate[label]['se']:.4f}"
+        for label in (BOTH_SEATS, PONE, DEALER)
+    )
+    outcome = "passed" if gate["passed"] else "did not pass"
+    return (
+        f"**Promotion gate ({gate['mode']}):** {outcome}. E(deltaP) was measured "
+        f"with {measured}.\n\nTrained minus legacy heuristic, points per hand "
+        f"(mean +/- standard error) over {gate['deals']} duplicate deals: {seats}."
+    )
