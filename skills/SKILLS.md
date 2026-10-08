@@ -181,6 +181,17 @@ discovery rate. Compare restricted and original books using per-deal paired
 differences; their separate marginal standard errors cannot recover the
 comparison's shared-deal covariance.
 
+For deterministic rank-only continuations, prefer exact hidden-hand enumeration
+with physical multiplicities after removing known cards. Compare integer score
+sums before any decimal conversion. Check the full conditional population mass
+and an independent physical-draw oracle; exact model expectations need no
+sampling significance screen. Condition later books on the frozen policy's
+actual public actions and key them from real state views. The default promotion
+gate's opposite seat is the heuristic, which can differ from the frozen book
+used to define a conditional training population. Prove non-empty overrides
+fire inside real simulations, and collect research regressions explicitly in
+ordinary unittest discovery when the research directory is not a package.
+
 Production play generation runs `--promotion-gate=enforce`: when the trained
 pegging policies do not beat the legacy heuristic on the duplicate-deal gate,
 the release is measured with the heuristic, with opponent discards refined

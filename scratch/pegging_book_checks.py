@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 from dataclasses import dataclass, field
+from fractions import Fraction
 import hashlib
 import importlib
 import json
@@ -95,7 +96,15 @@ def confirmation_jobs(
             for value in row["candidates"]
             if value["lead"] != row["heuristic_lead"]
         ]
-        best = max(alternatives, key=lambda value: (value["mu"], -value["lead"]))
+        best = max(
+            alternatives,
+            key=lambda value: (
+                Fraction(
+                    value.get("gain_sum", round(value["mu"] * value["n"])), value["n"]
+                ),
+                -value["lead"],
+            ),
+        )
         jobs.append((row, best["lead"], samples, seed, "rejected-control"))
     return jobs
 

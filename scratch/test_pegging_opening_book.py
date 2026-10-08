@@ -37,6 +37,35 @@ class Result:  # pylint: disable=too-few-public-methods
 
 
 class TestOpeningBook(unittest.TestCase):
+    def test_sampler_removes_known_cards_and_draws_again_each_time(self):
+        opponents = []
+
+        def rollout(_own, opponent, _ranks, _seed):
+            opponents.append(opponent)
+            return {0: 0}
+
+        with patch.object(book, "rollout_leads", side_effect=rollout):
+            book.train_hand(((0, 0, 0, 0), 20, 42))
+        self.assertEqual(len(opponents), 20)
+        self.assertTrue(all(0 not in opponent for opponent in opponents))
+        self.assertGreater(len(set(opponents)), 1)
+
+    def test_real_sample_integer_tie_prefers_lower_rank(self):
+        left = [4, 3, 5, 5, 4, 3, 5, 3, 5, 3, 4, 5, 5, 4, 4, 3, 4, 3, 5, 3]
+        right = [3, 3, 4, 4, 5, 4, 5, 5, 3, 5, 5, 5, 3, 3, 3, 5, 4, 4, 4, 3]
+        self.assertEqual(sum(left), sum(right))
+        index = iter(range(20))
+
+        def rollout(*_args):
+            sample = next(index)
+            return {0: left[sample], 1: right[sample], 2: 0, 8: -10}
+
+        with patch.object(book, "rollout_leads", side_effect=rollout):
+            row = book.train_hand(((0, 1, 2, 8), 20, 42))
+        self.assertEqual(row["override"], 0)
+        self.assertEqual(row["candidates"][0]["gain_sum"], 80)
+        self.assertEqual(row["candidates"][1]["gain_sum"], 80)
+
     def test_digest_preserves_unrounded_evidence(self):
         rows = [
             {

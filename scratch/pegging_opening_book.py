@@ -9,6 +9,7 @@ This is an experiment, not a production artifact or a legacy CLI adapter.
 from __future__ import annotations
 
 import argparse
+from fractions import Fraction
 import hashlib
 import json
 import multiprocessing
@@ -52,7 +53,7 @@ def remaining_deck(hand: tuple[int, ...]) -> tuple[int, ...]:
 
 
 def select_override(
-    values: dict[int, RunningStatistics], heuristic_lead: int
+    values: dict[int, RunningStatistics], heuristic_lead: int, gain_sums=None
 ) -> int | None:
     """Select the largest positive paired mean meeting the nominal 3-SE screen."""
     eligible = [
@@ -65,7 +66,15 @@ def select_override(
     ]
     if not eligible:
         return None
-    return max(eligible, key=lambda rank: (values[rank].mean, -rank))
+    # Actual sampling supplies integer sums. The default supports moment fixtures.
+    totals = (
+        gain_sums
+        if gain_sums is not None
+        else {rank: round(value.mean * value.n) for rank, value in values.items()}
+    )
+    return max(
+        eligible, key=lambda rank: (Fraction(totals[rank], values[rank].n), -rank)
+    )
 
 
 def rollout_leads(
@@ -88,9 +97,9 @@ def train_hand(job: tuple[tuple[int, ...], int, int]) -> dict[str, Any]:
     hand, samples, seed = job
     if samples < 2:
         raise ValueError("At least two training samples are required")
-    view = opening_view(hand)
-    baseline = LegacyHeuristicPolicy().select_rank(view, random.Random(0))
-    values = {rank: RunningStatistics() for rank in view.legal_ranks}
+    baseline = LegacyHeuristicPolicy().select_rank(opening_view(hand), random.Random(0))
+    values = {rank: RunningStatistics() for rank in sorted(set(hand))}
+    gain_sums = {rank: 0 for rank in values}
     pool = remaining_deck(hand)
     deal_rng = random.Random(_stable_seed(seed, TRAINING_LABEL, "deals", hand))
     for index in range(samples):
@@ -98,20 +107,24 @@ def train_hand(job: tuple[tuple[int, ...], int, int]) -> dict[str, Any]:
         deltas = rollout_leads(
             hand,
             opponent,
-            view.legal_ranks,
+            tuple(values),
             _stable_seed(seed, TRAINING_LABEL, "play", hand, index),
         )
         for rank, delta in deltas.items():
-            values[rank].add(delta - deltas[baseline])
-    selected = select_override(values, baseline)
+            gain = delta - deltas[baseline]
+            if gain != int(gain):
+                raise ValueError("Opening gains must be integer point differences")
+            gain_sums[rank] += int(gain)
+            values[rank].add(gain)
     return {
         "hand": list(hand),
         "key": canonical_hand_key(hand),
         "heuristic_lead": baseline,
-        "override": selected,
+        "override": select_override(values, baseline, gain_sums),
         "candidates": [
             {
                 "lead": rank,
+                "gain_sum": gain_sums[rank],
                 **value.to_dict(),
                 "z": (
                     value.mean / value.standard_error if value.standard_error else None
