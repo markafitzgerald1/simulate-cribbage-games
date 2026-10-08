@@ -1,0 +1,117 @@
+{
+  "experiment": "issue-187-pair-lead-rule-v1",
+  "rule": "initial-Pone: lowest repeated rank (multiplicity >= 2), otherwise heuristic",
+  "features": {
+    "lead_from_repeated_rank": {
+      "keys": 406,
+      "original_mean": 0.7087241379310345,
+      "fresh_mean": 0.7030216748768474
+    },
+    "lead_from_exact_pair": {
+      "keys": 356,
+      "original_mean": 0.7141483146067417,
+      "fresh_mean": 0.7067730337078653
+    },
+    "lead_is_lowest": {
+      "keys": 167,
+      "original_mean": 0.5650419161676649,
+      "fresh_mean": 0.5526179640718565
+    },
+    "lead_is_highest": {
+      "keys": 257,
+      "original_mean": 0.6036747081712063,
+      "fresh_mean": 0.5962832684824904
+    },
+    "lead_is_middle": {
+      "keys": 232,
+      "original_mean": 0.6752758620689656,
+      "fresh_mean": 0.6585706896551724
+    },
+    "lead_count_above_ten": {
+      "keys": 0,
+      "original_mean": null,
+      "fresh_mean": null
+    },
+    "lead_has_ten_value": {
+      "keys": 220,
+      "original_mean": 0.6202745454545455,
+      "fresh_mean": 0.612749090909091
+    },
+    "lead_is_face_rank": {
+      "keys": 181,
+      "original_mean": 0.6179690607734808,
+      "fresh_mean": 0.6119314917127073
+    },
+    "hand_has_repeated_rank": {
+      "keys": 435,
+      "original_mean": 0.6910924137931035,
+      "fresh_mean": 0.6850050574712645
+    },
+    "hand_has_two_pairs": {
+      "keys": 15,
+      "original_mean": 0.5879466666666666,
+      "fresh_mean": 0.5530133333333336
+    },
+    "hand_has_triple": {
+      "keys": 51,
+      "original_mean": 0.6659607843137255,
+      "fresh_mean": 0.6723058823529415
+    },
+    "hand_has_run_of_three": {
+      "keys": 65,
+      "original_mean": 0.630603076923077,
+      "fresh_mean": 0.6229784615384616
+    },
+    "hand_has_run_of_four": {
+      "keys": 5,
+      "original_mean": 0.5304000000000003,
+      "fresh_mean": 0.5887200000000006
+    }
+  },
+  "rule_agrees_with_original_overrides": 394,
+  "rule_vs_heuristic": {
+    "population": "uniform-random-four-card-hands-rank-only-v1",
+    "deals": 200000,
+    "seed": 44,
+    "z_threshold": 3.0,
+    "Pone": {
+      "n": 200000,
+      "mu": 0.05553000000000014,
+      "se": 0.0032213869656050045
+    },
+    "Dealer": {
+      "n": 200000,
+      "mu": 0.0,
+      "se": 0.0
+    },
+    "both_seats": {
+      "n": 200000,
+      "mu": 0.02776500000000007,
+      "se": 0.0016106934828025023
+    },
+    "passed": true
+  },
+  "rule_vs_original_book": {
+    "population": "uniform-random-four-card-hands-rank-only-v1",
+    "deals": 200000,
+    "seed": 44,
+    "Pone": {
+      "n": 200000,
+      "mu": -0.13627000000000208,
+      "se": 0.00394486758274612
+    },
+    "Dealer": {
+      "n": 200000,
+      "mu": 0.0,
+      "se": 0.0
+    },
+    "both_seats": {
+      "n": 200000,
+      "mu": -0.06813500000000104,
+      "se": 0.00197243379137306
+    },
+    "passed": false
+  },
+  "elapsed_seconds": 90.0205801250413,
+  "input_file_sha256": "a5a8ecd016d2291ad370aa6dc0415c9312444fdce532c6408a642afd4b02eaa9"
+}

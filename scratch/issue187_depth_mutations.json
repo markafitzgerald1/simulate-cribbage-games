@@ -1,0 +1,58 @@
+[
+  {
+    "mutation": "ignore-frozen-reply",
+    "file": "exact_second_card.py",
+    "before": "reply = parents[DEALER].select_rank(",
+    "after": "reply = LegacyHeuristicPolicy().select_rank(",
+    "test": "test_exact_second_card.TestSecondCard.test_conditional_gains_match_whole_game_physical_oracle",
+    "caught": true
+  },
+  {
+    "mutation": "ignore-second-weights",
+    "file": "exact_second_card.py",
+    "before": "cell[\"totals\"][rank] += weight * exact.integer_delta(",
+    "after": "cell[\"totals\"][rank] += exact.integer_delta(",
+    "test": "test_exact_second_card.TestSecondCard.test_conditional_gains_match_whole_game_physical_oracle",
+    "caught": true
+  },
+  {
+    "mutation": "dead-second-key",
+    "file": "exact_second_card.py",
+    "before": "c[\"view_key\"]: c[\"override\"]",
+    "after": "c[\"view_key\"] + \"dead\": c[\"override\"]",
+    "test": "test_exact_second_card.TestSecondCard.test_conditional_gains_match_whole_game_physical_oracle",
+    "caught": true
+  },
+  {
+    "mutation": "one-consistent-hand",
+    "file": "pegging_depth_cost.py",
+    "before": "sets[key][1] += 1",
+    "after": "sets[key][1] = 1",
+    "test": "test_pegging_depth_cost.TestDepthCost.test_rank_support_and_sweep_count_match_physical_draw_oracle",
+    "caught": true
+  },
+  {
+    "mutation": "ignore-go-actors",
+    "file": "pegging_depth_cost.py",
+    "before": "if action == GO_ACTION:\n            actor = other_role(actor)",
+    "after": "if action == GO_ACTION:\n            actor = actor",
+    "test": "test_pegging_depth_cost.TestDepthCost.test_original_hand_reconstruction_in_real_go_and_reset_sequences",
+    "caught": true
+  },
+  {
+    "mutation": "wrong-card-layer",
+    "file": "pegging_depth_cost.py",
+    "before": "5-len(view.own_remaining)",
+    "after": "4-len(view.own_remaining)",
+    "test": "test_pegging_depth_cost.TestDepthCost.test_original_hand_reconstruction_in_real_go_and_reset_sequences",
+    "caught": true
+  },
+  {
+    "mutation": "wrong-json-join",
+    "file": "pegging_depth_cost.py",
+    "before": "sum(v[\"compact_json_bytes\"] for v in cells) - len(cells) + 1",
+    "after": "sum(v[\"compact_json_bytes\"] for v in cells) - len(cells)",
+    "test": "test_pegging_depth_cost.TestDepthCost.test_joined_table_bytes_match_independent_json_serialization",
+    "caught": true
+  }
+]

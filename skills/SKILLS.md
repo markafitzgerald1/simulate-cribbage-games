@@ -164,6 +164,43 @@ including absolute Pone and Dealer point-type components and the keyed player's
 paired delta. Keep policy views limited to the acting player's cards and public
 history.
 
+For opening-book research, key an override on the complete opening information
+state, including role, remaining-card counts and empty public history. A zero
+count alone also matches later sequence resets. Screen leads with statistics
+of paired whole-hand deltas on shared hidden deals, then evaluate the frozen
+book on the independent promotion-gate stream. With only Pone overrides,
+Dealer's candidate-seat advantage is exactly zero and the both-seat gate
+advantage is half Pone's; passing does not establish improved Dealer play or
+validate each selected entry independently.
+
+Confirm exploratory opening-book entries by re-estimating the frozen selected
+actions on a separately labeled opponent stream, with the confirmation screen
+fixed before observing it. Count every tested alternative for a nominal null
+threshold benchmark, and distinguish that benchmark from a measured false
+discovery rate. Compare restricted and original books using per-deal paired
+differences; their separate marginal standard errors cannot recover the
+comparison's shared-deal covariance.
+
+For deterministic rank-only continuations, prefer exact hidden-hand enumeration
+with physical multiplicities after removing known cards. Compare integer score
+sums before any decimal conversion. Check the full conditional population mass
+and an independent physical-draw oracle; exact model expectations need no
+sampling significance screen. Condition later books on the frozen policy's
+actual public actions and key them from real state views. The default promotion
+gate's opposite seat is the heuristic, which can differ from the frozen book
+used to define a conditional training population. Prove non-empty overrides
+fire inside real simulations, and collect research regressions explicitly in
+ordinary unittest discovery when the research directory is not a package.
+
+For depth budgets, count optional full public views by actual cards played,
+including go and reset history; passes and final cards are forced. Distinguish
+reachable support under one frozen policy from counterfactual history trees.
+Benchmark distinct rank continuations while physical multiplicities weight
+their means. Separate action-only storage from candidate evidence and peak
+process memory, and treat fixed-point sweep budgets as scenarios until actual
+convergence is measured. Exact improvements against one frozen opponent do not
+guarantee marginal improvement against the promotion gate's heuristic opponent.
+
 Production play generation runs `--promotion-gate=enforce`: when the trained
 pegging policies do not beat the legacy heuristic on the duplicate-deal gate,
 the release is measured with the heuristic, with opponent discards refined
