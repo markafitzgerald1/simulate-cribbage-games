@@ -11,6 +11,8 @@ def load_tests(loader, _tests, _pattern):
         "scratch.test_pegging_opening_book",
         "scratch.test_pegging_book_checks",
         "scratch.test_exact_pegging_book",
+        "scratch.test_exact_second_card",
+        "scratch.test_pegging_depth_cost",
     ):
         suite.addTests(loader.loadTestsFromModule(importlib.import_module(name)))
     return suite

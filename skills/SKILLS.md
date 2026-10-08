@@ -192,6 +192,15 @@ used to define a conditional training population. Prove non-empty overrides
 fire inside real simulations, and collect research regressions explicitly in
 ordinary unittest discovery when the research directory is not a package.
 
+For depth budgets, count optional full public views by actual cards played,
+including go and reset history; passes and final cards are forced. Distinguish
+reachable support under one frozen policy from counterfactual history trees.
+Benchmark distinct rank continuations while physical multiplicities weight
+their means. Separate action-only storage from candidate evidence and peak
+process memory, and treat fixed-point sweep budgets as scenarios until actual
+convergence is measured. Exact improvements against one frozen opponent do not
+guarantee marginal improvement against the promotion gate's heuristic opponent.
+
 Production play generation runs `--promotion-gate=enforce`: when the trained
 pegging policies do not beat the legacy heuristic on the duplicate-deal gate,
 the release is measured with the heuristic, with opponent discards refined
