@@ -1,14 +1,16 @@
 """Exact per-deal components of the opt-in shared-rank crib estimator.
 
-This module only evaluates a fixed, supplied opponent policy. The production
-generator does not call it until the separate v4 integration is implemented.
+The injected opponent policy must depend on the ordered opponent hand alone,
+under its fixed role and frozen generation. Own discards and candidate starters
+passed to the scorer are scoring inputs only; they must not affect that policy's
+discard choice. This restriction makes mapped hands with no changed card share
+the same selected rank pair.
 """
 
 from dataclasses import dataclass
 from fractions import Fraction
 from itertools import combinations
 from typing import Optional
-
 
 RANK_CATEGORIES = ("fifteens", "pairs", "runs")
 SUIT_CATEGORIES = ("flushes", "nobs")
@@ -21,7 +23,12 @@ NON_MATCHING_DISCARD_SUIT = "non_matching_discard_suit"
 
 @dataclass(frozen=True)
 class CribGroup:
-    """A rank multiset with its canonical physical discard variants."""
+    """A rank multiset with its canonical physical discard variants.
+
+    Discard tuples use (rank-1, rank-2) order, with rank-1 <= rank-2.
+    The suited twin shares position zero and changes only position one's suit.
+    For equal ranks, the two unsuited suits form one matching relation.
+    """
 
     deck: tuple
     unsuited: tuple
@@ -42,6 +49,8 @@ class CribGroup:
         first, second = self.unsuited
         if first == second or first.suit == second.suit:
             raise ValueError("The unsuited discard must use distinct suits")
+        if first.index > second.index:
+            raise ValueError("Discard cards must be in rank order")
         if self.suited is None:
             if first.index != second.index:
                 raise ValueError("A distinct-rank group requires a suited twin")

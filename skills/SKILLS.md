@@ -86,6 +86,13 @@ starter-relation correction. Use that oracle to reject dropped residuals,
 opponent nobs, or sign clamps; do not turn positive flush possibility into a
 claim that every policy or finite sample has a positive measured flush.
 
+For opt-in version-4 generation, test the full checkpoint as the authority:
+complete group rounds, unit-weight joint moments, exact resume compatibility,
+and projections from saved moments. Check both seeded fresh-versus-resumed
+equality and unseeded saved-nonce continuation. A reduced-population identity
+oracle does not measure full-table runtime or achieved standard error. Keep
+weekly version-3 generation unchanged until a separate production decision.
+
 Python backend work must preserve existing validation expectations: unit tests
 through `coverage`, type checks through mypy (checking both
 `simulate_cribbage_games.py` and `artifact_pipeline`), and lint and code
@@ -238,6 +245,19 @@ When validating upgrades or writing regression checkers, observe these rules:
 Artifact pipeline changes that produce statistical tables should include
 focused tests for resume behavior, seeded reproducibility, checkpoint output,
 summary-table formatting, and impossible card states such as suited pairs.
+
+An enumeration oracle for estimator identities can bypass the sampler and
+therefore cannot prove its distribution. Pin each sampler's ordered physical
+population and random operations separately, including the residual stream's
+shuffle after forced inclusion. Seed fixtures must use the contract's exact
+population order. Four-suit toy decks test relation multiplicities that a
+three-suit fixture cannot represent.
+
+Centering terms cancel in expectation, so agreement between averaged estimators
+with and without centering cannot prove the chosen constant. Test individual
+integer rows against `1176*R - h_num`, using independently enumerated center
+numerators and nonzero occupancy shifts. A residual integer-scale fixture must
+contain a nonzero paired rank difference to exercise its `42336/k` factor.
 
 When publishing or updating a pull request, avoid force-pushing once review
 comments exist unless a human maintainer explicitly requests rewritten history.

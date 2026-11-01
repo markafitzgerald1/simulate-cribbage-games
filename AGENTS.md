@@ -472,6 +472,20 @@ Jack discards. It is published to the rolling `expected-crib-points` release.
 Keep the two repos in sync: bucket-schema changes must be reflected in both
 `build_client_table` here and the trainer's lookup.
 
+Issue #135's version-4 crib estimator is opt-in through `--estimator-v4`.
+Scheduled generation still uses version 3. Its inputs are the existing
+canonical discard keys and card deck, the frozen opponent policy (either the
+legacy static selector or an explicitly supplied bootstrap table), the user
+seed or saved nonce, and the target rows per stream. The exact centering
+constants come from uniform rank-pair completion after removing both own ranks
+and a starter rank. Version-4 sample rows enumerate each remaining physical
+starter and retain joint integer moments, including cross-cut and cross-variant
+products. Resume from the full version-4 checkpoint only; displayed means and
+standard errors and the lean client file are derived views. Keep the existing
+client shape and exclude producer-only moments and policy state. Neither this
+opt-in path nor its reduced-population oracle proves production precision,
+runtime, a pre-cut sign rule, or policy-learning uncertainty.
+
 Crib EV depends on the starter's suit only through flushes (possible only for a
 suited discard) and his-nobs (a discarded Jack matching the starter suit). For
 every other discard the `starter_suit_relation` buckets are sampling noise, so

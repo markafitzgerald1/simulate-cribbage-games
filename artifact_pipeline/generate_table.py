@@ -968,6 +968,16 @@ def build_client_table(output):
     client_table = {}
     for key, value in output.items():
         if key == METADATA_KEY:
+            if value.get("generation_method") == "artifact_pipeline.generate_table.v4":
+                public_metadata = (
+                    "generation_method",
+                    "seed",
+                    "seed_was_specified",
+                    "generation",
+                    "use_control_variates",
+                )
+                client_table[key] = {name: value[name] for name in public_metadata}
+                continue
             client_table[key] = {
                 metadata_key: metadata_value
                 for metadata_key, metadata_value in value.items()
@@ -1254,6 +1264,11 @@ def main(override_pairs=None):
         help="Enable control variates expected value scoring (variance reduction).",
     )
     parser.add_argument(
+        "--estimator-v4",
+        action="store_true",
+        help="Opt in to the versioned shared-rank estimator and joint checkpoints.",
+    )
+    parser.add_argument(
         "--fail-on-non-convergence",
         action="store_true",
         help="Exit with a non-zero status code if the hardcap is reached without satisfying convergence.",
@@ -1282,6 +1297,16 @@ def main(override_pairs=None):
 
     if args.dampening <= 0.0 or args.dampening > 1.0:
         parser.error("--dampening must be in range (0.0, 1.0]")
+
+    if args.estimator_v4:
+        if args.use_control_variates:
+            parser.error(
+                "--estimator-v4 is a separate mode from --use-control-variates"
+            )
+        from artifact_pipeline import crib_v4  # pylint: disable=import-outside-toplevel
+
+        crib_v4.run(args, override_pairs, sys.modules[__name__])
+        return
 
     if args.seed is not None:
         rng = random.Random(args.seed)
