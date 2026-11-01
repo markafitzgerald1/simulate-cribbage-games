@@ -11,9 +11,10 @@ write times and source/policy manifests; they contain no sampled table moments.
 ## Review and acceptance
 
 Allow 5-10 minutes for human review after the independent review loop is clean.
-Read the risk table and terminal 3-8 result, then decide whether the proposed
-16-hour future survey is worth its cost. Merging this pilot does not approve
-that survey or production activation. Most added lines are timing JSON, marked
+Read the risk table, terminal 3-8 result, and revised next-stage plan below.
+Mark approved recording that plan and merging this pilot on November 1.
+Workflow implementation, diagnostic execution and production activation remain
+separate steps. Most added lines are timing JSON, marked
 as generated in GitHub; expand them only to audit records. The shared runtime
 change is the short `_exact_psd` function; the separate helper is diagnostic.
 There is no app screen or deployed preview to test for this change.
@@ -193,34 +194,53 @@ first pass: at most about 1.1 mature-file hours, plus initial/final writes.
 These are extrapolations, not executed surveys. No indentation, wire format,
 stream allocation, or production sample target was changed.
 
-## Proposed budget, awaiting Mark's approval
+## Revised next-stage plan - November 1, 2026
 
-Approve **16 local wall hours for one fixed-policy N=22,000 survey**, with the
-source/policy/seed above and all 91 groups/both roles. This is a ceiling for
-planning, not permission granted by this pilot. A central sampling range of
-roughly 7-14 hours follows from the measured 6-12 ms group-role steps; a
-conservative allowance of 14 ms for distinct-rank and 10 ms for same-rank
-steps gives 14.9 sampling hours. Reserve the balance for checkpoints, startup,
-reporting, and a bounded retry. Unresolved signs stay unresolved at terminal N.
+OpenAI Codex, recording Mark's decision to revise the plan and merge PR #205.
+This supersedes the proposed immediate all-group N=22,000 / 16-hour survey.
+The N=22,000 results above remain measurements of the completed local pilot.
+Weekly v3 production keeps its existing sample target and workflow.
 
-Prefer separate rank-group checkpoints at cadence 1,000 for the diagnostic
-survey: each two-role file is about 3-11 MB, its writes take under one second
-locally, and a restart validates only that group. Group selection is absent from row
-seeds, so with the same frozen policy the individual rows match a combined
-run; retain each shard's own metadata and do not concatenate JSON into a
-purported valid full checkpoint. Reporting over shards is separate from
-production publication. Start jobs in batches with at most one hour of
-estimated work, report progress, and pause if the aggregate budget is reached.
+1. Merge this pilot and its operational fixes.
+2. Prepare a separate, small PR for a manual diagnostic-only GitHub Actions
+   workflow, isolated from production generation and release publication.
+3. Declare a representative first shard's rank groups before execution. Use
+   the same frozen generating policy and source/policy digests recorded above,
+   seed 42, and a fixed target of N=4,000 complete rows per active stream and
+   role. Distinct-rank groups retain complete twins and both roles.
+4. Give that first job a four-hour ceiling, with an earlier graceful stop and
+   time reserved for checkpoint/artifact upload. Finish sooner when N=4,000 is
+   reached. Do not sample until four hours have elapsed. Retain actual counts
+   and valid checkpoints if the job ends before reaching the target.
+5. Report actual GHA sample throughput, resume-validation time, checkpoint
+   size/write/upload cost, means and comparison SEs. Use these to propose the
+   budget and shard layout for the rest of the N=4,000 survey. No aggregate
+   all-shard budget or automatic higher-N follow-up is approved here.
 
-For an eventual **single-file production** run, propose cadence 22,000 rather
-than the default 100, preserving complete-round SIGINT checkpoints. The measured
-per-role work between checkpoints is minutes at this target. A provisional
-16-hour local allowance covers one frozen-policy generation only, not training
-or an unspecified number of policy transitions. A six-hour CI job cannot be
-promised to fit even the central local estimate. Production needs a separately
-approved resume-across-jobs plan, measured CI throughput/storage, and eventual
-v2 export/consumer readiness. The existing play-pipeline runner multiplier is
-not a v4 crib benchmark. Do not reduce N to fit the cap.
+The fixed sample target defines the experiment; the time ceiling limits cost.
+At the completed 3-8 Pone pilot's variance, square-root scaling projects twin
+SE about 0.00325 at N=4,000. That is a planning projection, not measured GHA
+precision or a guarantee for other groups. A pre-cut E(c) estimate retains
+baseline uncertainty that cancels only in its same-rank twin difference.
+Report unresolved comparisons honestly; do not continue until a desired sign
+appears. No new numerical SE acceptance threshold is adopted by this revision.
+
+The next workflow PR must provide resumable per-rank-group checkpoints, pin
+policy/seed/contracts and preserve full moments in uploaded artifacts. Shard
+selection must not change row seeds or sampling order. Retain each shard's own
+metadata; never concatenate JSON into a purported valid full checkpoint.
+Sharding can reduce elapsed time but not total compute, and GHA throughput must
+be measured before extrapolating a complete run. A later all-group report will
+retain all 156 twin comparisons and their cross-cut covariance-aware errors.
+
+The earlier 7-14-hour central / 16-hour planning allowance described an
+N=22,000 local all-group scenario. It is not the approved next execution.
+Production still needs a separately justified precision target, measured GHA
+runtime/storage, checkpoint cadence, export/consumer readiness and deliberate
+activation/release approval. This plan changes no production defaults and
+performs no workflow dispatch, survey, regeneration or publication. The current
+instruction authorizes recording the plan and merging #205, not starting the
+next workflow or diagnostic run.
 
 ## Why exact acceptance is unchanged
 
