@@ -204,6 +204,16 @@ def main(argv=None):
                 raise
         finally:
             signal.signal(signal.SIGINT, previous)
+    # A stop on the final row occurs before sample_pass marks the phase.
+    if current.state["phase"] == "sampling" and all(
+        moments["count"] == options.samples
+        for roles in current.state["estimator_state"].values()
+        for entry in roles.values()
+        for moments in entry["streams"].values()
+    ):
+        current.state["phase"] = "complete"
+        with patch.object(crib_v4, "_write_checkpoint", checkpoint):
+            current.checkpoint()
     complete = current.state["phase"] == "complete"
     for role, entry in current.state["estimator_state"][options.rank_group].items():
         if first != second:
@@ -225,11 +235,13 @@ def main(argv=None):
         complete=complete,
         counts=counts,
         reason=(
-            "complete" if complete else "deadline" if deadline_reached else "interrupt"
+            "interrupt"
+            if current.pending_stop and not deadline_reached
+            else "complete" if complete else "deadline"
         ),
         seconds=time.perf_counter() - start,
     )
-    if not complete and not deadline_reached:
+    if current.pending_stop and not deadline_reached:
         raise SystemExit(130)
     return complete
 

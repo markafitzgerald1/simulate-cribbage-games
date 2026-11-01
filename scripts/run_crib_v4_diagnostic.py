@@ -36,6 +36,20 @@ def verified_inputs(source, client):
         raise ValueError("diagnostic estimator contracts differ")
 
 
+def validate_resume_run(document, repository):
+    """Accept artifacts only from a completed manual diagnostic in this repo."""
+    if (
+        document.get("event") != "workflow_dispatch"
+        or document.get("status") != "completed"
+        or document.get("path") != ".github/workflows/diagnose-crib-v4.yml"
+        or (document.get("repository") or {}).get("full_name") != repository
+        or (document.get("head_repository") or {}).get("full_name") != repository
+    ):
+        raise ValueError(
+            "resume run is not a completed manual diagnostic from this repository"
+        )
+
+
 def manifest():
     """Pin producer source bytes as well as the explicit experiment identity."""
     root = Path(__file__).resolve().parents[1]
@@ -96,7 +110,8 @@ def run(source, client, output, stop_at):
                 )
         elif checkpoints:
             raise ValueError("resume checkpoints require their manifest")
-        identity_path.write_text(json.dumps(identity, indent=2) + "\n")
+        if not identity_path.exists():
+            identity_path.write_text(json.dumps(identity, indent=2) + "\n")
         for key in GROUPS:
             if time.time() >= stop_at:
                 break

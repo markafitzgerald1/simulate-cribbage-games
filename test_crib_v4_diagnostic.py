@@ -5,6 +5,7 @@ import hashlib
 import io
 import json
 import os
+import signal
 from pathlib import Path
 import tempfile
 import unittest
@@ -73,6 +74,71 @@ class TestDiagnosticDeadline(V4CheckpointFixture):
                 fresh = self.path(f"fresh-{group}.json")
                 self.assertTrue(self.invoke(fresh, group)[0])
                 self.assertEqual(Path(output).read_bytes(), Path(fresh).read_bytes())
+
+    def test_deadline_on_final_target_row_reports_complete(self):
+        original = crib_v4._sample_round
+        count = 0
+
+        def expire_on_last_row(*args):
+            nonlocal count
+            rows = original(*args)
+            count += 1
+            if count == 8:
+                clock.return_value = 11
+            return rows
+
+        output = self.path("terminal.json")
+        with patch("scripts.measure_crib_v4.time.time", return_value=0) as clock:
+            with patch.object(crib_v4, "_sample_round", expire_on_last_row):
+                complete, events = self.invoke(output, extra=("--stop-at", "10"))
+        self.assertTrue(complete)
+        self.assertEqual(events[-1]["reason"], "complete")
+        self.assertEqual(read_json(output)["__metadata__"]["phase"], "complete")
+        fresh = self.path("terminal-fresh.json")
+        self.invoke(fresh)
+        self.assertEqual(Path(output).read_bytes(), Path(fresh).read_bytes())
+
+    def test_sigint_commits_round_and_restores_handler(self):
+        original = crib_v4._sample_round
+        previous = signal.getsignal(signal.SIGINT)
+
+        def interrupt_after_row(*args):
+            rows = original(*args)
+            signal.raise_signal(signal.SIGINT)
+            return rows
+
+        output = self.path("interrupt.json")
+        with patch.object(crib_v4, "_sample_round", interrupt_after_row):
+            with self.assertRaises(SystemExit) as error:
+                self.invoke(output)
+        self.assertEqual(error.exception.code, 130)
+        self.assertEqual(signal.getsignal(signal.SIGINT), previous)
+        state = read_json(output)["__metadata__"]["estimator_state"]["3_8"]
+        for stream in state["Dealer"]["streams"].values():
+            self.assertEqual(stream["count"], 1)
+            self.assertEqual(stream["next_index"], 1)
+        self.assertTrue(self.invoke(output)[0])
+
+    def test_sigint_on_final_row_saves_completion_and_propagates_stop(self):
+        original = crib_v4._sample_round
+        count = 0
+
+        def interrupt_on_last_row(*args):
+            nonlocal count
+            rows = original(*args)
+            count += 1
+            if count == 8:
+                signal.raise_signal(signal.SIGINT)
+            return rows
+
+        output = self.path("interrupt-terminal.json")
+        with patch.object(crib_v4, "_sample_round", interrupt_on_last_row):
+            with self.assertRaises(SystemExit) as error:
+                self.invoke(output)
+        self.assertEqual(error.exception.code, 130)
+        self.assertEqual(read_json(output)["__metadata__"]["phase"], "complete")
+        with patch.object(crib_v4, "_sample_round", side_effect=AssertionError):
+            self.assertTrue(self.invoke(output)[0])
 
     def test_expired_deadline_does_not_sample(self):
         with patch("scripts.measure_crib_v4.time.time", return_value=11):
@@ -210,6 +276,38 @@ class TestShardCoordinator(unittest.TestCase):
         summary = json.loads((self.output / "summary.json").read_text())
         self.assertEqual(summary["groups"]["3_8"], "failed")
         self.assertFalse(summary["complete"])
+
+    def test_resume_does_not_rewrite_existing_manifest(self):
+        self.execute()
+        original = Path.write_text
+        manifest = self.output / "manifest.json"
+
+        def guarded_write(path, *args, **kwargs):
+            if path == manifest:
+                raise AssertionError("existing manifest must remain untouched")
+            return original(path, *args, **kwargs)
+
+        with patch.object(Path, "write_text", guarded_write):
+            self.assertTrue(self.execute()[0]["complete"])
+
+    def test_resume_origin_rejects_other_workflows_and_untrusted_events(self):
+        valid = {
+            "event": "workflow_dispatch",
+            "status": "completed",
+            "path": ".github/workflows/diagnose-crib-v4.yml",
+            "repository": {"full_name": "owner/repo"},
+            "head_repository": {"full_name": "owner/repo"},
+        }
+        self.runner.validate_resume_run(valid, "owner/repo")
+        for field, value in (
+            ("event", "pull_request"),
+            ("path", "other.yml"),
+            ("repository", {"full_name": "fork/repo"}),
+            ("head_repository", None),
+            ("status", "in_progress"),
+        ):
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                self.runner.validate_resume_run({**valid, field: value}, "owner/repo")
 
     def test_resume_requires_unchanged_manifest(self):
         self.execute()

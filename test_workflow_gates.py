@@ -1,6 +1,10 @@
 """Unit tests verifying GitHub Actions workflow gating and integrity."""
 
 from pathlib import Path
+import os
+import subprocess
+import sys
+import tempfile
 import shlex
 import unittest
 import yaml  # type: ignore[import-untyped]
@@ -107,10 +111,6 @@ class TestPlayReleaseWorkflow(unittest.TestCase):
         )
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class TestDiagnosticWorkflow(unittest.TestCase):
     """Guard manual execution and evidence preservation without dispatching."""
 
@@ -131,3 +131,85 @@ class TestDiagnosticWorkflow(unittest.TestCase):
         self.assertNotIn(
             "release", " ".join(step.get("uses", "") for step in job["steps"])
         )
+
+    def test_input_retrieval_falls_back_after_asset_replacement(self):
+        workflow = yaml.load(
+            (
+                Path(__file__).parent / ".github/workflows/diagnose-crib-v4.yml"
+            ).read_text(),
+            Loader=yaml.BaseLoader,
+        )
+        steps = workflow["jobs"]["first-shard"]["steps"]
+        retrieve = next(
+            step for step in steps if step.get("name", "").startswith("Retrieve")
+        )
+        self.assertTrue("verified_inputs" in retrieve["run"])
+        download = retrieve["run"].split("# Every route")[0]
+        fake = r"""import os, sys
+from pathlib import Path
+client = any('697897857' in value or 'client.json' in value for value in sys.argv)
+content = 'client' if client else 'full'
+if sys.argv[1] == 'api':
+    if os.environ['IDS_AVAILABLE'] != 'yes':
+        sys.exit(1)
+    print(content, end='')
+else:
+    Path(sys.argv[sys.argv.index('--output') + 1]).write_text(content)
+    with Path('fallbacks').open('a') as log:
+        log.write(content + '\n')
+"""
+        for available in ("yes", "no"):
+            with self.subTest(
+                available=available
+            ), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                gh = root / "gh"
+                gh.write_text(f"#!{sys.executable}\n" + fake)
+                gh.chmod(0o700)
+                result = subprocess.run(
+                    ["bash", "-e", "-c", download],
+                    cwd=root,
+                    env={
+                        **os.environ,
+                        "PATH": f"{root}{os.pathsep}{os.environ['PATH']}",
+                        "IDS_AVAILABLE": available,
+                    },
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual((root / "inputs/full.json").read_text(), "full")
+                self.assertEqual((root / "inputs/client.json").read_text(), "client")
+                self.assertEqual((root / "fallbacks").exists(), available == "no")
+
+    def test_resume_validation_precedes_restore_and_uses_environment_input(self):
+        workflow = yaml.load(
+            (
+                Path(__file__).parent / ".github/workflows/diagnose-crib-v4.yml"
+            ).read_text(),
+            Loader=yaml.BaseLoader,
+        )
+        steps = workflow["jobs"]["first-shard"]["steps"]
+        names = [step.get("name") for step in steps]
+        validate = names.index("Verify resume run provenance")
+        restore = names.index("Restore compatible per-group checkpoints")
+        measure = names.index("Measure the declared first shard")
+        self.assertLess(validate, restore)
+        self.assertLess(restore, measure)
+        self.assertTrue(
+            'validate_resume_run(json.load(sys.stdin), os.environ["GITHUB_REPOSITORY"])'
+            in steps[validate]["run"]
+        )
+        self.assertTrue('[[ "$RESUME_RUN_ID" =~ ^[0-9]+$ ]]' in steps[validate]["run"])
+        self.assertEqual(
+            steps[validate]["env"]["RESUME_RUN_ID"], "${{ inputs.resume_run_id }}"
+        )
+        self.assertFalse(
+            any("${{ inputs.resume_run_id }}" in step.get("run", "") for step in steps)
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()
