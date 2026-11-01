@@ -1,0 +1,3096 @@
+{
+  "source_commit": "32e520e",
+  "date_local": "2026-10-31",
+  "timezone": "America/Toronto",
+  "hardware": {
+    "cpu": "Apple M2",
+    "ram_bytes": 17179869184
+  },
+  "note": "Diagnostic measurements only; no production table or table-wide survey. Wall-time runs overlap local validation.",
+  "baseline-400": [
+    {
+      "event": "manifest",
+      "source_sha256": "a0464f8c805f782c27040bb366e0775455cd2fa02eb5e458d70bb0e6b9c69666",
+      "policy_sha256": "2a2a584f1f31fc28f3aa42988f0be8659eafde5e1776cac27c09f1d2e6f114d0",
+      "runtime": "3.14.4",
+      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.03878724994137883,
+      "bytes": 1297084,
+      "counts": {
+        "Dealer": 0,
+        "Pone": 0
+      }
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.1810337919741869,
+      "bytes": 5703985,
+      "counts": {
+        "Dealer": 400,
+        "Pone": 0
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 400,
+      "seconds_including_write": 3.4548474587500095
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.32899787509813905,
+      "bytes": 10278193,
+      "counts": {
+        "Dealer": 400,
+        "Pone": 400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 400,
+      "seconds_including_write": 3.308718292042613
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3172182091511786,
+      "bytes": 10278193,
+      "counts": {
+        "Dealer": 400,
+        "Pone": 400
+      }
+    },
+    {
+      "event": "complete",
+      "target": 400,
+      "seconds": 7.349889291916043
+    }
+  ],
+  "baseline-1600": [
+    {
+      "event": "manifest",
+      "source_sha256": "a0464f8c805f782c27040bb366e0775455cd2fa02eb5e458d70bb0e6b9c69666",
+      "policy_sha256": "2a2a584f1f31fc28f3aa42988f0be8659eafde5e1776cac27c09f1d2e6f114d0",
+      "runtime": "3.14.4",
+      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    },
+    {
+      "event": "load",
+      "seconds": 92.15782716590911
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.9625998749397695,
+      "bytes": 10382950,
+      "counts": {
+        "Dealer": 800,
+        "Pone": 400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 800,
+      "seconds_including_write": 10.213651000056416
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 2.5886538750492036,
+      "bytes": 10428090,
+      "counts": {
+        "Dealer": 800,
+        "Pone": 800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 800,
+      "seconds_including_write": 13.785331249702722
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.668770625256002,
+      "bytes": 10448117,
+      "counts": {
+        "Dealer": 1200,
+        "Pone": 800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 1200,
+      "seconds_including_write": 10.945831417106092
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.6771914167329669,
+      "bytes": 10459612,
+      "counts": {
+        "Dealer": 1200,
+        "Pone": 1200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 1200,
+      "seconds_including_write": 6.335609208792448
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.6578930420801044,
+      "bytes": 10490348,
+      "counts": {
+        "Dealer": 1600,
+        "Pone": 1200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 1600,
+      "seconds_including_write": 6.359407166950405
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.5164632080122828,
+      "bytes": 10523614,
+      "counts": {
+        "Dealer": 1600,
+        "Pone": 1600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 1600,
+      "seconds_including_write": 6.784927417058498
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.49937037471681833,
+      "bytes": 10523614,
+      "counts": {
+        "Dealer": 1600,
+        "Pone": 1600
+      }
+    },
+    {
+      "event": "complete",
+      "target": 1600,
+      "seconds": 147.366141915787
+    }
+  ],
+  "optimized-22000": [
+    {
+      "event": "manifest",
+      "source_sha256": "a0464f8c805f782c27040bb366e0775455cd2fa02eb5e458d70bb0e6b9c69666",
+      "policy_sha256": "2a2a584f1f31fc28f3aa42988f0be8659eafde5e1776cac27c09f1d2e6f114d0",
+      "runtime": "3.14.4",
+      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.09720945777371526,
+      "bytes": 1297086,
+      "counts": {
+        "Dealer": 0,
+        "Pone": 0
+      }
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.8291592500172555,
+      "bytes": 5703987,
+      "counts": {
+        "Dealer": 400,
+        "Pone": 0
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 400,
+      "seconds_including_write": 8.669772542081773
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 2.243626832962036,
+      "bytes": 10278195,
+      "counts": {
+        "Dealer": 400,
+        "Pone": 400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 400,
+      "seconds_including_write": 15.957319499924779
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 1.2157127079553902,
+      "bytes": 10382951,
+      "counts": {
+        "Dealer": 800,
+        "Pone": 400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 800,
+      "seconds_including_write": 11.19800754217431
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 1.1647055838257074,
+      "bytes": 10428091,
+      "counts": {
+        "Dealer": 800,
+        "Pone": 800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 800,
+      "seconds_including_write": 9.907479291781783
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 2.0278298342600465,
+      "bytes": 10448118,
+      "counts": {
+        "Dealer": 1200,
+        "Pone": 800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 1200,
+      "seconds_including_write": 11.468449499923736
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.808301208075136,
+      "bytes": 10459613,
+      "counts": {
+        "Dealer": 1200,
+        "Pone": 1200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 1200,
+      "seconds_including_write": 15.024824917316437
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.7063154997304082,
+      "bytes": 10490349,
+      "counts": {
+        "Dealer": 1600,
+        "Pone": 1200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 1600,
+      "seconds_including_write": 7.06543808337301
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.7042735000140965,
+      "bytes": 10523615,
+      "counts": {
+        "Dealer": 1600,
+        "Pone": 1600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 1600,
+      "seconds_including_write": 6.5406368328258395
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.9605141249485314,
+      "bytes": 10527964,
+      "counts": {
+        "Dealer": 2000,
+        "Pone": 1600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 2000,
+      "seconds_including_write": 6.935065750032663
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.4828876252286136,
+      "bytes": 10536898,
+      "counts": {
+        "Dealer": 2000,
+        "Pone": 2000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 2000,
+      "seconds_including_write": 5.054375458043069
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.5106421252712607,
+      "bytes": 10538388,
+      "counts": {
+        "Dealer": 2400,
+        "Pone": 2000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 2400,
+      "seconds_including_write": 4.877609500195831
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.5887135001830757,
+      "bytes": 10544628,
+      "counts": {
+        "Dealer": 2400,
+        "Pone": 2400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 2400,
+      "seconds_including_write": 6.139993375167251
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.5719536659307778,
+      "bytes": 10555732,
+      "counts": {
+        "Dealer": 2800,
+        "Pone": 2400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 2800,
+      "seconds_including_write": 5.594923832919449
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.5020253746770322,
+      "bytes": 10560520,
+      "counts": {
+        "Dealer": 2800,
+        "Pone": 2800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 2800,
+      "seconds_including_write": 5.047737332992256
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.6156539581716061,
+      "bytes": 10611269,
+      "counts": {
+        "Dealer": 3200,
+        "Pone": 2800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 3200,
+      "seconds_including_write": 6.126653667073697
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.39988895785063505,
+      "bytes": 10612856,
+      "counts": {
+        "Dealer": 3200,
+        "Pone": 3200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 3200,
+      "seconds_including_write": 5.054143916815519
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3842847077175975,
+      "bytes": 10613301,
+      "counts": {
+        "Dealer": 3600,
+        "Pone": 3200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 3600,
+      "seconds_including_write": 3.713927916251123
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.5002532908692956,
+      "bytes": 10612804,
+      "counts": {
+        "Dealer": 3600,
+        "Pone": 3600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 3600,
+      "seconds_including_write": 3.960865333210677
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 1.262054874561727,
+      "bytes": 10616661,
+      "counts": {
+        "Dealer": 4000,
+        "Pone": 3600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 4000,
+      "seconds_including_write": 8.446426749695092
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 1.6385393338277936,
+      "bytes": 10618393,
+      "counts": {
+        "Dealer": 4000,
+        "Pone": 4000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 4000,
+      "seconds_including_write": 13.353510832879692
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 1.8570359162986279,
+      "bytes": 10619582,
+      "counts": {
+        "Dealer": 4400,
+        "Pone": 4000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 4400,
+      "seconds_including_write": 16.617807792034
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 1.1959804589860141,
+      "bytes": 10622786,
+      "counts": {
+        "Dealer": 4400,
+        "Pone": 4400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 4400,
+      "seconds_including_write": 13.082405334338546
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.5982323749922216,
+      "bytes": 10624450,
+      "counts": {
+        "Dealer": 4800,
+        "Pone": 4400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 4800,
+      "seconds_including_write": 6.2230484168976545
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.5632571657188237,
+      "bytes": 10625809,
+      "counts": {
+        "Dealer": 4800,
+        "Pone": 4800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 4800,
+      "seconds_including_write": 5.494808875024319
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.5155382910743356,
+      "bytes": 10652951,
+      "counts": {
+        "Dealer": 5200,
+        "Pone": 4800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 5200,
+      "seconds_including_write": 4.835644457954913
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.5134063330478966,
+      "bytes": 10651186,
+      "counts": {
+        "Dealer": 5200,
+        "Pone": 5200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 5200,
+      "seconds_including_write": 4.748369333799928
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.664063542149961,
+      "bytes": 10654676,
+      "counts": {
+        "Dealer": 5600,
+        "Pone": 5200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 5600,
+      "seconds_including_write": 4.828846167307347
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.4068333748728037,
+      "bytes": 10659744,
+      "counts": {
+        "Dealer": 5600,
+        "Pone": 5600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 5600,
+      "seconds_including_write": 4.030046542175114
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.4417163338512182,
+      "bytes": 10660595,
+      "counts": {
+        "Dealer": 6000,
+        "Pone": 5600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 6000,
+      "seconds_including_write": 3.849633250385523
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.5128932087682188,
+      "bytes": 10662553,
+      "counts": {
+        "Dealer": 6000,
+        "Pone": 6000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 6000,
+      "seconds_including_write": 4.0403444999828935
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.41507350001484156,
+      "bytes": 10665375,
+      "counts": {
+        "Dealer": 6400,
+        "Pone": 6000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 6400,
+      "seconds_including_write": 3.666079207789153
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.4079153332859278,
+      "bytes": 10663019,
+      "counts": {
+        "Dealer": 6400,
+        "Pone": 6400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 6400,
+      "seconds_including_write": 3.5734223746694624
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.37774883303791285,
+      "bytes": 10674007,
+      "counts": {
+        "Dealer": 6800,
+        "Pone": 6400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 6800,
+      "seconds_including_write": 3.6185474172234535
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.39256404200568795,
+      "bytes": 10676936,
+      "counts": {
+        "Dealer": 6800,
+        "Pone": 6800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 6800,
+      "seconds_including_write": 3.5425836252979934
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.4898846661671996,
+      "bytes": 10679318,
+      "counts": {
+        "Dealer": 7200,
+        "Pone": 6800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 7200,
+      "seconds_including_write": 3.4913761662319303
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.4130167500115931,
+      "bytes": 10681012,
+      "counts": {
+        "Dealer": 7200,
+        "Pone": 7200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 7200,
+      "seconds_including_write": 3.4351694169454277
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3927383339032531,
+      "bytes": 10680641,
+      "counts": {
+        "Dealer": 7600,
+        "Pone": 7200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 7600,
+      "seconds_including_write": 3.558032583910972
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.46862079203128815,
+      "bytes": 10678940,
+      "counts": {
+        "Dealer": 7600,
+        "Pone": 7600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 7600,
+      "seconds_including_write": 3.362130666151643
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.36811200017109513,
+      "bytes": 10708011,
+      "counts": {
+        "Dealer": 8000,
+        "Pone": 7600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 8000,
+      "seconds_including_write": 3.2207067077979445
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.33885233383625746,
+      "bytes": 10709840,
+      "counts": {
+        "Dealer": 8000,
+        "Pone": 8000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 8000,
+      "seconds_including_write": 3.6100673340260983
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3206084999255836,
+      "bytes": 10712784,
+      "counts": {
+        "Dealer": 8400,
+        "Pone": 8000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 8400,
+      "seconds_including_write": 2.9215925000607967
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.33751666685566306,
+      "bytes": 10714577,
+      "counts": {
+        "Dealer": 8400,
+        "Pone": 8400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 8400,
+      "seconds_including_write": 2.9590019159950316
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3621210418641567,
+      "bytes": 10712080,
+      "counts": {
+        "Dealer": 8800,
+        "Pone": 8400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 8800,
+      "seconds_including_write": 3.0453289998695254
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.31812650011852384,
+      "bytes": 10713459,
+      "counts": {
+        "Dealer": 8800,
+        "Pone": 8800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 8800,
+      "seconds_including_write": 2.858372540678829
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3307448336854577,
+      "bytes": 10716151,
+      "counts": {
+        "Dealer": 9200,
+        "Pone": 8800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 9200,
+      "seconds_including_write": 2.909547041170299
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.31541283382102847,
+      "bytes": 10714527,
+      "counts": {
+        "Dealer": 9200,
+        "Pone": 9200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 9200,
+      "seconds_including_write": 2.77022608416155
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3225555829703808,
+      "bytes": 10715782,
+      "counts": {
+        "Dealer": 9600,
+        "Pone": 9200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 9600,
+      "seconds_including_write": 2.8305539581924677
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.33028799993917346,
+      "bytes": 10716728,
+      "counts": {
+        "Dealer": 9600,
+        "Pone": 9600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 9600,
+      "seconds_including_write": 2.7441832502372563
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3100964999757707,
+      "bytes": 10718714,
+      "counts": {
+        "Dealer": 10000,
+        "Pone": 9600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 10000,
+      "seconds_including_write": 2.8202172089368105
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.36718133417889476,
+      "bytes": 10722099,
+      "counts": {
+        "Dealer": 10000,
+        "Pone": 10000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 10000,
+      "seconds_including_write": 3.153934999834746
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.376311541069299,
+      "bytes": 10723447,
+      "counts": {
+        "Dealer": 10400,
+        "Pone": 10000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 10400,
+      "seconds_including_write": 3.213196124881506
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.37542354222387075,
+      "bytes": 10724515,
+      "counts": {
+        "Dealer": 10400,
+        "Pone": 10400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 10400,
+      "seconds_including_write": 3.3248422923497856
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3654957921244204,
+      "bytes": 10724964,
+      "counts": {
+        "Dealer": 10800,
+        "Pone": 10400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 10800,
+      "seconds_including_write": 3.196174374781549
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.37286687502637506,
+      "bytes": 10726911,
+      "counts": {
+        "Dealer": 10800,
+        "Pone": 10800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 10800,
+      "seconds_including_write": 3.0497685843147337
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3391490839421749,
+      "bytes": 10734123,
+      "counts": {
+        "Dealer": 11200,
+        "Pone": 10800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 11200,
+      "seconds_including_write": 3.0407865829765797
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3290829169563949,
+      "bytes": 10734339,
+      "counts": {
+        "Dealer": 11200,
+        "Pone": 11200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 11200,
+      "seconds_including_write": 2.8651577499695122
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.33990349993109703,
+      "bytes": 10733253,
+      "counts": {
+        "Dealer": 11600,
+        "Pone": 11200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 11600,
+      "seconds_including_write": 2.9336365000344813
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3014765828847885,
+      "bytes": 10733217,
+      "counts": {
+        "Dealer": 11600,
+        "Pone": 11600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 11600,
+      "seconds_including_write": 2.84259554091841
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2942468333058059,
+      "bytes": 10733792,
+      "counts": {
+        "Dealer": 12000,
+        "Pone": 11600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 12000,
+      "seconds_including_write": 2.534788165707141
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3094902918674052,
+      "bytes": 10733757,
+      "counts": {
+        "Dealer": 12000,
+        "Pone": 12000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 12000,
+      "seconds_including_write": 2.630683332681656
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.29882995784282684,
+      "bytes": 10734603,
+      "counts": {
+        "Dealer": 12400,
+        "Pone": 12000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 12400,
+      "seconds_including_write": 2.5978257092647254
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3303393330425024,
+      "bytes": 10735220,
+      "counts": {
+        "Dealer": 12400,
+        "Pone": 12400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 12400,
+      "seconds_including_write": 2.6403535422869027
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.30618983320891857,
+      "bytes": 10735912,
+      "counts": {
+        "Dealer": 12800,
+        "Pone": 12400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 12800,
+      "seconds_including_write": 2.5746252918615937
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.29016941599547863,
+      "bytes": 10737712,
+      "counts": {
+        "Dealer": 12800,
+        "Pone": 12800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 12800,
+      "seconds_including_write": 2.5827345000579953
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.29362729098647833,
+      "bytes": 10737771,
+      "counts": {
+        "Dealer": 13200,
+        "Pone": 12800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 13200,
+      "seconds_including_write": 2.5476329158991575
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.28613020898774266,
+      "bytes": 10738954,
+      "counts": {
+        "Dealer": 13200,
+        "Pone": 13200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 13200,
+      "seconds_including_write": 2.50515029206872
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2961805830709636,
+      "bytes": 10739137,
+      "counts": {
+        "Dealer": 13600,
+        "Pone": 13200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 13600,
+      "seconds_including_write": 2.5061170840635896
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2967926673591137,
+      "bytes": 10738712,
+      "counts": {
+        "Dealer": 13600,
+        "Pone": 13600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 13600,
+      "seconds_including_write": 2.527226417325437
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2967122080735862,
+      "bytes": 10740054,
+      "counts": {
+        "Dealer": 14000,
+        "Pone": 13600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 14000,
+      "seconds_including_write": 2.585104249883443
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.30306070763617754,
+      "bytes": 10739518,
+      "counts": {
+        "Dealer": 14000,
+        "Pone": 14000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 14000,
+      "seconds_including_write": 2.8074877499602735
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2963334168307483,
+      "bytes": 10739398,
+      "counts": {
+        "Dealer": 14400,
+        "Pone": 14000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 14400,
+      "seconds_including_write": 2.581733583007008
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.30008329218253493,
+      "bytes": 10739898,
+      "counts": {
+        "Dealer": 14400,
+        "Pone": 14400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 14400,
+      "seconds_including_write": 2.5818620417267084
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.30800095899030566,
+      "bytes": 10740056,
+      "counts": {
+        "Dealer": 14800,
+        "Pone": 14400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 14800,
+      "seconds_including_write": 2.5610513747669756
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2969206250272691,
+      "bytes": 10740177,
+      "counts": {
+        "Dealer": 14800,
+        "Pone": 14800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 14800,
+      "seconds_including_write": 2.703542791772634
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.30634887516498566,
+      "bytes": 10741194,
+      "counts": {
+        "Dealer": 15200,
+        "Pone": 14800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 15200,
+      "seconds_including_write": 2.570392208173871
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.29641408286988735,
+      "bytes": 10742055,
+      "counts": {
+        "Dealer": 15200,
+        "Pone": 15200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 15200,
+      "seconds_including_write": 2.575444375164807
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3058194168843329,
+      "bytes": 10742553,
+      "counts": {
+        "Dealer": 15600,
+        "Pone": 15200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 15600,
+      "seconds_including_write": 2.583465290721506
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3117741667665541,
+      "bytes": 10743568,
+      "counts": {
+        "Dealer": 15600,
+        "Pone": 15600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 15600,
+      "seconds_including_write": 2.5907231247983873
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.291725707706064,
+      "bytes": 10743033,
+      "counts": {
+        "Dealer": 16000,
+        "Pone": 15600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 16000,
+      "seconds_including_write": 2.5687034158036113
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2987762079574168,
+      "bytes": 10741355,
+      "counts": {
+        "Dealer": 16000,
+        "Pone": 16000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 16000,
+      "seconds_including_write": 2.612920334096998
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.32587608275935054,
+      "bytes": 10741932,
+      "counts": {
+        "Dealer": 16400,
+        "Pone": 16000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 16400,
+      "seconds_including_write": 2.5675589172169566
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.30002808291465044,
+      "bytes": 10743671,
+      "counts": {
+        "Dealer": 16400,
+        "Pone": 16400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 16400,
+      "seconds_including_write": 2.568346458952874
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3087962083518505,
+      "bytes": 10745035,
+      "counts": {
+        "Dealer": 16800,
+        "Pone": 16400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 16800,
+      "seconds_including_write": 2.5702390829101205
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2936827498488128,
+      "bytes": 10745362,
+      "counts": {
+        "Dealer": 16800,
+        "Pone": 16800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 16800,
+      "seconds_including_write": 2.5719857080839574
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2961734998971224,
+      "bytes": 10745107,
+      "counts": {
+        "Dealer": 17200,
+        "Pone": 16800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 17200,
+      "seconds_including_write": 2.550060208886862
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2942803748883307,
+      "bytes": 10744653,
+      "counts": {
+        "Dealer": 17200,
+        "Pone": 17200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 17200,
+      "seconds_including_write": 2.575830874964595
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3120018746703863,
+      "bytes": 10746082,
+      "counts": {
+        "Dealer": 17600,
+        "Pone": 17200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 17600,
+      "seconds_including_write": 2.5403645001351833
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.31658333260565996,
+      "bytes": 10746391,
+      "counts": {
+        "Dealer": 17600,
+        "Pone": 17600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 17600,
+      "seconds_including_write": 2.645971415564418
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.29973600013181567,
+      "bytes": 10746221,
+      "counts": {
+        "Dealer": 18000,
+        "Pone": 17600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 18000,
+      "seconds_including_write": 2.582292958162725
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3365389578975737,
+      "bytes": 10744281,
+      "counts": {
+        "Dealer": 18000,
+        "Pone": 18000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 18000,
+      "seconds_including_write": 2.674291083123535
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2999608749523759,
+      "bytes": 10745204,
+      "counts": {
+        "Dealer": 18400,
+        "Pone": 18000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 18400,
+      "seconds_including_write": 2.538684958126396
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.30363749992102385,
+      "bytes": 10747421,
+      "counts": {
+        "Dealer": 18400,
+        "Pone": 18400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 18400,
+      "seconds_including_write": 2.515028417110443
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.29577945824712515,
+      "bytes": 10747216,
+      "counts": {
+        "Dealer": 18800,
+        "Pone": 18400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 18800,
+      "seconds_including_write": 2.533145416993648
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.28365937480702996,
+      "bytes": 10748066,
+      "counts": {
+        "Dealer": 18800,
+        "Pone": 18800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 18800,
+      "seconds_including_write": 2.509670458268374
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.304130791220814,
+      "bytes": 10748119,
+      "counts": {
+        "Dealer": 19200,
+        "Pone": 18800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 19200,
+      "seconds_including_write": 2.544875457882881
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.28362366696819663,
+      "bytes": 10748402,
+      "counts": {
+        "Dealer": 19200,
+        "Pone": 19200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 19200,
+      "seconds_including_write": 2.5545838749967515
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3054476249963045,
+      "bytes": 10749056,
+      "counts": {
+        "Dealer": 19600,
+        "Pone": 19200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 19600,
+      "seconds_including_write": 2.5043779159896076
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.31032287515699863,
+      "bytes": 10750633,
+      "counts": {
+        "Dealer": 19600,
+        "Pone": 19600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 19600,
+      "seconds_including_write": 2.5047329999506474
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2784951659850776,
+      "bytes": 10749935,
+      "counts": {
+        "Dealer": 20000,
+        "Pone": 19600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 20000,
+      "seconds_including_write": 2.4833506252616644
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2969952495768666,
+      "bytes": 10749087,
+      "counts": {
+        "Dealer": 20000,
+        "Pone": 20000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 20000,
+      "seconds_including_write": 2.5324108339846134
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.28795212507247925,
+      "bytes": 10750129,
+      "counts": {
+        "Dealer": 20400,
+        "Pone": 20000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 20400,
+      "seconds_including_write": 2.510009292047471
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2816961659118533,
+      "bytes": 10773481,
+      "counts": {
+        "Dealer": 20400,
+        "Pone": 20400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 20400,
+      "seconds_including_write": 2.4841909161768854
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.37966962484642863,
+      "bytes": 10773228,
+      "counts": {
+        "Dealer": 20800,
+        "Pone": 20400
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 20800,
+      "seconds_including_write": 2.645581833086908
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.28153404081240296,
+      "bytes": 10773645,
+      "counts": {
+        "Dealer": 20800,
+        "Pone": 20800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 20800,
+      "seconds_including_write": 2.446838959120214
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.28697120770812035,
+      "bytes": 10772740,
+      "counts": {
+        "Dealer": 21200,
+        "Pone": 20800
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 21200,
+      "seconds_including_write": 2.6910480419173837
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.27695358311757445,
+      "bytes": 10771790,
+      "counts": {
+        "Dealer": 21200,
+        "Pone": 21200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 21200,
+      "seconds_including_write": 2.465612584259361
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.30266004195436835,
+      "bytes": 10772596,
+      "counts": {
+        "Dealer": 21600,
+        "Pone": 21200
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 21600,
+      "seconds_including_write": 2.494205749593675
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2925140419974923,
+      "bytes": 10772958,
+      "counts": {
+        "Dealer": 21600,
+        "Pone": 21600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 21600,
+      "seconds_including_write": 2.564875707961619
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.29137541679665446,
+      "bytes": 10772415,
+      "counts": {
+        "Dealer": 22000,
+        "Pone": 21600
+      }
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 22000,
+      "seconds_including_write": 2.4496309580281377
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.31103862496092916,
+      "bytes": 10773069,
+      "counts": {
+        "Dealer": 22000,
+        "Pone": 22000
+      }
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 22000,
+      "seconds_including_write": 2.529885499738157
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3079427918419242,
+      "bytes": 10773069,
+      "counts": {
+        "Dealer": 22000,
+        "Pone": 22000
+      }
+    },
+    {
+      "event": "complete",
+      "target": 22000,
+      "seconds": 450.6161969169043
+    }
+  ],
+  "2_3": [
+    {
+      "event": "manifest",
+      "source_sha256": "a0464f8c805f782c27040bb366e0775455cd2fa02eb5e458d70bb0e6b9c69666",
+      "policy_sha256": "2a2a584f1f31fc28f3aa42988f0be8659eafde5e1776cac27c09f1d2e6f114d0",
+      "runtime": "3.14.4",
+      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+      "rank_group": "2_3",
+      "seed": 42,
+      "samples": 4000,
+      "checkpoint_frequency": 1000
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.10495187528431416,
+      "bytes": 1297103
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.33874962478876114,
+      "bytes": 5868171
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 1000,
+      "target": 1000,
+      "seconds_including_write": 12.729006541892886
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.5604372499510646,
+      "bytes": 10426225
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 1000,
+      "target": 1000,
+      "seconds_including_write": 13.15663370769471
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.6967079588212073,
+      "bytes": 10448201
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 1000,
+      "target": 2000,
+      "seconds_including_write": 13.400360458064824
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.47034783428534865,
+      "bytes": 10567908
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 1000,
+      "target": 2000,
+      "seconds_including_write": 8.933156999759376
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 1.8596765422262251,
+      "bytes": 10619615
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 1000,
+      "target": 3000,
+      "seconds_including_write": 25.313500250224024
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.6358822910115123,
+      "bytes": 10635856
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 1000,
+      "target": 3000,
+      "seconds_including_write": 29.931083084084094
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.5508760842494667,
+      "bytes": 10663527
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 1000,
+      "target": 4000,
+      "seconds_including_write": 12.557684792205691
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.4656736250035465,
+      "bytes": 10668303
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 1000,
+      "target": 4000,
+      "seconds_including_write": 11.127057292032987
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.4640561658889055,
+      "bytes": 10668303
+    },
+    {
+      "event": "complete",
+      "seconds": 127.96391683304682
+    },
+    {
+      "event": "comparison",
+      "role": "Dealer",
+      "gap": {
+        "n": 4000,
+        "mu": 0.04085159090909091,
+        "se": 0.003384550658748504
+      },
+      "residual": {
+        "n": 4000,
+        "mu": 0.002573181818181818,
+        "se": 0.001643821412667541
+      },
+      "flush": {
+        "n": 4000,
+        "mu": 0.038494318181818185,
+        "se": 0.0029652773607406952
+      },
+      "nobs": {
+        "n": 4000,
+        "mu": -0.0002159090909090909,
+        "se": 0.0001856751744817933
+      }
+    },
+    {
+      "event": "comparison",
+      "role": "Pone",
+      "gap": {
+        "n": 4000,
+        "mu": 0.03799545454545455,
+        "se": 0.0035953320012197757
+      },
+      "residual": {
+        "n": 4000,
+        "mu": -0.0017488636363636363,
+        "se": 0.001951962602477549
+      },
+      "flush": {
+        "n": 4000,
+        "mu": 0.039857954545454544,
+        "se": 0.003028166322637933
+      },
+      "nobs": {
+        "n": 4000,
+        "mu": -0.00011363636363636364,
+        "se": 0.00015054947556180032
+      }
+    }
+  ],
+  "7_8": [
+    {
+      "event": "manifest",
+      "source_sha256": "a0464f8c805f782c27040bb366e0775455cd2fa02eb5e458d70bb0e6b9c69666",
+      "policy_sha256": "2a2a584f1f31fc28f3aa42988f0be8659eafde5e1776cac27c09f1d2e6f114d0",
+      "runtime": "3.14.4",
+      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+      "rank_group": "7_8",
+      "seed": 42,
+      "samples": 4000,
+      "checkpoint_frequency": 1000
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.07347970921546221,
+      "bytes": 1297103
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.27023904118686914,
+      "bytes": 5826564
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 1000,
+      "target": 1000,
+      "seconds_including_write": 11.867175166960806
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.42951170867308974,
+      "bytes": 10490429
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 1000,
+      "target": 1000,
+      "seconds_including_write": 12.482561042066664
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.9696773341856897,
+      "bytes": 10603937
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 1000,
+      "target": 2000,
+      "seconds_including_write": 10.603298082947731
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 1.80060379114002,
+      "bytes": 10624128
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 1000,
+      "target": 2000,
+      "seconds_including_write": 32.15038083400577
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.679321541916579,
+      "bytes": 10646456
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 1000,
+      "target": 3000,
+      "seconds_including_write": 22.21283758385107
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.5435255831107497,
+      "bytes": 10655475
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 1000,
+      "target": 3000,
+      "seconds_including_write": 12.047147375065833
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.40539904218167067,
+      "bytes": 10664120
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 1000,
+      "target": 4000,
+      "seconds_including_write": 10.35012183431536
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.4372647078707814,
+      "bytes": 10667160
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 1000,
+      "target": 4000,
+      "seconds_including_write": 9.288152291905135
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.47738225013017654,
+      "bytes": 10667160
+    },
+    {
+      "event": "complete",
+      "seconds": 121.78100954089314
+    },
+    {
+      "event": "comparison",
+      "role": "Dealer",
+      "gap": {
+        "n": 4000,
+        "mu": 0.03444545454545454,
+        "se": 0.0036244287233699866
+      },
+      "residual": {
+        "n": 4000,
+        "mu": -0.00042954545454545453,
+        "se": 0.002261508912421193
+      },
+      "flush": {
+        "n": 4000,
+        "mu": 0.034772727272727275,
+        "se": 0.0028360679613731767
+      },
+      "nobs": {
+        "n": 4000,
+        "mu": 0.00010227272727272727,
+        "se": 0.00018130018037422623
+      }
+    },
+    {
+      "event": "comparison",
+      "role": "Pone",
+      "gap": {
+        "n": 4000,
+        "mu": 0.024374090909090908,
+        "se": 0.004167957765389831
+      },
+      "residual": {
+        "n": 4000,
+        "mu": -0.011552045454545454,
+        "se": 0.0030415633005779086
+      },
+      "flush": {
+        "n": 4000,
+        "mu": 0.03568181818181818,
+        "se": 0.002857924334021188
+      },
+      "nobs": {
+        "n": 4000,
+        "mu": 0.0002443181818181818,
+        "se": 0.00015875908304704625
+      }
+    }
+  ],
+  "4_J": [
+    {
+      "event": "manifest",
+      "source_sha256": "a0464f8c805f782c27040bb366e0775455cd2fa02eb5e458d70bb0e6b9c69666",
+      "policy_sha256": "2a2a584f1f31fc28f3aa42988f0be8659eafde5e1776cac27c09f1d2e6f114d0",
+      "runtime": "3.14.4",
+      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+      "rank_group": "4_J",
+      "seed": 42,
+      "samples": 1600,
+      "checkpoint_frequency": 800
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.0591192077845335,
+      "bytes": 1297085
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.27310079196467996,
+      "bytes": 6008450
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 800,
+      "target": 800,
+      "seconds_including_write": 9.771157249808311
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.4190518339164555,
+      "bytes": 10754254
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 800,
+      "target": 800,
+      "seconds_including_write": 8.221786249894649
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3872215421870351,
+      "bytes": 10786807
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 800,
+      "target": 1600,
+      "seconds_including_write": 7.974353124853224
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3761638328433037,
+      "bytes": 10808528
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 800,
+      "target": 1600,
+      "seconds_including_write": 7.552068083081394
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3759170421399176,
+      "bytes": 10808528
+    },
+    {
+      "event": "complete",
+      "seconds": 34.14400670863688
+    },
+    {
+      "event": "comparison",
+      "role": "Dealer",
+      "gap": {
+        "n": 1600,
+        "mu": 0.02665681818181818,
+        "se": 0.005410827354125306
+      },
+      "residual": {
+        "n": 1600,
+        "mu": -0.00043125,
+        "se": 0.002029796079230259
+      },
+      "flush": {
+        "n": 1600,
+        "mu": 0.04673295454545454,
+        "se": 0.005146418347200435
+      },
+      "nobs": {
+        "n": 1600,
+        "mu": -0.019644886363636364,
+        "se": 0.0009701283056367851
+      }
+    },
+    {
+      "event": "comparison",
+      "role": "Pone",
+      "gap": {
+        "n": 1600,
+        "mu": 0.02055965909090909,
+        "se": 0.005186524550167343
+      },
+      "residual": {
+        "n": 1600,
+        "mu": -8.522727272727273e-06,
+        "se": 0.0023035217495181916
+      },
+      "flush": {
+        "n": 1600,
+        "mu": 0.03892045454545454,
+        "se": 0.004744775042831508
+      },
+      "nobs": {
+        "n": 1600,
+        "mu": -0.018352272727272727,
+        "se": 0.0010090091321436955
+      }
+    }
+  ],
+  "A_A": [
+    {
+      "event": "manifest",
+      "source_sha256": "a0464f8c805f782c27040bb366e0775455cd2fa02eb5e458d70bb0e6b9c69666",
+      "policy_sha256": "2a2a584f1f31fc28f3aa42988f0be8659eafde5e1776cac27c09f1d2e6f114d0",
+      "runtime": "3.14.4",
+      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+      "rank_group": "A_A",
+      "seed": 42,
+      "samples": 1600,
+      "checkpoint_frequency": 800
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.18374608270823956,
+      "bytes": 1258039
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.3447894169948995,
+      "bytes": 2024343
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 800,
+      "target": 800,
+      "seconds_including_write": 11.694207292050123
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.29600691609084606,
+      "bytes": 2804924
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 800,
+      "target": 800,
+      "seconds_including_write": 9.783687208779156
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.18368733301758766,
+      "bytes": 2811003
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 800,
+      "target": 1600,
+      "seconds_including_write": 5.006364499684423
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.21484487457200885,
+      "bytes": 2816909
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 800,
+      "target": 1600,
+      "seconds_including_write": 4.116654708050191
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.16647395817562938,
+      "bytes": 2816909
+    },
+    {
+      "event": "complete",
+      "seconds": 31.145741499960423
+    }
+  ],
+  "timing-only": [
+    {
+      "event": "manifest",
+      "source_sha256": "a0464f8c805f782c27040bb366e0775455cd2fa02eb5e458d70bb0e6b9c69666",
+      "policy_sha256": "2a2a584f1f31fc28f3aa42988f0be8659eafde5e1776cac27c09f1d2e6f114d0",
+      "runtime": "3.14.4",
+      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+      "rank_group": "3_8",
+      "seed": 42,
+      "samples": 23000,
+      "checkpoint_frequency": 1000
+    },
+    {
+      "event": "load",
+      "seconds": 34.71793720778078
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.6011437089182436,
+      "bytes": 10773540
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 1000,
+      "target": 23000,
+      "seconds_including_write": 12.570113041903824
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.406785000115633,
+      "bytes": 10773993
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 1000,
+      "target": 23000,
+      "seconds_including_write": 15.057667542248964
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.5799763752147555,
+      "bytes": 10773993
+    },
+    {
+      "event": "complete",
+      "seconds": 63.08535900013521
+    },
+    {
+      "event": "comparison",
+      "role": "Dealer",
+      "gap": {
+        "n": 23000,
+        "mu": 0.039651541501976285,
+        "se": 0.0013666557647195716
+      },
+      "residual": {
+        "n": 23000,
+        "mu": -0.0009749407114624506,
+        "se": 0.0005097140666490982
+      },
+      "flush": {
+        "n": 23000,
+        "mu": 0.04055335968379447,
+        "se": 0.0012683459734089346
+      },
+      "nobs": {
+        "n": 23000,
+        "mu": 7.312252964426877e-05,
+        "se": 8.011907273640419e-05
+      }
+    },
+    {
+      "event": "comparison",
+      "role": "Pone",
+      "gap": {
+        "n": 23000,
+        "mu": 0.03622312252964427,
+        "se": 0.0013559507340638712
+      },
+      "residual": {
+        "n": 23000,
+        "mu": -0.0012403162055335969,
+        "se": 0.0005795698051547579
+      },
+      "flush": {
+        "n": 23000,
+        "mu": 0.03751482213438735,
+        "se": 0.0012259038835579943
+      },
+      "nobs": {
+        "n": 23000,
+        "mu": -5.1383399209486166e-05,
+        "se": 8.79181612736699e-05
+      }
+    }
+  ],
+  "resume-final-400": [
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.010767582803964615,
+      "cpu_seconds": 0.008653999999999995,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.005792625248432159,
+      "cpu_seconds": 0.005500000000000005,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 279,
+      "seconds": 2.4798766667954624,
+      "cpu_seconds": 2.324908,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.006465249694883823,
+      "cpu_seconds": 0.006450000000000067,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.003923291806131601,
+      "cpu_seconds": 0.003922999999999899,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 279,
+      "seconds": 3.160796333104372,
+      "cpu_seconds": 2.8423960000000004,
+      "accepted": true
+    },
+    {
+      "event": "load",
+      "target": 400,
+      "seconds": 5.959694750141352,
+      "cpu_seconds": 5.435352
+    }
+  ],
+  "resume-original-1600": [
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.3903795829974115,
+      "cpu_seconds": 0.14836599999999994,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.25849929079413414,
+      "cpu_seconds": 0.12654300000000007,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 279,
+      "seconds": 100.66823983332142,
+      "cpu_seconds": 64.406113,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.12173558305948973,
+      "cpu_seconds": 0.11959400000000642,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.0963943749666214,
+      "cpu_seconds": 0.09596400000000926,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 279,
+      "seconds": 55.66035204101354,
+      "cpu_seconds": 54.419876,
+      "accepted": true
+    },
+    {
+      "event": "load",
+      "target": 1600,
+      "seconds": 157.74272866686806,
+      "cpu_seconds": 119.566222
+    }
+  ],
+  "resume-primitive-1600": [
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.006611458025872707,
+      "cpu_seconds": 0.0065709999999999935,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.005115832667797804,
+      "cpu_seconds": 0.005115000000000008,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 279,
+      "seconds": 4.051951374858618,
+      "cpu_seconds": 4.038137,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.007008916232734919,
+      "cpu_seconds": 0.006979999999999542,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.005080665927380323,
+      "cpu_seconds": 0.005080999999999669,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 279,
+      "seconds": 4.104977332986891,
+      "cpu_seconds": 4.089421000000001,
+      "accepted": true
+    },
+    {
+      "event": "load",
+      "target": 1600,
+      "seconds": 8.34860208304599,
+      "cpu_seconds": 8.3188
+    }
+  ],
+  "resume-final-22000": [
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.008528666105121374,
+      "cpu_seconds": 0.008528000000000008,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.006777999922633171,
+      "cpu_seconds": 0.006778000000000006,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 279,
+      "seconds": 10.905117082875222,
+      "cpu_seconds": 9.665368,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.010658166836947203,
+      "cpu_seconds": 0.010336999999999819,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.010141666978597641,
+      "cpu_seconds": 0.00989799999999974,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 279,
+      "seconds": 13.913094874937087,
+      "cpu_seconds": 11.562964000000001,
+      "accepted": true
+    },
+    {
+      "event": "load",
+      "target": 22000,
+      "seconds": 25.041811084374785,
+      "cpu_seconds": 21.446804
+    }
+  ],
+  "serialize": [
+    {
+      "event": "synthetic-rewrite",
+      "repeat": 0,
+      "seconds": 20.291900749783963,
+      "cpu_seconds": 17.358041,
+      "bytes": 853450713
+    },
+    {
+      "event": "synthetic-rewrite",
+      "repeat": 1,
+      "seconds": 21.027573541738093,
+      "cpu_seconds": 18.678292000000003,
+      "bytes": 853450713
+    },
+    {
+      "event": "synthetic-rewrite",
+      "repeat": 2,
+      "seconds": 32.157824291847646,
+      "cpu_seconds": 22.386397000000002,
+      "bytes": 853450713
+    }
+  ],
+  "resume-original-22000": [
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.11922566592693329,
+      "cpu_seconds": 0.119201,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.10089033422991633,
+      "cpu_seconds": 0.100298,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 279,
+      "seconds": 154.93840004084632,
+      "cpu_seconds": 123.030292,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.21606329083442688,
+      "cpu_seconds": 0.1752520000000004,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 39,
+      "seconds": 0.19605770893394947,
+      "cpu_seconds": 0.14552399999999466,
+      "accepted": true
+    },
+    {
+      "event": "psd",
+      "dimension": 279,
+      "seconds": 156.10659358277917,
+      "cpu_seconds": 130.449051,
+      "accepted": true
+    },
+    {
+      "event": "load",
+      "target": 22000,
+      "seconds": 311.90171854104847,
+      "cpu_seconds": 254.218049
+    }
+  ],
+  "resumed-final": [
+    {
+      "event": "manifest",
+      "source_sha256": "a0464f8c805f782c27040bb366e0775455cd2fa02eb5e458d70bb0e6b9c69666",
+      "policy_sha256": "2a2a584f1f31fc28f3aa42988f0be8659eafde5e1776cac27c09f1d2e6f114d0",
+      "runtime": "3.14.4",
+      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+      "rank_group": "3_8",
+      "seed": 42,
+      "samples": 1600,
+      "checkpoint_frequency": 400
+    },
+    {
+      "event": "load",
+      "seconds": 4.616455291863531
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.294038875028491,
+      "bytes": 10382950
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 800,
+      "seconds_including_write": 3.12932520871982
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2834565001539886,
+      "bytes": 10428090
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 800,
+      "seconds_including_write": 2.5521037080325186
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2853607921861112,
+      "bytes": 10448117
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 1200,
+      "seconds_including_write": 2.4969601249322295
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2758310418576002,
+      "bytes": 10459612
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 1200,
+      "seconds_including_write": 2.528089666739106
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2688960828818381,
+      "bytes": 10490348
+    },
+    {
+      "event": "group",
+      "role": "Dealer",
+      "rows": 400,
+      "target": 1600,
+      "seconds_including_write": 2.463768375106156
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2749559171497822,
+      "bytes": 10523614
+    },
+    {
+      "event": "group",
+      "role": "Pone",
+      "rows": 400,
+      "target": 1600,
+      "seconds_including_write": 2.514705332927406
+    },
+    {
+      "event": "checkpoint",
+      "seconds": 0.2630024589598179,
+      "bytes": 10523614
+    },
+    {
+      "event": "complete",
+      "seconds": 20.6661184579134
+    },
+    {
+      "event": "comparison",
+      "role": "Dealer",
+      "gap": {
+        "n": 1600,
+        "mu": 0.04279431818181818,
+        "se": 0.005467623784543756
+      },
+      "residual": {
+        "n": 1600,
+        "mu": -0.00335625,
+        "se": 0.001965460564521404
+      },
+      "flush": {
+        "n": 1600,
+        "mu": 0.04602272727272727,
+        "se": 0.00510415194889039
+      },
+      "nobs": {
+        "n": 1600,
+        "mu": 0.0001278409090909091,
+        "se": 0.0003465796881644673
+      }
+    },
+    {
+      "event": "comparison",
+      "role": "Pone",
+      "gap": {
+        "n": 1600,
+        "mu": 0.04107954545454545,
+        "se": 0.005338840805699012
+      },
+      "residual": {
+        "n": 1600,
+        "mu": -0.0007244318181818182,
+        "se": 0.0021043942391337596
+      },
+      "flush": {
+        "n": 1600,
+        "mu": 0.04197443181818182,
+        "se": 0.004919418792325802
+      },
+      "nobs": {
+        "n": 1600,
+        "mu": -0.00017045454545454547,
+        "se": 0.00025886496043037117
+      }
+    }
+  ],
+  "terminal-22000-comparisons": {
+    "checkpoint_sha256": "4fdceef6ea293cf9b5cdb8f0ea12e6f9cab69f6491f3618092b52ab6370b7b0f",
+    "method": "Independent Fraction projection of encoded integer moments; verified against the report and helper. Moment checkpoint is not included in this timing log.",
+    "roles": {
+      "Dealer": {
+        "residual": {
+          "n": 22000,
+          "mu": -0.0010098347107438017,
+          "se": 0.0005236823049419249
+        },
+        "flush": {
+          "n": 22000,
+          "mu": 0.04057334710743802,
+          "se": 0.0012976012281003173
+        },
+        "nobs": {
+          "n": 22000,
+          "mu": 6.198347107438017e-05,
+          "se": 8.16319685466208e-05
+        },
+        "gap": {
+          "n": 22000,
+          "mu": 0.0396254958677686,
+          "se": 0.0013985420489518027
+        }
+      },
+      "Pone": {
+        "residual": {
+          "n": 22000,
+          "mu": -0.0010270661157024794,
+          "se": 0.0005935790021853117
+        },
+        "flush": {
+          "n": 22000,
+          "mu": 0.03745867768595041,
+          "se": 0.0012527945740334133
+        },
+        "nobs": {
+          "n": 22000,
+          "mu": -4.752066115702479e-05,
+          "se": 9.051056488192274e-05
+        },
+        "gap": {
+          "n": 22000,
+          "mu": 0.03638409090909091,
+          "se": 0.0013861537035084217
+        }
+      }
+    }
+  }
+}

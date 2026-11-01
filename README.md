@@ -60,8 +60,10 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 - Run exact analytical artifact-pipeline integration tests when changing
   analytical discard-policy math: `coverage run -m unittest discover
   artifact_pipeline && coverage run --append
-  scripts/run_slow_analytical_tests.py && coverage report --fail-under=100 -m
-  --include='artifact_pipeline/*'`. CI shards those exact tests into named
+  scripts/run_slow_analytical_tests.py && coverage run --append -m unittest
+  test_check_legacy_pylint_ratchet && coverage report --fail-under=100 -m
+  --include='artifact_pipeline/*,scripts/check_legacy_pylint_ratchet.py'`. CI
+  shards those exact tests into named
   groups and combines coverage data before enforcing the same 100% artifact
   coverage gate.
 - Check spelling in Python, scripts, Markdown, and repository instructions:
@@ -147,11 +149,13 @@ starter, and two-card crib completion for flush possibility without imposing a
 per-cut sign requirement on the estimator.
 
 The opt-in version-4 producer joins this decomposition to resumable, joint
-integer moments. For a bounded trial, choose a separate output path:
+integer moments. For a bounded trial, select one complete rank group and a
+separate output path (omitting the selection runs all 91 groups):
 
 ```sh
-python artifact_pipeline/generate_table.py --estimator-v4 --samples 2 \
-  --seed 42 --output /tmp/expected-crib-points-v4.json
+python -c 'from artifact_pipeline.generate_table import main; main(["3_8_Suited", "3_8_Unsuited"])' \
+  --estimator-v4 --samples 2 --seed 42 \
+  --output /tmp/expected-crib-points-v4.json
 ```
 
 The ordinary command below still selects version 3, including in the weekly
@@ -174,7 +178,8 @@ accounted separately. The lean client file excludes the moment state, policy
 snapshot, nonce, and producer-only identifiers; it retains the existing mean
 and starter-relation shape. This split does not export a new uncertainty
 sidecar, survey full-table signs, regenerate production assets, or authorize
-a version-4 production run.
+a version-4 production run. The [bounded pilot report](docs/v4-pilot.md) records
+measured cost, precision, and a proposed survey budget awaiting approval.
 
 Generate the Monte Carlo expected crib points table from the repository root:
 
