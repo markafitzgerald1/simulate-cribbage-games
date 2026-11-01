@@ -109,3 +109,25 @@ class TestPlayReleaseWorkflow(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestDiagnosticWorkflow(unittest.TestCase):
+    """Guard manual execution and evidence preservation without dispatching."""
+
+    def test_manual_read_only_serial_job_keeps_upload_on_failure(self):
+        path = Path(__file__).parent / ".github/workflows/diagnose-crib-v4.yml"
+        workflow = yaml.load(path.read_text(), Loader=yaml.BaseLoader)
+        self.assertEqual(set(workflow["on"]), {"workflow_dispatch"})
+        self.assertEqual(
+            workflow["permissions"], {"contents": "read", "actions": "read"}
+        )
+        self.assertEqual(len(workflow["jobs"]), 1)
+        job = workflow["jobs"]["first-shard"]
+        self.assertEqual(job["timeout-minutes"], "240")
+        self.assertNotIn("strategy", job)
+        upload = job["steps"][-1]
+        self.assertEqual(upload["if"], "always()")
+        self.assertTrue(upload["uses"].startswith("actions/upload-artifact@"))
+        self.assertNotIn(
+            "release", " ".join(step.get("uses", "") for step in job["steps"])
+        )

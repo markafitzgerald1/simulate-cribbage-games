@@ -1,0 +1,73 @@
+name: Diagnose bounded crib v4
+
+on:
+  workflow_dispatch:
+    inputs:
+      resume_run_id:
+        description: 'Optional prior diagnostic run ID (same experiment only)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+# One serial first shard, never a matrix or an automatic follow-up run.
+concurrency:
+  group: crib-v4-first-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  first-shard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - name: Reserve final thirty minutes for checkpoint and upload
+        run: echo "V4_STOP_AT=$(( $(date +%s) + 210 * 60 ))" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14.4'
+      - name: Install pinned dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Retrieve matched historical inputs by asset ID
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p inputs diagnostic
+          gh api -H 'Accept: application/octet-stream' repos/markafitzgerald1/simulate-cribbage-games/releases/assets/697897856 > inputs/full.json
+          gh api -H 'Accept: application/octet-stream' repos/markafitzgerald1/simulate-cribbage-games/releases/assets/697897857 > inputs/client.json
+      - name: Restore compatible per-group checkpoints
+        if: inputs.resume_run_id != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: crib-v4-diagnostic-checkpoints
+          path: diagnostic
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.resume_run_id }}
+      - name: Measure the predeclared first shard
+        id: measurement
+        run: |
+          python -u -m scripts.run_crib_v4_diagnostic \
+            --source inputs/full.json --client inputs/client.json \
+            --output diagnostic --stop-at "$V4_STOP_AT"
+      - name: Record upload start and local bytes
+        if: always()
+        env:
+          MEASUREMENT_OUTCOME: ${{ steps.measurement.outcome }}
+        run: |
+          mkdir -p diagnostic
+          date -u +'%Y-%m-%dT%H:%M:%SZ' > diagnostic/upload-start.txt
+          echo "This attempt measurement step: $MEASUREMENT_OUTCOME. A failed/skipped attempt does not validate restored results." >> "$GITHUB_STEP_SUMMARY"
+          du -sb diagnostic >> "$GITHUB_STEP_SUMMARY"
+          echo 'Upload duration, transferred bytes and artifact digest: see the upload step log. Incomplete groups remain incomplete; no automatic continuation.' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f diagnostic/summary.json ]; then cat diagnostic/summary.json >> "$GITHUB_STEP_SUMMARY"; fi
+      - name: Preserve checkpoints and diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: crib-v4-diagnostic-checkpoints
+          path: diagnostic/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 6

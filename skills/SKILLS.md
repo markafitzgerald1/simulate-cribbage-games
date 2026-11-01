@@ -302,3 +302,23 @@ requirements, remove quality checks, add broad ignore comments, or refactor the
 legacy `simulate_cribbage_games.py` dependency. Do not replace mathematical
 simulation with subjective heuristics. Do not build on untested legacy behavior
 or skip end-to-end smoke coverage for code changes.
+
+## Manual v4 diagnostic operations
+
+The separate [first-shard diagnostic](../docs/v4-diagnostic.md) is manual and
+has no release step. Its fixed groups/target, historical asset IDs, exact
+input/policy/source hashes and earlier complete-round deadline are part of
+the experiment. A four-hour first-job ceiling is not a multi-shard budget.
+Checkpoints restored from Actions need the matching source manifest; complete
+groups require validation but no new sampling. Report incomplete/not-started
+counts honestly, preserve per-group files, and never rely on a hard runner
+termination to save local state. The upload step's own duration belongs in
+its Actions log; it cannot be finalized inside the archive it is uploading.
+A deleted historical release asset is an input-availability gap, not permission
+to substitute another generating policy. Implementation or merge does not
+authorize dispatch, production generation, publication or automatic continuation.
+
+A fixed-policy diagnostic also pins generation zero: the general checkpoint
+reader permits later generations, and generation is part of every row seed.
+A hash-rejection regression must start from an otherwise valid checkpoint;
+an invalid file can raise an unrelated error and hide a missing digest check.

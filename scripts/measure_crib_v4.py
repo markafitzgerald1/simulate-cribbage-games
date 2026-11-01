@@ -8,6 +8,7 @@ import argparse
 import hashlib
 import json
 import platform
+import signal
 import time
 from fractions import Fraction
 from pathlib import Path
@@ -49,7 +50,27 @@ def comparison(streams, rank_key):
     }
 
 
-def main():
+def precut_means(streams, rank_key):
+    """Project individual crib means without cancelling their shared baseline."""
+    first, second = rank_key.split("_")
+    result = {}
+    for variant in ("Unsuited", "Suited") if first != second else ("Unsuited",):
+        terms = {}
+        for rank in generate_table.Index.indices:
+            weight = Fraction(4 - (rank == first) - (rank == second), 50)
+            for kind in ("fifteens", "pairs", "runs", "flushes", "nobs"):
+                coefficients = crib_v4._component_coefficients(
+                    rank, variant, "root", kind
+                )
+                for stream, values in coefficients.items():
+                    for label, value in values.items():
+                        block = terms.setdefault(stream, {})
+                        block[label] = block.get(label, 0) + value * weight
+        result[variant] = projected_statistics(streams, terms)
+    return result
+
+
+def main(argv=None):
     """Run one explicitly selected group under the saved generating policy."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", required=True, type=Path)
@@ -57,7 +78,10 @@ def main():
     parser.add_argument("--rank-group", default="3_8")
     parser.add_argument("--samples", required=True, type=int)
     parser.add_argument("--checkpoint-frequency", default=400, type=int)
-    options = parser.parse_args()
+    parser.add_argument("--stop-at", type=float, help="Graceful deadline, Unix seconds")
+    parser.add_argument("--source-sha256")
+    parser.add_argument("--policy-sha256")
+    options = parser.parse_args(argv)
     write_paths = (options.output, Path(f"{options.output}.tmp"))
     for path in write_paths:
         if options.source.resolve() == path.resolve() or (
@@ -69,6 +93,11 @@ def main():
     raw = options.source.read_bytes()
     payload = json.loads(raw)["__metadata__"]["generation_accumulators"]
     digest = hashlib.sha256(raw).hexdigest()
+    policy_digest = crib_v4._policy_hash(payload)
+    if options.source_sha256 and options.source_sha256 != digest:
+        raise ValueError("diagnostic source hash differs")
+    if options.policy_sha256 and options.policy_sha256 != policy_digest:
+        raise ValueError("diagnostic policy hash differs")
     emit(
         "manifest",
         source_sha256=digest,
@@ -102,6 +131,19 @@ def main():
     original_write = crib_v4._write_checkpoint
     original_sample = crib_v4._V4Run.sample_group
     original_load = crib_v4._load_state
+    original_round = crib_v4._sample_round
+    deadline_reached = False
+
+    def check_deadline(current):
+        nonlocal deadline_reached
+        if options.stop_at is not None and time.time() >= options.stop_at:
+            deadline_reached = True
+            current.request_stop(None, None)
+
+    def sample_round(*arguments):
+        rows = original_round(*arguments)
+        check_deadline(current)
+        return rows
 
     def checkpoint(state, args, legacy):
         start = time.perf_counter()
@@ -117,20 +159,26 @@ def main():
         start = time.perf_counter()
         streams = current.state["estimator_state"][key][role]["streams"]
         before = streams["base"]["count"]
-        original_sample(current, key, role, policy)
-        emit(
-            "group",
-            role=role,
-            rows=streams["base"]["count"] - before,
-            target=streams["base"]["count"],
-            seconds_including_write=time.perf_counter() - start,
-        )
+        check_deadline(current)
+        if current.pending_stop:
+            raise SystemExit(130)
+        try:
+            original_sample(current, key, role, policy)
+        finally:
+            emit(
+                "group",
+                role=role,
+                rows=streams["base"]["count"] - before,
+                target=streams["base"]["count"],
+                seconds_including_write=time.perf_counter() - start,
+            )
 
     def load(*arguments):
         start = time.perf_counter()
         result = original_load(*arguments)
         if (
-            result["policy_sha256"] != crib_v4._policy_hash(payload)
+            result["generation"] != 0
+            or result["policy_sha256"] != crib_v4._policy_hash(payload)
             or result["bootstrap_sha256"] != digest
         ):
             raise ValueError("diagnostic source and resumed policy differ")
@@ -143,17 +191,47 @@ def main():
         patch.object(crib_v4, "_write_checkpoint", checkpoint),
         patch.object(crib_v4._V4Run, "sample_group", sample),
         patch.object(crib_v4, "_load_state", load),
+        patch.object(crib_v4, "_sample_round", sample_round),
     ):
         current = crib_v4._V4Run(args, pairs, generate_table)
-        current.execute()
-    emit("complete", seconds=time.perf_counter() - start)
-    if first != second:
-        for role, entry in current.state["estimator_state"][options.rank_group].items():
+        previous = signal.getsignal(signal.SIGINT)
+        signal.signal(signal.SIGINT, current.request_stop)
+        try:
+            check_deadline(current)
+            current.execute()
+        except SystemExit as error:
+            if error.code != 130:
+                raise
+        finally:
+            signal.signal(signal.SIGINT, previous)
+    complete = current.state["phase"] == "complete"
+    for role, entry in current.state["estimator_state"][options.rank_group].items():
+        if first != second:
             emit(
                 "comparison",
                 role=role,
                 **comparison(entry["streams"], options.rank_group),
             )
+        for variant, statistics in precut_means(
+            entry["streams"], options.rank_group
+        ).items():
+            emit("mean", role=role, variant=variant, statistics=statistics)
+    counts = {
+        role: {name: moments["count"] for name, moments in entry["streams"].items()}
+        for role, entry in current.state["estimator_state"][options.rank_group].items()
+    }
+    emit(
+        "status",
+        complete=complete,
+        counts=counts,
+        reason=(
+            "complete" if complete else "deadline" if deadline_reached else "interrupt"
+        ),
+        seconds=time.perf_counter() - start,
+    )
+    if not complete and not deadline_reached:
+        raise SystemExit(130)
+    return complete
 
 
 if __name__ == "__main__":
