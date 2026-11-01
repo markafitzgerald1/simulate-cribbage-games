@@ -17,7 +17,7 @@ from artifact_pipeline.crib_v4_state import (
     coordinate_labels,
     empty_moments,
 )
-from scripts.measure_crib_v4 import comparison
+from scripts.measure_crib_v4 import comparison, precut_means
 
 
 class TestPilotComparison(unittest.TestCase):
@@ -40,6 +40,11 @@ class TestPilotComparison(unittest.TestCase):
                     moments,
                     [SCALE * observation.get(label, 0) for label in moments["labels"]],
                 )
+        means = precut_means(streams, "3_8")
+        self.assertEqual(means["Unsuited"], {"n": 2, "mu": 150.0, "se": 150.0})
+        self.assertEqual(
+            means["Suited"], {"n": 2, "mu": 155.0, "se": math.sqrt(22502.5)}
+        )
         result = comparison(streams, "3_8")
         # Own-rank weights are 3/50, other ranks 4/50. Residual rows
         # project to (3,0), suit totals to (3,4), not independent F and J.

@@ -179,7 +179,10 @@ snapshot, nonce, and producer-only identifiers; it retains the existing mean
 and starter-relation shape. This split does not export a new uncertainty
 sidecar, survey full-table signs, regenerate production assets, or authorize
 a version-4 production run. The [bounded pilot report](docs/v4-pilot.md) records
-measured cost, precision, and a proposed survey budget awaiting approval.
+measured cost and precision. The separate [manual diagnostic workflow](docs/v4-diagnostic.md)
+declares the N=4,000 first shard, pins historical inputs and reserves time
+for graceful checkpoint/upload. Dispatch and any wider survey need separate
+approval.
 
 Generate the Monte Carlo expected crib points table from the repository root:
 

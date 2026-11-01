@@ -185,13 +185,16 @@ skills unless the work product shows it.
 ## Python Setup
 
 Use Python 3.14.4 unless a task updates the supported version.
-`.python-version` is the single source of truth: pyenv reads it locally, and
-the workflows that set up one interpreter pass it to `actions/setup-python` as
-`python-version-file`. The matrix jobs in `python-install-and-test.yml` keep a
-literal version, because a `strategy` block is evaluated before checkout and
-can read neither that file nor the `env` context; that list is also where a
-second supported version would be added. A version bump therefore edits
-`.python-version`, those matrices, and this line.
+`.python-version` is the source of truth for that default: pyenv reads it
+locally, and ordinary single-interpreter workflows pass it to
+`actions/setup-python` as `python-version-file`. The manual
+`diagnose-crib-v4.yml` is a deliberate exception: its historical experiment
+pins CPython 3.14.4 independently of future repository upgrades.
+The matrix jobs in `python-install-and-test.yml` keep a literal version,
+because a `strategy` block is evaluated before checkout and can read neither
+that file nor the `env` context; that list is also where a second supported
+version would be added. A version bump therefore edits `.python-version`,
+those matrices, and this line.
 
 Install dependencies with:
 
@@ -728,3 +731,23 @@ complete until requested files are updated, required constraints are represented
 in documentation, and the diff has been reviewed against the issue text. Do not
 resolve review feedback without either making the requested change or explaining
 why no change is appropriate.
+
+## Manual v4 diagnostic operations
+
+The separate [first-shard diagnostic](docs/v4-diagnostic.md) is manual and
+has no release step. Its fixed groups/target, historical asset IDs, exact
+input/policy/source hashes and earlier complete-round deadline are part of
+the experiment. A four-hour first-job ceiling is not a multi-shard budget.
+Checkpoints restored from Actions need the matching source manifest; complete
+groups require validation but no new sampling. Report incomplete/not-started
+counts honestly, preserve per-group files, and never rely on a hard runner
+termination to save local state. The upload step's own duration belongs in
+its Actions log; it cannot be finalized inside the archive it is uploading.
+A deleted historical release asset is an input-availability gap, not permission
+to substitute another generating policy. Implementation or merge does not
+authorize dispatch, production generation, publication or automatic continuation.
+
+A fixed-policy diagnostic also pins generation zero: the general checkpoint
+reader permits later generations, and generation is part of every row seed.
+A hash-rejection regression must start from an otherwise valid checkpoint;
+an invalid file can raise an unrelated error and hide a missing digest check.
