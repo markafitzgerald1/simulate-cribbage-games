@@ -58,8 +58,12 @@ def main():
     parser.add_argument("--samples", required=True, type=int)
     parser.add_argument("--checkpoint-frequency", default=400, type=int)
     options = parser.parse_args()
-    if options.source.resolve() == options.output.resolve():
-        parser.error("source and diagnostic output must differ")
+    write_paths = (options.output, Path(f"{options.output}.tmp"))
+    for path in write_paths:
+        if options.source.resolve() == path.resolve() or (
+            path.exists() and options.source.samefile(path)
+        ):
+            parser.error("source must differ from output and its temporary path")
     if options.checkpoint_frequency < 1:
         parser.error("checkpoint frequency must be positive")
     raw = options.source.read_bytes()

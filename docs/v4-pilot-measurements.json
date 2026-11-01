@@ -3042,5 +3042,55 @@
         "se": 0.00025886496043037117
       }
     }
-  ]
+  ],
+  "terminal-22000-comparisons": {
+    "checkpoint_sha256": "4fdceef6ea293cf9b5cdb8f0ea12e6f9cab69f6491f3618092b52ab6370b7b0f",
+    "method": "Independent Fraction projection of encoded integer moments; verified against the report and helper. Moment checkpoint is not included in this timing log.",
+    "roles": {
+      "Dealer": {
+        "residual": {
+          "n": 22000,
+          "mu": -0.0010098347107438017,
+          "se": 0.0005236823049419249
+        },
+        "flush": {
+          "n": 22000,
+          "mu": 0.04057334710743802,
+          "se": 0.0012976012281003173
+        },
+        "nobs": {
+          "n": 22000,
+          "mu": 6.198347107438017e-05,
+          "se": 8.16319685466208e-05
+        },
+        "gap": {
+          "n": 22000,
+          "mu": 0.0396254958677686,
+          "se": 0.0013985420489518027
+        }
+      },
+      "Pone": {
+        "residual": {
+          "n": 22000,
+          "mu": -0.0010270661157024794,
+          "se": 0.0005935790021853117
+        },
+        "flush": {
+          "n": 22000,
+          "mu": 0.03745867768595041,
+          "se": 0.0012527945740334133
+        },
+        "nobs": {
+          "n": 22000,
+          "mu": -4.752066115702479e-05,
+          "se": 9.051056488192274e-05
+        },
+        "gap": {
+          "n": 22000,
+          "mu": 0.03638409090909091,
+          "se": 0.0013861537035084217
+        }
+      }
+    }
+  }
 }

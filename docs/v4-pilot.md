@@ -8,6 +8,55 @@ consumer change, or per-cut sign gate is included.
 The [machine-readable timings](v4-pilot-measurements.json) retain chunk counts,
 write times and source/policy manifests; they contain no sampled table moments.
 
+## Review and acceptance
+
+Allow 5-10 minutes for human review after the independent review loop is clean.
+Read the risk table and terminal 3-8 result, then decide whether the proposed
+16-hour future survey is worth its cost. Merging this pilot does not approve
+that survey or production activation. Most added lines are timing JSON, marked
+as generated in GitHub; expand them only to audit records. The shared runtime
+change is the short `_exact_psd` function; the separate helper is diagnostic.
+There is no app screen or deployed preview to test for this change.
+
+| Risk and worst outcome | Exposure now | Evidence and later checks |
+| --- | --- | --- |
+| PSD false rejection prevents resuming a valid checkpoint | Opt-in v4 operator loses time | Independent old/new exact comparisons and principal-minor oracle test acceptance. A later resume makes rejection visible. |
+| PSD false acceptance admits inconsistent covariance | Opt-in v4 can report misleading uncertainty | Independent oracle and corrupted-state tests are the primary protection. Per-bucket variance checks catch only some directions. The survey and an exporter reusing this validator do not independently prove PSD. |
+| Diagnostic output aliases its source and destroys it | Local input file, before any publication | Real CLI tests reject direct, symlink and hard link temporary-path aliases with unchanged source bytes. Later math or release checks cannot restore that file. |
+| Pilot understates full-survey time or overstates precision | Future budget/research decisions | Independent integer-moment projection verifies the terminal figures. Monitoring and a stop budget limit future cost; the survey does not itself establish calibration. |
+| A future v4 artifact reaches users with an unnoticed defect | Future activation and adoption, not this merge | Weekly v3 routing and assets are unchanged. Separate survey, export, production and trainer decisions offer opportunities to catch defects, but need independent checks rather than reusing the same arithmetic. |
+
+For a quick check without reading implementation, run from a configured PR
+checkout:
+
+```sh
+python -m unittest artifact_pipeline.test_crib_v4_psd \
+  artifact_pipeline.test_crib_v4_state test_measure_crib_v4
+```
+
+Expected: all tests pass in seconds, including source preservation, exact
+classification and a hand-calculated covariance result. The maintainer does
+not need to rerun expensive measurements or the full CI suite. A second,
+optional acceptance check exercises real CLI fresh/resume behavior:
+
+```sh
+trial="$(mktemp -d)"
+v4_trial() {
+  python -c 'from artifact_pipeline.generate_table import main; main(["3_8_Suited", "3_8_Unsuited"])' \
+    --estimator-v4 --seed 42 "$@"
+}
+v4_trial --samples 2 --output "$trial/resumed.json"
+v4_trial --samples 4 --output "$trial/resumed.json"
+v4_trial --samples 4 --output "$trial/fresh.json"
+cmp "$trial/resumed.json" "$trial/fresh.json"
+cmp "$trial/resumed.client.json" "$trial/fresh.client.json"
+```
+
+Expected: all commands succeed; both `cmp` calls print nothing, confirming exact
+fresh/resumed full and client bytes. Only temporary trial files are written.
+If either check fails, stop review and retain the output. This establishes the
+small acceptance case, not performance at N=22,000 or statistical calibration.
+
 ## Inputs and reproduction
 
 Apple M2, 16 GiB RAM, macOS 26.6.2, CPython 3.14.4, seed 42, generation zero.
@@ -114,8 +163,8 @@ chosen groups cannot establish the sign distribution across all 156 twins.
 The suit stream has 357 contract coordinates, of which 279 have nonzero
 empirical variance in these larger checkpoints. Base and residual each have
 39 active coordinates. Original N=1,600 load consumed 119.566 CPU s; primitive
-load consumed 8.319 CPU s. At N=22,000 the original load consumed 254.218 CPU s and primitive load
-consumed 21.447 CPU s: 12.5x less wall time and 11.9x less CPU time.
+load consumed 8.319 CPU s. At N=22,000 the original load consumed 254.218 CPU s
+and primitive load consumed 21.447 CPU s: 12.5x less wall time and 11.9x less CPU time.
 This confirms growth with sample target even at fixed dimension, but does not
 fit a dimension exponent from three real observations. The earlier d^5 claim
 was a small synthetic extrapolation, not a measured production law.
@@ -149,14 +198,14 @@ stream allocation, or production sample target was changed.
 Approve **16 local wall hours for one fixed-policy N=22,000 survey**, with the
 source/policy/seed above and all 91 groups/both roles. This is a ceiling for
 planning, not permission granted by this pilot. A central sampling range of
-roughly 6-12 hours follows from the measured 6-12 ms group-role steps; a
+roughly 7-14 hours follows from the measured 6-12 ms group-role steps; a
 conservative allowance of 14 ms for distinct-rank and 10 ms for same-rank
 steps gives 14.9 sampling hours. Reserve the balance for checkpoints, startup,
 reporting, and a bounded retry. Unresolved signs stay unresolved at terminal N.
 
 Prefer separate rank-group checkpoints at cadence 1,000 for the diagnostic
-survey: each two-role file is about 3-11 MB, its writes take under one second locally,
-and a restart validates only that group. Group selection is absent from row
+survey: each two-role file is about 3-11 MB, its writes take under one second
+locally, and a restart validates only that group. Group selection is absent from row
 seeds, so with the same frozen policy the individual rows match a combined
 run; retain each shard's own metadata and do not concatenate JSON into a
 purported valid full checkpoint. Reporting over shards is separate from
@@ -203,8 +252,8 @@ implementation.
 
 The unchanged v4 sampling identity and JSON format need no contract bump.
 Both original-validator and final-validator N=400 -> 1,600 seeded runs equal
-fresh N=1,600 generation in every field, moment and statistic. The existing small seeded,
-nonce, interruption, and policy-transition tests remain required.
+fresh N=1,600 generation in every field, moment and statistic. The existing
+small seeded, nonce, interruption, and policy-transition tests remain required.
 A bounded v3 control-variate run at N=40, seed 42, both 3-8 variants/roles,
 produced identical full and client bytes from main and the pilot sources.
 The legacy file, v3 generator and weekly workflow have no source changes;
@@ -215,9 +264,9 @@ in isolated directories, with local worker connections permitted. It establishes
 repeatability, not before/after source compatibility or v4 calibration.
 
 
-## Validation
+## Initial-head validation
 
-All required Python checks passed: 356 root tests, 318 fast artifact tests,
+At `7a93a13`, all required Python checks passed: 356 root tests, 318 fast artifact tests,
 all five slow analytical tests, and the appended ratchet tests. The combined
 artifact/ratchet gate reports 100% statement and branch coverage (3,811
 statements, 1,508 branches). Mypy, artifact pylint, the legacy ratchet and

@@ -1,6 +1,12 @@
 """Guard the pilot report's population weights and joint comparison errors."""
 
+import json
 import math
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
 import unittest
 
 from artifact_pipeline.crib_v4 import _physical_group
@@ -41,3 +47,47 @@ class TestPilotComparison(unittest.TestCase):
         self.assertEqual(result["flush"], {"n": 2, "mu": 1.5, "se": 1.5})
         self.assertEqual(result["nobs"], {"n": 2, "mu": 2.0, "se": 2.0})
         self.assertEqual(result["gap"], {"n": 2, "mu": 5.0, "se": math.sqrt(2.5)})
+
+
+class TestPilotSourceProtection(unittest.TestCase):
+    """Reject writer paths that can destroy the diagnostic input."""
+
+    def test_temporary_path_aliases_are_rejected_before_writing(self):
+        repository = Path(__file__).resolve().parent
+        for alias in ("direct", "symlink", "hard_link"):
+            with self.subTest(alias=alias), tempfile.TemporaryDirectory() as directory:
+                folder = Path(directory)
+                output = folder / "diagnostic.json"
+                temporary = Path(f"{output}.tmp")
+                source = temporary if alias == "direct" else folder / "source.json"
+                original = json.dumps(
+                    {"__metadata__": {"generation_accumulators": None}}
+                ).encode()
+                source.write_bytes(original)
+                if alias == "symlink":
+                    temporary.symlink_to(source)
+                elif alias == "hard_link":
+                    os.link(source, temporary)
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        "-m",
+                        "scripts.measure_crib_v4",
+                        "--source",
+                        str(source),
+                        "--output",
+                        str(output),
+                        "--samples",
+                        "2",
+                    ],
+                    cwd=folder,
+                    env={**os.environ, "PYTHONPATH": str(repository)},
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertTrue("source" in result.stderr)
+                self.assertEqual(source.read_bytes(), original)
+                self.assertFalse(output.exists())

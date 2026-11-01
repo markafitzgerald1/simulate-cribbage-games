@@ -137,6 +137,15 @@ combined 100% report that also includes `scripts/check_legacy_pylint_ratchet.py`
 otherwise that script appears uncovered even though its root tests passed.
 This collects the existing tests and does not relax the gate.
 
+Size human review by the changed executable behavior and exposure. Separate
+sampled evidence, diagnostic helpers and generated logs in the reading guide.
+For each material risk, state the worst outcome and which later check is
+independent; rerunning the same validator is not a second mathematical oracle.
+A useful manual test checks observable acceptance behavior with expected output
+and a time estimate, rather than asking the maintainer to re-read tests.
+Diagnostic source preservation must check the writer's temporary path as well
+as its output, including existing symbolic and hard links before any write.
+
 Exact analytical test coverage should be as small as the behavior under review
 allows. Full convergence is appropriate for published artifact generation and
 for explicitly expensive CI gates, but regression tests can often use smaller
