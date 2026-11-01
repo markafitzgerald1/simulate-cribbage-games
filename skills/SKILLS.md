@@ -79,6 +79,15 @@ permits direct pushes to `main` or bypasses pull request review.
 
 ## Python Backend Guardrails
 
+For a bounded v4 diagnostic, select complete twins through `main(override_pairs)`
+or a same-rank group; `--samples` alone still selects all 91 rank groups.
+Use the saved `generation_accumulators` policy, preserving `policy_mu`, rather
+than bootstrapping from a full artifact's displayed means. Record source and
+policy hashes, completed rows per stream, cross-cut comparison covariance,
+checkpoint cadence, and separate sampling/write/resume timings. Fraction-free
+integer PSD validation preserves the exact contract: a zero pivot requires a
+zero remaining row. It changes neither checkpoint bytes nor sampling identity.
+
 For issue #135, keep the shared-rank crib decomposition opt-in until a separate
 production decision. Its exact reduced-population oracle proves the component
 identities for a fixed suit-sensitive policy, including the residual and
@@ -121,6 +130,12 @@ fast artifact test run, followed by `coverage report --fail-under=100 -m
 `historical-true-nobs`, and `historical-flat-nobs` in parallel and combine their
 coverage data with the fast artifact coverage file before the 100%
 artifact-pipeline coverage report.
+
+The artifact `coverage run` resets coverage from the root unittest run. Append
+`coverage run --append -m unittest test_check_legacy_pylint_ratchet` before the
+combined 100% report that also includes `scripts/check_legacy_pylint_ratchet.py`;
+otherwise that script appears uncovered even though its root tests passed.
+This collects the existing tests and does not relax the gate.
 
 Exact analytical test coverage should be as small as the behavior under review
 allows. Full convergence is appropriate for published artifact generation and

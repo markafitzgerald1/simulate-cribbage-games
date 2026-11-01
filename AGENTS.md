@@ -241,6 +241,7 @@ coverage xml
 coverage report
 coverage run -m unittest discover artifact_pipeline
 coverage run --append scripts/run_slow_analytical_tests.py
+coverage run --append -m unittest test_check_legacy_pylint_ratchet
 coverage report --fail-under=100 -m --include='artifact_pipeline/*,scripts/check_legacy_pylint_ratchet.py'
 mypy simulate_cribbage_games.py artifact_pipeline
 npm run spellcheck
@@ -487,10 +488,10 @@ opt-in path nor its reduced-population oracle proves production precision,
 runtime, a pre-cut sign rule, or policy-learning uncertainty.
 
 Crib EV depends on the starter's suit only through flushes (possible only for a
-suited discard) and his-nobs (a discarded Jack matching the starter suit). For
-every other discard the `starter_suit_relation` buckets are sampling noise, so
-the lean client artifact omits them for unsuited, non-Jack discards. Do not add
-suit conditioning where the rules make it impossible.
+suited discard) and his-nobs (an own or opponent discarded Jack matching the
+starter suit). The lean client retains relation buckets for suited or own-Jack
+discards; this retention policy is not a proof that opponent-contributed nobs
+or suit-sensitive opponent selection is independent of starter suit elsewhere.
 
 The weekly production generation runs close to the 6-hour GitHub Actions cap
 (about 20 minutes of headroom) with a razor-thin convergence margin (max EV
