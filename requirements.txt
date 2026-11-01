@@ -46,8 +46,10 @@ mypy-extensions==1.1.0
     #   mypy
 nodeenv==1.10.0
     # via pre-commit
-packaging==26.2
-    # via black
+packaging==26.3
+    # via
+    #   black
+    #   virtualenv
 pathspec==1.1.1
     # via
     #   black
@@ -77,5 +79,5 @@ tomlkit==0.15.0
     # via pylint
 typing-extensions==4.16.0
     # via mypy
-virtualenv==21.7.13
+virtualenv==21.14.13
     # via pre-commit
