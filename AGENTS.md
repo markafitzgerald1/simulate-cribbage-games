@@ -388,6 +388,15 @@ Prefer correctness and explainability over apparent playing strength. A strategy
 that wins in anecdotal trials is not acceptable evidence unless the sample,
 comparison baseline, and uncertainty are described.
 
+A test must be able to fail for the bug it names. For a bug fix, write the
+failing test first and show it failing against the unfixed code. For estimator,
+sampler, checkpoint, and CI-gate logic, where a wrong answer ships silently, the
+pull request also names the mutation each new test catches, and the author shows
+the test failing against that mutation in a scratch copy. A test never
+re-implements the logic it tests: it would then agree with a wrong
+implementation. Coverage cannot tell these apart, because a vacuous test
+executes the same lines as a good one.
+
 Near the end of this section, observe these boundaries: do not tune decisions by
 personal cribbage preference, vague "strong play" claims, or opaque AI-generated
 rankings. Do not replace objective simulation with subjective heuristics.
@@ -543,6 +552,13 @@ assets; it is not a promise that a deliberate generation change will preserve
 them, and a dispatch after such a change must turn the check off.
 
 The expected-play pipeline is separate from the expected-crib pipeline.
+Its [opening-lines companion](docs/pegging-lines.md) observes the first two
+actual selections in the final frozen-policy measurement simulations. Dealer
+delta means condition on the opponent lead, including every response; modal
+response frequency uses that lead's count. Retain thin cells with counts and
+null mean/SE, and hash exact client means bytes. Published rounded SEs are not
+checkpoint moments. Keep the companion in the same release publication call.
+
 `generate_play_table.py` uses the analytical `E(h +/- c)` solution as its
 initial discard policy, trains a rank-only hidden-information pegging policy by
 rollout iterative best response, and refines discards using
@@ -551,6 +567,27 @@ keyed player's delta plus absolute Pone and Dealer point-type totals. Its lean
 client artifact recursively strips `n` and `se` while retaining those means.
 Do not expose hidden opponent cards to policy inputs or move rollout decisions
 into the browser.
+
+The promotion gate (`artifact_pipeline/promotion_gate.py`) plays each gate deal
+three times on one play seed so the trained and heuristic seats are compared
+on identical cards and draws, and averages the two seats within a deal before
+estimating the both-seat standard error, which keeps the covariance the shared
+deal induces. Its deal and play streams carry their own label so they cannot
+coincide with training or measurement streams from the same `--seed`. Report
+mode must leave every measured value unchanged. When checking that, compare
+parsed documents rather than re-serialized bytes: JSON turns the opening
+lines' integer response keys into strings, which sort differently, so loading
+and rewriting an unchanged full play table does not reproduce its bytes.
+
+`--promotion-gate=enforce` must never publish a table whose discards and
+measurement come from different pegging models. When the gate fails, the
+fallback restarts discard refinement from the analytical context, not from the
+trained-refined one, because that context's discards already carry the trained
+policy's deltas; it refines with heuristic play tables only and measures the
+heuristic on the keeps that refinement produced. Only enforced runs write
+`measured_policy` and `discard_policy_fingerprint`, which keeps report and off
+outputs byte-identical; readers therefore treat an absent `measured_policy` as
+an older or report-mode document, never as an error.
 
 Expected opponent hand points conditional on a user's known six-card deal are
 invariant across that user's 15 discard choices: all six known cards are removed

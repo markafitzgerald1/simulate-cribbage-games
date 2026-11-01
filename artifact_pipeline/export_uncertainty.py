@@ -30,6 +30,11 @@ QUALIFICATIONS = {
     "scope": "No policy-learning or model uncertainty; no global or "
     "twin-difference noise floor; missing is unavailable, not zero.",
 }
+# The legacy heuristic's policy fingerprint: pegging.policy_fingerprint hashes
+# this fixed payload, and the exporter may not import the pegging module.
+LEGACY_HEURISTIC_FINGERPRINT = hashlib.sha256(
+    repr(("legacy-heuristic-v1",)).encode("utf-8")
+).hexdigest()
 
 
 def _object(value: Any) -> dict[str, Any]:
@@ -169,6 +174,24 @@ def _statistics(table: str, source: dict[str, Any]) -> dict[str, Any] | None:
     return {"reported_marginal_se": values.pop("se"), **values}
 
 
+def validate_measured_policy(provenance: dict[str, Any]) -> None:
+    """Accept documents that predate the field; a present one must name the
+    policy whose fingerprint the document carries and identify the discard policy."""
+    if "measured_policy" not in provenance:
+        return
+    heuristic = f"{LEGACY_HEURISTIC_FINGERPRINT}:{LEGACY_HEURISTIC_FINGERPRINT}"
+    expected = (
+        "legacy-heuristic"
+        if provenance.get("policy_fingerprint") == heuristic
+        else "trained"
+    )
+    if provenance["measured_policy"] != expected:
+        raise ValueError("Invalid measured pegging policy")
+    discard_fingerprint = provenance.get("discard_policy_fingerprint")
+    if not isinstance(discard_fingerprint, str) or not discard_fingerprint:
+        raise ValueError("Invalid discard policy fingerprint")
+
+
 def _validate_provenance(table: str, provenance: dict[str, Any]) -> None:
     for value in provenance.values():
         if isinstance(value, (dict, list)):
@@ -181,6 +204,7 @@ def _validate_provenance(table: str, provenance: dict[str, Any]) -> None:
             raise ValueError("Invalid play policy fingerprint")
         if not isinstance(provenance.get("joint_policy_converged"), bool):
             raise ValueError("Invalid play convergence status")
+        validate_measured_policy(provenance)
 
 
 def build_sidecar(table: str, full_bytes: bytes, means_bytes: bytes) -> dict[str, Any]:

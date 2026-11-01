@@ -150,12 +150,34 @@ code cannot call the Python solver directly, so either encode needed
 conditional values in the artifact or reimplement runtime adjustments in
 TypeScript with Python-generated golden tests.
 
+The [opening-lines contract](../docs/pegging-lines.md) retains observed thin
+cells with counts and null conditional moments. Dealer means include all
+responses to the opponent lead; modal frequency uses that lead's count. Observe
+actual policy selections without additional randomness, keep unrounded
+checkpoint moments, and validate exact client-byte digest pairing before use.
+Publish this companion in the same release call as its means.
+
+Publication rounding must normalize signed zero without altering checkpoint
+moments. Test modes where count and rank disagree, leads observed out of order,
+and fractional checkpoint moments; integer fixtures hide these mutation gaps.
+Opening-lines readers reject malformed documents with `ValueError`, including
+invalid canonical key order or lead-row order. Digest pairing does not verify
+numerical agreement with the client means.
+
 The expected-play artifact follows the same boundary. Pegging policy training,
 hidden-information rollouts, discard-policy refinement, and uncertainty remain
 in Python. The browser receives only means keyed by four kept ranks and role,
 including absolute Pone and Dealer point-type components and the keyed player's
 paired delta. Keep policy views limited to the acting player's cards and public
 history.
+
+Production play generation runs `--promotion-gate=enforce`: when the trained
+pegging policies do not beat the legacy heuristic on the duplicate-deal gate,
+the release is measured with the heuristic, with opponent discards refined
+under that same heuristic, and `measured_policy` says so in the full table,
+the lines and the sidecar. Keep discards and measurement on one pegging model,
+keep report and off outputs byte-identical, and keep the release notes stating
+the gate outcome. See `AGENTS.md`, "Artifact Pipeline And Statistical Tables".
 
 For standalone uncertainty exports, follow
 [the JSON sidecar contract](../docs/uncertainty-sidecars.md). Preserve the exact

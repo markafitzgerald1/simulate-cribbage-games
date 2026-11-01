@@ -119,6 +119,13 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 
 ## Artifact Pipeline
 
+Expected-play generation also writes the compact
+[first-exchange lines companion](docs/pegging-lines.md), describing the same
+frozen policy as the play means and paired to their exact bytes. Observed thin
+cells retain counts with null conditional mean/SE; missing data is unavailable,
+never zero. Generation prints its minified and gzip sizes. The workflow
+publishes it beside the means in the same rolling-release call.
+
 The experimental shared-rank crib decomposition is isolated in
 `artifact_pipeline/crib_decomposition.py`. It is an opt-in library for the
 version-4 producer work under issue #135; the scheduled `generate_table.py`
@@ -335,6 +342,50 @@ paired `n`, `mu`, and `se` values for the keyed player's pegging delta and for
 absolute Pone and Dealer totals broken down into fifteens, thirty-ones, pairs,
 runs, go, and last-card points. The lean client artifact retains only those
 means.
+
+After the final training pass and before the final measurement, the generator
+runs a promotion gate that compares the trained pegging policies with the
+legacy heuristic they started from. Each of `--promotion-gate-deals` deals
+(default 200,000; minimum 1,000 when enabled) gives each seat a uniformly random
+rank-only four-card hand, not the hands the discard policy keeps; that is the
+design approved in #187, which judges play strength across all hands, so the
+gate's population differs from the published table's. Each deal is played three
+times with the same play seed: heuristic against heuristic, trained Pone
+against the heuristic Dealer, and the heuristic Pone against the trained Dealer.
+The report gives each seat's advantage in points per hand and the both-seat
+average, whose standard error is taken over per-deal averages; it passes when
+that average is positive and at least three standard errors.
+`--promotion-gate=report`, the default, logs the report and stores it under
+`__metadata__.promotion_gate` in the full table without changing any measured
+value; `--promotion-gate=off` skips it and drops any gate report a resumed table
+carried.
+
+`--promotion-gate=enforce` acts on the result. When the trained policies pass,
+it measures exactly what report mode measures and adds the labels described
+below. When they fail, the
+generator rebuilds the opponent discard policy from the analytical starting
+point, refining it with play tables measured under the legacy heuristic in
+both seats, and then measures E(deltaP) with the heuristic in both seats, so
+the discards and the measurement use one pegging model. The rebuild's passes
+are recorded under `__metadata__.promotion_gate.discard_refinement`, and
+`joint_policy_converged` and `--fail-on-non-convergence` then refer to it;
+the top-level `outer_iterations` still record the trained passes that the
+gate rejected, and the top-level `measured_discard_refinement` names which of
+the two records produced the measured keeps. Enforced tables carry a top-level
+`measured_policy` (`trained` or `legacy-heuristic`), which the opening-lines
+and uncertainty-sidecar provenance repeat and their readers check against
+`policy_fingerprint` (`legacy-heuristic` exactly when both seats carry the
+heuristic's fingerprint), and a `discard_policy_fingerprint` of the measured
+keeps that a resumed run must match. A report or off run that resumes an
+enforced table drops all of these labels.
+
+The weekly production workflow (`generate-play-artifact.yml`) runs with
+`--promotion-gate=enforce`, so the released table is measured with whichever
+pegging player passed: the trained policies, or the legacy heuristic when they
+lose to it. Its release notes state the gate outcome, the measured policy and
+the trained-minus-heuristic advantages per seat and for both seats. The bounded
+pull-request run stays in report mode and writes the same summary, so every
+pull request exercises it.
 
 Production runs resume from `expected_play_points.json` by default. Each sample
 is seeded independently by hand, role, and cumulative sample index, so a resumed

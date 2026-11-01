@@ -6,6 +6,7 @@ import argparse
 from collections.abc import Callable
 from copy import deepcopy
 import hashlib
+import gzip
 import json
 import math
 import os
@@ -30,11 +31,13 @@ from artifact_pipeline.analytical_solver import (  # noqa: E402
     get_card_removal_weight,
     run_analytical_ibr,
 )
+from artifact_pipeline.play_lines import OpeningLines, build_lines  # noqa: E402
 from artifact_pipeline.pegging import (  # noqa: E402
     DEALER,
     PONE,
     POINT_TYPES,
     ROLES,
+    LegacyHeuristicPolicy,
     PeggingPolicy,
     RunningStatistics,
     canonical_hand_key,
@@ -44,10 +47,17 @@ from artifact_pipeline.pegging import (  # noqa: E402
     simulate_pegging,
     train_iterative_best_response,
 )
+from artifact_pipeline.promotion_gate import (  # noqa: E402
+    DEFAULT_GATE_DEALS,
+    MINIMUM_GATE_DEALS,
+    describe_promotion,
+    evaluate_promotion,
+)
 
 DEFAULT_OUTPUT_PATH = "expected_play_points.json"
 DEFAULT_CLIENT_OUTPUT_PATH = "expected_play_points.client.json"
-GENERATION_METHOD = "artifact_pipeline.generate_play_table.v2"
+DEFAULT_LINES_OUTPUT_PATH = "expected_play_points.lines.json"
+GENERATION_METHOD = "artifact_pipeline.generate_play_table.v3"
 PHYSICAL_DECK = tuple((rank, suit) for rank in range(13) for suit in range(4))
 
 
@@ -105,6 +115,7 @@ class EntryAccumulators:
 
     delta: RunningStatistics
     players: dict[str, PlayerAccumulators]
+    opening: OpeningLines
 
 
 def selected_discards_to_policy(
@@ -212,6 +223,7 @@ def sample_opponent_keep(
 def _empty_entry_accumulators() -> EntryAccumulators:
     return EntryAccumulators(
         delta=RunningStatistics(),
+        opening=OpeningLines(),
         players={
             role: PlayerAccumulators(
                 total=RunningStatistics(),
@@ -225,6 +237,7 @@ def _empty_entry_accumulators() -> EntryAccumulators:
 def _entry_from_output(entry: Mapping[str, Any]) -> EntryAccumulators:
     return EntryAccumulators(
         delta=RunningStatistics.from_dict(entry),
+        opening=OpeningLines.restore(entry.get("opening", {}), entry["n"]),
         players={
             role: PlayerAccumulators(
                 total=RunningStatistics.from_dict(entry["players"][role]),
@@ -241,7 +254,9 @@ def _entry_from_output(entry: Mapping[str, Any]) -> EntryAccumulators:
 
 
 def _record_result(accumulators: EntryAccumulators, target_role, result) -> None:
-    accumulators.delta.add(result.delta(target_role))
+    delta = result.delta(target_role)
+    accumulators.delta.add(delta)
+    accumulators.opening.add(result.opening, delta)
     for role in ROLES:
         player_accumulators = accumulators.players[role]
         player_accumulators.total.add(result.total(role))
@@ -251,6 +266,7 @@ def _record_result(accumulators: EntryAccumulators, target_role, result) -> None
 
 def _entry_to_output(accumulators: EntryAccumulators) -> dict[str, Any]:
     output: dict[str, Any] = accumulators.delta.to_dict()
+    output["opening"] = accumulators.opening.checkpoint()
     output["players"] = {}
     for role in ROLES:
         player_accumulators = accumulators.players[role]
@@ -312,12 +328,19 @@ def _log_progress(
     )
 
 
+def discard_keeps_fingerprint(discard_policy: DiscardPolicy) -> str:
+    """Return a stable digest of every role's kept ranks for every deal."""
+    keeps = sorted(discard_policy.kept_by_role_and_hand.items())
+    return hashlib.sha256(repr(keeps).encode("utf-8")).hexdigest()
+
+
 def validate_resume_table(
     existing_table: Mapping[str, Any],
     seed: int,
     expected_policy_fingerprint: str | None = None,
+    expected_discard_fingerprint: str | None = None,
 ) -> None:
-    """Reject checkpoints produced by an incompatible method or seed."""
+    """Reject checkpoints produced by an incompatible method, seed or policy."""
     metadata = existing_table.get("__metadata__", {})
     if metadata.get("generation_method") != GENERATION_METHOD:
         raise ValueError("Existing play table uses an incompatible generation method")
@@ -328,6 +351,11 @@ def validate_resume_table(
         and metadata.get("policy_fingerprint") != expected_policy_fingerprint
     ):
         raise ValueError("Existing play table uses a different play policy")
+    if (
+        expected_discard_fingerprint is not None
+        and metadata.get("discard_policy_fingerprint") != expected_discard_fingerprint
+    ):
+        raise ValueError("Existing play table uses different discard keeps")
 
 
 def generate_play_table(
@@ -342,6 +370,7 @@ def generate_play_table(
     checkpoint: Callable[[Mapping[str, Any]], None] | None = None,
     play_policy_fingerprint: str | None = None,
     checkpoint_frequency: int = 100,
+    discard_policy_fingerprint: str | None = None,
 ) -> dict[str, Any]:
     """Generate paired seat and point-type estimates for every requested hand."""
     # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
@@ -363,10 +392,18 @@ def generate_play_table(
         raise ValueError("Checkpoint frequency must be positive")
     requested_hands = list(hands if hands is not None else get_canonical_hands())
     if existing_table is not None:
-        validate_resume_table(existing_table, seed, play_policy_fingerprint)
+        validate_resume_table(
+            existing_table, seed, play_policy_fingerprint, discard_policy_fingerprint
+        )
     output: dict[str, Any] = deepcopy(dict(existing_table)) if existing_table else {}
     output["__metadata__"] = {
-        **output.get("__metadata__", {}),
+        # A keeps fingerprint carried from an enforced table is dropped, then
+        # restored below only when this run supplies one.
+        **{
+            name: value
+            for name, value in output.get("__metadata__", {}).items()
+            if name != "discard_policy_fingerprint"
+        },
         **{
             "generation_method": GENERATION_METHOD,
             "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -376,6 +413,12 @@ def generate_play_table(
             "max_samples": max_samples or samples,
             "hand_count": len(requested_hands),
             "policy_fingerprint": play_policy_fingerprint,
+            # Enforced runs only, so report and off outputs stay unchanged.
+            **(
+                {"discard_policy_fingerprint": discard_policy_fingerprint}
+                if discard_policy_fingerprint is not None
+                else {}
+            ),
         },
     }
     total_hands = len(requested_hands)
@@ -564,6 +607,19 @@ def _write_json(path: str, data: Mapping[str, object], compact: bool = False) ->
     os.replace(temporary_path, path)
 
 
+def _write_lines(lines_path: str, means_path: str, full: Mapping[str, Any]) -> None:
+    """Hash the written client bytes and report reproducible companion sizes."""
+    with open(means_path, "rb") as means_file:
+        lines = build_lines(full, means_file.read())
+    _write_json(lines_path, lines, compact=True)
+    with open(lines_path, "rb") as lines_file:
+        lines_bytes = lines_file.read()
+    print(
+        f"Play lines: {len(lines_bytes)} minified bytes; "
+        f"{len(gzip.compress(lines_bytes, 9, mtime=0))} gzip bytes"
+    )
+
+
 def positive_int(value: str) -> int:
     parsed = int(value)
     if parsed <= 0:
@@ -600,6 +656,7 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", default=DEFAULT_OUTPUT_PATH)
     parser.add_argument("--client-output", default=DEFAULT_CLIENT_OUTPUT_PATH)
+    parser.add_argument("--lines-output", default=DEFAULT_LINES_OUTPUT_PATH)
     parser.add_argument("--samples", type=positive_int, default=1000)
     parser.add_argument("--max-samples", type=positive_int)
     parser.add_argument("--target-standard-error", type=positive_float)
@@ -617,35 +674,81 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--hand-limit", type=positive_int)
     parser.add_argument("--no-resume", action="store_true")
     parser.add_argument("--fail-on-non-convergence", action="store_true")
-    return parser.parse_args()
-
-
-def main() -> None:
-    """Train policies, refine discards, and write full and lean artifacts."""
-    # pylint: disable=too-many-locals
-    args = _parse_args()
-    context = solve_initial_discard_policy(
-        args.analytical_max_iterations,
-        args.full_hand_policy_max_iterations,
+    parser.add_argument(
+        "--promotion-gate", choices=("off", "report", "enforce"), default="report"
     )
-    requested_hands = get_canonical_hands()
-    if args.hand_limit is not None:
-        requested_hands = requested_hands[: args.hand_limit]
+    parser.add_argument(
+        "--promotion-gate-deals",
+        type=positive_int,
+        default=DEFAULT_GATE_DEALS,
+        help=(
+            f"Deals to evaluate in the promotion gate (default {DEFAULT_GATE_DEALS:,}; "
+            f"minimum {MINIMUM_GATE_DEALS:,} when enabled)"
+        ),
+    )
+    args = parser.parse_args()
+    if args.promotion_gate != "off" and args.promotion_gate_deals < MINIMUM_GATE_DEALS:
+        parser.error(
+            f"--promotion-gate-deals must be at least {MINIMUM_GATE_DEALS:,} "
+            "when the gate is enabled"
+        )
+    if os.path.realpath(args.lines_output) in {
+        os.path.realpath(args.output),
+        os.path.realpath(args.client_output),
+    }:
+        parser.error("Lines output must be separate from full and client means")
+    return args
+
+
+def promotion_gate_metadata(
+    policies: Mapping[str, PeggingPolicy], args: argparse.Namespace
+) -> dict[str, Any]:
+    """Run the enabled gate on the final trained policies and log its report."""
+    if args.promotion_gate == "off":
+        return {}
+    report = {
+        "mode": args.promotion_gate,
+        **evaluate_promotion(policies, args.promotion_gate_deals, args.seed),
+    }
+    print(describe_promotion(report), file=sys.stderr, flush=True)
+    return {"promotion_gate": report}
+
+
+def apply_promotion_metadata(
+    metadata: dict[str, Any], gate_metadata: Mapping[str, Any]
+) -> None:
+    """Replace any gate labels a resumed table carries with this run's."""
+    for name in ("promotion_gate", "measured_policy", "measured_discard_refinement"):
+        metadata.pop(name, None)
+    metadata.update(gate_metadata)
+
+
+def refine_discards(
+    context: AnalyticalContext,
+    args: argparse.Namespace,
+    requested_hands: Sequence[tuple[int, ...]],
+    fixed_policies: Mapping[str, PeggingPolicy] | None = None,
+) -> tuple[AnalyticalContext, Mapping[str, PeggingPolicy], list[dict[str, Any]], bool]:
+    """Refine discards against trained pegging, or one fixed pegging model."""
+    # pylint: disable=too-many-locals
     reports = []
     converged = False
     stable_iterations = 0
-    policies = None
+    policies: Mapping[str, PeggingPolicy] | None = None
     previous_policy_table = None
     for outer_iteration in range(args.outer_iterations):
         discard_policy = selected_discards_to_policy(context.selected_discards)
-        policies, ibr_reports = train_iterative_best_response(
-            partial(sample_policy_deal, discard_policy=discard_policy),
-            iterations=args.ibr_iterations,
-            samples_per_role=args.ibr_samples,
-            rollouts_per_action=args.rollouts_per_action,
-            seed=args.seed,
-            initial_policies=policies,
-        )
+        if fixed_policies is None:
+            policies, ibr_reports = train_iterative_best_response(
+                partial(sample_policy_deal, discard_policy=discard_policy),
+                iterations=args.ibr_iterations,
+                samples_per_role=args.ibr_samples,
+                rollouts_per_action=args.rollouts_per_action,
+                seed=args.seed,
+                initial_policies=policies,
+            )
+        else:
+            policies, ibr_reports = fixed_policies, []
         policy_table = generate_play_table(
             discard_policy,
             policies,
@@ -679,10 +782,67 @@ def main() -> None:
         if stable_iterations >= 2:
             converged = True
             break
-    if args.fail_on_non_convergence and not converged:
-        raise RuntimeError("Joint discard/play policy did not converge")
     if policies is None:  # pragma: no cover
         raise AssertionError("At least one outer iteration is required")
+    return context, policies, reports, converged
+
+
+def require_convergence(args: argparse.Namespace, converged: bool) -> None:
+    """Fail when asked to and the refinement that is measured did not converge."""
+    if args.fail_on_non_convergence and not converged:
+        raise RuntimeError("Joint discard/play policy did not converge")
+
+
+def heuristic_fallback(
+    gate: dict[str, Any],
+    analytical_context: AnalyticalContext,
+    args: argparse.Namespace,
+    requested_hands: Sequence[tuple[int, ...]],
+) -> tuple[Mapping[str, PeggingPolicy], AnalyticalContext, bool] | None:
+    """After a failed gate, refine and measure with the heuristic in both seats.
+
+    Refinement restarts from the analytical policy, whose discards carry no
+    trained pegging deltas, so the discards and the measurement use one
+    pegging model. Returns None when the gate passed.
+    """
+    if gate["passed"]:
+        return None
+    print(
+        "[promotion-gate] enforce: the trained policy did not pass; refining "
+        "discards from the analytical policy and measuring with the legacy "
+        "heuristic in both seats",
+        file=sys.stderr,
+        flush=True,
+    )
+    heuristic = {role: LegacyHeuristicPolicy() for role in ROLES}
+    context, policies, reports, converged = refine_discards(
+        analytical_context, args, requested_hands, fixed_policies=heuristic
+    )
+    gate["discard_refinement"] = {
+        "policy": "legacy-heuristic",
+        "initialization": "analytical",
+        "converged": converged,
+        "outer_iterations": reports,
+    }
+    return policies, context, converged
+
+
+def main() -> None:
+    """Train policies, refine discards, and write full and lean artifacts."""
+    # pylint: disable=too-many-locals
+    args = _parse_args()
+    analytical_context = solve_initial_discard_policy(
+        args.analytical_max_iterations,
+        args.full_hand_policy_max_iterations,
+    )
+    requested_hands = get_canonical_hands()
+    if args.hand_limit is not None:
+        requested_hands = requested_hands[: args.hand_limit]
+    context, policies, reports, converged = refine_discards(
+        analytical_context, args, requested_hands
+    )
+    if args.promotion_gate != "enforce":
+        require_convergence(args, converged)
     discard_policy = selected_discards_to_policy(context.selected_discards)
     policies, final_ibr_reports = train_iterative_best_response(
         partial(sample_policy_deal, discard_policy=discard_policy),
@@ -693,6 +853,29 @@ def main() -> None:
         initial_policies=policies,
     )
     reports.append({"final_play_ibr": final_ibr_reports})
+    promotion_metadata = promotion_gate_metadata(policies, args)
+    discard_fingerprint = None
+    if args.promotion_gate == "enforce":
+        fallback = heuristic_fallback(
+            promotion_metadata["promotion_gate"],
+            analytical_context,
+            args,
+            requested_hands,
+        )
+        if fallback is not None:
+            policies, context, converged = fallback
+            discard_policy = selected_discards_to_policy(context.selected_discards)
+        require_convergence(args, converged)
+        promotion_metadata["measured_policy"] = (
+            "trained" if fallback is None else "legacy-heuristic"
+        )
+        # The top-level outer_iterations always hold the trained passes.
+        promotion_metadata["measured_discard_refinement"] = (
+            "outer_iterations"
+            if fallback is None
+            else "promotion_gate.discard_refinement"
+        )
+        discard_fingerprint = discard_keeps_fingerprint(discard_policy)
     final_policy_fingerprint = ":".join(
         policy_fingerprint(policies[role]) for role in ROLES
     )
@@ -702,6 +885,7 @@ def main() -> None:
             existing_table = json.load(checkpoint_file)
 
     def checkpoint(table: Mapping[str, Any]) -> None:
+        apply_promotion_metadata(table["__metadata__"], promotion_metadata)
         _write_json(args.output, table)
         _write_json(args.client_output, build_client_table(table), compact=True)
 
@@ -717,15 +901,15 @@ def main() -> None:
         checkpoint=checkpoint,
         play_policy_fingerprint=final_policy_fingerprint,
         checkpoint_frequency=args.checkpoint_frequency,
+        discard_policy_fingerprint=discard_fingerprint,
     )
     full_table["__metadata__"].update(
-        {
-            "joint_policy_converged": converged,
-            "outer_iterations": reports,
-        }
+        {"joint_policy_converged": converged, "outer_iterations": reports}
     )
+    apply_promotion_metadata(full_table["__metadata__"], promotion_metadata)
     _write_json(args.output, full_table)
     _write_json(args.client_output, build_client_table(full_table), compact=True)
+    _write_lines(args.lines_output, args.client_output, full_table)
     print(
         f"Generated {len(requested_hands) * len(ROLES)} role entries in "
         f"{args.output} and {args.client_output}"

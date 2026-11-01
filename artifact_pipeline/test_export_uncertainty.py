@@ -361,6 +361,13 @@ class TestExportUncertainty(unittest.TestCase):
             lambda data: data["provenance"].update(policy_fingerprint=""),
             lambda data: data["provenance"].pop("joint_policy_converged"),
             lambda data: data["provenance"].update(joint_policy_converged=0),
+            lambda data: data["provenance"].update(measured_policy="trained"),
+            lambda data: data["provenance"].update(
+                measured_policy="trained", discard_policy_fingerprint=""
+            ),
+            lambda data: data["provenance"].update(
+                measured_policy="trained", discard_policy_fingerprint=123
+            ),
             lambda data: data["record_groups"]["totals"].update(record_count=0),
             lambda data: data["record_groups"]["totals"].update(record_count=True),
             lambda data: data["record_groups"]["totals"].update(record_count="2"),
