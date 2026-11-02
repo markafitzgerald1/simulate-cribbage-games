@@ -210,11 +210,18 @@ def _validate_provenance(table: str, provenance: dict[str, Any]) -> None:
 def build_sidecar(table: str, full_bytes: bytes, means_bytes: bytes) -> dict[str, Any]:
     """Export measured totals only; snapshot and policy values are never read."""
     full, means = read_json(full_bytes), read_json(means_bytes)
+    metadata = _object(full.get("__metadata__", {}))
+    if table == "crib" and metadata.get("generation_method") != (
+        "artifact_pipeline.generate_table.v3"
+    ):
+        raise ValueError(
+            "Version-1 crib export requires artifact_pipeline.generate_table.v3; "
+            "v4 requires the v2 uncertainty sidecar. Unknown methods are unsupported."
+        )
     buckets = mean_buckets(table, means)
     if set(full) - {"__metadata__"} != set(_keys(table, means)):
         raise ValueError("Full and client artifact keys differ")
     _matching_means(full, means)
-    metadata = _object(full.get("__metadata__", {}))
     provenance = {
         key: value
         for key, value in metadata.items()
