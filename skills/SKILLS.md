@@ -61,6 +61,13 @@ default skill for documentation and Python backend work.
    `markafitzgerald1/cribbage-trainer` and set its Status and milestone; see
    `AGENTS.md`, "Issue Tracking And The Shared Project Board", for how, and for
    why an audit keys on repository and number together.
+18. Before calling work ready for human review, obtain independent adversarial
+    review of the current diff by a reviewer who did not implement it. Require
+    practical checks proportionate to risk, address actionable findings, and
+    have fixes reviewed again. Record the reviewed commit, scope, findings and
+    limits in the PR. Self-review, CI, coverage and mutation checks do not
+    replace this gate. If review is unavailable or incomplete, report that
+    status without claiming readiness. See `AGENTS.md`, "Pull Request Readiness".
 
 ## Skill Authoring Rules
 
@@ -322,3 +329,14 @@ A fixed-policy diagnostic also pins generation zero: the general checkpoint
 reader permits later generations, and generation is part of every row seed.
 A hash-rejection regression must start from an otherwise valid checkpoint;
 an invalid file can raise an unrelated error and hide a missing digest check.
+
+## V4 survey timing and authorization
+
+The [four-shard survey](../docs/v4-survey.md) records Mark's November 1 budget:
+one manual-only workflow PR, then one dispatch after Mark merges it. Any failed
+or incomplete shard needs approval before retry or resume. Production and
+publication remain separate decisions. V4 crib generation measured about M2
+speed on the GitHub runner; the play pipeline's 1.6 multiplier does not apply.
+The N=22,000 resume cost was already measured at 25.0 seconds for 3-8 on the M2
+after #205's exact PSD optimization; later 45-75 second extrapolations were
+too high. No further optimization is required for this survey budget.
