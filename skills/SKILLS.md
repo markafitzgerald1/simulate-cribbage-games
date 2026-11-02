@@ -61,6 +61,13 @@ default skill for documentation and Python backend work.
    `markafitzgerald1/cribbage-trainer` and set its Status and milestone; see
    `AGENTS.md`, "Issue Tracking And The Shared Project Board", for how, and for
    why an audit keys on repository and number together.
+18. Before calling work ready for human review, obtain independent adversarial
+    review of the current diff by a reviewer who did not implement it. Require
+    practical checks proportionate to risk, address actionable findings, and
+    have fixes reviewed again. Record the reviewed commit, scope, findings and
+    limits in the PR. Self-review, CI, coverage and mutation checks do not
+    replace this gate. If review is unavailable or incomplete, report that
+    status without claiming readiness. See `AGENTS.md`, "Pull Request Readiness".
 
 ## Skill Authoring Rules
 

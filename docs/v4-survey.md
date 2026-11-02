@@ -89,3 +89,39 @@ the later 45-75 second extrapolation overstated it. About 0.5 runner-hours
 for all distinct groups is a planning estimate, not a measured survey resume.
 The exact PSD optimization already landed in #205 (311.9 down to 25.0 seconds).
 No further optimization is required for this approved budget.
+
+## Independent adversarial review
+
+Two separate OpenAI Codex reviewers, neither the implementer, reviewed executable
+commit `4e0848e8b4185a2fae249df7ce5f491468a92577` on November 1, 2026.
+No actionable defects were found. Both also checked the new independent-review
+readiness gate in `AGENTS.md`, `README.md` and `skills/SKILLS.md`.
+
+The operations review examined authorization, workflow isolation, concurrency,
+resume origin and manifests, deadlines and failure uploads. It ran the 28
+focused checks and actionlint, then independently exercised two small groups
+through the real coordinator, scorer, engine and checkpoint machinery at N=2
+using fixture input digests and partition/target overrides. Both roles and all
+streams reached the target; same-target resume preserved checkpoint bytes.
+Wrong-shard manifests, changed workflow hashes and swapped group checkpoints
+were rejected. An expired deadline started no group or checkpoint.
+
+The contract review independently checked the exact 78-group partition and
+experiment identity. Its separate tiny deterministic-scoring experiment used
+the real engine/checkpoint path with correctly hashed synthetic input: both
+roles and all streams retained count and next index 2, generation zero and
+seed 42; fresh and resumed checkpoint bytes matched. Revisiting a completed
+checkpoint succeeded with sampling replaced by a function that would fail if
+called. All 28 focused checks passed in that review too.
+
+These reviews do not establish physical-policy mathematics, calibration,
+N=22,000 performance, production input availability or actual GitHub runner
+cancellation/upload behavior. The operations experiment used a real scorer;
+the contract experiment used the existing deterministic test scorer. Neither
+review dispatched a workflow. A future approved resume schedules all four
+matrix jobs, including validation of completed shards; account for that cost.
+
+The additive follow-up changes documentation only. The readiness gate now
+explicitly requires independent adversarial review before a ready handoff,
+review of fixes, and recorded commit/scope/findings/limits. CI and self-review
+alone cannot satisfy it. Human review and execution authorization still apply.

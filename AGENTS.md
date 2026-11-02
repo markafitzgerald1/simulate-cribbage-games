@@ -679,6 +679,18 @@ many opaque identifier fragments that pylint accepts as valid snake_case.
 
 ## Pull Request Readiness
 
+Before telling the maintainer that work is ready for human review, obtain an
+independent adversarial review of the current diff. Use a separate reviewer
+who did not implement the change. Self-review, passing CI, coverage and mutation
+checks are supporting evidence, not substitutes. Give the reviewer the current
+issue/specification and authorization boundaries; require practical attempts to
+falsify material correctness and operational claims in proportion to risk.
+Address actionable findings and obtain a follow-up review of fixes. Record the
+reviewed commit, reviewer scope, findings, fixes and remaining limits in the PR.
+If independent review is unavailable or incomplete, say so and do not call the
+work ready. Independent review does not replace required human review or grant
+merge, execution or publication authority.
+
 Before opening or updating a pull request, summarize what changed, why it
 changed, and which validation commands were run. Include any skipped checks and
 the reason they were skipped.

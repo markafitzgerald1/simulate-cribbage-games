@@ -73,6 +73,11 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 - New code that imports or relies on parts of `simulate_cribbage_games.py` must
   first prove the used legacy surface with 100% unit test coverage and related
   automated acceptance test coverage.
+- Before handing work to the maintainer as ready for review, complete an
+  independent adversarial review, address findings and review fixes again.
+  Record the reviewed commit, practical checks and remaining limits in the PR;
+  see `AGENTS.md`, "Pull Request Readiness". Passing CI and self-review alone
+  do not satisfy this gate.
 - Before code changes are pushed or marked ready for review, run at least one
   smoke test or usage example from this README and sanity-check the output.
   Automate that acceptance test when practical.
