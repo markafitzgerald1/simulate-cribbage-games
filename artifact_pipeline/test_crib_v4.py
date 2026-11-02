@@ -132,6 +132,101 @@ class V4CheckpointFixture(unittest.TestCase):
 class TestV4Checkpoint(V4CheckpointFixture):
     """Exercise the real state machine with a fast fixed scorer fixture."""
 
+    def test_precut_report_guard_and_resume(self):
+        from artifact_pipeline import crib_precut
+
+        path = self.path("guarded.json")
+        output = self.run_table(path, pairs=PAIRS[1:], precut_guard="report")
+        report = output["__metadata__"]["precut_twin_report"]
+        self.assertEqual(len(report["rows"]), 2)
+        row = report["rows"][0]
+        self.assertAlmostEqual(
+            sum(row[kind]["mu"] for kind in ("residual", "flush", "nobs")),
+            row["gap"]["mu"],
+        )
+        self.assertNotIn(
+            "precut_twin_report",
+            generate_table.build_client_table(output)["__metadata__"],
+        )
+        resumed = self.run_table(path, pairs=PAIRS[1:], precut_guard="enforce")
+        self.assertEqual(output, resumed)
+        with patch.object(
+            crib_v4,
+            "enforce_precut_report",
+            side_effect=ValueError("negative fixture"),
+        ):
+            with self.assertRaisesRegex(ValueError, "negative fixture"):
+                self.run_table(path, pairs=PAIRS[1:], precut_guard="enforce")
+        current = _V4Run(run_args(path), PAIRS[1:], generate_table)
+        self.assertEqual(report, crib_precut.precut_twin_report(current.state))
+
+    def test_real_twin_components_and_completed_write_enforcement(self):
+        path = self.path("real-twin.json")
+        pairs = ["3_8_Suited", "3_8_Unsuited"]
+        with patch("artifact_pipeline.crib_v4._score_deal", _score_deal), patch(
+            "artifact_pipeline.crib_v4._centers", _centers
+        ):
+            output = self.run_table(path, 2, pairs=pairs)
+        for row in output["__metadata__"]["precut_twin_report"]["rows"]:
+            self.assertAlmostEqual(
+                row["gap"]["mu"],
+                sum(row[kind]["mu"] for kind in ("residual", "flush", "nobs")),
+            )
+            gap = sum(
+                (4 - int(rank in ("3", "8")))
+                / 50
+                * (
+                    output[pairs[0]][row["role"]][rank]["mu"]
+                    - output[pairs[1]][row["role"]][rank]["mu"]
+                )
+                for rank in generate_table.Index.indices
+            )
+            self.assertAlmostEqual(gap, row["gap"]["mu"])
+        with patch("artifact_pipeline.crib_v4._centers", _centers):
+            current = _V4Run(
+                run_args(path, precut_guard="enforce"), pairs, generate_table
+            )
+        before = read_bytes(path)
+        with patch(
+            "artifact_pipeline.crib_v4.enforce_precut_report",
+            side_effect=ValueError("negative fixture"),
+        ):
+            with self.assertRaisesRegex(ValueError, "negative fixture"):
+                current.checkpoint()
+        self.assertEqual(read_bytes(path), before)
+
+    def test_enforce_checks_pending_transition_before_replacing_policy(self):
+        from artifact_pipeline.crib_v4_state import SCALE, add_row, empty_moments
+
+        path = self.path("pending-negative.json")
+        pairs = PAIRS[1:]
+        current = _V4Run(run_args(path, max_generations=2), pairs, generate_table)
+        current.sample_pass()
+        for entry in current.state["estimator_state"]["A_2"].values():
+            for name, saved in list(entry["streams"].items()):
+                stream = empty_moments(saved["labels"])
+                row = [
+                    100 * SCALE if label.endswith("/Unsuited/root/nobs") else 0
+                    for label in saved["labels"]
+                ]
+                add_row(stream, row)
+                add_row(stream, row)
+                entry["streams"][name] = stream
+        current.state["phase"] = "transition_pending"
+        current.checkpoint()
+        resumed = _V4Run(
+            run_args(path, max_generations=2, precut_guard="enforce"),
+            pairs,
+            generate_table,
+        )
+        with patch(
+            "artifact_pipeline.crib_v4._transition",
+            side_effect=RuntimeError("transition reached"),
+        ) as transition:
+            with self.assertRaisesRegex(ValueError, "A_2/Dealer"):
+                resumed.execute()
+        transition.assert_not_called()
+
     def test_seeded_twins_and_same_rank_resume_match_fresh(self):
         resumed = self.path("resumed.json")
         fresh = self.path("fresh.json")
@@ -380,6 +475,19 @@ class TestV4Checkpoint(V4CheckpointFixture):
         self.assertEqual(routed.call_count, 1)
         self.assertEqual(routed.call_args.args[1], ["A_A_Unsuited"])
         self.assertIs(routed.call_args.args[2], generate_table)
+        with patch.object(sys, "argv", [*arguments, "--precut-guard=enforce"]), patch(
+            "artifact_pipeline.crib_v4.run"
+        ) as routed:
+            generate_table.main(["A_A_Unsuited"])
+        self.assertEqual(routed.call_args.args[0].precut_guard, "enforce")
+        with patch.object(
+            sys,
+            "argv",
+            [arg for arg in arguments if arg != "--estimator-v4"]
+            + ["--precut-guard=report"],
+        ), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            generate_table.main(["A_A_Unsuited"])
+
         with patch.object(
             sys, "argv", [*arguments, "--use-control-variates"]
         ), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):

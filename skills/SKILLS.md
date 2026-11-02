@@ -102,6 +102,11 @@ starter-relation correction. Use that oracle to reject dropped residuals,
 opponent nobs, or sign clamps; do not turn positive flush possibility into a
 claim that every policy or finite sample has a positive measured flush.
 
+Completed v4 generations carry the [pre-cut twin report](../docs/v4-precut.md).
+Enforcement uses the simultaneous upper bound across the fixed 156-row family,
+including labelled Jack rows. Unresolved rows do not fail. Recompute reports
+from moments on resume; displayed means and saved reports are derived views.
+
 For opt-in version-4 generation, test the full checkpoint as the authority:
 complete group rounds, unit-weight joint moments, exact resume compatibility,
 and projections from saved moments. Check both seeded fresh-versus-resumed
