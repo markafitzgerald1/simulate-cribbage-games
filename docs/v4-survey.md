@@ -94,7 +94,7 @@ No further optimization is required for this approved budget.
 
 Two separate OpenAI Codex reviewers, neither the implementer, reviewed executable
 commit `4e0848e8b4185a2fae249df7ce5f491468a92577` on November 1, 2026.
-No actionable defects were found. Both also checked the new independent-review
+No executable defects were found. Both also checked the new independent-review
 readiness gate in `AGENTS.md`, `README.md` and `skills/SKILLS.md`.
 
 The operations review examined authorization, workflow isolation, concurrency,
@@ -121,7 +121,14 @@ the contract experiment used the existing deterministic test scorer. Neither
 review dispatched a workflow. A future approved resume schedules all four
 matrix jobs, including validation of completed shards; account for that cost.
 
-The additive follow-up changes documentation only. The readiness gate now
+The contract reviewer also found a test gap: routing every measurement to 3-8
+still passed the new survey tests. The follow-up asserts the exact measurement
+call count, each rank group, its output path and the source path. In scratch
+copies the strengthened test rejects constant-rank, constant-output and extra
+measurement mutations; the unmodified coordinator passes.
+
+The follow-up changes tests and documentation, leaving executable behavior
+unchanged. The readiness gate now
 explicitly requires independent adversarial review before a ready handoff,
 review of fixes, and recorded commit/scope/findings/limits. CI and self-review
 alone cannot satisfy it. Human review and execution authorization still apply.

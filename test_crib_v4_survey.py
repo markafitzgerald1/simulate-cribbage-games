@@ -53,8 +53,15 @@ class TestSurvey(unittest.TestCase):
                     self.assertTrue(
                         ".github/workflows/survey-crib-v4.yml" in identity["files"]
                     )
-                    for call in measure.call_args_list[-len(groups) :]:
+                    self.assertEqual(measure.call_count, len(groups))
+                    for group, call in zip(groups, measure.call_args_list, strict=True):
                         args = call.args[0]
+                        self.assertEqual(args[args.index("--rank-group") + 1], group)
+                        self.assertEqual(
+                            args[args.index("--output") + 1],
+                            str(destination / f"group-{group}.json"),
+                        )
+                        self.assertEqual(args[args.index("--source") + 1], str(source))
                         self.assertEqual(args[args.index("--samples") + 1], "22000")
                         self.assertEqual(
                             args[args.index("--checkpoint-frequency") + 1], "1000"
