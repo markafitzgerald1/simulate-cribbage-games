@@ -36,12 +36,14 @@ def verified_inputs(source, client):
         raise ValueError("diagnostic estimator contracts differ")
 
 
-def validate_resume_run(document, repository):
+def validate_resume_run(
+    document, repository, workflow=".github/workflows/diagnose-crib-v4.yml"
+):
     """Accept artifacts only from a completed manual diagnostic in this repo."""
     if (
         document.get("event") != "workflow_dispatch"
         or document.get("status") != "completed"
-        or document.get("path") != ".github/workflows/diagnose-crib-v4.yml"
+        or document.get("path") != workflow
         or (document.get("repository") or {}).get("full_name") != repository
         or (document.get("head_repository") or {}).get("full_name") != repository
     ):
@@ -50,7 +52,7 @@ def validate_resume_run(document, repository):
         )
 
 
-def manifest():
+def manifest(groups=GROUPS, samples=4000, extra_paths=()):
     """Pin producer source bytes as well as the explicit experiment identity."""
     root = Path(__file__).resolve().parents[1]
     paths = [
@@ -59,14 +61,15 @@ def manifest():
         Path(__file__).resolve(),
         root / "scripts/measure_crib_v4.py",
         root / "requirements.txt",
+        *(root / path for path in extra_paths),
     ]
     return {
         "source_sha256": SOURCE_SHA256,
         "client_sha256": CLIENT_SHA256,
         "policy_sha256": POLICY_SHA256,
         "seed": 42,
-        "samples": 4000,
-        "groups": list(GROUPS),
+        "samples": samples,
+        "groups": list(groups),
         "python": platform.python_version(),
         "files": {
             str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest()
@@ -75,10 +78,10 @@ def manifest():
     }
 
 
-def run(source, client, output, stop_at):
+def run(source, client, output, stop_at, *, groups=GROUPS, samples=4000, identity=None):
     """Run only the declared groups, retaining separate authoritative files."""
     paths = [output / name for name in ("manifest.json", "summary.json")]
-    for key in GROUPS:
+    for key in groups:
         paths.extend(
             output / f"group-{key}.{suffix}" for suffix in ("json", "json.tmp", "jsonl")
         )
@@ -89,7 +92,7 @@ def run(source, client, output, stop_at):
             ):
                 raise ValueError("diagnostic writer aliases an input")
     output.mkdir(parents=True, exist_ok=True)
-    statuses = {key: "not_started" for key in GROUPS}
+    statuses = {key: "not_started" for key in groups}
     summary_path = output / "summary.json"
     summary = {
         "complete": False,
@@ -100,7 +103,7 @@ def run(source, client, output, stop_at):
     }
     try:
         verified_inputs(source, client)
-        identity = manifest()
+        identity = manifest(groups, samples) if identity is None else identity
         identity_path = output / "manifest.json"
         checkpoints = list(output.glob("group-*.json"))
         if identity_path.exists():
@@ -112,7 +115,7 @@ def run(source, client, output, stop_at):
             raise ValueError("resume checkpoints require their manifest")
         if not identity_path.exists():
             identity_path.write_text(json.dumps(identity, indent=2) + "\n")
-        for key in GROUPS:
+        for key in groups:
             if time.time() >= stop_at:
                 break
             statuses[key] = "failed"
@@ -127,7 +130,7 @@ def run(source, client, output, stop_at):
                             "--rank-group",
                             key,
                             "--samples",
-                            "4000",
+                            str(samples),
                             "--checkpoint-frequency",
                             "1000",
                             "--source-sha256",

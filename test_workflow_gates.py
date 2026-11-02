@@ -211,5 +211,57 @@ else:
         )
 
 
+class TestSurveyWorkflow(unittest.TestCase):
+    """Check budget and isolation in the actual committed workflow."""
+
+    def test_budget_parallelism_resume_and_always_upload(self):
+        path = Path(__file__).parent / ".github/workflows/survey-crib-v4.yml"
+        workflow = yaml.load(path.read_text(), Loader=yaml.BaseLoader)
+        self.assertEqual(set(workflow["on"]), {"workflow_dispatch"})
+        self.assertEqual(
+            workflow["permissions"], {"contents": "read", "actions": "read"}
+        )
+        self.assertNotIn("concurrency", workflow)
+        self.assertEqual(len(workflow["jobs"]), 1)
+        job = workflow["jobs"]["survey-shard"]
+        self.assertEqual(job["strategy"]["matrix"]["shard"], ["1", "2", "3", "4"])
+        self.assertEqual(job["strategy"]["max-parallel"], "4")
+        self.assertEqual(job["strategy"]["fail-fast"], "false")
+        self.assertEqual(job["timeout-minutes"], "330")
+        self.assertTrue("${{ matrix.shard }}" in job["concurrency"]["group"])
+        self.assertEqual(job["concurrency"]["cancel-in-progress"], "false")
+        steps = job["steps"]
+        self.assertTrue("300 * 60" in steps[0]["run"])
+        runtime = next(s for s in steps if "setup-python@" in s.get("uses", ""))
+        self.assertEqual(runtime["with"]["python-version"], "3.14.4")
+        names = [s.get("name") for s in steps]
+        validate = names.index("Verify resume run provenance")
+        restore = names.index("Restore compatible per-group checkpoints")
+        measure = names.index("Measure the declared survey shard")
+        self.assertLess(validate, restore)
+        self.assertLess(restore, measure)
+        self.assertTrue(
+            "scripts.run_crib_v4_survey import validate_resume_run"
+            in steps[validate]["run"]
+        )
+        self.assertTrue('[[ "$RESUME_RUN_ID" =~ ^[0-9]+$ ]]' in steps[validate]["run"])
+        self.assertTrue('--shard "${{ matrix.shard }}"' in steps[measure]["run"])
+        self.assertTrue(
+            "exec python -u -m scripts.run_crib_v4_survey" in steps[measure]["run"]
+        )
+        upload = steps[-1]
+        self.assertEqual(upload["if"], "always()")
+        self.assertEqual(upload["with"]["retention-days"], "30")
+        self.assertEqual(
+            upload["with"]["name"], "crib-v4-survey-shard-${{ matrix.shard }}"
+        )
+        self.assertEqual(steps[restore]["with"]["name"], upload["with"]["name"])
+        self.assertTrue(upload["uses"].startswith("actions/upload-artifact@"))
+        self.assertFalse(any("release" in s.get("uses", "") for s in steps))
+        self.assertFalse(
+            any("${{ inputs.resume_run_id }}" in s.get("run", "") for s in steps)
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
