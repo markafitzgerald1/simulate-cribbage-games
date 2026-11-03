@@ -370,3 +370,7 @@ postcss-modules 9. The frontend uses Parcel's native `.module.css` support
 instead; do not restore the old PostCSS module adapter when updating
 PostCSS dependencies. Scoped class names are internal and flow through the
 CSS module imports rather than fixed strings in components.
+
+yargs 18 is ESM-only, but the CommonJS simulator build loads it unchanged
+because Node 24 can `require()` an ES module without top-level await. No
+module-system migration is needed for ESM-only dependencies of that kind.
