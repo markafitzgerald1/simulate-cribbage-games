@@ -14,7 +14,7 @@ from fractions import Fraction
 from random import Random
 from unittest.mock import patch
 
-from artifact_pipeline import crib_v4, generate_table
+from artifact_pipeline import crib_precut, crib_v4, generate_table
 from artifact_pipeline.crib_decomposition import (
     RANK_CATEGORIES,
     ROOT,
@@ -37,6 +37,8 @@ from artifact_pipeline.crib_v4 import (
     _score_deal,
     _transition,
 )
+
+from artifact_pipeline.crib_v4_state import SCALE, add_row, empty_moments
 
 PAIRS = ["A_A_Unsuited", "A_2_Suited", "A_2_Unsuited"]
 
@@ -133,8 +135,6 @@ class TestV4Checkpoint(V4CheckpointFixture):
     """Exercise the real state machine with a fast fixed scorer fixture."""
 
     def test_precut_report_guard_and_resume(self):
-        from artifact_pipeline import crib_precut
-
         path = self.path("guarded.json")
         output = self.run_table(path, pairs=PAIRS[1:], precut_guard="report")
         report = output["__metadata__"]["precut_twin_report"]
@@ -196,8 +196,6 @@ class TestV4Checkpoint(V4CheckpointFixture):
         self.assertEqual(read_bytes(path), before)
 
     def test_enforce_checks_pending_transition_before_replacing_policy(self):
-        from artifact_pipeline.crib_v4_state import SCALE, add_row, empty_moments
-
         path = self.path("pending-negative.json")
         pairs = PAIRS[1:]
         current = _V4Run(run_args(path, max_generations=2), pairs, generate_table)
