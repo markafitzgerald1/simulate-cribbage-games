@@ -39,3 +39,6 @@
 /expected_crib_points.analytical.json
 *.py[cod]
 __pycache__/
+
+/playwright-report/
+/test-results/

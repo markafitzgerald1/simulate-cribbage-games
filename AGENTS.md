@@ -318,6 +318,16 @@ When validating upgrades or writing regression checkers, observe these rules:
   to capture deprecation warnings or diagnostics, and compare generated files
   directly rather than relying solely on CLI print logs.
 
+For browser UI changes, run `npm run tcm-build`, `npm run eslint`,
+`npm run tsc-build`, `npm run coverage`, `npm run spellcheck`, and the README
+browser acceptance command: install Chromium with
+`npx playwright install --with-deps chromium`, then run `npm run e2e`.
+The browser check builds the production web app and serves `dist/`; keep it
+in the existing `frontend-tests-and-build` CI job with all existing gates.
+Record build or browser sandbox restrictions as blocked validation, never as
+passing browser evidence. Keep browser tests under `e2e/*.e2e.ts`, separate
+from Jest's `.spec.ts` discovery and the simulator TypeScript emit.
+
 For documentation-only changes, run a targeted review of the changed Markdown
 and skip expensive code validation when no executable behavior changed. State
 which checks were run in the pull request notes.

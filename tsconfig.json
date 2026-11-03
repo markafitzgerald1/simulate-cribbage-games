@@ -4,5 +4,6 @@
     "jsx": "react",
     "outDir": "dist",
     "types": ["node", "jest"]
-  }
+  },
+  "exclude": ["node_modules", "dist", "e2e", "playwright.config.ts"]
 }

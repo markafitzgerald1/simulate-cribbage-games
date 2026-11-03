@@ -218,6 +218,20 @@ jobs:
         run: |
           npm run build-webapp
 
+      - name: Install Chromium for browser acceptance
+        run: npx playwright install --with-deps chromium
+      - name: Run play UI browser acceptance
+        run: npm run e2e
+      - name: Upload browser failure report and trace
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-failure-${{ matrix.node-version }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
   # Stable aggregate gate required by branch protection on main (#177).
   # When adding a new job to this workflow, add it to the needs list below;
   # every job in this workflow must gate ci-passed.

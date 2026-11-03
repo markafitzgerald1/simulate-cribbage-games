@@ -14,7 +14,7 @@ const PlayedCards: React.FunctionComponent<{
     <h3 className={count}>
       Play{props.thePlay ? ` count is ${props.thePlay.count}` : ":"}
     </h3>
-    <ul className={playedCardList}>
+    <ul className={playedCardList} data-testid="play-history">
       {props.thePlay?.playsTo31.map((playTo31) => (
         <PlayTo31Component
           playTo31={playTo31}

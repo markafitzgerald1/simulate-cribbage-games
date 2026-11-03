@@ -20,6 +20,10 @@ const VisibleHandCard: React.FunctionComponent<{
   discardHandCard: (card: Card) => void;
 }> = (props): JSX.Element => (
   <li
+    aria-disabled={
+      !canPlayNow(props.card, props.thePlay) &&
+      !canDiscardNow(props.card, props.thePlay)
+    }
     className={`${card} ${
       props.card.suit.color === Color.RED ? redSuit : blackSuit
     } ${

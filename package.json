@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.64.1",
     "@tsconfig/recommended": "^1.0.1",
     "@types/jest": "^30.0.0",
     "@types/md5": "^2.3.0",
@@ -68,7 +69,8 @@
     "simulate": "node dist/src/simulateCribbageHands.js --hide-pone-hand --hide-dealer-hand --hide-play-actions",
     "cpd": "pmd --version | grep -q 'PMD 7' && (find src test -type f -name \"*.ts\" > cpd-files.txt && pmd cpd --language typescript --minimum-tokens 40 --file-list cpd-files.txt && rm -f cpd-files.txt) || pmd cpd --language ecmascript --minimum-tokens 22 --files $(find src test -type f -name \"*.ts\")",
     "eslint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "spellcheck": "cspell --config cspell.json"
+    "spellcheck": "cspell --config cspell.json",
+    "e2e": "npm run build-webapp && playwright test"
   },
   "engines": {
     "node": ">=24"
