@@ -46,7 +46,7 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 
 - Install [Python](https://www.python.org/downloads/) ~= 3.14.4
 - Install dependencies: `pip install -r requirements.txt` _(may require local admin to install black globally... or use a [virtualenv](https://virtualenv.pypa.io/en/latest/) instead!)_
-- Install Node.js 18 or newer and npm dependencies for spellcheck:
+- Install Node.js 24 or newer and npm dependencies for spellcheck:
   `npm ci --ignore-scripts`
 - Install pre-commit hooks: `pre-commit install`
 - Bootstrap the tally shelf (required once per working directory before any
@@ -98,8 +98,8 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 
 ### Node.js
 
-- Install [Node.js](https://nodejs.org/en/) 18 or newer. The spellcheck
-  validation uses cspell, which requires Node.js 18+.
+- Install [Node.js](https://nodejs.org/en/) 24 or newer. The spellcheck
+  validation uses cspell 10; CI also runs on Node.js 24.
 - Install dependencies without running package scripts for validation and
   pre-commit spellcheck: `npm ci --ignore-scripts`
 - Optionally audit for known dependency vulnerabilities and report on any out of

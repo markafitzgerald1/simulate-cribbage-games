@@ -26,7 +26,7 @@ default skill for documentation and Python backend work.
    [scratch/verify_upgrade.py](scratch/verify_upgrade.py)
    (passing the old and new Python binaries as arguments) to verify that
    simulated game outputs and generated tables match 100% identically.
-7. Run `npm run spellcheck` with Node.js 18 or newer for Python, script,
+7. Run `npm run spellcheck` with Node.js 24 or newer for Python, script,
    Markdown, and repository instruction changes. Add only real project/domain
    words to `cspell.json`; rename opaque abbreviations or unpronounceable
    identifiers instead of allowlisting them. Run `npm ci --ignore-scripts`
@@ -343,7 +343,7 @@ too high. No further optimization is required for this survey budget.
 
 ## Frontend dependency validation
 
-The legacy frontend and spellcheck CI jobs run Node.js 18. Check package engines
+The legacy frontend and spellcheck CI jobs run Node.js 24. Check package engines
 as well as peer ranges before accepting grouped npm updates. Keep incompatible
 updates behind bounded Dependabot ignores so later releases prompt a fresh
 compatibility check. React, React DOM and their type packages move together;
@@ -355,3 +355,18 @@ or collecting coverage. When migrating ESLint recommended presets, retain prior
 rules that the newer preset no longer enables, using their supported replacement
 rules where necessary. An assertion such as `.toThrow` must be called as
 `.toThrow()` to exercise the callback and check that an exception occurs.
+
+Parcel initializes its LMDB cache even with `--no-cache`. An empty `data.mdb`
+left after a denied cache open can turn the next error into `MDB_INVALID`.
+Use a fresh temporary `--cache-dir` to distinguish a stale cache from an
+operation denied by the execution environment; do not weaken CI to work around
+that environment. Browser acceptance still needs a successful build and browser
+launch: unit tests and TypeScript compilation do not exercise Parcel's CSS
+module integration.
+
+Parcel 2.16's PostCSS module adapter requires postcss-modules 6 and its private
+loader path. Node 24 alone does not make that adapter compatible with
+postcss-modules 9. The frontend uses Parcel's native `.module.css` support
+instead; do not restore the old PostCSS module adapter when updating
+PostCSS dependencies. Scoped class names are internal and flow through the
+CSS module imports rather than fixed strings in components.
