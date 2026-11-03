@@ -1,0 +1,252 @@
+name: Shadow Crib V4
+
+# Full production-sized computation, never publication. Dispatch needs a
+# separate maintainer go; opening or merging this file does not run it.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crib-v4-shadow-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PYTHONUNBUFFERED: '1'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  initialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+      - run: pip install -r requirements.txt
+      - name: Pin this week's v3 reference
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir reference
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/expected-crib-points" > reference/release.json
+          for name in expected_crib_points.json expected_crib_points.client.json; do
+            asset_id="$(python -c 'import json,sys; assets=json.load(open("reference/release.json"))["assets"]; matches=[a for a in assets if a["name"]==sys.argv[1]]; assert len(matches)==1; print(int(matches[0]["id"]))' "$name")"
+            gh api "repos/$GITHUB_REPOSITORY/releases/assets/$asset_id" \
+              --header 'Accept: application/octet-stream' > "reference/$name"
+          done
+          python -c 'from pathlib import Path; from artifact_pipeline.crib_v4_shards import reference_files; reference_files(Path("reference"), require_complete=True)'
+      - name: Build analytical initial policy
+        run: |
+          python -u artifact_pipeline/analytical_solver.py \
+            --convergence-threshold=0.001 --output bootstrap.json | tee bootstrap.log
+      - name: Create fixed eight-shard generation plan
+        run: |
+          python -m artifact_pipeline.crib_v4_shards plan \
+            --bootstrap bootstrap.json --reference reference --output plan0
+      - uses: actions/upload-artifact@v7
+        with:
+          name: v4-shadow-plan0
+          path: plan0/
+          retention-days: 30
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: v4-shadow-reference
+          path: |
+            reference/
+            bootstrap.json
+            bootstrap.log
+          retention-days: 30
+
+  generation0:
+    needs: initialize
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - name: Set graceful deadline
+        id: deadline
+        run: echo "stop_at=$(( $(date +%s) + 9000 ))" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+      - run: pip install -r requirements.txt
+      - uses: actions/download-artifact@v8
+        with:
+          name: v4-shadow-plan0
+          path: plan0
+      - name: Measure one frozen generation
+        run: |
+          python -m artifact_pipeline.crib_v4_shards measure --plan plan0/plan.json \
+            --shard '${{ matrix.shard }}' --stop-at '${{ steps.deadline.outputs.stop_at }}' --output work | tee measurement.jsonl
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: v4-shadow-g0-${{ matrix.shard }}
+          path: work/
+          retention-days: 30
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: v4-shadow-timing-g0-${{ matrix.shard }}
+          path: measurement.jsonl
+          retention-days: 30
+
+  assemble0:
+    needs: generation0
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+      - run: pip install -r requirements.txt
+      - uses: actions/download-artifact@v8
+        with:
+          name: v4-shadow-plan0
+          path: plan0
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: v4-shadow-g0-*
+          path: wave0
+      - name: Validate all groups and transition once
+        run: |
+          python -m artifact_pipeline.crib_v4_shards assemble --plan plan0/plan.json \
+            --shards wave0/v4-shadow-g0-* --output assembled0 | tee assembly.jsonl
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: v4-shadow-assembled0
+          path: assembled0/
+          retention-days: 30
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: v4-shadow-timing-assembly0
+          path: assembly.jsonl
+          retention-days: 30
+
+  generation1:
+    needs: assemble0
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - name: Set graceful deadline
+        id: deadline
+        run: echo "stop_at=$(( $(date +%s) + 9000 ))" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+      - run: pip install -r requirements.txt
+      - uses: actions/download-artifact@v8
+        with:
+          name: v4-shadow-assembled0
+          path: assembled0
+      - name: Measure the globally transitioned policy
+        run: |
+          python -m artifact_pipeline.crib_v4_shards measure --plan assembled0/next-plan.json \
+            --shard '${{ matrix.shard }}' --stop-at '${{ steps.deadline.outputs.stop_at }}' --output work | tee measurement.jsonl
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: v4-shadow-g1-${{ matrix.shard }}
+          path: work/
+          retention-days: 30
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: v4-shadow-timing-g1-${{ matrix.shard }}
+          path: measurement.jsonl
+          retention-days: 30
+
+  assemble1:
+    needs: generation1
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+      - run: pip install -r requirements.txt
+      - uses: actions/download-artifact@v8
+        with:
+          name: v4-shadow-assembled0
+          path: assembled0
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: v4-shadow-g1-*
+          path: wave1
+      - name: Validate convergence and guard before terminal completion
+        run: |
+          python -m artifact_pipeline.crib_v4_shards assemble --plan assembled0/next-plan.json \
+            --shards wave1/v4-shadow-g1-* --output assembled1 | tee assembly.jsonl
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: v4-shadow-assembled1
+          path: assembled1/
+          retention-days: 30
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: v4-shadow-timing-assembly1
+          path: assembly.jsonl
+          retention-days: 30
+
+  finalize:
+    needs: assemble1
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+      - run: pip install -r requirements.txt
+      - uses: actions/download-artifact@v8
+        with:
+          name: v4-shadow-assembled0
+          path: assembled0
+      - uses: actions/download-artifact@v8
+        with:
+          name: v4-shadow-assembled1
+          path: assembled1
+      - uses: actions/download-artifact@v8
+        with:
+          name: v4-shadow-reference
+          path: diagnostic
+      - name: Rebuild terminal table and compare pinned v3 reference
+        run: |
+          python -m artifact_pipeline.crib_v4_shards finalize \
+            --plan assembled0/next-plan.json --assembled assembled1 \
+            --reference diagnostic/reference --output final | tee finalization.jsonl
+      - uses: actions/upload-artifact@v7
+        with:
+          name: v4-shadow-result
+          path: final/
+          retention-days: 30
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: v4-shadow-timing-final
+          path: finalization.jsonl
+          retention-days: 30

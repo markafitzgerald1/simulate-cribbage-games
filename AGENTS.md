@@ -681,6 +681,9 @@ The approved v4 eight-shard layout and assembly rejection contract are in
 [the production-layout design](docs/v4-production-layout.md). Workers must not
 transition a partial table. The initial workflow is manual and non-publishing;
 its dispatch and eventual activation still require separate approval.
+Sharded resumes verify immutable snapshot digests before writing, and commit
+the manifest pointer before pruning old snapshots. See the
+[shadow implementation guide](docs/v4-shadow.md) for the tested protocol.
 
 ## Pull Request Readiness
 

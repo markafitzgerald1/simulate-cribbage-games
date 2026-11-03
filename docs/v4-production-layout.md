@@ -2,7 +2,8 @@
 
 OpenAI Codex, November 2, 2026. Design implementing Mark's
 [D6 decision](https://github.com/markafitzgerald1/simulate-cribbage-games/issues/135#issuecomment-6591347660).
-This document precedes an implementation PR. It authorizes no execution,
+The [implementation guide](v4-shadow.md) documents the resulting boundaries.
+This design authorizes no execution,
 activation or production release. The existing v3 weekly workflow stays intact.
 
 ## Scope and fixed settings
