@@ -13,6 +13,6 @@ describe("getPlayableCards", () => {
       PlayTo31.create(Player.PONE).getPlayableCards(
         createHandOfUniqueCards(Game.KEPT_HAND_SIZE + 1)
       );
-    }).toThrow;
+    }).toThrow();
   });
 });

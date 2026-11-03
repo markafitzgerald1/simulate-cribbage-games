@@ -340,3 +340,18 @@ speed on the GitHub runner; the play pipeline's 1.6 multiplier does not apply.
 The N=22,000 resume cost was already measured at 25.0 seconds for 3-8 on the M2
 after #205's exact PSD optimization; later 45-75 second extrapolations were
 too high. No further optimization is required for this survey budget.
+
+## Frontend dependency validation
+
+The legacy frontend and spellcheck CI jobs run Node.js 18. Check package engines
+as well as peer ranges before accepting grouped npm updates. Keep incompatible
+updates behind bounded Dependabot ignores so later releases prompt a fresh
+compatibility check. React, React DOM and their type packages move together;
+`react-helmet` also brings a `react-side-effect` React peer constraint.
+
+TypeScript 6 needs explicit `node` and `jest` entries in `compilerOptions.types`
+for the simulator and test globals. Generate CSS declarations before compiling
+or collecting coverage. When migrating ESLint recommended presets, retain prior
+rules that the newer preset no longer enables, using their supported replacement
+rules where necessary. An assertion such as `.toThrow` must be called as
+`.toThrow()` to exercise the callback and check that an exception occurs.
