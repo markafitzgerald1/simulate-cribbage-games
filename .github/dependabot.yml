@@ -40,14 +40,14 @@ updates:
       # prompts a periodic compatibility re-check. Blocked by the latest
       # eslint-plugin-react peer range (^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9.7).
       - dependency-name: "eslint"
-        versions: [">=10.0.0 <=10.11.0"]
+        versions: [">=10.0.0 <=10.13.0"]
       # Bounded to the current release (not >=18) so the ignore ages out and
-      # prompts a periodic compatibility re-check. Retiring the frontend to
-      # cribbage-trainer (#103, #129).
+      # prompts a periodic compatibility re-check. react-helmet depends on
+      # react-side-effect, which excludes React 19; retirement is #103/#129.
       - dependency-name: "react"
-        versions: [">=18.0.0 <=19.3.0"]
+        versions: [">=18.0.0 <=19.3.1"]
       - dependency-name: "react-dom"
-        versions: [">=18.0.0 <=19.3.0"]
+        versions: [">=18.0.0 <=19.3.1"]
       - dependency-name: "@types/react"
         versions: [">=18.0.0 <=19.3.0"]
       - dependency-name: "@types/react-dom"
@@ -57,6 +57,16 @@ updates:
       # @typescript-eslint/eslint-plugin peer range (<6.1.0).
       - dependency-name: "typescript"
         versions: [">=6.1.0 <=7.0.2"]
+      # Bounded to current releases so each ignore ages out for re-checking.
+      # cspell 10 requires Node 22; CI and the legacy frontend use Node 18.
+      - dependency-name: "cspell"
+        versions: [">=9.0.0 <=10.4.0"]
+      # yargs 18 requires Node 20 and ESM; the simulator uses CommonJS on 18.
+      - dependency-name: "yargs"
+        versions: [">=18.0.0 <=18.2.0"]
+      # postcss-modules 9 requires Node 20; preserve the Node 18 build.
+      - dependency-name: "postcss-modules"
+        versions: [">=7.0.0 <=9.0.1"]
     groups:
       npm-dependencies:
         patterns:

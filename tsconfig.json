@@ -2,6 +2,7 @@
   "extends": "@tsconfig/recommended/tsconfig.json",
   "compilerOptions": {
     "jsx": "react",
-    "outDir": "dist"
+    "outDir": "dist",
+    "types": ["node", "jest"]
   }
 }
