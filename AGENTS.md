@@ -677,6 +677,11 @@ configuration does not enforce magic-number checks or unusually strict
 short-variable-name checks. Use `npm run spellcheck` to catch misspellings and
 many opaque identifier fragments that pylint accepts as valid snake_case.
 
+The approved v4 eight-shard layout and assembly rejection contract are in
+[the production-layout design](docs/v4-production-layout.md). Workers must not
+transition a partial table. The initial workflow is manual and non-publishing;
+its dispatch and eventual activation still require separate approval.
+
 ## Pull Request Readiness
 
 Before telling the maintainer that work is ready for human review, obtain an

@@ -318,6 +318,11 @@ legacy `simulate_cribbage_games.py` dependency. Do not replace mathematical
 simulation with subjective heuristics. Do not build on untested legacy behavior
 or skip end-to-end smoke coverage for code changes.
 
+The [eight-shard production design](../docs/v4-production-layout.md) requires
+complete table assembly before any policy transition. A shard-local key list
+is an explicit subset of the global plan, not a different sampling identity.
+Checkpoint validation and transfer costs belong in the wall-time budget.
+
 ## Manual v4 diagnostic operations
 
 The separate [first-shard diagnostic](../docs/v4-diagnostic.md) is manual and
