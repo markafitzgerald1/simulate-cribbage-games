@@ -185,13 +185,16 @@ skills unless the work product shows it.
 ## Python Setup
 
 Use Python 3.14.4 unless a task updates the supported version.
-`.python-version` is the single source of truth: pyenv reads it locally, and
-the workflows that set up one interpreter pass it to `actions/setup-python` as
-`python-version-file`. The matrix jobs in `python-install-and-test.yml` keep a
-literal version, because a `strategy` block is evaluated before checkout and
-can read neither that file nor the `env` context; that list is also where a
-second supported version would be added. A version bump therefore edits
-`.python-version`, those matrices, and this line.
+`.python-version` is the source of truth for that default: pyenv reads it
+locally, and ordinary single-interpreter workflows pass it to
+`actions/setup-python` as `python-version-file`. The manual
+`diagnose-crib-v4.yml` is a deliberate exception: its historical experiment
+pins CPython 3.14.4 independently of future repository upgrades.
+The matrix jobs in `python-install-and-test.yml` keep a literal version,
+because a `strategy` block is evaluated before checkout and can read neither
+that file nor the `env` context; that list is also where a second supported
+version would be added. A version bump therefore edits `.python-version`,
+those matrices, and this line.
 
 Install dependencies with:
 
@@ -241,6 +244,7 @@ coverage xml
 coverage report
 coverage run -m unittest discover artifact_pipeline
 coverage run --append scripts/run_slow_analytical_tests.py
+coverage run --append -m unittest test_check_legacy_pylint_ratchet
 coverage report --fail-under=100 -m --include='artifact_pipeline/*,scripts/check_legacy_pylint_ratchet.py'
 mypy simulate_cribbage_games.py artifact_pipeline
 npm run spellcheck
@@ -487,10 +491,10 @@ opt-in path nor its reduced-population oracle proves production precision,
 runtime, a pre-cut sign rule, or policy-learning uncertainty.
 
 Crib EV depends on the starter's suit only through flushes (possible only for a
-suited discard) and his-nobs (a discarded Jack matching the starter suit). For
-every other discard the `starter_suit_relation` buckets are sampling noise, so
-the lean client artifact omits them for unsuited, non-Jack discards. Do not add
-suit conditioning where the rules make it impossible.
+suited discard) and his-nobs (an own or opponent discarded Jack matching the
+starter suit). The lean client retains relation buckets for suited or own-Jack
+discards; this retention policy is not a proof that opponent-contributed nobs
+or suit-sensitive opponent selection is independent of starter suit elsewhere.
 
 The weekly production generation runs close to the 6-hour GitHub Actions cap
 (about 20 minutes of headroom) with a razor-thin convergence margin (max EV
@@ -675,6 +679,18 @@ many opaque identifier fragments that pylint accepts as valid snake_case.
 
 ## Pull Request Readiness
 
+Before telling the maintainer that work is ready for human review, obtain an
+independent adversarial review of the current diff. Use a separate reviewer
+who did not implement the change. Self-review, passing CI, coverage and mutation
+checks are supporting evidence, not substitutes. Give the reviewer the current
+issue/specification and authorization boundaries; require practical attempts to
+falsify material correctness and operational claims in proportion to risk.
+Address actionable findings and obtain a follow-up review of fixes. Record the
+reviewed commit, reviewer scope, findings, fixes and remaining limits in the PR.
+If independent review is unavailable or incomplete, say so and do not call the
+work ready. Independent review does not replace required human review or grant
+merge, execution or publication authority.
+
 Before opening or updating a pull request, summarize what changed, why it
 changed, and which validation commands were run. Include any skipped checks and
 the reason they were skipped.
@@ -727,3 +743,34 @@ complete until requested files are updated, required constraints are represented
 in documentation, and the diff has been reviewed against the issue text. Do not
 resolve review feedback without either making the requested change or explaining
 why no change is appropriate.
+
+## Manual v4 diagnostic operations
+
+The separate [first-shard diagnostic](docs/v4-diagnostic.md) is manual and
+has no release step. Its fixed groups/target, historical asset IDs, exact
+input/policy/source hashes and earlier complete-round deadline are part of
+the experiment. A four-hour first-job ceiling is not a multi-shard budget.
+Checkpoints restored from Actions need the matching source manifest; complete
+groups require validation but no new sampling. Report incomplete/not-started
+counts honestly, preserve per-group files, and never rely on a hard runner
+termination to save local state. The upload step's own duration belongs in
+its Actions log; it cannot be finalized inside the archive it is uploading.
+A deleted historical release asset is an input-availability gap, not permission
+to substitute another generating policy. Implementation or merge does not
+authorize dispatch, production generation, publication or automatic continuation.
+
+A fixed-policy diagnostic also pins generation zero: the general checkpoint
+reader permits later generations, and generation is part of every row seed.
+A hash-rejection regression must start from an otherwise valid checkpoint;
+an invalid file can raise an unrelated error and hide a missing digest check.
+
+## V4 survey timing and authorization
+
+The [four-shard survey](docs/v4-survey.md) records Mark's November 1 budget:
+one manual-only workflow PR, then one dispatch after Mark merges it. Any failed
+or incomplete shard needs approval before retry or resume. Production and
+publication remain separate decisions. V4 crib generation measured about M2
+speed on the GitHub runner; the play pipeline's 1.6 multiplier does not apply.
+The N=22,000 resume cost was already measured at 25.0 seconds for 3-8 on the M2
+after #205's exact PSD optimization; later 45-75 second extrapolations were
+too high. No further optimization is required for this survey budget.

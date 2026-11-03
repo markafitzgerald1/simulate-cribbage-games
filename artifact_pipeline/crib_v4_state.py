@@ -5,7 +5,7 @@ errors are derived views and must never be read back as sampling state.
 """
 
 from fractions import Fraction
-from math import sqrt
+from math import gcd, sqrt
 
 from artifact_pipeline.crib_decomposition import (
     RANK_CATEGORIES,
@@ -14,8 +14,13 @@ from artifact_pipeline.crib_decomposition import (
     bucket_populations,
 )
 
-SCALE = 310464
+# Removing the own discard and starter leaves C(49, 2) completions.
 CENTER_DENOMINATOR = 1176
+# Bucket populations k are 1..4. Since 50/44 = 25/22, multiplying by
+# 22*lcm(1,2,3,4)*1176 clears both bucket and centering denominators.
+# SCALE*50/(44*k) = 1176*300/k; the residual's forced-inclusion
+# probability 6/50 gives SCALE*6/(44*k) = 42336/k = 1176*36/k.
+SCALE = 310464
 RELATION_ORDER = (
     "matching_discard_suit",
     "matching_rank_1_suit",
@@ -159,25 +164,38 @@ def encode_moments(moments):
 
 
 def _exact_psd(matrix):
-    """Check for a nonnegative quadratic form by rational Schur complements."""
-    remaining = [list(map(Fraction, row)) for row in matrix]
-    while remaining:
-        pivot = remaining[0][0]
+    """Check a symmetric integer matrix by primitive Schur complements.
+
+    For a positive pivot p, p*A - v*v.T is p times the rational Schur
+    complement, so it has the same PSD status. Divide by the positive gcd
+    of its entries to remove integer content without changing that status.
+    Every division is exact. This avoids growing determinant factors or
+    constructing a Fraction for every entry. A zero pivot still requires
+    the entire remaining pivot row to vanish. Only the upper triangle is
+    read or updated; the caller owns symmetry. The input is not modified.
+    """
+    remaining = [list(row) for row in matrix]
+    for index, pivot_row in enumerate(remaining):
+        pivot = pivot_row[index]
         if pivot < 0:
             return False
         if pivot == 0:
-            if any(remaining[0][index] for index in range(1, len(remaining))):
+            if any(pivot_row[index + 1 :]):
                 return False
-            remaining = [row[1:] for row in remaining[1:]]
             continue
-        remaining = [
-            [
-                remaining[left][right]
-                - remaining[left][0] * remaining[0][right] / pivot
-                for right in range(1, len(remaining))
-            ]
-            for left in range(1, len(remaining))
-        ]
+        divisor = 0
+        for left in range(index + 1, len(remaining)):
+            row = remaining[left]
+            cross = pivot_row[left]
+            for right in range(left, len(remaining)):
+                value = pivot * row[right] - cross * pivot_row[right]
+                row[right] = value
+                divisor = gcd(divisor, value)
+        if divisor > 1:
+            for left in range(index + 1, len(remaining)):
+                row = remaining[left]
+                for right in range(left, len(remaining)):
+                    row[right] //= divisor
     return True
 
 

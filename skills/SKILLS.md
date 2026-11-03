@@ -61,6 +61,13 @@ default skill for documentation and Python backend work.
    `markafitzgerald1/cribbage-trainer` and set its Status and milestone; see
    `AGENTS.md`, "Issue Tracking And The Shared Project Board", for how, and for
    why an audit keys on repository and number together.
+18. Before calling work ready for human review, obtain independent adversarial
+    review of the current diff by a reviewer who did not implement it. Require
+    practical checks proportionate to risk, address actionable findings, and
+    have fixes reviewed again. Record the reviewed commit, scope, findings and
+    limits in the PR. Self-review, CI, coverage and mutation checks do not
+    replace this gate. If review is unavailable or incomplete, report that
+    status without claiming readiness. See `AGENTS.md`, "Pull Request Readiness".
 
 ## Skill Authoring Rules
 
@@ -78,6 +85,15 @@ frontend-only rules to repository-wide skills. Do not create a skill that
 permits direct pushes to `main` or bypasses pull request review.
 
 ## Python Backend Guardrails
+
+For a bounded v4 diagnostic, select complete twins through `main(override_pairs)`
+or a same-rank group; `--samples` alone still selects all 91 rank groups.
+Use the saved `generation_accumulators` policy, preserving `policy_mu`, rather
+than bootstrapping from a full artifact's displayed means. Record source and
+policy hashes, completed rows per stream, cross-cut comparison covariance,
+checkpoint cadence, and separate sampling/write/resume timings. Fraction-free
+integer PSD validation preserves the exact contract: a zero pivot requires a
+zero remaining row. It changes neither checkpoint bytes nor sampling identity.
 
 For issue #135, keep the shared-rank crib decomposition opt-in until a separate
 production decision. Its exact reduced-population oracle proves the component
@@ -121,6 +137,21 @@ fast artifact test run, followed by `coverage report --fail-under=100 -m
 `historical-true-nobs`, and `historical-flat-nobs` in parallel and combine their
 coverage data with the fast artifact coverage file before the 100%
 artifact-pipeline coverage report.
+
+The artifact `coverage run` resets coverage from the root unittest run. Append
+`coverage run --append -m unittest test_check_legacy_pylint_ratchet` before the
+combined 100% report that also includes `scripts/check_legacy_pylint_ratchet.py`;
+otherwise that script appears uncovered even though its root tests passed.
+This collects the existing tests and does not relax the gate.
+
+Size human review by the changed executable behavior and exposure. Separate
+sampled evidence, diagnostic helpers and generated logs in the reading guide.
+For each material risk, state the worst outcome and which later check is
+independent; rerunning the same validator is not a second mathematical oracle.
+A useful manual test checks observable acceptance behavior with expected output
+and a time estimate, rather than asking the maintainer to re-read tests.
+Diagnostic source preservation must check the writer's temporary path as well
+as its output, including existing symbolic and hard links before any write.
 
 Exact analytical test coverage should be as small as the behavior under review
 allows. Full convergence is appropriate for published artifact generation and
@@ -278,3 +309,34 @@ requirements, remove quality checks, add broad ignore comments, or refactor the
 legacy `simulate_cribbage_games.py` dependency. Do not replace mathematical
 simulation with subjective heuristics. Do not build on untested legacy behavior
 or skip end-to-end smoke coverage for code changes.
+
+## Manual v4 diagnostic operations
+
+The separate [first-shard diagnostic](../docs/v4-diagnostic.md) is manual and
+has no release step. Its fixed groups/target, historical asset IDs, exact
+input/policy/source hashes and earlier complete-round deadline are part of
+the experiment. A four-hour first-job ceiling is not a multi-shard budget.
+Checkpoints restored from Actions need the matching source manifest; complete
+groups require validation but no new sampling. Report incomplete/not-started
+counts honestly, preserve per-group files, and never rely on a hard runner
+termination to save local state. The upload step's own duration belongs in
+its Actions log; it cannot be finalized inside the archive it is uploading.
+A deleted historical release asset is an input-availability gap, not permission
+to substitute another generating policy. Implementation or merge does not
+authorize dispatch, production generation, publication or automatic continuation.
+
+A fixed-policy diagnostic also pins generation zero: the general checkpoint
+reader permits later generations, and generation is part of every row seed.
+A hash-rejection regression must start from an otherwise valid checkpoint;
+an invalid file can raise an unrelated error and hide a missing digest check.
+
+## V4 survey timing and authorization
+
+The [four-shard survey](../docs/v4-survey.md) records Mark's November 1 budget:
+one manual-only workflow PR, then one dispatch after Mark merges it. Any failed
+or incomplete shard needs approval before retry or resume. Production and
+publication remain separate decisions. V4 crib generation measured about M2
+speed on the GitHub runner; the play pipeline's 1.6 multiplier does not apply.
+The N=22,000 resume cost was already measured at 25.0 seconds for 3-8 on the M2
+after #205's exact PSD optimization; later 45-75 second extrapolations were
+too high. No further optimization is required for this survey budget.
