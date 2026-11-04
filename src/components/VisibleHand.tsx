@@ -20,7 +20,7 @@ const VisibleHand: React.FunctionComponent<{
     <h2>Player: {props.thePlay?.poneScore || 0} points</h2>
     <div className={visibleHandHand}>
       <span>{props.name}</span>
-      <ul>
+      <ul data-testid="player-hand">
         {props.hand.cards.map((card) => (
           <VisibleHandCard
             card={card}

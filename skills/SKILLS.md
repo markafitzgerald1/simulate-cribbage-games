@@ -387,3 +387,30 @@ CSS module imports rather than fixed strings in components.
 yargs 18 is ESM-only, but the CommonJS simulator build loads it unchanged
 because Node 24 can `require()` an ES module without top-level await. No
 module-system migration is needed for ESM-only dependencies of that kind.
+
+## Play UI browser acceptance
+
+Use `npm run e2e` after installing Chromium with `npm run e2e:install` on
+Node.js 24 or newer. It builds with Parcel and serves the production `dist/`
+on port 4173. The existing frontend CI job runs it without path filters and
+uploads the HTML report, screenshot and retained trace on failure. Jest's
+`.spec.ts` tests and the simulator TypeScript build exclude the browser suite.
+
+Select cards using the player-hand test ID and their `aria-disabled` state;
+use visible headings and button names elsewhere. Never depend on Parcel's
+scoped CSS names. A player's empty hand does not prove the opponent finished:
+require all eight cards in the play history. Count retained sequences as well
+as the current displayed count to cover opponent actions between clicks.
+Bound the action loop and require each click to change the UI. Random deals
+must not assume specific cards or require a Go on every hand. Compare the
+displayed count with the current sequence inside one page evaluate, because
+an opponent play can land between two separate reads. Several hands in one
+page load also prove that state resets across deals; each deal is logged so
+a random failure can be diagnosed without a seed. Validate what the app
+supplies rather than trusting it: hand sizes alone pass a wrong-card discard,
+and sequence sums alone pass a count reset after one Go.
+
+Mutation evidence needs a successful baseline browser run and an assertion
+failure on an intentionally broken scratch build. A Parcel cache permission
+error or browser launch failure proves neither baseline success nor mutation
+detection. Preserve that distinction when handing validation to another runner.

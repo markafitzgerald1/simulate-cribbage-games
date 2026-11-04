@@ -10,6 +10,8 @@ export default [
       "dist/**",
       "test/**/*.js",
       "coverage/**",
+      "playwright-report/**",
+      "test-results/**",
       "htmlcov/**",
       "**/.*",
     ],
