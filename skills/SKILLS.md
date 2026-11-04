@@ -401,7 +401,9 @@ must not assume specific cards or require a Go on every hand. Compare the
 displayed count with the current sequence inside one page evaluate, because
 an opponent play can land between two separate reads. Several hands in one
 page load also prove that state resets across deals; each deal is logged so
-a random failure can be diagnosed without a seed.
+a random failure can be diagnosed without a seed. Validate what the app
+supplies rather than trusting it: hand sizes alone pass a wrong-card discard,
+and sequence sums alone pass a count reset after one Go.
 
 Mutation evidence needs a successful baseline browser run and an assertion
 failure on an intentionally broken scratch build. A Parcel cache permission
