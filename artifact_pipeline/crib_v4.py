@@ -15,6 +15,7 @@ import signal
 from functools import lru_cache
 from fractions import Fraction
 
+from artifact_pipeline.crib_precut import enforce_precut_report, precut_twin_report
 from artifact_pipeline.crib_decomposition import (
     RANK_CATEGORIES,
     ROOT,
@@ -313,7 +314,7 @@ def _validate_control(saved, current):
 def _check_metadata(saved, args, pairs, legacy):
     """Check the versioned experiment identity before decoding any moments."""
     expected = _contract_identity(args, pairs)
-    if set(saved) != METADATA_FIELDS or any(
+    if set(saved) - {"precut_twin_report"} != METADATA_FIELDS or any(
         _canonical_json(saved.get(key)) != _canonical_json(value)
         for key, value in expected.items()
     ):
@@ -397,6 +398,7 @@ def _load_state(args, pairs, legacy):
     ):
         raise ValueError("v4 cannot resume a legacy or client-only artifact")
     _check_metadata(saved, args, pairs, legacy)
+    saved.pop("precut_twin_report", None)
     decoded = _decode_groups(saved, pairs, legacy)
     saved["estimator_state"] = decoded
     target = saved["run_control"]["target_samples"]
@@ -565,11 +567,18 @@ def _encode_state(state):
         }
         for rank_key, roles in state["estimator_state"].items()
     }
+    if state["phase"] != "sampling":
+        metadata["precut_twin_report"] = precut_twin_report(state)
     return metadata
 
 
 def _write_checkpoint(state, args, legacy):
     output = _project_output(state, legacy)
+    if (
+        state["phase"] == "complete"
+        and getattr(args, "precut_guard", None) == "enforce"
+    ):
+        enforce_precut_report(output[legacy.METADATA_KEY]["precut_twin_report"])
     temporary = f"{args.output}.tmp"
     with open(temporary, "w", encoding="utf-8") as table_file:
         json.dump(output, table_file, indent=2, allow_nan=False)
@@ -706,6 +715,8 @@ class _V4Run:
             if self.pending_stop:
                 raise SystemExit(130)
             if self.state["phase"] == "complete":
+                if getattr(self.args, "precut_guard", None) == "enforce":
+                    enforce_precut_report(precut_twin_report(self.state))
                 if _should_stop_after_complete(self.state, self.legacy):
                     return _project_output(self.state, self.legacy)
                 self.state["phase"] = "transition_pending"
@@ -713,6 +724,8 @@ class _V4Run:
             if self.state["phase"] == "transition_pending":
                 if self.pending_stop:
                     raise SystemExit(130)
+                if getattr(self.args, "precut_guard", None) == "enforce":
+                    enforce_precut_report(precut_twin_report(self.state))
                 _transition(self.state, self.legacy)
                 self.checkpoint()
             self.sample_pass()
