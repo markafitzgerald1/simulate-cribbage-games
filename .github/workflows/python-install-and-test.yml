@@ -219,7 +219,7 @@ jobs:
           npm run build-webapp
 
       - name: Install Chromium for browser acceptance
-        run: npx playwright install --with-deps chromium
+        run: npm run e2e:install
       - name: Run play UI browser acceptance
         run: npm run e2e
       - name: Upload browser failure report and trace

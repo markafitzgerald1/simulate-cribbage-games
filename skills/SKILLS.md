@@ -377,12 +377,11 @@ module-system migration is needed for ESM-only dependencies of that kind.
 
 ## Play UI browser acceptance
 
-Use `npm run e2e` after installing Chromium with
-`npx playwright install --with-deps chromium` on Node.js 24 or newer. It builds
-with Parcel and serves the production `dist/` on port 4173. The existing
-frontend CI job runs it without path filters and uploads the HTML report,
-screenshot and retained trace on failure. Jest's `.spec.ts` tests and the
-simulator TypeScript build exclude the browser suite.
+Use `npm run e2e` after installing Chromium with `npm run e2e:install` on
+Node.js 24 or newer. It builds with Parcel and serves the production `dist/`
+on port 4173. The existing frontend CI job runs it without path filters and
+uploads the HTML report, screenshot and retained trace on failure. Jest's
+`.spec.ts` tests and the simulator TypeScript build exclude the browser suite.
 
 Select cards using the player-hand test ID and their `aria-disabled` state;
 use visible headings and button names elsewhere. Never depend on Parcel's

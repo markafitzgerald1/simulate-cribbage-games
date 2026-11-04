@@ -320,8 +320,8 @@ When validating upgrades or writing regression checkers, observe these rules:
 
 For browser UI changes, run `npm run tcm-build`, `npm run eslint`,
 `npm run tsc-build`, `npm run coverage`, `npm run spellcheck`, and the README
-browser acceptance command: install Chromium with
-`npx playwright install --with-deps chromium`, then run `npm run e2e`.
+browser acceptance command: install Chromium with `npm run e2e:install`,
+then run `npm run e2e`.
 The browser check builds the production web app and serves `dist/`; keep it
 in the existing `frontend-tests-and-build` CI job with all existing gates.
 Record build or browser sandbox restrictions as blocked validation, never as

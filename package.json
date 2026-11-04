@@ -70,6 +70,7 @@
     "cpd": "pmd --version | grep -q 'PMD 7' && (find src test -type f -name \"*.ts\" > cpd-files.txt && pmd cpd --language typescript --minimum-tokens 40 --file-list cpd-files.txt && rm -f cpd-files.txt) || pmd cpd --language ecmascript --minimum-tokens 22 --files $(find src test -type f -name \"*.ts\")",
     "eslint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "spellcheck": "cspell --config cspell.json",
+    "e2e:install": "playwright install --with-deps chromium",
     "e2e": "npm run build-webapp && playwright test"
   },
   "engines": {
