@@ -397,7 +397,11 @@ scoped CSS names. A player's empty hand does not prove the opponent finished:
 require all eight cards in the play history. Count retained sequences as well
 as the current displayed count to cover opponent actions between clicks.
 Bound the action loop and require each click to change the UI. Random deals
-must not assume specific cards or require a Go on every hand.
+must not assume specific cards or require a Go on every hand. Compare the
+displayed count with the current sequence inside one page evaluate, because
+an opponent play can land between two separate reads. Several hands in one
+page load also prove that state resets across deals; each deal is logged so
+a random failure can be diagnosed without a seed.
 
 Mutation evidence needs a successful baseline browser run and an assertion
 failure on an intentionally broken scratch build. A Parcel cache permission

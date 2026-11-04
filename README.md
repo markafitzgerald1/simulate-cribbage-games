@@ -117,8 +117,8 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 - Browser acceptance against the production build (Node.js 24 or newer):
   `npm ci`, `npm run e2e:install` (downloads the Chromium build this
   Playwright version expects), then `npm run e2e`.
-  This builds with Parcel, serves `dist/` on `127.0.0.1:4173`, and plays a
-  random hand in headless Chromium before dealing again. Keep that port free.
+  This builds with Parcel, serves `dist/` on `127.0.0.1:4173`, and plays ten
+  random hands in headless Chromium, logging each deal. Keep that port free.
   On failure, inspect `playwright-report/` with `npx playwright show-report`;
   screenshots and traces are in `test-results/`. CI uploads both directories
   on failure in the existing frontend job.
