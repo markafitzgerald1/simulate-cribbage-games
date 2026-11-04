@@ -322,6 +322,13 @@ The [eight-shard production design](../docs/v4-production-layout.md) requires
 complete table assembly before any policy transition. A shard-local key list
 is an explicit subset of the global plan, not a different sampling identity.
 Checkpoint validation and transfer costs belong in the wall-time budget.
+Never accept changed resume bytes by replacing their saved digest. Commit an
+immutable snapshot before its manifest pointer, and prune only after the
+pointer commits. Temporary paths must not alias saved inputs. Pin reference
+asset IDs and verify their digests before expensive work; re-reading a rolling
+tag can pair different bytes with old provenance. Keep failed convergence
+shifts in diagnostic logs and compare absolute means as well as twin gaps.
+See the [shadow guide](../docs/v4-shadow.md).
 
 ## Manual v4 diagnostic operations
 

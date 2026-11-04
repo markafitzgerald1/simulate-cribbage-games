@@ -652,14 +652,16 @@ def _transition(state, legacy):
 class _V4Run:
     """Keep interrupt and checkpoint transitions local to one opt-in run."""
 
-    def __init__(self, args, requested, legacy):
+    def __init__(self, args, requested, legacy, initial_state=None):
         if args.samples is not None and args.samples < 2:
             raise ValueError("v4 finite targets require at least two rows per stream")
         self.args = args
         self.legacy = legacy
         self.pairs = _requested_pairs(requested, legacy)
         self.pending_stop = False
-        if os.path.exists(args.output) and not args.no_resume:
+        if initial_state is not None:
+            self.state = initial_state
+        elif os.path.exists(args.output) and not args.no_resume:
             self.state = _load_state(args, self.pairs, legacy)
         else:
             self.state = _fresh_state(args, self.pairs, legacy)
