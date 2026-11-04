@@ -1269,11 +1269,20 @@ def main(override_pairs=None):
         help="Opt in to the versioned shared-rank estimator and joint checkpoints.",
     )
     parser.add_argument(
+        "--precut-guard",
+        choices=("report", "enforce"),
+        default=None,
+        help="V4 only: report twins (default), or reject resolved-negative rows.",
+    )
+    parser.add_argument(
         "--fail-on-non-convergence",
         action="store_true",
         help="Exit with a non-zero status code if the hardcap is reached without satisfying convergence.",
     )
     args = parser.parse_args()
+
+    if args.precut_guard is not None and not args.estimator_v4:
+        parser.error("--precut-guard requires --estimator-v4")
 
     if not args.infinite and args.samples is None:
         parser.error("--samples is required unless --infinite is set")

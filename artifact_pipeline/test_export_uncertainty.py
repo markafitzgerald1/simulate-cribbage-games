@@ -94,6 +94,11 @@ def fixture(table):
         },
         "training_history": [1, 2, 3],
     }
+    full["__metadata__"]["generation_method"] = (
+        "artifact_pipeline.generate_table.v3"
+        if table == "crib"
+        else "artifact_pipeline.generate_play_table.v1"
+    )
     return full, means
 
 
@@ -106,6 +111,43 @@ def records(sidecar):
 
 
 class TestExportUncertainty(unittest.TestCase):
+    def test_crib_generation_method_rejected_before_output(self):
+        full, means = fixture("crib")
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            source, client, output = (base / name for name in ("full", "means", "out"))
+            client.write_bytes(encoded(means))
+            for method in (
+                "artifact_pipeline.generate_table.v4",
+                "artifact_pipeline.generate_table.v5",
+                "unrecognized",
+                None,
+                3,
+                {},
+            ):
+                with self.subTest(method=method):
+                    full["__metadata__"]["generation_method"] = method
+                    # No estimator_contract: method alone must control admission.
+                    source.write_bytes(encoded(full))
+                    with self.assertRaisesRegex(ValueError, "v2"):
+                        exporter.export_files("crib", source, client, output)
+                    self.assertFalse(output.exists())
+                    output.write_bytes(b"previous valid sidecar")
+                    with self.assertRaisesRegex(ValueError, "v2"):
+                        exporter.export_files("crib", source, client, output)
+                    self.assertEqual(output.read_bytes(), b"previous valid sidecar")
+                    output.unlink()
+
+    def test_v3_export_bytes_unchanged(self):
+        full, means = fixture("crib")
+        sidecar = exporter.encode_json(
+            exporter.build_sidecar("crib", encoded(full), encoded(means))
+        )
+        self.assertEqual(
+            hashlib.sha256(sidecar).hexdigest(),
+            "bff2c166b92125330bb15eafc6479cb5e7f894eb5135c669fcf055d44572ad06",
+        )
+
     def test_measured_precision_provenance_pairing_and_binary_experiment(self):
         for table in ("crib", "play"):
             full, means = fixture(table)
@@ -195,7 +237,10 @@ class TestExportUncertainty(unittest.TestCase):
             }
             for key in crib_present
         }
-        full["__metadata__"] = {"seed": 1}
+        full["__metadata__"] = {
+            "seed": 1,
+            "generation_method": "artifact_pipeline.generate_table.v3",
+        }
         expected_crib = [key for key in get_canonical_pairs() if key in crib_present]
         self.assertNotEqual(sorted(crib_present), expected_crib)
         sidecar = exporter.build_sidecar("crib", encoded(full), encoded(means))

@@ -102,6 +102,11 @@ starter-relation correction. Use that oracle to reject dropped residuals,
 opponent nobs, or sign clamps; do not turn positive flush possibility into a
 claim that every policy or finite sample has a positive measured flush.
 
+Completed v4 generations carry the [pre-cut twin report](../docs/v4-precut.md).
+Enforcement uses the simultaneous upper bound across the fixed 156-row family,
+including labelled Jack rows. Unresolved rows do not fail. Recompute reports
+from moments on resume; displayed means and saved reports are derived views.
+
 For opt-in version-4 generation, test the full checkpoint as the authority:
 complete group rounds, unit-weight joint moments, exact resume compatibility,
 and projections from saved moments. Check both seeded fresh-versus-resumed
@@ -211,7 +216,10 @@ keep report and off outputs byte-identical, and keep the release notes stating
 the gate outcome. See `AGENTS.md`, "Artifact Pipeline And Statistical Tables".
 
 For standalone uncertainty exports, follow
-[the JSON sidecar contract](../docs/uncertainty-sidecars.md). Preserve the exact
+[the JSON sidecar contract](../docs/uncertainty-sidecars.md).
+Crib v1 admission must use the explicit v3 generation method, not the presence
+of an estimator-contract field: v4 counts cannot become weighted v1 counts.
+Reject unsupported input before creating or replacing output. Preserve exact
 client means bytes and export only their top-level measured statistics, not
 the frozen policy snapshot. Crib weight sums and recoverable marginal moments
 do not establish joint weighted-estimator uncertainty or calibration. Preserve

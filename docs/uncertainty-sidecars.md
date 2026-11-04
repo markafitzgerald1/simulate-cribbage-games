@@ -75,6 +75,12 @@ legitimately replaced those bytes must turn that check off.
 
 ## Version 1 JSON contract
 
+Crib export requires the explicit generation method
+`artifact_pipeline.generate_table.v3`. Version 4 needs a v2 sidecar: its
+unit-weight vector counts and joint moments cannot be labelled as legacy
+weighted marginal statistics. Unknown or missing crib generation methods fail
+before output is written. Play export is unchanged.
+
 The UTF-8 document has `schema: "expected-points-uncertainty.v1"`, `table`
 (`crib` or `play`), `source_full_sha256`, `means_sha256`, and `provenance`.
 Provenance retains every scalar item from the full artifact's metadata;
