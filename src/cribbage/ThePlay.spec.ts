@@ -22,5 +22,5 @@ test(`cannot contain more than ${MAXIMUM_PLAYED_CARD_COUNT} played cards`, () =>
         )
       );
     });
-  }).toThrow;
+  }).toThrow();
 });

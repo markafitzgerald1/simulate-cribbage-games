@@ -40,14 +40,14 @@ updates:
       # prompts a periodic compatibility re-check. Blocked by the latest
       # eslint-plugin-react peer range (^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9.7).
       - dependency-name: "eslint"
-        versions: [">=10.0.0 <=10.11.0"]
+        versions: [">=10.0.0 <=10.13.0"]
       # Bounded to the current release (not >=18) so the ignore ages out and
-      # prompts a periodic compatibility re-check. Retiring the frontend to
-      # cribbage-trainer (#103, #129).
+      # prompts a periodic compatibility re-check. react-helmet depends on
+      # react-side-effect, which excludes React 19; retirement is #103/#129.
       - dependency-name: "react"
-        versions: [">=18.0.0 <=19.3.0"]
+        versions: [">=18.0.0 <=19.3.1"]
       - dependency-name: "react-dom"
-        versions: [">=18.0.0 <=19.3.0"]
+        versions: [">=18.0.0 <=19.3.1"]
       - dependency-name: "@types/react"
         versions: [">=18.0.0 <=19.3.0"]
       - dependency-name: "@types/react-dom"

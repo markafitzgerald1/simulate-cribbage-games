@@ -202,7 +202,7 @@ Install dependencies with:
 pip install -r requirements.txt
 ```
 
-Install Node.js 18 or newer and npm development dependencies before installing
+Install Node.js 24 or newer and npm development dependencies before installing
 pre-commit hooks, because the local cspell hook runs through npm:
 
 ```sh
