@@ -7,6 +7,11 @@ activation or production release. The existing v3 weekly workflow stays intact.
 
 ## Scope and fixed settings
 
+Plan v4 generation as an on-demand release run when the estimator, policy or
+sample budget changes. With the same inputs and fixed seed, rerunning on a
+schedule repeats the same experiment. The first run is a separately approved
+shadow comparison.
+
 The new layout measures all 91 rank groups (169 discard keys), both roles,
 at 22,000 complete rows per active stream per generation, seed 42, at most
 2 generations, convergence threshold 0.10 and failure on non-convergence.
@@ -153,7 +158,7 @@ maintainer decisions.
 The survey measured about 8.3 runner-hours for 78 distinct groups. Adding the
 13 cheaper same-rank groups gives about 9 runner-hours per generation, about
 18 for two generations. Eight shards imply about 1.2 sampling hours per wave.
-The expected weekly wall time is roughly 3-4 hours, subject to the shadow run.
+Estimated wall time per run is roughly 3-4 hours, subject to the shadow run.
 These are estimates, not a production timing measurement.
 
 Assembly is not free: the measured N=22,000 resume validation is about
