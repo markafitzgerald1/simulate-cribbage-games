@@ -27,6 +27,10 @@ sampling, or measured simulation results.
 must never attempt to format, lint, refactor, reorganize, or mechanically clean
 up that file unless a human maintainer explicitly requests a direct edit.
 
+The opt-in v4 production layout is specified in
+[the eight-shard design](docs/v4-production-layout.md). Its implementation and
+shadow execution are staged separately from production activation.
+
 ## License And AI Provenance
 
 This project uses AI coding assistants in its development. All AI-generated
