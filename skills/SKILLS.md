@@ -211,7 +211,10 @@ keep report and off outputs byte-identical, and keep the release notes stating
 the gate outcome. See `AGENTS.md`, "Artifact Pipeline And Statistical Tables".
 
 For standalone uncertainty exports, follow
-[the JSON sidecar contract](../docs/uncertainty-sidecars.md). Preserve the exact
+[the JSON sidecar contract](../docs/uncertainty-sidecars.md).
+Crib v1 admission must use the explicit v3 generation method, not the presence
+of an estimator-contract field: v4 counts cannot become weighted v1 counts.
+Reject unsupported input before creating or replacing output. Preserve exact
 client means bytes and export only their top-level measured statistics, not
 the frozen policy snapshot. Crib weight sums and recoverable marginal moments
 do not establish joint weighted-estimator uncertainty or calibration. Preserve
