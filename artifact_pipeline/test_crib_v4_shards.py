@@ -521,6 +521,15 @@ class TestShardedV4(ShardedV4Fixture):
         with self.assertRaises(ValueError):
             shards.read_bundle(output)
 
+    def test_finalize_rejects_rebuilt_client_digest_mismatch(self):
+        reference, plan_path, assembled, _final = self._cli_pipeline()
+        plan = json.loads(plan_path.read_bytes())
+        client = assembled / "expected_crib_points.client.json"
+        with patch.object(
+            shards, "client_bytes", return_value=client.read_bytes() + b" "
+        ), self.assertRaisesRegex(ValueError, "Rebuilt client digest"):
+            shards.final_output(plan, assembled, reference)
+
     def test_real_cli_pipeline_and_reference_pinning(self):
         reference, current_path, assembled, final = self._cli_pipeline()
         self.assertEqual(shards.read_bundle(final)["kind"], "shadow")

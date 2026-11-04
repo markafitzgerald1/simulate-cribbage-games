@@ -803,6 +803,9 @@ def final_output(plan, directory, reference):
     if not _should_stop_after_complete(state, generate_table):
         raise ValueError("Final generation is not converged")
     output = _project_output(state, generate_table)
+    client_digest = hashlib.sha256(client_bytes(output)).hexdigest()
+    if client_digest != manifest["files"].get("expected_crib_points.client.json"):
+        raise ValueError("Rebuilt client digest differs from assembled bundle")
     baseline = _read(Path(reference) / "expected_crib_points.json")
     return output, _comparison(output, baseline)
 
