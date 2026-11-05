@@ -348,3 +348,35 @@ def projected_statistics(streams, coefficients):
         "mu": float(mean),
         "se": sqrt(float(variance)) if count >= 2 else None,
     }
+
+
+def component_coefficients(rank_name, variant, relation_name, kind):
+    coefficients = {"base": {}}
+    if kind in RANK_CATEGORIES:
+        coefficients["base"][f"{rank_name}/base/{kind}"] = 1
+        if variant == "Suited":
+            coefficients["residual"] = {f"{rank_name}/residual/{kind}": 1}
+        if relation_name != ROOT:
+            coefficients["suit"] = {
+                f"{rank_name}/{variant}/{relation_name}/correction_{kind}": 1
+            }
+    else:
+        coefficients["suit"] = {f"{rank_name}/{variant}/{relation_name}/{kind}": 1}
+    return coefficients
+
+
+def bucket_statistics(streams, rank_name, variant, relation_name):
+    points = {}
+    coefficients = {}
+    for kind in (*RANK_CATEGORIES, *SUIT_CATEGORIES):
+        terms = component_coefficients(rank_name, variant, relation_name, kind)
+        points[kind] = projected_statistics(streams, terms)
+        for stream, weights in terms.items():
+            combined = coefficients.setdefault(stream, {})
+            for label, weight in weights.items():
+                combined[label] = combined.get(label, 0) + weight
+    total = projected_statistics(streams, coefficients)
+    if total is None:
+        return None
+    points["total"] = total.copy()
+    return {**total, "points": points}

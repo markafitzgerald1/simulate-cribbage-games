@@ -19,7 +19,6 @@ from artifact_pipeline.crib_precut import enforce_precut_report, precut_twin_rep
 from artifact_pipeline.crib_decomposition import (
     RANK_CATEGORIES,
     ROOT,
-    SUIT_CATEGORIES,
     CribGroup,
     base_observation,
     bucket_populations,
@@ -33,13 +32,13 @@ from artifact_pipeline.crib_v4_state import (
     STREAM_ALLOCATION,
     active_streams,
     add_row,
+    bucket_statistics,
     coordinate_labels,
     decode_moments,
     empty_moments,
     encode_moments,
     integer_row,
     observation_coordinates,
-    projected_statistics,
 )
 
 GENERATION_METHOD = "artifact_pipeline.generate_table.v4"
@@ -479,43 +478,11 @@ def _sample_round(state, identity, group, legacy, policy):
     }
 
 
-def _component_coefficients(rank_name, variant, relation_name, kind):
-    coefficients = {"base": {}}
-    if kind in RANK_CATEGORIES:
-        coefficients["base"][f"{rank_name}/base/{kind}"] = 1
-        if variant == "Suited":
-            coefficients["residual"] = {f"{rank_name}/residual/{kind}": 1}
-        if relation_name != ROOT:
-            coefficients["suit"] = {
-                f"{rank_name}/{variant}/{relation_name}/correction_{kind}": 1
-            }
-    else:
-        coefficients["suit"] = {f"{rank_name}/{variant}/{relation_name}/{kind}": 1}
-    return coefficients
-
-
-def _bucket_statistics(streams, rank_name, variant, relation_name):
-    points = {}
-    coefficients = {}
-    for kind in (*RANK_CATEGORIES, *SUIT_CATEGORIES):
-        terms = _component_coefficients(rank_name, variant, relation_name, kind)
-        points[kind] = projected_statistics(streams, terms)
-        for stream, weights in terms.items():
-            combined = coefficients.setdefault(stream, {})
-            for label, weight in weights.items():
-                combined[label] = combined.get(label, 0) + weight
-    total = projected_statistics(streams, coefficients)
-    if total is None:
-        return None
-    points["total"] = total.copy()
-    return {**total, "points": points}
-
-
 def _cut_output(group, streams, variant, legacy):
     output = {}
     legal = bucket_populations(group, variant)
     for cut, rank_name in enumerate(legacy.Index.indices):
-        bucket = _bucket_statistics(streams, rank_name, variant, ROOT)
+        bucket = bucket_statistics(streams, rank_name, variant, ROOT)
         if bucket is None:
             continue
         relations = {}
@@ -526,7 +493,7 @@ def _cut_output(group, streams, variant, legacy):
             "non_matching_discard_suit",
         ):
             if (cut, relation_name) in legal:
-                relations[relation_name] = _bucket_statistics(
+                relations[relation_name] = bucket_statistics(
                     streams, rank_name, variant, relation_name
                 )
         bucket["starter_suit_relation"] = relations

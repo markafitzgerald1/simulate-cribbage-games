@@ -514,9 +514,10 @@ resume-across-runs (the resumable-checkpoint design above) if the cap becomes a
 recurring problem.
 
 Uncertainty publication has a standalone read/export boundary documented in
-[the sidecar contract](docs/uncertainty-sidecars.md). Export the top-level
-measured buckets matching the client means, never `generation_accumulators` or
-dampened policy values. Recoverable marginal moments do not supply the missing
+[the sidecar contract](docs/uncertainty-sidecars.md). For v1, export the
+top-level measured buckets matching the client means. For v2, project the
+measured v4 moments in `artifact_pipeline/crib_uncertainty_v2.py`. Never
+export `generation_accumulators` or dampened policy values. Recoverable marginal moments do not supply the missing
 joint weighted-estimator moments or establish calibration. Keep crib weight
 sums fractional, use play's paired delta SE, and retain policy provenance.
 Version-1 JSON readers ignore new named record groups; future categories belong

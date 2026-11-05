@@ -138,6 +138,26 @@ class TestExportUncertainty(unittest.TestCase):
                     self.assertEqual(output.read_bytes(), b"previous valid sidecar")
                     output.unlink()
 
+    def test_v1_cannot_be_repinned_to_v4_client_means(self):
+        full, means = fixture("crib")
+        sidecar = exporter.build_sidecar("crib", encoded(full), encoded(means))
+        means["__metadata__"] = {
+            "generation_method": "artifact_pipeline.generate_table.v4"
+        }
+        means_bytes = encoded(means)
+        sidecar["means_sha256"] = hashlib.sha256(means_bytes).hexdigest()
+        with self.assertRaisesRegex(ValueError, "Version 4 crib means"):
+            exporter.decode_sidecar(encoded(sidecar), means_bytes)
+
+    def test_v1_cannot_claim_v4_provenance(self):
+        full, means = fixture("crib")
+        sidecar = exporter.build_sidecar("crib", encoded(full), encoded(means))
+        sidecar["provenance"][
+            "generation_method"
+        ] = "artifact_pipeline.generate_table.v4"
+        with self.assertRaisesRegex(ValueError, "Version 4 crib means"):
+            exporter.decode_sidecar(encoded(sidecar), encoded(means))
+
     def test_v3_export_bytes_unchanged(self):
         full, means = fixture("crib")
         sidecar = exporter.encode_json(
