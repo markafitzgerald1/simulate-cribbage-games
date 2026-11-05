@@ -63,6 +63,11 @@ class TestCribActivationWorkflow(unittest.TestCase):
         self.require_fragment("approval == 'restore-v3'", workflow)
         self.require_fragment("approval == 'publish'", workflow)
 
+    def test_every_workflow_runs_the_exporter_as_a_module(self):
+        for path in sorted(WORKFLOWS.glob("*.yml")):
+            text = path.read_text()
+            self.assertNotIn("artifact_pipeline/export_uncertainty.py ", text, path)
+
     def test_only_writer_jobs_hold_the_release_lock(self):
         workflow = yaml.safe_load((WORKFLOWS / "activate-crib-v4.yml").read_text())
         self.assertNotIn("concurrency", workflow)
