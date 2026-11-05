@@ -1,0 +1,573 @@
+{
+  "schema": "expected-points-uncertainty.v2",
+  "table": "crib",
+  "source_full_sha256": "87a8b4c5e89b50487e11a148f8083484966dece6848ca25d831ff39cb5f18af0",
+  "means_sha256": "055bbf363c1b9c8a71c98af29df46142c784c9e719d1917abe99e7bc56276501",
+  "provenance": {
+    "generation_method": "artifact_pipeline.generate_table.v4",
+    "estimator_contract": "shared-rank-relation-v1",
+    "relation_centering_contract": "uniform-two-card-rank-completion-v1",
+    "sample_unit": "independent-vector-rows-per-active-stream",
+    "selector_contract": "legacy-suit-sensitive-first-max-v1",
+    "rng_contract": "python-random-sample-v1",
+    "deck_order": "rank-index-then-suit-index-v1",
+    "python_implementation": "CPython",
+    "python_version": "3.14.4",
+    "scale": 310464,
+    "seed": 42,
+    "seed_was_specified": true,
+    "use_control_variates": true,
+    "bootstrap_sha256": null,
+    "generation": 0,
+    "phase": "complete",
+    "policy_sha256": "051d514ae08f0a83395eaa3d7be7187f8514a83e6ab53208679c4c57a669fb0b"
+  },
+  "statistic": "reported_marginal_se",
+  "n_semantics": "independent-vector-rows-per-active-stream",
+  "uncertainty_scope": "fixed-policy-sampling",
+  "cross_bucket_covariance": null,
+  "policy_uncertainty": null,
+  "selection_adjustment": null,
+  "calibrated_comparison_uncertainty": null,
+  "qualifications": {
+    "crib": "Marginal sampling SE conditional on the frozen opponent policy. Root and relation estimates overlap.",
+    "scope": "No coverage claim, policy-learning or model uncertainty. A twin-difference SE is specific to that comparison."
+  },
+  "keys": [
+    "3_8_Suited",
+    "3_8_Unsuited"
+  ],
+  "roles": [
+    "Dealer",
+    "Pone"
+  ],
+  "ranks": [
+    "A",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "T",
+    "J",
+    "Q",
+    "K"
+  ],
+  "slots": [
+    "total",
+    "matching_discard_suit",
+    "non_matching_discard_suit",
+    "matching_rank_1_suit",
+    "matching_rank_2_suit"
+  ],
+  "record_groups": {
+    "totals": {
+      "record_count": 100,
+      "records": {
+        "3_8_Suited/Dealer/A/total": {
+          "mu": 3.1051136363636362,
+          "reported_marginal_se": 0.7829217650480477,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/A/matching_discard_suit": {
+          "mu": 2.7727079468150895,
+          "reported_marginal_se": 0.8205032047716712,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/A/non_matching_discard_suit": {
+          "mu": 3.215915532879819,
+          "reported_marginal_se": 0.7871860877361553,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/2/total": {
+          "mu": 5.920454545454546,
+          "reported_marginal_se": 0.6073568642381431,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/2/matching_discard_suit": {
+          "mu": 5.920454545454546,
+          "reported_marginal_se": 0.6073568642381431,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/2/non_matching_discard_suit": {
+          "mu": 5.920454545454546,
+          "reported_marginal_se": 0.6073568642381431,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/3/total": {
+          "mu": 5.681818181818182,
+          "reported_marginal_se": 1.1363636363636365,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/3/non_matching_discard_suit": {
+          "mu": 5.681818181818182,
+          "reported_marginal_se": 1.1363636363636365,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/4/total": {
+          "mu": 4.28125,
+          "reported_marginal_se": 1.2028904707729247,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/4/matching_discard_suit": {
+          "mu": 3.136552064007421,
+          "reported_marginal_se": 1.6682040519766488,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/4/non_matching_discard_suit": {
+          "mu": 4.6628159786641925,
+          "reported_marginal_se": 1.2630856677395585,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/5/total": {
+          "mu": 3.7670454545454546,
+          "reported_marginal_se": 1.1704499485052418,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/5/matching_discard_suit": {
+          "mu": 4.277974257884972,
+          "reported_marginal_se": 1.2771066220319565,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/5/non_matching_discard_suit": {
+          "mu": 3.596735853432282,
+          "reported_marginal_se": 1.1827757362185152,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/6/total": {
+          "mu": 3.2670454545454546,
+          "reported_marginal_se": 0.7471464885444838,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/6/matching_discard_suit": {
+          "mu": 3.0201569264069263,
+          "reported_marginal_se": 0.7868810714909601,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/6/non_matching_discard_suit": {
+          "mu": 3.3493416305916304,
+          "reported_marginal_se": 0.751665175418002,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/7/total": {
+          "mu": 4.693181818181818,
+          "reported_marginal_se": 0.5608235655046464,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/7/matching_discard_suit": {
+          "mu": 4.155921459492888,
+          "reported_marginal_se": 0.7766413359098924,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/7/non_matching_discard_suit": {
+          "mu": 4.872268604411461,
+          "reported_marginal_se": 0.5887233209474603,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/8/total": {
+          "mu": 3.3181818181818183,
+          "reported_marginal_se": 0.6623482725574059,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/8/non_matching_discard_suit": {
+          "mu": 3.3181818181818183,
+          "reported_marginal_se": 0.6623482725574059,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/9/total": {
+          "mu": 2.2045454545454546,
+          "reported_marginal_se": 0.40750956993275245,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/9/matching_discard_suit": {
+          "mu": 2.321708797155226,
+          "reported_marginal_se": 0.42401804022738404,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/9/non_matching_discard_suit": {
+          "mu": 2.165491007008864,
+          "reported_marginal_se": 0.40937672070986786,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/T/total": {
+          "mu": 3.127840909090909,
+          "reported_marginal_se": 0.5150409654666466,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/T/matching_discard_suit": {
+          "mu": 2.9241941094619666,
+          "reported_marginal_se": 0.5282908313058748,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/T/non_matching_discard_suit": {
+          "mu": 3.1957231756338897,
+          "reported_marginal_se": 0.5165299573233737,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/J/total": {
+          "mu": 2.0795454545454546,
+          "reported_marginal_se": 1.279431409417855,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/J/matching_discard_suit": {
+          "mu": 2.293217571119357,
+          "reported_marginal_se": 1.297150918284426,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/J/non_matching_discard_suit": {
+          "mu": 2.008321415687487,
+          "reported_marginal_se": 1.2814123439065974,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/Q/total": {
+          "mu": 1.6363636363636365,
+          "reported_marginal_se": 1.0901196638638806,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/Q/matching_discard_suit": {
+          "mu": 2.0593595392702535,
+          "reported_marginal_se": 1.169310230613965,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/Q/non_matching_discard_suit": {
+          "mu": 1.4953650020614306,
+          "reported_marginal_se": 1.0992003895640625,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/K/total": {
+          "mu": 1.0681818181818181,
+          "reported_marginal_se": 0.6596131682133406,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/K/matching_discard_suit": {
+          "mu": 0.5754918444650587,
+          "reported_marginal_se": 0.7911839117537183,
+          "n": 4
+        },
+        "3_8_Suited/Dealer/K/non_matching_discard_suit": {
+          "mu": 1.232411809420738,
+          "reported_marginal_se": 0.6754988474092841,
+          "n": 4
+        },
+        "3_8_Suited/Pone/A/total": {
+          "mu": 6.107954545454546,
+          "reported_marginal_se": 1.5055031340515763,
+          "n": 4
+        },
+        "3_8_Suited/Pone/A/matching_discard_suit": {
+          "mu": 7.2684755720470005,
+          "reported_marginal_se": 2.010007288671227,
+          "n": 4
+        },
+        "3_8_Suited/Pone/A/non_matching_discard_suit": {
+          "mu": 5.72111420325706,
+          "reported_marginal_se": 1.467565342344332,
+          "n": 4
+        },
+        "3_8_Suited/Pone/2/total": {
+          "mu": 8.309659090909092,
+          "reported_marginal_se": 0.878502619094672,
+          "n": 4
+        },
+        "3_8_Suited/Pone/2/matching_discard_suit": {
+          "mu": 9.135358688930118,
+          "reported_marginal_se": 1.7062564290393882,
+          "n": 4
+        },
+        "3_8_Suited/Pone/2/non_matching_discard_suit": {
+          "mu": 8.034425891568748,
+          "reported_marginal_se": 0.8049828212389825,
+          "n": 4
+        },
+        "3_8_Suited/Pone/3/total": {
+          "mu": 8.522727272727273,
+          "reported_marginal_se": 1.940710372340833,
+          "n": 4
+        },
+        "3_8_Suited/Pone/3/non_matching_discard_suit": {
+          "mu": 8.522727272727273,
+          "reported_marginal_se": 1.940710372340833,
+          "n": 4
+        },
+        "3_8_Suited/Pone/4/total": {
+          "mu": 8.380681818181818,
+          "reported_marginal_se": 1.115456343692211,
+          "n": 4
+        },
+        "3_8_Suited/Pone/4/matching_discard_suit": {
+          "mu": 10.172918599257885,
+          "reported_marginal_se": 1.6876186657495145,
+          "n": 4
+        },
+        "3_8_Suited/Pone/4/non_matching_discard_suit": {
+          "mu": 7.78326955782313,
+          "reported_marginal_se": 1.0719266136100132,
+          "n": 4
+        },
+        "3_8_Suited/Pone/5/total": {
+          "mu": 7.386363636363637,
+          "reported_marginal_se": 0.8832745315425014,
+          "n": 4
+        },
+        "3_8_Suited/Pone/5/matching_discard_suit": {
+          "mu": 8.74956516697588,
+          "reported_marginal_se": 1.5717133186039811,
+          "n": 4
+        },
+        "3_8_Suited/Pone/5/non_matching_discard_suit": {
+          "mu": 6.9319631261595545,
+          "reported_marginal_se": 0.816478370909493,
+          "n": 4
+        },
+        "3_8_Suited/Pone/6/total": {
+          "mu": 7.315340909090909,
+          "reported_marginal_se": 2.426927409006737,
+          "n": 4
+        },
+        "3_8_Suited/Pone/6/matching_discard_suit": {
+          "mu": 5.9473079004329,
+          "reported_marginal_se": 3.0981349410710597,
+          "n": 4
+        },
+        "3_8_Suited/Pone/6/non_matching_discard_suit": {
+          "mu": 7.771351911976912,
+          "reported_marginal_se": 2.501060682808257,
+          "n": 4
+        },
+        "3_8_Suited/Pone/7/total": {
+          "mu": 7.315340909090909,
+          "reported_marginal_se": 1.1385809333722583,
+          "n": 4
+        },
+        "3_8_Suited/Pone/7/matching_discard_suit": {
+          "mu": 5.944167439703154,
+          "reported_marginal_se": 1.7356915928151329,
+          "n": 4
+        },
+        "3_8_Suited/Pone/7/non_matching_discard_suit": {
+          "mu": 7.772398732220161,
+          "reported_marginal_se": 1.2194514996541992,
+          "n": 4
+        },
+        "3_8_Suited/Pone/8/total": {
+          "mu": 7.291666666666667,
+          "reported_marginal_se": 1.587410474833353,
+          "n": 4
+        },
+        "3_8_Suited/Pone/8/non_matching_discard_suit": {
+          "mu": 7.291666666666667,
+          "reported_marginal_se": 1.587410474833353,
+          "n": 4
+        },
+        "3_8_Suited/Pone/9/total": {
+          "mu": 7.386363636363637,
+          "reported_marginal_se": 2.5881913577114486,
+          "n": 4
+        },
+        "3_8_Suited/Pone/9/matching_discard_suit": {
+          "mu": 8.163990027829314,
+          "reported_marginal_se": 3.1868465356336406,
+          "n": 4
+        },
+        "3_8_Suited/Pone/9/non_matching_discard_suit": {
+          "mu": 7.12715483920841,
+          "reported_marginal_se": 2.5912831593636536,
+          "n": 4
+        },
+        "3_8_Suited/Pone/T/total": {
+          "mu": 5.113636363636363,
+          "reported_marginal_se": 1.4392693327244945,
+          "n": 4
+        },
+        "3_8_Suited/Pone/T/matching_discard_suit": {
+          "mu": 6.290222054730983,
+          "reported_marginal_se": 1.9780318688277443,
+          "n": 4
+        },
+        "3_8_Suited/Pone/T/non_matching_discard_suit": {
+          "mu": 4.72144113327149,
+          "reported_marginal_se": 1.3993971497609812,
+          "n": 4
+        },
+        "3_8_Suited/Pone/J/total": {
+          "mu": 5.894886363636363,
+          "reported_marginal_se": 1.2856225362107447,
+          "n": 4
+        },
+        "3_8_Suited/Pone/J/matching_discard_suit": {
+          "mu": 6.17535366419295,
+          "reported_marginal_se": 2.3382908620726424,
+          "n": 4
+        },
+        "3_8_Suited/Pone/J/non_matching_discard_suit": {
+          "mu": 5.801397263450835,
+          "reported_marginal_se": 1.2640358560284963,
+          "n": 4
+        },
+        "3_8_Suited/Pone/Q/total": {
+          "mu": 4.261363636363637,
+          "reported_marginal_se": 0.8343281338402507,
+          "n": 4
+        },
+        "3_8_Suited/Pone/Q/matching_discard_suit": {
+          "mu": 4.043584763450835,
+          "reported_marginal_se": 1.0193114623599298,
+          "n": 4
+        },
+        "3_8_Suited/Pone/Q/non_matching_discard_suit": {
+          "mu": 4.333956594001237,
+          "reported_marginal_se": 0.8436140539846179,
+          "n": 4
+        },
+        "3_8_Suited/Pone/K/total": {
+          "mu": 5.042613636363637,
+          "reported_marginal_se": 1.2960431527624048,
+          "n": 4
+        },
+        "3_8_Suited/Pone/K/matching_discard_suit": {
+          "mu": 6.467537299010513,
+          "reported_marginal_se": 1.950568488615927,
+          "n": 4
+        },
+        "3_8_Suited/Pone/K/non_matching_discard_suit": {
+          "mu": 4.567639082148011,
+          "reported_marginal_se": 1.2521090977992146,
+          "n": 4
+        },
+        "3_8_Unsuited/Dealer/A/total": {
+          "mu": 3.053977272727273,
+          "reported_marginal_se": 0.78125,
+          "n": 4
+        },
+        "3_8_Unsuited/Dealer/2/total": {
+          "mu": 5.894886363636363,
+          "reported_marginal_se": 0.6068184478208474,
+          "n": 4
+        },
+        "3_8_Unsuited/Dealer/3/total": {
+          "mu": 5.681818181818182,
+          "reported_marginal_se": 1.1363636363636365,
+          "n": 4
+        },
+        "3_8_Unsuited/Dealer/4/total": {
+          "mu": 4.332386363636363,
+          "reported_marginal_se": 1.2018030441758576,
+          "n": 4
+        },
+        "3_8_Unsuited/Dealer/5/total": {
+          "mu": 3.835227272727273,
+          "reported_marginal_se": 1.1684623749292677,
+          "n": 4
+        },
+        "3_8_Unsuited/Dealer/6/total": {
+          "mu": 3.2670454545454546,
+          "reported_marginal_se": 0.7471464885444838,
+          "n": 4
+        },
+        "3_8_Unsuited/Dealer/7/total": {
+          "mu": 4.829545454545454,
+          "reported_marginal_se": 0.5439926748615557,
+          "n": 4
+        },
+        "3_8_Unsuited/Dealer/8/total": {
+          "mu": 3.409090909090909,
+          "reported_marginal_se": 0.6560798513518474,
+          "n": 4
+        },
+        "3_8_Unsuited/Dealer/9/total": {
+          "mu": 2.272727272727273,
+          "reported_marginal_se": 0.40176521658326564,
+          "n": 4
+        },
+        "3_8_Unsuited/Dealer/T/total": {
+          "mu": 3.196022727272727,
+          "reported_marginal_se": 0.510508017349617,
+          "n": 4
+        },
+        "3_8_Unsuited/Dealer/J/total": {
+          "mu": 2.1306818181818183,
+          "reported_marginal_se": 1.2784090909090908,
+          "n": 4
+        },
+        "3_8_Unsuited/Dealer/Q/total": {
+          "mu": 1.7045454545454546,
+          "reported_marginal_se": 1.0879853497231113,
+          "n": 4
+        },
+        "3_8_Unsuited/Dealer/K/total": {
+          "mu": 1.1363636363636365,
+          "reported_marginal_se": 0.6560798513518474,
+          "n": 4
+        },
+        "3_8_Unsuited/Pone/A/total": {
+          "mu": 5.752840909090909,
+          "reported_marginal_se": 1.4687573266331533,
+          "n": 4
+        },
+        "3_8_Unsuited/Pone/2/total": {
+          "mu": 7.954545454545454,
+          "reported_marginal_se": 0.8035304331665313,
+          "n": 4
+        },
+        "3_8_Unsuited/Pone/3/total": {
+          "mu": 8.522727272727273,
+          "reported_marginal_se": 1.940710372340833,
+          "n": 4
+        },
+        "3_8_Unsuited/Pone/4/total": {
+          "mu": 8.025568181818182,
+          "reported_marginal_se": 1.0653409090909092,
+          "n": 4
+        },
+        "3_8_Unsuited/Pone/5/total": {
+          "mu": 7.03125,
+          "reported_marginal_se": 0.8190740479169599,
+          "n": 4
+        },
+        "3_8_Unsuited/Pone/6/total": {
+          "mu": 7.315340909090909,
+          "reported_marginal_se": 2.426927409006737,
+          "n": 4
+        },
+        "3_8_Unsuited/Pone/7/total": {
+          "mu": 7.315340909090909,
+          "reported_marginal_se": 1.1385809333722583,
+          "n": 4
+        },
+        "3_8_Unsuited/Pone/8/total": {
+          "mu": 7.386363636363637,
+          "reported_marginal_se": 1.590232540127525,
+          "n": 4
+        },
+        "3_8_Unsuited/Pone/9/total": {
+          "mu": 7.03125,
+          "reported_marginal_se": 2.566991021026696,
+          "n": 4
+        },
+        "3_8_Unsuited/Pone/T/total": {
+          "mu": 4.7585227272727275,
+          "reported_marginal_se": 1.4007871394400582,
+          "n": 4
+        },
+        "3_8_Unsuited/Pone/J/total": {
+          "mu": 5.5397727272727275,
+          "reported_marginal_se": 1.2356049574526409,
+          "n": 4
+        },
+        "3_8_Unsuited/Pone/Q/total": {
+          "mu": 4.261363636363637,
+          "reported_marginal_se": 0.8343281338402507,
+          "n": 4
+        },
+        "3_8_Unsuited/Pone/K/total": {
+          "mu": 4.6875,
+          "reported_marginal_se": 1.2531704799115575,
+          "n": 4
+        }
+      }
+    }
+  }
+}
