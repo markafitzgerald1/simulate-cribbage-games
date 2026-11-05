@@ -73,6 +73,101 @@ same assets, and by default it checks each downloaded client means file against
 the digest pinned in its matrix. A dispatch after a regeneration has
 legitimately replaced those bytes must turn that check off.
 
+## Version 2 crib JSON contract
+
+This section specifies the wire format for the follow-up exporter and readers.
+This contract and its fixtures land before the v2 exporter and Python reference
+reader; those implementations follow in separate changes. The export commands
+and publication behavior above remain version 1.
+
+Version 2 is the marginal sidecar for the version 4 crib estimator. Select the
+decoder by `schema`. Version 1 remains the format for version 3 crib and for
+play. The v2 schema is `expected-points-uncertainty.v2` and its table is `crib`.
+
+V2 retains the v1 crib identity lists and ordering and the
+`record_groups.totals` envelope. Production shadow data has 9,076 identities.
+A bounded table may contain fewer. Each measured identity has these fields.
+
+| Field | Meaning |
+| --- | --- |
+| `mu` | Finite, unrounded measured mean. The producer’s Python `round(mu, 4)` must match the corresponding client mean. |
+| `reported_marginal_se` | Finite, nonnegative standard error of the measured estimator conditional on the frozen opponent policy. |
+| `n` | Integer count of independent vector rows per active stream, at least two. |
+
+The estimator projects joint integer moments within each active stream and
+combines the stream contributions to obtain the marginal variance. The count
+is neither a weight sum nor the sum across streams. V2 omits `sum_w2`.
+The standalone exporter uses completed measured state and checks the displayed
+means against the exact matching client file. Publication additionally requires
+a verified terminal bundle.
+
+The exact byte digests are lowercase SHA-256 hex. `means_sha256` binds the
+sidecar to its client JSON, and `source_full_sha256` identifies the uncompressed
+full JSON even when distributed as gzip. The following fields are required in
+`provenance`.
+
+| Field | Value |
+| --- | --- |
+| `generation_method` | `artifact_pipeline.generate_table.v4` |
+| `estimator_contract` | `shared-rank-relation-v1` |
+| `relation_centering_contract` | `uniform-two-card-rank-completion-v1` |
+| `selector_contract` | `legacy-suit-sensitive-first-max-v1` |
+| `rng_contract` | `python-random-sample-v1` |
+| `sample_unit` | `independent-vector-rows-per-active-stream` |
+| `policy_sha256` | Lowercase SHA-256 hex of the frozen opponent policy |
+| `bootstrap_sha256` | Lowercase SHA-256 hex of the bootstrap input, or null when no external bootstrap file was supplied |
+| `generation` | Nonnegative integer generation index |
+| `seed` | Integer seed, or null for a run initialized with a nonce |
+
+The standalone exporter omits `convergence_shift` when the full JSON lacks
+it. A publication workflow with verified assembly diagnostics can include
+the measured shift as a finite nonnegative number. When the full source has
+a pre-cut report, include the nonnegative integer counts
+`precut_resolved_positive`, `precut_resolved_negative` and `precut_unresolved`
+derived from its row statuses. Additional scalar provenance fields are allowed.
+Exclude checkpoint moments, policy snapshots and their null placeholders.
+
+Every integer field (`n`, `record_count`, `generation`, `seed` and the
+pre-cut counts) is a JSON integer that is also a JavaScript safe integer,
+meaning its magnitude is at most 9007199254740991, so the Python and
+browser readers describe one wire format. `seed` may be negative; `n` is
+at least two and the other counts are nonnegative. A producer must refuse
+to emit, and a reader must reject, an integer outside that range.
+A sidecar with zero records is well formed but offers no capability, and
+the trainer updater refuses to install one.
+
+The paired means JSON must carry a `__metadata__` object with
+`generation_method`, `generation` and `seed`. Each must have the same type
+and value as the sidecar's provenance field, including a null seed, and the
+means `generation_method` must be `artifact_pipeline.generate_table.v4`.
+The reference reader and the byte-aware updater reject a missing object or
+any difference, even when the means digest matches. A browser parser that
+receives only parsed sidecar data relies on that upstream check.
+
+- `statistic` is `reported_marginal_se`.
+- `n_semantics` is `independent-vector-rows-per-active-stream`.
+- `uncertainty_scope` is `fixed-policy-sampling`.
+- `cross_bucket_covariance`, `policy_uncertainty`, `selection_adjustment` and
+  `calibrated_comparison_uncertainty` are required JSON nulls.
+- `qualifications` has nonempty `crib` and `scope` strings describing the
+  fixed-policy sampling scope, the lack of a coverage claim and the
+  comparison-specific nature of twin-difference SE.
+
+The integer `record_count` equals the number of entries in `records`.
+Each entry names a root or retained relation identity in the paired means.
+The Python reference reader checks the producer rounding rule.
+Reject an unsupported schema or table, a mismatched means digest where exact
+bytes are available, or a malformed document or record. Keep a missing record
+unavailable, including a missing relation record whose root is present. Keep
+a measured zero. Unknown separate record groups may be ignored. A linear
+comparison can still use the sum of absolute combined coefficients times
+their marginal SEs as a dependence bound conditional on the frozen policy.
+
+The [golden fixture directory](../artifact_pipeline/fixtures/crib-uncertainty-v2)
+contains the exact client bytes and the expected marginal sidecar for a retained
+seed-42 run of the 3–8 group with four rows per active stream. The fixtures
+cover root and suit-relation identities without depending on the shadow run.
+
 ## Version 1 JSON contract
 
 Crib export requires the explicit generation method
@@ -168,14 +263,15 @@ it by summing the two player-total variances. There are no category, player-tota
 or per-action uncertainty records. #774 and #11 can reuse these inputs but do
 not gain a calibrated combined mistake threshold from publication alone.
 
-Always use the top-level measured crib bucket corresponding to the client mean.
+For v1, always use the top-level measured crib bucket corresponding to the
+client mean.
 `generation_accumulators` is a frozen policy snapshot and also lacks nested
 relations. For `A_A_Unsuited/Dealer/A`, the full measurement mean is
 7.749001108447055; snapshot `policy_mu` is 7.740845299442242. Neither the snapshot
 nor dampened values describe the published measurement.
 
-Crib `n` is a sum of weights, not hands simulated. With `W=n` and `Q=sum_w2`,
-the stored marginal moments reconstruct as:
+Version 1 crib `n` is a sum of weights, not hands simulated. With `W=n` and
+`Q=sum_w2`, the stored marginal moments reconstruct as:
 
 ```text
 sum = W * mu
