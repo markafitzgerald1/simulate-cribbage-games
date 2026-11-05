@@ -10,6 +10,8 @@ import math
 from pathlib import Path
 from typing import Any
 
+from artifact_pipeline import crib_uncertainty_v2 as v2
+
 SCHEMA = "expected-points-uncertainty.v1"
 RANKS = list("A23456789TJQK")
 ROLES = ["Dealer", "Pone"]
@@ -73,7 +75,11 @@ def encode_json(value: dict[str, Any]) -> bytes:
 def _number(value: Any) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValueError("Expected a finite number")
-    if not math.isfinite(value):
+    try:
+        finite = math.isfinite(value)
+    except OverflowError as error:
+        raise ValueError("Expected a finite number") from error
+    if not finite:
         raise ValueError("Expected a finite number")
     return value
 
@@ -207,12 +213,45 @@ def _validate_provenance(table: str, provenance: dict[str, Any]) -> None:
         validate_measured_policy(provenance)
 
 
+def _require_client_relations(buckets: dict[str, Any]) -> None:
+    for identity, bucket in buckets.items():
+        key, role, rank, slot = identity.split("/")
+        if slot == "total" and set(
+            bucket.get("starter_suit_relation", {})
+        ) != _relations(key, rank):
+            raise ValueError(f"Incomplete v2 client relations: {key}/{role}/{rank}")
+
+
+def _project_v2(full: dict[str, Any], buckets: dict[str, Any]) -> dict[str, Any]:
+    try:
+        return v2.project_records(full, buckets, RANKS)
+    except (KeyError, TypeError) as error:
+        raise ValueError("Malformed v2 measured state") from error
+
+
+def _validate_v2_records(records: dict[str, Any], buckets: dict[str, Any]) -> None:
+    for identity, record in records.items():
+        record = _object(record)
+        if (
+            set(record) != {"mu", "reported_marginal_se", "n"}
+            or not v2.is_safe_integer(record["n"], 2)
+            or _number(record["reported_marginal_se"]) < 0
+            or round(_number(record["mu"]), 4) != _number(buckets[identity]["mu"])
+        ):
+            raise ValueError("Invalid v2 measured record")
+
+
 def build_sidecar(table: str, full_bytes: bytes, means_bytes: bytes) -> dict[str, Any]:
-    """Export measured totals only; snapshot and policy values are never read."""
+    """Export measured totals; v2 reads the frozen policy payload only to check its digest."""
     full, means = read_json(full_bytes), read_json(means_bytes)
     metadata = _object(full.get("__metadata__", {}))
-    if table == "crib" and metadata.get("generation_method") != (
-        "artifact_pipeline.generate_table.v3"
+    is_v2 = table == "crib" and (
+        metadata.get("generation_method") == v2.CONTRACTS["generation_method"]
+    )
+    if (
+        table == "crib"
+        and not is_v2
+        and metadata.get("generation_method") != "artifact_pipeline.generate_table.v3"
     ):
         raise ValueError(
             "Version-1 crib export requires artifact_pipeline.generate_table.v3; "
@@ -227,9 +266,13 @@ def build_sidecar(table: str, full_bytes: bytes, means_bytes: bytes) -> dict[str
         for key, value in metadata.items()
         if not isinstance(value, (dict, list))
     }
+    if is_v2:
+        provenance = v2.build_provenance(metadata)
+        v2.validate_source(metadata, means, _keys(table, means))
+        _require_client_relations(buckets)
     _validate_provenance(table, provenance)
-    records = {}
-    for identity in buckets:
+    records = _project_v2(full, buckets) if is_v2 else {}
+    for identity in () if is_v2 else buckets:
         path = identity.split("/")
         source = full[path[0]][path[1]]
         if table == "crib":
@@ -257,10 +300,12 @@ def build_sidecar(table: str, full_bytes: bytes, means_bytes: bytes) -> dict[str
         "slots": CRIB_SLOTS if table == "crib" else ["delta"],
         "record_groups": {"totals": {"record_count": len(records), "records": records}},
     }
+    if is_v2:
+        result.update(v2.HEADER, schema=v2.SCHEMA, qualifications=v2.QUALIFICATIONS)
     return decode_sidecar(encode_json(result), means_bytes)
 
 
-def _validate_qualifications(sidecar: dict[str, Any]) -> None:
+def _validate_qualifications(sidecar: dict[str, Any], required: set[str]) -> None:
     """Require the stable identifiers and non-empty text, not exact wording.
 
     Qualification wording is prose, not wire format: whole-dict equality
@@ -268,9 +313,7 @@ def _validate_qualifications(sidecar: dict[str, Any]) -> None:
     reader into lockstep on a wording-only edit.
     """
     qualifications = sidecar.get("qualifications")
-    if not isinstance(qualifications, dict) or set(qualifications) != set(
-        QUALIFICATIONS
-    ):
+    if not isinstance(qualifications, dict) or set(qualifications) != required:
         raise ValueError("Invalid sidecar field: qualifications")
     if any(
         not isinstance(value, str) or not value for value in qualifications.values()
@@ -279,11 +322,15 @@ def _validate_qualifications(sidecar: dict[str, Any]) -> None:
 
 
 def decode_sidecar(data: bytes, means_bytes: bytes) -> dict[str, Any]:
-    """Validate version-1 totals; ignore separate, future record groups/fields."""
+    """Validate versioned totals and ignore separate, future record groups."""
     sidecar = read_json(data)
     means = read_json(means_bytes)
     table = sidecar.get("table")
-    if sidecar.get("schema") != SCHEMA or table not in ("crib", "play"):
+    schema = sidecar.get("schema")
+    if table not in ("crib", "play"):
+        raise ValueError("Unsupported schema or table")
+    is_v2 = schema == v2.SCHEMA and table == "crib"
+    if not is_v2 and schema != SCHEMA:
         raise ValueError("Unsupported schema or table")
     expected = {
         "means_sha256": hashlib.sha256(means_bytes).hexdigest(),
@@ -297,19 +344,16 @@ def decode_sidecar(data: bytes, means_bytes: bytes) -> dict[str, Any]:
         "policy_uncertainty": None,
         "calibrated_comparison_uncertainty": None,
     }
+    if is_v2:
+        expected.update(v2.HEADER)
     for key, value in expected.items():
         if key not in sidecar or sidecar[key] != value:
             raise ValueError(f"Invalid sidecar field: {key}")
-    _validate_qualifications(sidecar)
-    digest = sidecar.get("source_full_sha256")
-    if (
-        not isinstance(digest, str)
-        or len(digest) != 64
-        or any(char not in "0123456789abcdef" for char in digest)
-    ):
-        raise ValueError("Invalid source digest")
-    provenance = _object(sidecar.get("provenance"))
-    _validate_provenance(table, provenance)
+    _validate_qualifications(
+        sidecar, set(v2.QUALIFICATIONS if is_v2 else QUALIFICATIONS)
+    )
+    _validate_source_digest(sidecar.get("source_full_sha256"))
+    _validate_pairing(table, is_v2, sidecar, means)
     totals = _object(_object(sidecar.get("record_groups")).get("totals"))
     records = _object(totals.get("records"))
     if (
@@ -318,8 +362,44 @@ def decode_sidecar(data: bytes, means_bytes: bytes) -> dict[str, Any]:
         or totals["record_count"] != len(records)
     ):
         raise ValueError("Inconsistent record count")
-    if not set(records) <= set(mean_buckets(table, means)):
+    buckets = mean_buckets(table, means)
+    if not set(records) <= set(buckets):
         raise ValueError("Unexpected record identity")
+    if is_v2:
+        _validate_v2_records(records, buckets)
+        return sidecar
+    _validate_v1_records(table, records)
+    return sidecar
+
+
+def _validate_source_digest(digest: Any) -> None:
+    if (
+        not isinstance(digest, str)
+        or len(digest) != 64
+        or any(char not in "0123456789abcdef" for char in digest)
+    ):
+        raise ValueError("Invalid source digest")
+
+
+def _validate_pairing(
+    table: str, is_v2: bool, sidecar: dict[str, Any], means: dict[str, Any]
+) -> None:
+    provenance = _object(sidecar.get("provenance"))
+    _validate_provenance(table, provenance)
+    if is_v2:
+        v2.validate_provenance(provenance)
+        v2.validate_client_metadata(means, provenance)
+    elif table == "crib":
+        metadata = means.get("__metadata__")
+        v4_method = v2.CONTRACTS["generation_method"]
+        if provenance.get("generation_method") == v4_method or (
+            isinstance(metadata, dict)
+            and metadata.get("generation_method") == v4_method
+        ):
+            raise ValueError("Version 4 crib means require the v2 sidecar")
+
+
+def _validate_v1_records(table: str, records: dict[str, Any]) -> None:
     columns = ["reported_marginal_se", "n"] + (["sum_w2"] if table == "crib" else [])
     for record in records.values():
         record = _object(record)
@@ -332,7 +412,6 @@ def decode_sidecar(data: bytes, means_bytes: bytes) -> dict[str, Any]:
         }
         if _statistics(table, source) is None:
             raise ValueError("Unsupported measured record")
-    return sidecar
 
 
 def export_files(table: str, full_path: Path, means_path: Path, output: Path) -> None:

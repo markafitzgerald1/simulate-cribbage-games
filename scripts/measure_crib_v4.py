@@ -15,7 +15,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from artifact_pipeline import crib_v4, generate_table
-from artifact_pipeline.crib_v4_state import projected_statistics
+from artifact_pipeline.crib_v4_state import component_coefficients, projected_statistics
 
 
 def emit(event, **values):
@@ -59,9 +59,7 @@ def precut_means(streams, rank_key):
         for rank in generate_table.Index.indices:
             weight = Fraction(4 - (rank == first) - (rank == second), 50)
             for kind in ("fifteens", "pairs", "runs", "flushes", "nobs"):
-                coefficients = crib_v4._component_coefficients(
-                    rank, variant, "root", kind
-                )
+                coefficients = component_coefficients(rank, variant, "root", kind)
                 for stream, values in coefficients.items():
                     for label, value in values.items():
                         block = terms.setdefault(stream, {})
