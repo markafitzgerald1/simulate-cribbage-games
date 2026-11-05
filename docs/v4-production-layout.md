@@ -4,7 +4,7 @@ OpenAI Codex, November 2, 2026. Design implementing Mark's
 [D6 decision](https://github.com/markafitzgerald1/simulate-cribbage-games/issues/135#issuecomment-6591347660).
 The [implementation guide](v4-shadow.md) documents the resulting boundaries.
 This design authorizes no execution,
-activation or production release. The existing v3 weekly workflow stays intact.
+activation or production release. The v3 artifact workflow stays available for manual and bounded runs.
 
 ## Scope and fixed settings
 
@@ -145,14 +145,10 @@ cost and convergence against that week's v3 table. Failure or incomplete work
 does not authorize a retry. No dispatch is part of implementing this design.
 
 D5 requires the v2 crib sidecar and a compatible trainer reader before
-activation. Implementing that exporter/reader is outside this handoff's list
-of authorized changes. The shadow workflow therefore publishes no sidecar,
-and never substitutes a v1 crib sidecar. Eventual activated publication must
-rebuild the final table, export v2 and publish full/client/sidecar together in
-one final job, preserving exact-byte digest pairing. Do not move export into
-a later job reading an already-published rolling release. Activation, adding
-that publishing path, the release and trainer re-vendoring each remain separate
-maintainer decisions.
+activation. The [activation runbook](crib-v4-activation.md) describes the
+preparation, publication and rollback boundaries. Preparation rebuilds and
+exports from the same terminal state. Publication consumes that verified
+candidate in a separate, approved dispatch.
 
 ## Budget and observability
 

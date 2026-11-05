@@ -4,6 +4,19 @@ name: Shadow Crib V4
 # separate maintainer go; opening or merging this file does not run it.
 on:
   workflow_dispatch:
+    inputs:
+      approval:
+        description: Enter shadow to confirm the approved standalone run
+        type: string
+        required: true
+  workflow_call:
+    inputs:
+      prepare_activation:
+        type: boolean
+        default: false
+      approval:
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -21,6 +34,9 @@ defaults:
 
 jobs:
   initialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.run_attempt == 1 &&
+      ((inputs.prepare_activation && inputs.approval == 'prepare') || (!inputs.prepare_activation && inputs.approval == 'shadow'))
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -29,17 +45,18 @@ jobs:
         with:
           python-version-file: .python-version
       - run: pip install -r requirements.txt
-      - name: Pin this week's v3 reference
+      - name: Verify approved activation runtime pins
+        if: inputs.prepare_activation
+        run: |
+          sha256sum --check --strict <<'SUMS'
+          bb90877c5ee8c4703cfd03421e92ef2a17a10b67ecc822524baeea4c8da3dc9f  .python-version
+          9e7e590675174d95195553a21dfc7179ed30424de1208690c6cad6f1cb5c040f  requirements.txt
+          SUMS
+      - name: Pin the archived v3 reference
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir reference
-          gh api "repos/$GITHUB_REPOSITORY/releases/tags/expected-crib-points" > reference/release.json
-          for name in expected_crib_points.json expected_crib_points.client.json; do
-            asset_id="$(python -c 'import json,sys; assets=json.load(open("reference/release.json"))["assets"]; matches=[a for a in assets if a["name"]==sys.argv[1]]; assert len(matches)==1; print(int(matches[0]["id"]))' "$name")"
-            gh api "repos/$GITHUB_REPOSITORY/releases/assets/$asset_id" \
-              --header 'Accept: application/octet-stream' > "reference/$name"
-          done
+          bash scripts/download_crib_v3_reference.sh
           python -c 'from pathlib import Path; from artifact_pipeline.crib_v4_shards import reference_files; reference_files(Path("reference"), require_complete=True)'
       - name: Build analytical initial policy
         run: |
@@ -65,6 +82,9 @@ jobs:
           retention-days: 30
 
   generation0:
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.run_attempt == 1 &&
+      ((inputs.prepare_activation && inputs.approval == 'prepare') || (!inputs.prepare_activation && inputs.approval == 'shadow'))
     needs: initialize
     runs-on: ubuntu-latest
     timeout-minutes: 180
@@ -139,6 +159,9 @@ jobs:
           retention-days: 30
 
   generation1:
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.run_attempt == 1 &&
+      ((inputs.prepare_activation && inputs.approval == 'prepare') || (!inputs.prepare_activation && inputs.approval == 'shadow'))
     needs: assemble0
     runs-on: ubuntu-latest
     timeout-minutes: 180
@@ -244,6 +267,15 @@ jobs:
           name: v4-shadow-result
           path: final/
           retention-days: 30
+      - name: Prepare verified v4 release assets
+        if: inputs.prepare_activation
+        run: python -m scripts.prepare_crib_activation final assembled1 activation
+      - uses: actions/upload-artifact@v7
+        if: inputs.prepare_activation
+        with:
+          name: crib-v4-release-assets
+          path: activation/
+          if-no-files-found: error
       - uses: actions/upload-artifact@v7
         if: always()
         with:

@@ -111,8 +111,12 @@ For opt-in version-4 generation, test the full checkpoint as the authority:
 complete group rounds, unit-weight joint moments, exact resume compatibility,
 and projections from saved moments. Check both seeded fresh-versus-resumed
 equality and unseeded saved-nonce continuation. A reduced-population identity
-oracle does not measure full-table runtime or achieved standard error. Keep
-weekly version-3 generation unchanged until a separate production decision.
+oracle does not measure full-table runtime or achieved standard error. Follow the
+[activation runbook](../docs/crib-v4-activation.md) for separate preparation,
+publication, and exact v3 restore. Keep bounded v3 artifact checks.
+Require manual main dispatch, first attempt and explicit confirmation inside
+the reusable sampler before bootstrap and each measurement wave. Keep sampling
+concurrency separate from the shared publish/restore writer lock.
 
 Python backend work must preserve existing validation expectations: unit tests
 through `coverage`, type checks through mypy (checking both

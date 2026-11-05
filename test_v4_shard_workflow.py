@@ -5,12 +5,82 @@ from pathlib import Path
 import re
 import unittest
 
+import yaml  # type: ignore[import-untyped]
+
 WORKFLOW = Path(__file__).parent / ".github/workflows/shadow-crib-v4.yml"
+
+
+def guard_accepts(expression, **context):
+    """Evaluate the workflow's Boolean guard with explicit Actions context values."""
+    expression = re.sub(
+        r"(?:github|inputs)\.[a-z_]+",
+        lambda match: repr(context.get(match[0], False)),
+        expression,
+    )
+    expression = expression.replace("&&", " and ").replace("||", " or ")
+    expression = expression.replace("!", " not ")
+    return bool(eval(expression.strip(), {"__builtins__": {}}, {}))
 
 
 class TestV4ShadowWorkflow(unittest.TestCase):
     def _require_fragment(self, fragment, workflow):
         self.assertTrue(fragment in workflow, fragment)
+
+    def test_every_sampling_entry_requires_explicit_manual_authorization(self):
+        workflow = yaml.safe_load(WORKFLOW.read_text())
+        approved = {
+            "github.event_name": "workflow_dispatch",
+            "github.ref": "refs/heads/main",
+            "github.run_attempt": 1,
+            "inputs.prepare_activation": True,
+            "inputs.approval": "prepare",
+        }
+        shadow = {
+            **approved,
+            "inputs.prepare_activation": False,
+            "inputs.approval": "shadow",
+        }
+        standalone = {
+            key: value
+            for key, value in shadow.items()
+            if key != "inputs.prepare_activation"
+        }
+        for job in ("initialize", "generation0", "generation1"):
+            guard = workflow["jobs"][job]["if"]
+            # Standalone dispatch has no prepare_activation input.
+            self.assertTrue(guard_accepts(guard, **standalone))
+            for context in (approved, shadow):
+                with self.subTest(job=job, context=context):
+                    self.assertTrue(guard_accepts(guard, **context))
+                rejected = [
+                    {**context, "github.event_name": event}
+                    for event in ("pull_request", "schedule", "push")
+                ] + [
+                    {**context, "github.ref": "refs/heads/feature"},
+                    {**context, "github.ref": "refs/tags/main"},
+                    {**context, "github.run_attempt": 2},
+                    {**context, "inputs.approval": ""},
+                    {**context, "inputs.approval": "publish"},
+                    {
+                        **context,
+                        "inputs.prepare_activation": not context[
+                            "inputs.prepare_activation"
+                        ],
+                    },
+                    {
+                        key: value
+                        for key, value in context.items()
+                        if not key.startswith("inputs.")
+                    },
+                    {
+                        key: value
+                        for key, value in context.items()
+                        if key != "inputs.approval"
+                    },
+                ]
+                for invalid in rejected:
+                    with self.subTest(job=job, rejected=invalid):
+                        self.assertFalse(guard_accepts(guard, **invalid))
 
     def test_manual_readonly_two_wave_budget_and_publication_boundary(self):
         workflow = WORKFLOW.read_text(encoding="utf-8")
@@ -48,7 +118,7 @@ class TestV4ShadowWorkflow(unittest.TestCase):
 
     def test_reference_is_pinned_before_bootstrap_and_each_phase_keeps_its_plan(self):
         workflow = WORKFLOW.read_text(encoding="utf-8")
-        self._require_fragment("releases/assets/$asset_id", workflow)
+        self._require_fragment("bash scripts/download_crib_v3_reference.sh", workflow)
         self.assertNotIn("gh release download", workflow)
         self.assertLess(
             workflow.index("require_complete=True"),
