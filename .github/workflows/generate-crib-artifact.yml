@@ -70,7 +70,7 @@ jobs:
       - name: Export uncertainty sidecar
         run: |
           before="$(sha256sum expected_crib_points.client.json | cut -d' ' -f1)"
-          python -u artifact_pipeline/export_uncertainty.py \
+          python -u -m artifact_pipeline.export_uncertainty \
             --table crib \
             --full expected_crib_points.json \
             --means expected_crib_points.client.json \

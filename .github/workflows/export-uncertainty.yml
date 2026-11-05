@@ -78,7 +78,7 @@ jobs:
         run: |
           mkdir -p dist
           before="$(sha256sum inputs/expected_${{ matrix.table }}_points.client.json | cut -d' ' -f1)"
-          python -u artifact_pipeline/export_uncertainty.py \
+          python -u -m artifact_pipeline.export_uncertainty \
             --table "${{ matrix.table }}" \
             --full "inputs/expected_${{ matrix.table }}_points.json" \
             --means "inputs/expected_${{ matrix.table }}_points.client.json" \
