@@ -8,7 +8,8 @@ artifact generation and bounded PR coverage. It has no rolling release job.
 The v3 restore operation uses the exact archived v3 bytes.
 
 Before publication, confirm no historical writer run is queued or in flight
-across any ref: both Generate Crib Artifact (`generate-crib-artifact.yml`)
+across any ref: both the v3 crib artifact workflow
+(`generate-crib-artifact.yml`, formerly named Generate Crib Artifact)
 and Export Uncertainty Sidecars (`export-uncertainty.yml`), including its
 historical crib backfill. Keep historical scheduled and manual runs from both
 workflows out of the retry path. GitHub reruns use the original workflow
@@ -24,7 +25,9 @@ the uncompressed full file.
 The reusable sampler checks manual dispatch, main, attempt 1 and explicit
 `prepare` confirmation before bootstrap and each measurement wave. A standalone
 shadow dispatch requires its own `shadow` confirmation on main, attempt 1.
-Sampling has a separate concurrency group with cancellation disabled. Only
+Sampling has a separate concurrency group. Cancellation of a run in progress
+is disabled, but a pending dispatch in a group is still replaced by a newer
+one. Only
 publish and restore hold the shared release writer lock, so preparation does
 not delay a separately approved restore.
 
@@ -34,16 +37,36 @@ without overwriting an asset and verifies the staged gzip and all three v3
 assets before replacing the client pair. It verifies the resulting digests
 and removes the superseded v3 full asset.
 
-GitHub replaces rolling assets individually. Readers check means pairing by
+The release action deletes an existing asset and then uploads its
+replacement, so each replaced asset briefly does not exist. It also updates
+the release body before any upload, so a failed run can leave a body that
+disagrees with the assets. Readers check means pairing by
 digest. A failed gzip upload leaves the v3 client pair in place. If an upload
 or cleanup leaves an incomplete asset set, inspect the release and use a
 separately approved fresh restore dispatch before trying publication again.
 Reruns of activation preparation cannot start sampling, and reruns cannot
 publish.
 
-The restore job validates the v3 full, client and sidecar hashes before
-the write job runs. It attaches all three, verifies their
+The rollback preparation job validates the v3 full, client and sidecar hashes
+before the restore job runs. It attaches all three, verifies their
 uploaded digests, and removes any v4 full asset. Preparing the rollback
 locally reproduced the original v1 sidecar byte for byte. The D9 prerelease
 stores that sidecar separately because the reference ZIP contains only the
 v3 full and client files.
+
+Never delete the D9 prerelease `crib-v4-shadow-41771033920`: restore reads the
+archived sidecar and reference from it, and deleting it makes restore
+impossible. Keep a local copy of the three archived v3 files as well. Digests
+are pinned, so tampering fails closed.
+
+The weekly v3 schedule stays live on main until this change merges. Re-check
+the live v3 digests immediately before publishing; the publish preflight check fails
+closed if they changed, and a restore would then return to the pinned 2026-11-01
+bytes, not to newer ones.
+
+All guards live in the workflow files. A branch copy with the `if:` lines
+removed would bypass them, so publication and restore are only as protected as
+write access to this repository. A protected GitHub environment with a required
+reviewer on the publish and restore jobs would make the separate maintainer
+approval enforced by GitHub. That is a repository setting a maintainer must
+create, and this change does not add it.
