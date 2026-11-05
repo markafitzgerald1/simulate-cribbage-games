@@ -1,0 +1,76 @@
+{
+  "scope": "reachable optional information sets under frozen deterministic policies; policy changes require recounting",
+  "simulations_per_sweep": 45587560,
+  "entries_full_coverage": 1514850,
+  "measured_benchmark_simulations": 5020498,
+  "measured_benchmark_seconds": 88.07815500022843,
+  "measured_aggregate_simulations_per_second": 57000.490075966954,
+  "projected_sweep_seconds_including_trace_overhead": 799.7748780623384,
+  "projected_pure_continuation_seconds_8_workers": 640.5777058518732,
+  "physical_rank_deals_per_seat": 3274375,
+  "single_frozen_sweep_simulations_upper_bound": 58938750,
+  "full_coverage_compact_json_bytes": 102223489,
+  "sum_compressed_own_hand_shard_bytes": 9378938,
+  "python_keys_and_two_role_dict_bytes": {
+    "Pone": 35818322,
+    "Dealer": 172868876
+  },
+  "layers": {
+    "Pone-1": {
+      "simulations": 10658830,
+      "projected_worker_seconds": 1554.1268893206015,
+      "projected_pure_wall_seconds_8_workers": 194.2658611650752
+    },
+    "Pone-2": {
+      "simulations": 8923666,
+      "projected_worker_seconds": 986.0151096511484,
+      "projected_pure_wall_seconds_8_workers": 123.25188870639354
+    },
+    "Pone-3": {
+      "simulations": 4555964,
+      "projected_worker_seconds": 311.486715274979,
+      "projected_pure_wall_seconds_8_workers": 38.93583940937238
+    },
+    "Dealer-1": {
+      "simulations": 10658830,
+      "projected_worker_seconds": 1432.1598125135345,
+      "projected_pure_wall_seconds_8_workers": 179.0199765641918
+    },
+    "Dealer-2": {
+      "simulations": 6588142,
+      "projected_worker_seconds": 627.6034436474484,
+      "projected_pure_wall_seconds_8_workers": 78.45043045593106
+    },
+    "Dealer-3": {
+      "simulations": 4202128,
+      "projected_worker_seconds": 213.22967640727404,
+      "projected_pure_wall_seconds_8_workers": 26.653709550909255
+    }
+  },
+  "sweep_budget_scenarios_seconds": {
+    "5": 3998.874390311692,
+    "10": 7997.748780623384,
+    "20": 15995.497561246768
+  },
+  "fixed_point_sweeps": "not measured; convergence and a finite sweep count are not guaranteed",
+  "selected_installed_policy_sizes": {
+    "Pone-stage1": {
+      "entries": 878,
+      "compact_json_bytes": 40571,
+      "gzip_bytes": 2752,
+      "python_keys_and_dict_bytes": 97971
+    },
+    "Dealer-stage2": {
+      "entries": 10495,
+      "compact_json_bytes": 555523,
+      "gzip_bytes": 35068,
+      "python_keys_and_dict_bytes": 1138420
+    },
+    "Pone-stage3a": {
+      "entries": 10746,
+      "compact_json_bytes": 561341,
+      "gzip_bytes": 44479,
+      "python_keys_and_dict_bytes": 1152538
+    }
+  }
+}
