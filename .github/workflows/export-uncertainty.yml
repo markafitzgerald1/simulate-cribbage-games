@@ -1,8 +1,8 @@
 name: Export Uncertainty Sidecars
 
-# Backfill path only. It rebuilds both sidecars from the table assets already
-# attached to the rolling releases, without regenerating a table, and attaches
-# them to the same tags. Use it to land sidecars for tables that were generated
+# Backfill path only. It rebuilds the play sidecar from the table assets already
+# attached to the rolling play release, without regenerating a table, and
+# attaches it to the same tag. Crib sidecars travel with their generation. Use it to land sidecars for tables that were generated
 # before the generation workflows exported one, and to re-export after a fix to
 # artifact_pipeline/export_uncertainty.py.
 #
@@ -34,9 +34,6 @@ jobs:
           # Digests of the client means assets as released on 2026-09-20, which
           # are byte-identical to the copies cribbage-trainer vendored in June
           # 2026 across roughly twelve weekly generations.
-          - table: crib
-            tag: expected-crib-points
-            client_sha256: "4cd8a9258d32973710361b9c2a764aea3b8c9a1178ab53e1c2aa38a53e030cc1"
           - table: play
             tag: expected-play-points
             client_sha256: "7420b1804f64a32a73edb2fcc7fe9f53fe427510755c8b2b3723142e503cca5c"
@@ -81,7 +78,7 @@ jobs:
         run: |
           mkdir -p dist
           before="$(sha256sum inputs/expected_${{ matrix.table }}_points.client.json | cut -d' ' -f1)"
-          python -u artifact_pipeline/export_uncertainty.py \
+          python -u -m artifact_pipeline.export_uncertainty \
             --table "${{ matrix.table }}" \
             --full "inputs/expected_${{ matrix.table }}_points.json" \
             --means "inputs/expected_${{ matrix.table }}_points.client.json" \

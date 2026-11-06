@@ -118,7 +118,7 @@ jobs:
       - name: Export uncertainty sidecar
         run: |
           before="$(sha256sum expected_play_points.client.json | cut -d' ' -f1)"
-          python -u artifact_pipeline/export_uncertainty.py \
+          python -u -m artifact_pipeline.export_uncertainty \
             --table play \
             --full expected_play_points.json \
             --means expected_play_points.client.json \

@@ -1,0 +1,196 @@
+name: Activate or restore crib table
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Approved operation
+        type: choice
+        required: true
+        options:
+          - prepare
+          - publish
+          - restore-v3
+      prepared_run:
+        description: Successful prepare run ID (publish only)
+        type: string
+      approval:
+        description: Enter the approved operation name to confirm
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  prepare-rollback:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.operation == inputs.approval
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+      - name: Verify the archived rollback bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash scripts/download_crib_v3_reference.sh
+          gh release download crib-v4-shadow-41771033920             --pattern v3-rollback.uncertainty.json --repo "$GITHUB_REPOSITORY"
+          mv v3-rollback.uncertainty.json reference/expected_crib_points.uncertainty.json
+          (cd reference && sha256sum --check --strict ../scripts/crib-v3-release.sha256)
+      - uses: actions/upload-artifact@v7
+        if: inputs.operation == 'restore-v3'
+        with:
+          name: crib-v3-rollback-assets
+          path: reference/expected_crib_points*.json
+          if-no-files-found: error
+
+  measure:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.operation == 'prepare' && inputs.approval == 'prepare'
+    needs: prepare-rollback
+    uses: ./.github/workflows/shadow-crib-v4.yml
+    with:
+      prepare_activation: true
+      approval: ${{ inputs.approval }}
+
+  publish:
+    needs: prepare-rollback
+    environment: crib-release
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.operation == 'publish' && inputs.approval == 'publish'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: expected-crib-points-release-${{ github.ref_name }}
+      cancel-in-progress: false
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+      - name: Verify the approved preparation run
+        id: preparation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREPARED_RUN: ${{ inputs.prepared_run }}
+        run: |
+          [[ "$PREPARED_RUN" =~ ^[1-9][0-9]*$ ]]
+          workflow_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/activate-crib-v4.yml" --jq '.id')"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PREPARED_RUN" > preparation.json
+          jq -e --arg sha "$GITHUB_SHA" --argjson workflow_id "$workflow_id"             '.event == "workflow_dispatch" and .workflow_id == $workflow_id
+             and .head_branch == "main" and .head_sha == $sha and .run_attempt == 1 and .conclusion == "success"' preparation.json
+          echo "prepared_at=$(jq -r '.created_at' preparation.json)" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v8
+        with:
+          name: crib-v4-release-assets
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.prepared_run }}
+          path: candidate
+      - name: Verify candidate bytes before publication
+        run: python -m scripts.prepare_crib_activation verify candidate
+      - name: Require the exact live v3 release before writing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -o pipefail
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/expected-crib-points" |
+            bash scripts/check_crib_release_assets.sh scripts/crib-v3-release.sha256
+      - name: Stage and verify the v4 full table before replacing the client pair
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -o pipefail
+          asset=expected_crib_points.json.gz
+          cp scripts/crib-v3-release.sha256 staged.sha256
+          (cd candidate && sha256sum "$asset") >> staged.sha256
+          gh release upload expected-crib-points "candidate/$asset" --repo "$GITHUB_REPOSITORY"
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/expected-crib-points" |
+            bash scripts/check_crib_release_assets.sh staged.sha256
+      - name: Replace the verified v4 client pair
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: expected-crib-points
+          name: Latest Expected Crib Points Table
+          body: |
+            Version 4 crib table. The terminal generation passed the 0.10 gate.
+
+            Preparation: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ inputs.prepared_run }}
+            Source commit: ${{ github.sha }}
+            Preparation started (UTC): ${{ steps.preparation.outputs.prepared_at }}
+
+            - `expected_crib_points.json.gz` contains the full table.
+            - `expected_crib_points.client.json` contains the lean client means.
+            - `expected_crib_points.uncertainty.json` contains marginal sampling SEs.
+          files: |
+            candidate/expected_crib_points.client.json
+            candidate/expected_crib_points.uncertainty.json
+          fail_on_unmatched_files: true
+          make_latest: false
+      - name: Verify the attached release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/expected-crib-points" > published.json
+          for asset in expected_crib_points.json.gz expected_crib_points.client.json expected_crib_points.uncertainty.json; do
+            digest="sha256:$(sha256sum "candidate/$asset" | cut -d' ' -f1)"
+            jq -e --arg name "$asset" --arg digest "$digest"               '[.assets[] | select(.name == $name and .state == "uploaded") | .digest] == [$digest]' published.json
+          done
+      - name: Remove the superseded v3 full asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          assets="$(gh release view expected-crib-points --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
+          if grep -Fxq expected_crib_points.json <<< "$assets"; then
+            gh release delete-asset expected-crib-points expected_crib_points.json --repo "$GITHUB_REPOSITORY" --yes
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/expected-crib-points"             --jq '.assets[].name' | sort | diff - <(printf '%s\n' expected_crib_points.client.json expected_crib_points.json.gz expected_crib_points.uncertainty.json)
+
+
+  restore:
+    needs: prepare-rollback
+    environment: crib-release
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.operation == 'restore-v3' && inputs.approval == 'restore-v3'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: expected-crib-points-release-${{ github.ref_name }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: crib-v3-rollback-assets
+      - name: Restore the exact v3 assets
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: expected-crib-points
+          name: Latest Expected Crib Points Table
+          body: |
+            Restored the exact 2026-11-01 v3 full table, client means and uncertainty sidecar.
+            Pinned archive: ${{ github.server_url }}/${{ github.repository }}/releases/tag/crib-v4-shadow-41771033920
+          files: |
+            expected_crib_points.json
+            expected_crib_points.client.json
+            expected_crib_points.uncertainty.json
+          fail_on_unmatched_files: true
+          make_latest: false
+      - name: Verify the attached release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/expected-crib-points" > published.json
+          for asset in expected_crib_points.json expected_crib_points.client.json expected_crib_points.uncertainty.json; do
+            digest="sha256:$(sha256sum "$asset" | cut -d' ' -f1)"
+            jq -e --arg name "$asset" --arg digest "$digest"               '[.assets[] | select(.name == $name and .state == "uploaded") | .digest] == [$digest]' published.json
+          done
+      - name: Remove the superseded v4 full asset if present
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          assets="$(gh release view expected-crib-points --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
+          if grep -Fxq expected_crib_points.json.gz <<< "$assets"; then
+            gh release delete-asset expected-crib-points expected_crib_points.json.gz --repo "$GITHUB_REPOSITORY" --yes
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/expected-crib-points"             --jq '.assets[].name' | sort | diff - <(printf '%s\n' expected_crib_points.client.json expected_crib_points.json expected_crib_points.uncertainty.json)

@@ -487,7 +487,8 @@ Keep the two repos in sync: bucket-schema changes must be reflected in both
 `build_client_table` here and the trainer's lookup.
 
 Issue #135's version-4 crib estimator is opt-in through `--estimator-v4`.
-Scheduled generation still uses version 3. Its inputs are the existing
+The default command and the manual v3 artifact workflow still select version 3;
+version 4 generation is on demand. Its inputs are the existing
 canonical discard keys and card deck, the frozen opponent policy (either the
 legacy static selector or an explicitly supplied bootstrap table), the user
 seed or saved nonce, and the target rows per stream. The exact centering
@@ -506,12 +507,14 @@ starter suit). The lean client retains relation buckets for suited or own-Jack
 discards; this retention policy is not a proof that opponent-contributed nobs
 or suit-sensitive opponent selection is independent of starter suit elsewhere.
 
-The weekly production generation runs close to the 6-hour GitHub Actions cap
-(about 20 minutes of headroom) with a razor-thin convergence margin (max EV
-shift near the 0.10 threshold). Do not trim the sample count to buy wall-clock
-time: fewer samples raise the shift and risk a non-convergence failure. Prefer
-resume-across-runs (the resumable-checkpoint design above) if the cap becomes a
-recurring problem.
+Crib v4 generation is on demand. The
+[activation and restore runbook](docs/crib-v4-activation.md) governs the
+separate preparation, publication and exact v3 restore dispatches. The legacy
+v3 workflow keeps manual and bounded PR artifact generation. Preserve the
+approved sample budget and gate on the activation path.
+The reusable sampler must enforce manual main dispatch, first attempt and
+explicit confirmation before bootstrap and each measurement wave. Keep its
+sampling concurrency separate from the shared publish/restore writer lock.
 
 Uncertainty publication has a standalone read/export boundary documented in
 [the sidecar contract](docs/uncertainty-sidecars.md). For v1, export the
@@ -524,19 +527,11 @@ Version-1 JSON readers ignore new named record groups; future categories belong
 in a separate group, never in the existing totals group. The exporter must not
 import generators, train, resume, sample, modify means, or publish releases.
 
-Each generation workflow runs that exporter in the same job that writes its
-table and publishes the sidecar in the same `action-gh-release` call as the
-table and the client means. Keep it there. A downstream job that re-derived a
-sidecar from already-published assets would publish one built from the previous
-tables at the moment the tables changed, and nothing about that failure would
-be visible while generation stayed deterministic. The export step carries
-no event condition, so the bounded pull-request generation exercises the real
-publication step on every pull request: the bounded crib run
-(`--samples=300 --max-generations=1`) and the bounded play run
-(`--hand-limit=4`) write the same `se`, `n` and `sum_w2` accumulators the
-production runs do, and export in well under a second. Each step asserts the
-client means digest is unchanged across the export and that the sidecar carries
-at least one measured record.
+Export from the same generation's exact table and means bytes. Check the
+uploaded digests of all three verified release assets. The
+bounded v3 crib and play PR jobs still exercise the v1 exporter. The v4
+preparation job exports before a separate publication decision. The
+client means digest must match throughout export and publication.
 
 On pull requests both generation workflows are filtered to the paths that can
 reach generation or the export step: `artifact_pipeline/**`,
@@ -550,21 +545,11 @@ making `generate-table` required would leave every filtered pull request
 waiting on a check that never arrives. The scheduled and dispatched triggers
 are unfiltered and unaffected.
 
-`workflow_dispatch` on either generation workflow is not a cheap way to test a
-workflow change. The production generation steps are gated on `schedule ||
-workflow_dispatch`, so a dispatch runs the full table generation -- hours, not
-minutes -- and `release-artifact` additionally requires `refs/heads/main`. A
-dispatch from a branch therefore burns those hours and then skips publication
-entirely, and a dispatch from `main` replaces the real release assets. Use the
-pull-request path, or a separate `workflow_dispatch`-only workflow, to exercise
-publication logic.
-
-Client means bytes are reproducible across regenerations: the released crib and
-play `.client.json` digests still match the copies `cribbage-trainer` vendored
-in June 2026, across roughly twelve weekly generations. That is what lets
-`export-uncertainty.yml` pin those digests when backfilling from release
-assets; it is not a promise that a deliberate generation change will preserve
-them, and a dispatch after such a change must turn the check off.
+A manual generation dispatch runs a full generation. The play workflow can
+publish on main, and the crib v4 preparation path consumes the full eight-shard
+budget. Use bounded local fixtures and PR checks for validation. The manual
+uncertainty backfill applies only to play and verifies its client digest by
+default.
 
 The expected-play pipeline is separate from the expected-crib pipeline.
 Its [opening-lines companion](docs/pegging-lines.md) observes the first two
