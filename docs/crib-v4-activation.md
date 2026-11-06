@@ -72,3 +72,10 @@ that needs the release-writing credential stored as a secret in the
 environment, which is not done while the repository has one maintainer;
 revisit it when anyone else gets write access or an agent gets push rights
 without review.
+
+A publish job that is waiting for environment approval can hold the release
+lock, so a restore dispatched meanwhile queues behind it. Reject or cancel the
+waiting publish, confirm it has ended, then approve the restore. Never approve
+the obsolete publish only to unblock the restore. A rejected or expired
+approval makes no release write, and a rerun is a new attempt that the guards
+refuse, so recovery always needs a fresh dispatch.
