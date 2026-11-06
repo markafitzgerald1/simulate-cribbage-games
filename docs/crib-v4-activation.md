@@ -64,9 +64,11 @@ the live v3 digests immediately before publishing; the publish preflight check f
 closed if they changed, and a restore would then return to the pinned 2026-11-01
 bytes, not to newer ones.
 
-All guards live in the workflow files. A branch copy with the `if:` lines
-removed would bypass them, so publication and restore are only as protected as
-write access to this repository. A protected GitHub environment with a required
-reviewer on the publish and restore jobs would make the separate maintainer
-approval enforced by GitHub. That is a repository setting a maintainer must
-create, and this change does not add it.
+Publish and restore run in the `crib-release` GitHub environment, limited to
+`main` and requiring a reviewer's approval for each run. The environment gates
+only jobs that name it, so a branch copy of the workflow that drops the
+`environment:` line would still receive `GITHUB_TOKEN` write access. Closing
+that needs the release-writing credential stored as a secret in the
+environment, which is not done while the repository has one maintainer;
+revisit it when anyone else gets write access or an agent gets push rights
+without review.

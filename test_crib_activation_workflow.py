@@ -68,6 +68,13 @@ class TestCribActivationWorkflow(unittest.TestCase):
             text = path.read_text()
             self.assertNotIn("artifact_pipeline/export_uncertainty.py ", text, path)
 
+    def test_only_writer_jobs_use_the_protected_environment(self):
+        jobs = yaml.safe_load((WORKFLOWS / "activate-crib-v4.yml").read_text())["jobs"]
+        self.assertEqual(jobs["publish"].get("environment"), "crib-release")
+        self.assertEqual(jobs["restore"].get("environment"), "crib-release")
+        self.assertNotIn("environment", jobs["prepare-rollback"])
+        self.assertNotIn("environment", jobs["measure"])
+
     def test_only_writer_jobs_hold_the_release_lock(self):
         workflow = yaml.safe_load((WORKFLOWS / "activate-crib-v4.yml").read_text())
         self.assertNotIn("concurrency", workflow)

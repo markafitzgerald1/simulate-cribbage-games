@@ -56,6 +56,7 @@ jobs:
 
   publish:
     needs: prepare-rollback
+    environment: crib-release
     if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.operation == 'publish' && inputs.approval == 'publish'
     runs-on: ubuntu-latest
     concurrency:
@@ -149,6 +150,7 @@ jobs:
 
   restore:
     needs: prepare-rollback
+    environment: crib-release
     if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.operation == 'restore-v3' && inputs.approval == 'restore-v3'
     runs-on: ubuntu-latest
     concurrency:
