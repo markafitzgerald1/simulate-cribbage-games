@@ -214,7 +214,15 @@ def main() -> None:
             for spec in (*components, *manifest["menus"])
         ),
     }
-    if inputs.intersection(outputs):
+    # The writer stages each output at "<output>.tmp-<pid>" before renaming.
+    if any(
+        path == output
+        or (
+            path.parent == output.parent and path.name.startswith(f"{output.name}.tmp-")
+        )
+        for path in inputs
+        for output in outputs
+    ):
         parser.error("Outputs must not alias fixed policy inputs")
     hands = get_canonical_hands()
     if args.hand_limit is not None:

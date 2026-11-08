@@ -786,6 +786,8 @@ The fixed six-layer Python measurement path is described in
 in both seats; it must never import research measurement statistics, train or
 refine discards. A failed enforced gate aborts instead of silently changing the
 chosen model. Preserve both convergence flags and the frozen discard limits.
+It writes `measured_policy` in every gate mode, unlike the enforced-only rule
+for `generate_play_table`, because it never substitutes a fallback model.
 
 Historical opponent training reach was not retained. A saved counterfactual
 support mask cannot justify "never trained": it identifies zero opponent reach

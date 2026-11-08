@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import random
 import unittest
@@ -258,6 +259,19 @@ class TestFixedMeasurement(unittest.TestCase):
             SystemExit
         ):
             main()
+        # A pinned input at the writer's staging path would be truncated.
+        document = json.loads(self.path.read_text())
+        staged = f"{paths[0].name}.tmp-{os.getpid()}"
+        original = document["probabilities"]["file"]
+        (self.root / original).rename(self.root / staged)
+        document["probabilities"]["file"] = staged
+        self.path.write_text(json.dumps(document))
+        with patch("sys.argv", args), self.assertRaises(SystemExit):
+            main()
+        self.assertTrue((self.root / staged).exists())
+        (self.root / staged).rename(self.root / original)
+        document["probabilities"]["file"] = original
+        self.path.write_text(json.dumps(document))
         args_no_limit = [
             "measure",
             "--policy-manifest",

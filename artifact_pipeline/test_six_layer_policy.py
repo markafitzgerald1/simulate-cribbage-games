@@ -18,6 +18,7 @@ from artifact_pipeline.pegging import (
     ROLES,
     LegacyHeuristicPolicy,
     PeggingState,
+    PolicyView,
     policy_fingerprint,
     simulate_pegging,
 )
@@ -124,6 +125,28 @@ class TestSixLayerPolicy(unittest.TestCase):
             policy.reset_counts()
             self.assertEqual(sum(policy.decision_counts().values()), 0)
 
+    def test_dealer_mixed_row_returns_stored_actions_not_heuristic(self):
+        # After a Five lead the stored Dealer row is half Ace, half Nine while
+        # the heuristic plays Nine, so a heuristic Dealer fails at low draws.
+        state = PeggingState(
+            {PONE: [4] * 3, DEALER: list(OWN)},
+            next_role=DEALER,
+            count=5,
+            sequence=[4],
+            public_history=[4],
+            last_player=PONE,
+        )
+        self.assertEqual(
+            LegacyHeuristicPolicy().select_rank(state.view(), random.Random(0)), 8
+        )
+        with SixLayerPolicy(self.path) as policy:
+            for draw, expected in [(0, 0), (499, 0), (500, 8), (999, 8)]:
+                rng = Mock(spec=random.Random)
+                rng.randrange.return_value = draw
+                self.assertEqual(policy.select_rank(state.view(), rng), expected)
+                rng.randrange.assert_called_once_with(1000)
+            self.assertEqual(policy.decision_counts()["trained"], 4)
+
     def test_public_history_reconstruction_go_and_31(self):
         heuristic = {r: LegacyHeuristicPolicy() for r in ROLES}
         saw_go = saw_reset = saw_31 = False
@@ -153,6 +176,48 @@ class TestSixLayerPolicy(unittest.TestCase):
                     )
                     policy.select_rank(view, random.Random(seed))
         self.assertTrue(saw_go and saw_reset and saw_31)
+
+    def test_go_and_reset_pack_to_fixed_history_nibbles(self):
+        # Hand-packed producer codes, low nibble first: rank r -> r + 1,
+        # go -> 0xE, sequence reset -> 0xF. A swap of the go and reset codes
+        # would miss every post-go row and silently fall back to heuristics.
+        after_go = PolicyView(
+            role=PONE,
+            own_remaining=(6, 12),
+            count=0,
+            sequence=(),
+            opponent_remaining_count=1,
+            passed_roles=(),
+            public_history=(0, 8, 6, 7, -1, 4, -1, -1, -2),
+        )
+        after_31 = PolicyView(
+            role=DEALER,
+            own_remaining=(1, 4),
+            count=0,
+            sequence=(),
+            opponent_remaining_count=1,
+            passed_roles=(),
+            public_history=(2, 7, 9, 7, 1, -2),
+        )
+        for view, own, code in [
+            (after_go, (0, 6, 6, 12), 0xF_EE5E_8791),
+            (after_31, (1, 4, 7, 7), 0xF2_8A83),
+        ]:
+            key, actual = _address(view)
+            self.assertEqual(actual, code)
+            self.assertEqual(key // len(HANDS), ROLES.index(view.role))
+            self.assertEqual(HANDS[key % len(HANDS)], own)
+
+    def test_fingerprint_binds_prior_bytes(self):
+        with SixLayerPolicy(self.path) as first:
+            before = policy_fingerprint(first)
+        prior = self.root / "prior.bin"
+        data = bytearray(prior.read_bytes())
+        data[-1] ^= 1
+        prior.write_bytes(data)
+        self.rebind("prior")
+        with SixLayerPolicy(self.path) as second:
+            self.assertNotEqual(before, policy_fingerprint(second))
 
     def test_missing_history_and_bounded_mapping_lifecycle(self):
         with patch(

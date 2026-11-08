@@ -85,6 +85,12 @@ keep fingerprint, input/prior digests and explicit limits. Both
 existing exporter retains these scalar fields. Paired delta SE excludes model,
 prior and policy-learning uncertainty; more samples do not repair those limits.
 
+Unlike `generate_play_table`, which writes `measured_policy` and
+`discard_policy_fingerprint` only on enforced promotion-gate runs, this tool
+writes both in every gate mode. It has no fallback model to substitute, and a
+failed enforced gate aborts, so their presence says nothing about the gate
+mode. Read `promotion_gate` for that; it is absent when the gate is off.
+
 Counters are disjoint, in this order: forced, missing-menu fallback, off-support,
 heuristic-equivalent, trained. "Trained" means positive saved opponent support
 and a stored distribution differing from the heuristic; it does **not** mean
