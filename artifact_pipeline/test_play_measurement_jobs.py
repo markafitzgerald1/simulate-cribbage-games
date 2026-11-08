@@ -34,6 +34,7 @@ from artifact_pipeline.play_measurement_jobs import (
     _tasks,
     _validate_cell,
     measure_cells,
+    sampler_digest,
 )
 from artifact_pipeline.test_fixed_policy_fixtures import make_bundle
 from artifact_pipeline.test_six_layer_policy import temporary_directory
@@ -129,14 +130,29 @@ class TestMeasurementJobs(unittest.TestCase):
 
     saved_measure = CellWorker.measure
 
+    def test_resume_rejects_a_valid_cell_from_another_run(self):
+        mine, other = self.root / "mine", self.root / "other"
+        self.run_table(checkpoint=mine, samples=2)
+        self.run_table(checkpoint=other, samples=2, stamp="2026-10-12T17:00:00Z")
+        name = sorted(path.name for path in other.glob("*.json"))[0]
+        self.assertNotEqual(name, "run.json")
+        (mine / name).write_bytes((other / name).read_bytes())
+        with self.assertRaisesRegex(ValueError, "task identity"):
+            self.run_table(checkpoint=mine, samples=2)
+
+    def test_sampler_digest_binds_the_interpreter(self):
+        before = sampler_digest()
+        with patch("artifact_pipeline.play_measurement_jobs.sys.version", "other"):
+            self.assertNotEqual(sampler_digest(), before)
+
     def test_resume_rejects_changed_inputs_seed_count_timestamp_code_and_schedule(self):
         checkpoint = self.root / "cells"
         self.run_table(checkpoint=checkpoint, samples=2)
         for changes in [
-            {"seed": 43},
+            {"seed": 43, "samples": 2},
             {"samples": 3},
-            {"stamp": "2026-10-12T17:00:00Z"},
-            {"hands": HANDS[:1]},
+            {"stamp": "2026-10-12T17:00:00Z", "samples": 2},
+            {"hands": HANDS[:1], "samples": 2},
         ]:
             with self.assertRaisesRegex(ValueError, "Checkpoint run"):
                 self.run_table(checkpoint=checkpoint, **changes)

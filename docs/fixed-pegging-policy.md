@@ -174,6 +174,11 @@ exact means pairing and recomputes both companions from that full table. With
 approved sample count, a passed enforced gate and truthful model limits.
 The release job repeats that check after download and before attachment.
 
+Because it reuses that tag, activating the example also requires retiring or
+re-pointing the scheduled v3 play generation in
+`.github/workflows/generate-play-artifact.yml`. Otherwise its next scheduled
+run replaces the fixed-policy bundle with a rollout-trained v3 table.
+
 The example's local complete-cell checkpoints are not retained across hosted
 workflow jobs. Cross-job checkpoint transport, a larger precision schedule and
 real runner throughput are subsequent work. Activating, dispatching, publishing

@@ -536,14 +536,15 @@ client means digest must match throughout export and publication.
 On pull requests both generation workflows are filtered to the paths that can
 reach generation or the export step: `artifact_pipeline/**`,
 `simulate_cribbage_games.py` (which `adapter.py` imports), `requirements.txt`,
-`.python-version`, and the workflow's own file. Keep that list in step with
-what generation actually reads, because a path the filter omits is a path whose
-changes reach `main` without the bounded run ever having exercised them. The
-filter is safe only while neither workflow supplies a required status check: a
-path-filtered workflow reports no check at all rather than a skipped one, so
-making `generate-table` required would leave every filtered pull request
-waiting on a check that never arrives. The scheduled and dispatched triggers
-are unfiltered and unaffected.
+`.python-version`, and the workflow's own file; the play workflow also lists
+`scripts/run_fixed_play_smoke.py` for its bounded fixed-policy step. Keep that
+list in step with what generation actually reads, because a path the filter
+omits is a path whose changes reach `main` without the bounded run ever having
+exercised them. The filter is safe only while neither workflow supplies a
+required status check: a path-filtered workflow reports no check at all rather
+than a skipped one, so making `generate-table` required would leave every
+filtered pull request waiting on a check that never arrives. The scheduled and
+dispatched triggers are unfiltered and unaffected.
 
 A manual generation dispatch runs a full generation. The play workflow can
 publish on main, and the crib v4 preparation path consumes the full eight-shard
@@ -796,7 +797,6 @@ not policy calls; count final measurement calls only, excluding gate calls.
 Behavioral fingerprints must bind actual components, not a Python class name.
 Test live real-state selections and fractional outcome mixtures; literal views
 and constant payoffs alone miss policy activation and sampler mistakes.
-
 
 Fixed-policy parallel measurement keeps each complete key/role stream on one
 worker. Complete-cell checkpoints bind code, interpreter, inputs, timestamp,
