@@ -1,0 +1,132 @@
+# Draft only: outside .github/workflows, so GitHub cannot run this file.
+# Mark must approve the pins/input distribution and configure the protected
+# environment before activating this explicit, unscheduled workflow.
+name: Generate Fixed Play Artifact
+
+on:
+  workflow_dispatch:
+    inputs:
+      authorize_release:
+        description: Replace the rolling play release after Mark approval
+        type: boolean
+        default: false
+
+concurrency:
+  group: expected-play-points-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  generate-table:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      # Reviewed inputs must be materialized regular files, not local research
+      # symlinks. The approved workflow run supplies a named input artifact;
+      # all bytes inside it are pinned by examples/fixed-play-inputs.json.
+      - name: Download approved fixed inputs
+        uses: actions/download-artifact@v8
+        with:
+          name: fixed-play-policy-inputs
+          path: inputs
+          github-token: ${{ github.token }}
+          run-id: ${{ vars.FIXED_PLAY_INPUT_RUN_ID }}
+      - name: Capture one generation timestamp and pin
+        id: generation
+        run: |
+          echo "timestamp=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
+          python -c 'import json; print("manifest_sha256=" + json.load(open("examples/fixed-play-inputs.json"))["policy_manifest_sha256"])' >> "$GITHUB_OUTPUT"
+      - name: Measure fixed policy in four workers
+        env:
+          MANIFEST_SHA256: ${{ steps.generation.outputs.manifest_sha256 }}
+          GENERATED_AT: ${{ steps.generation.outputs.timestamp }}
+        run: |
+          python -u -m artifact_pipeline.measure_fixed_play_table \
+            --policy-manifest inputs/policy.json \
+            --policy-manifest-sha256 "$MANIFEST_SHA256" \
+            --generated-at "$GENERATED_AT" --checkpoint-dir cells \
+            --workers 4 --samples 13000 --seed 42 --promotion-gate enforce
+      - name: Check offline reference and record regression
+        run: |
+          python -m artifact_pipeline.compare_play_table expected_play_points.json \
+            --fail-on-regression --write-metadata
+      # Same publication-path exporter as generate-play-artifact.yml. No
+      # downstream derivation from assets already attached to the release.
+      - name: Export and verify companions
+        env:
+          MANIFEST_SHA256: ${{ steps.generation.outputs.manifest_sha256 }}
+        run: |
+          before="$(sha256sum expected_play_points.client.json | cut -d' ' -f1)"
+          python -m artifact_pipeline.export_uncertainty \
+            --table play --full expected_play_points.json \
+            --means expected_play_points.client.json \
+            --output expected_play_points.uncertainty.json
+          after="$(sha256sum expected_play_points.client.json | cut -d' ' -f1)"
+          test "$before" = "$after"
+          python -m scripts.verify_fixed_play_bundle \
+            --policy-manifest-sha256 "$MANIFEST_SHA256" --release-samples 13000
+          python -c 'import json; from artifact_pipeline.promotion_gate import release_summary; print(release_summary(json.load(open("expected_play_points.json"))["__metadata__"]))' > expected_play_points.gate.md
+      - name: Upload complete publication bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: expected-play-points-fixed
+          if-no-files-found: error
+          path: |
+            expected_play_points.json
+            expected_play_points.client.json
+            expected_play_points.uncertainty.json
+            expected_play_points.lines.json
+            expected_play_points.gate.md
+
+  # This is the existing rolling-release boundary: one action-gh-release call,
+  # same tag and concurrency group, all four measured assets attached together.
+  release-artifact:
+    needs: generate-table
+    if: inputs.authorize_release && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: approved-fixed-play-release
+    permissions:
+      contents: write
+    steps:
+      - name: Check out verification code and pins
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Download complete publication bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: expected-play-points-fixed
+      - name: Verify exact pairing before attachment
+        run: |
+          pin="$(python -c 'import json; print(json.load(open("examples/fixed-play-inputs.json"))["policy_manifest_sha256"])')"
+          python -m scripts.verify_fixed_play_bundle \
+            --policy-manifest-sha256 "$pin" --release-samples 13000
+      - name: Publish rolling release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: expected-play-points
+          name: "Latest Expected Play Points Table"
+          body_path: expected_play_points.gate.md
+          files: |
+            expected_play_points.json
+            expected_play_points.client.json
+            expected_play_points.uncertainty.json
+            expected_play_points.lines.json
+          fail_on_unmatched_files: true
+          make_latest: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

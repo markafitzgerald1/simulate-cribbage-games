@@ -737,12 +737,42 @@ Python v3 sampler without training or refining discards:
 
 ```sh
 python -m artifact_pipeline.measure_fixed_play_table \
-  --policy-manifest inputs/policy.json --samples 13000 --seed 42 \
-  --hand-limit 4 --promotion-gate report
+  --policy-manifest inputs/policy.json \
+  --policy-manifest-sha256 <approved-manifest-sha256> \
+  --samples 13000 --seed 42 --workers 4 --hand-limit 4 \
+  --generated-at 2026-10-12T16:00:00Z --checkpoint-dir dist/fixed-cells \
+  --promotion-gate report
 ```
 
 See [the fixed-policy input contract](docs/fixed-pegging-policy.md) for digest
 binding, complete frozen keeps, resources, counters and honest lack of convergence
-provenance. Inputs are not fetched automatically. This serial mode leaves
-release workflows and published schemas unchanged; parallelism, resume and
-production activation need separate review.
+provenance. Each key/role cell has one worker owner, with canonical parent
+reduction and atomic complete-cell resume. Keep the same timestamp, pinned
+inputs, seed, sample count and cell set on resume. A killed incomplete cell
+restarts at sample zero; completed statistics are reused without reconstruction.
+Inputs are not fetched by the CLI. Published schemas and the scheduled producer
+retain their contracts; production activation needs Mark's approval.
+
+Exercise the bounded parallel CLI and all four exports offline:
+
+```sh
+python -m scripts.run_fixed_play_smoke --output-dir dist/fixed-play-smoke
+```
+
+Artifact discovery replaces the default suite's coverage data. After the
+artifact and slow suites, append the root acceptance and ratchet coverage before
+the combined 100% gate, matching CI's combined data:
+
+```sh
+coverage run --append -m unittest test_fixed_play_release test_check_legacy_pylint_ratchet
+coverage report --fail-under=100 -m --include='artifact_pipeline/*,scripts/check_legacy_pylint_ratchet.py'
+```
+
+The play workflow also runs this synthetic fixture on applicable pull requests.
+[The draft release job](examples/generate-fixed-play-artifact.yml) is outside
+`.github/workflows`, so it cannot execute. It uses the existing rolling-release
+boundary and attaches full, means, sidecar and lines together after explicit
+release authorization and protected-environment approval. See
+[the input pins](examples/fixed-play-inputs.json) and the fixed-policy contract
+for the input-distribution and activation decisions still required.
+It retains the offline Cribbage Pro regression check before companion export.

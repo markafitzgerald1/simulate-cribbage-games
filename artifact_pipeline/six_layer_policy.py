@@ -37,7 +37,9 @@ CATEGORIES = (
     "missing_menu_fallback",
 )
 HANDS = get_canonical_hands()
-HAND_INDICES = {hand: index for index, hand in enumerate(HANDS)}
+HAND_INDICES: dict[tuple[int, ...], int] = {
+    hand: index for index, hand in enumerate(HANDS)
+}
 Buffer = bytes | mmap.mmap
 
 

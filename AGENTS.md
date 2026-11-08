@@ -244,7 +244,7 @@ coverage xml
 coverage report
 coverage run -m unittest discover artifact_pipeline
 coverage run --append scripts/run_slow_analytical_tests.py
-coverage run --append -m unittest test_check_legacy_pylint_ratchet
+coverage run --append -m unittest test_fixed_play_release test_check_legacy_pylint_ratchet
 coverage report --fail-under=100 -m --include='artifact_pipeline/*,scripts/check_legacy_pylint_ratchet.py'
 mypy simulate_cribbage_games.py artifact_pipeline
 npm run spellcheck
@@ -796,3 +796,21 @@ not policy calls; count final measurement calls only, excluding gate calls.
 Behavioral fingerprints must bind actual components, not a Python class name.
 Test live real-state selections and fractional outcome mixtures; literal views
 and constant payoffs alone miss policy activation and sampler mistakes.
+
+
+Fixed-policy parallel measurement keeps each complete key/role stream on one
+worker. Complete-cell checkpoints bind code, interpreter, inputs, timestamp,
+seed and schedule; reject changes rather than reconstructing M2 from displayed
+SEs. Normalize opening-response JSON key types before computing checksums and merging,
+including multi-digit ranks. Test a real killed worker and verify surviving
+complete files byte-for-byte. The draft fixed-policy release definition lives
+outside `.github/workflows`; activation, approved input distribution and release
+authorization remain human decisions. Its bounded fixture is an offline CLI
+acceptance check, not a production policy or gate result.
+The inert release example retains the offline Cribbage Pro check before
+companion export. Its metadata write changes no parsed observation; derive the
+sidecar afterward from the final full bytes.
+
+Artifact-only discovery replaces the default coverage data. Append the root
+release acceptance and legacy ratchet tests before the combined local threshold;
+CI combines their default-suite data with artifact data instead.

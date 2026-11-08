@@ -234,6 +234,8 @@ class TestFixedMeasurement(unittest.TestCase):
             "measure",
             "--policy-manifest",
             str(self.path),
+            "--policy-manifest-sha256",
+            hashlib.sha256(self.path.read_bytes()).hexdigest(),
             "--samples",
             "2",
             "--hand-limit",
@@ -291,11 +293,13 @@ class TestFixedMeasurement(unittest.TestCase):
             "measure",
             "--policy-manifest",
             str(self.path),
+            "--policy-manifest-sha256",
+            hashlib.sha256(self.path.read_bytes()).hexdigest(),
             "--promotion-gate",
             "off",
         ]
         with patch("sys.argv", args_no_limit), patch(
-            "artifact_pipeline.measure_fixed_play_table.measure_fixed_table",
+            "artifact_pipeline.measure_fixed_play_table.measure_fixed_parallel",
             return_value={},
         ):
             with patch("artifact_pipeline.measure_fixed_play_table._write_json"), patch(

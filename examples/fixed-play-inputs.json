@@ -1,0 +1,7 @@
+{
+  "policy_manifest_sha256": "6b1fc5c11b2151818b74341bda198213858efbe4cb9957f4f820948795cde3b0",
+  "discard_population_sha256": "67397d2d42c95fc4aba35cc2afddc8c1105002080228b8aa3b84a40968349663",
+  "discard_policy_fingerprint": "326f6541973eeb44d763f3efc4182f0884f77e6473013e3bef739c4c6856c720",
+  "policy_training_prior_sha256": "6685f5481eb0ee149b6dc4401921497b69a26e0f1422abb6dd7964a62b1c3131",
+  "description": "Research candidate only; input derivation, distribution and release activation require Mark approval."
+}
