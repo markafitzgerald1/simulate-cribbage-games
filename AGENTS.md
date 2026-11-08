@@ -778,3 +778,19 @@ speed on the GitHub runner; the play pipeline's 1.6 multiplier does not apply.
 The N=22,000 resume cost was already measured at 25.0 seconds for 3-8 on the M2
 after #205's exact PSD optimization; later 45-75 second extrapolations were
 too high. No further optimization is required for this survey budget.
+
+## Fixed Policy Measurement Invariants
+
+The fixed six-layer Python measurement path is described in
+[its input contract](docs/fixed-pegging-policy.md). It measures fresh v3 samples
+in both seats; it must never import research measurement statistics, train or
+refine discards. A failed enforced gate aborts instead of silently changing the
+chosen model. Preserve both convergence flags and the frozen discard limits.
+
+Historical opponent training reach was not retained. A saved counterfactual
+support mask cannot justify "never trained": it identifies zero opponent reach
+under a saved policy/prior while ignoring own-action reach. Automatic goes are
+not policy calls; count final measurement calls only, excluding gate calls.
+Behavioral fingerprints must bind actual components, not a Python class name.
+Test live real-state selections and fractional outcome mixtures; literal views
+and constant payoffs alone miss policy activation and sampler mistakes.

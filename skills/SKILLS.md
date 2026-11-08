@@ -322,6 +322,13 @@ legacy `simulate_cribbage_games.py` dependency. Do not replace mathematical
 simulation with subjective heuristics. Do not build on untested legacy behavior
 or skip end-to-end smoke coverage for code changes.
 
+For fixed six-layer pegging measurement, follow
+[the producer input contract](../docs/fixed-pegging-policy.md). Keep the frozen
+model in both seats, bind actual policy bytes and complete discard choices,
+and distinguish saved counterfactual support from unavailable historical
+training reach. The serial entry point samples fresh Python v3 observations;
+parallel/resume and release activation remain separately reviewed work.
+
 The [eight-shard production design](../docs/v4-production-layout.md) requires
 complete table assembly before any policy transition. A shard-local key list
 is an explicit subset of the global plan, not a different sampling identity.

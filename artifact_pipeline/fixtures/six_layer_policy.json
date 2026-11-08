@@ -1,0 +1,9 @@
+{
+  "description": "Small producer-input fixture; root Pone and three Dealer reply rows, with a degenerate shaped training-prior file and a complete keep-first-four discard map built by the tests.",
+  "rows": [
+    {"role": "Pone", "own_hand": [0, 0, 1, 8], "history": [], "actions": [0, 1, 8], "counts": [500, 0, 500], "stage": 0, "heuristic_index": 1, "support": 1},
+    {"role": "Dealer", "own_hand": [0, 0, 1, 8], "history": [0], "actions": [0, 1, 8], "counts": [1000, 0, 0], "stage": 1, "heuristic_index": 0, "support": 1},
+    {"role": "Dealer", "own_hand": [0, 0, 1, 8], "history": [1], "actions": [0, 1, 8], "counts": [0, 1000, 0], "stage": 1, "heuristic_index": 1, "support": 0},
+    {"role": "Dealer", "own_hand": [0, 0, 1, 8], "history": [4], "actions": [0, 1, 8], "counts": [500, 0, 500], "stage": 1, "heuristic_index": 2, "support": 1}
+  ]
+}
