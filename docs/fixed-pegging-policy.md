@@ -177,7 +177,8 @@ The release job repeats that check after download and before attachment.
 Because it reuses that tag, activating the example also requires retiring or
 re-pointing the scheduled v3 play generation in
 `.github/workflows/generate-play-artifact.yml`. Otherwise its next scheduled
-run replaces the fixed-policy bundle with a rollout-trained v3 table.
+run replaces the fixed-policy bundle with a v3 table: rollout-trained, or
+heuristic after a failed promotion gate.
 
 The example's local complete-cell checkpoints are not retained across hosted
 workflow jobs. Cross-job checkpoint transport, a larger precision schedule and
