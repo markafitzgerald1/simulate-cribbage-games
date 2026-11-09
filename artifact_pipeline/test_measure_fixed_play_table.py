@@ -269,6 +269,21 @@ class TestFixedMeasurement(unittest.TestCase):
         with patch("sys.argv", args), self.assertRaises(SystemExit):
             main()
         self.assertTrue((self.root / staged).exists())
+        # A symlinked output still stages beside the link, not its target.
+        target = self.root / "real"
+        target.mkdir()
+        link = self.root / "linked.json"
+        link.symlink_to(target / "full.json")
+        linked_stage = f"{link.name}.tmp-{os.getpid()}"
+        (self.root / staged).rename(self.root / linked_stage)
+        document["probabilities"]["file"] = linked_stage
+        self.path.write_text(json.dumps(document))
+        with patch("sys.argv", args + ["--output", str(link)]), self.assertRaises(
+            SystemExit
+        ):
+            main()
+        self.assertTrue((self.root / linked_stage).exists())
+        staged = linked_stage
         (self.root / staged).rename(self.root / original)
         document["probabilities"]["file"] = original
         self.path.write_text(json.dumps(document))

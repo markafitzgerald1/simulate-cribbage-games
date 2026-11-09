@@ -214,14 +214,19 @@ def main() -> None:
             for spec in (*components, *manifest["menus"])
         ),
     }
-    # The writer stages each output at "<output>.tmp-<pid>" before renaming.
-    if any(
-        path == output
-        or (
-            path.parent == output.parent and path.name.startswith(f"{output.name}.tmp-")
+    # The writer stages each output beside the path as given, at
+    # "<given name>.tmp-<pid>", even when that path is a symlink.
+    staging = [
+        (
+            Path(getattr(args, name)).absolute().parent.resolve(),
+            Path(getattr(args, name)).name,
         )
+        for name in ("output", "client_output", "lines_output", "uncertainty_output")
+    ]
+    if inputs.intersection(outputs) or any(
+        path.parent == directory and path.name.startswith(f"{stem}.tmp-")
         for path in inputs
-        for output in outputs
+        for directory, stem in staging
     ):
         parser.error("Outputs must not alias fixed policy inputs")
     hands = get_canonical_hands()
