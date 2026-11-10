@@ -232,6 +232,56 @@ jobs:
             test-results/
           retention-days: 7
 
+  # The Rust CFR input generator (native/cfr). The toolchain is pinned by
+  # native/cfr/rust-toolchain.toml, which rustup reads on first use. The
+  # gates mirror the Python and TypeScript ones: formatting, lint (clippy's
+  # pedantic group, set in Cargo.toml), tests with 100% line coverage, PMD
+  # copy/paste detection, and dependency advisories, licenses and sources.
+  rust-cfr-inputs:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: native/cfr
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      # Pinned so a new tool release cannot turn ci-passed red on its own.
+      # Dependabot does not track these; bump them by hand.
+      - name: Install cargo-llvm-cov and cargo-deny
+        uses: taiki-e/install-action@v2.87.32
+        with:
+          tool: cargo-llvm-cov@0.9.1,cargo-deny@0.20.2
+      - name: Set up Java JDK (required by PMD CPD)
+        uses: actions/setup-java@v6
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Install PMD CPD (v7.24.0, which reads Rust)
+        working-directory: ${{ github.workspace }}
+        run: |
+          wget -q https://github.com/pmd/pmd/releases/download/pmd_releases%2F7.24.0/pmd-dist-7.24.0-bin.zip
+          unzip -q pmd-dist-7.24.0-bin.zip -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/pmd-bin-7.24.0/bin" >> "$GITHUB_PATH"
+      - name: Check formatting
+        run: cargo fmt --check
+      - name: Lint
+        run: cargo clippy --locked --release --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --locked --release
+      # Coverage counters are shared by every thread, so a parallel solve
+      # spends its time contending for them (12 s against 148 s for one
+      # test). One rayon thread keeps the run short; the plain test step
+      # above and the explicit pools in tests/solve.rs still cover threads.
+      - name: Check 100% line coverage
+        env:
+          RAYON_NUM_THREADS: "1"
+        run: cargo llvm-cov --locked --release --fail-under-lines 100 --show-missing-lines
+      - name: Run PMD Copy/Paste Detector
+        run: pmd cpd --language rust --minimum-tokens 40 --dir src
+      - name: Check dependency advisories, licenses and sources
+        run: cargo deny --locked check
+
   # Stable aggregate gate required by branch protection on main (#177).
   # When adding a new job to this workflow, add it to the needs list below;
   # every job in this workflow must gate ci-passed.
@@ -245,6 +295,7 @@ jobs:
       - artifact-coverage
       - lint-and-typecheck
       - frontend-tests-and-build
+      - rust-cfr-inputs
     steps:
       - name: Check required job results
         env:

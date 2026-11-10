@@ -1,0 +1,23 @@
+# cargo-deny policy for the CFR input generator, run in CI by
+# `cargo deny --locked check`.
+
+[graph]
+all-features = true
+
+[advisories]
+# Fail on any RustSec advisory (vulnerable, unmaintained, unsound) or yanked
+# package in Cargo.lock.
+yanked = "deny"
+
+[licenses]
+# Every dependency today is MIT or Apache-2.0. This package itself is MPL-2.0.
+allow = ["MIT", "Apache-2.0", "MPL-2.0"]
+confidence-threshold = 0.9
+
+[bans]
+multiple-versions = "deny"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

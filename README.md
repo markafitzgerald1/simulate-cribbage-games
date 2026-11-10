@@ -76,6 +76,10 @@ Mozilla Public License 2.0. See `LICENSE` for details.
   `npm run spellcheck`. Add real repo-specific domain words to `cspell.json`;
   prefer renaming opaque abbreviations or unpronounceable identifiers instead of
   adding them to the dictionary.
+- Check the Rust CFR input generator in `native/cfr/` with formatting,
+  pedantic clippy, 100% line coverage, PMD copy/paste detection and
+  `cargo deny`; `AGENTS.md` lists the commands and its README gives the
+  full-size digest check.
 - New code that imports or relies on parts of `simulate_cribbage_games.py` must
   first prove the used legacy surface with 100% unit test coverage and related
   automated acceptance test coverage.

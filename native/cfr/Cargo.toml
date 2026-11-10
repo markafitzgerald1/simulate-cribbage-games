@@ -1,0 +1,35 @@
+[package]
+name = "cfr-inputs"
+version = "0.1.0"
+edition = "2024"
+license = "MPL-2.0"
+description = "Regenerates the six-layer CFR pegging inputs (menus, trees, offsets, policy, support) byte for byte."
+publish = false
+
+[dependencies]
+rayon = "1.10"
+sha2 = "0.10"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+debug = false
+
+[lints.rust]
+unsafe_code = "forbid"
+
+# The pedantic group is on, as the strict lint gate for this code. The first
+# three exemptions ask for documentation or annotations aimed at a published
+# library's callers, and this package is never published. The arithmetic keeps
+# the research C++'s short names (m, s, t, w, p, d) so the two can be read
+# side by side. Integer-to-f64 conversions mirror the C++'s implicit ones,
+# rounding identically, and that equality is what the digests check.
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+many_single_char_names = "allow"
+cast_precision_loss = "allow"
