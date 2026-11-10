@@ -323,7 +323,7 @@ from that directory: `cargo fmt --check`, `cargo clippy --locked --release
 --all-targets -- -D warnings` (clippy's pedantic group is on in
 `Cargo.toml`), `cargo test --locked --release`, `RAYON_NUM_THREADS=1 cargo
 llvm-cov --locked --release --fail-under-lines 100`, `pmd cpd --language
-rust --minimum-tokens 40 --dir src` and `cargo deny --locked
+rust --minimum-tokens 40 --dir src --dir tests` and `cargo deny --locked
 check`. These mirror the Python and TypeScript gates: lint, full line
 coverage, copy/paste detection, and dependency advisories, licenses and
 sources. The `rust-cfr-inputs` CI job runs all of them under `ci-passed`;

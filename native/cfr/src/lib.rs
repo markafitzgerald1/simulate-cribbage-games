@@ -7,4 +7,7 @@
 //! the same operation order and no fused multiply-add, so its outputs can be
 //! compared byte for byte with the saved research digests.
 
+pub mod driver;
 pub mod game;
+pub mod menus;
+pub mod trees;
