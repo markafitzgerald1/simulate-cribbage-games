@@ -19,7 +19,8 @@ concurrency:
 
 jobs:
   first-shard:
-    runs-on: ubuntu-latest
+    # setup-python has no 3.14.4 build for Ubuntu 26.04 (ubuntu-latest).
+    runs-on: ubuntu-24.04
     timeout-minutes: 240
     steps:
       - name: Reserve final thirty minutes for checkpoint and upload

@@ -363,12 +363,18 @@ class TestShardCoordinator(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.runner.verified_inputs(self.source, self.client)
             with patch.object(self.runner, "POLICY_SHA256", crib_v4._policy_hash(None)):
+                for other in ("3.14.3", "3.14.10"):
+                    with patch.object(
+                        self.runner.platform, "python_version", return_value=other
+                    ):
+                        with self.assertRaisesRegex(ValueError, "requires CPython"):
+                            self.runner.verified_inputs(self.source, self.client)
+                # The repository default may move past the frozen runtime, so
+                # report it here rather than relying on the test interpreter.
                 with patch.object(
-                    self.runner.platform, "python_version", return_value="3.14.3"
+                    self.runner.platform, "python_version", return_value="3.14.4"
                 ):
-                    with self.assertRaises(ValueError):
-                        self.runner.verified_inputs(self.source, self.client)
-                with patch.object(crib_v4, "ESTIMATOR_CONTRACT", "different"):
-                    with self.assertRaises(ValueError):
-                        self.runner.verified_inputs(self.source, self.client)
-                self.runner.verified_inputs(self.source, self.client)
+                    with patch.object(crib_v4, "ESTIMATOR_CONTRACT", "different"):
+                        with self.assertRaisesRegex(ValueError, "contracts differ"):
+                            self.runner.verified_inputs(self.source, self.client)
+                    self.runner.verified_inputs(self.source, self.client)

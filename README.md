@@ -50,7 +50,7 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 
 ### Python simulator
 
-- Install [Python](https://www.python.org/downloads/) ~= 3.14.4
+- Install [Python](https://www.python.org/downloads/) ~= 3.14.10
 - Install dependencies: `pip install -r requirements.txt` _(may require local admin to install black globally... or use a [virtualenv](https://virtualenv.pypa.io/en/latest/) instead!)_
 - Install Node.js 24 or newer and npm dependencies for spellcheck:
   `npm ci --ignore-scripts`
@@ -538,7 +538,7 @@ above):
     - Markdown lint;
   - factor out the duplication checker between `README.md` and `.pre-commit-config.yaml` using native Python lints; and
   - update all third party dependencies:
-    - `python` -> ~= 3.14.4
+    - `python` -> ~= 3.14.10
     - everything in `requirements.txt` (e.g. `mypy`).
 - Web UI/UX _and_ Node.js command-line simulation improvements:
   - add parameterized test (e.g. `parameterized` decorator library with `unittest`?) and invalid argument tests to existing Python tests,
@@ -717,7 +717,7 @@ above):
 
 #### Main implementation
 
-- Python 3.14.4
+- Python 3.14.10
 
 #### Backup, partial implementation
 

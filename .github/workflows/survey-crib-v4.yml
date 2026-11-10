@@ -23,7 +23,8 @@ jobs:
     concurrency:
       group: crib-v4-survey-shard-${{ matrix.shard }}
       cancel-in-progress: false
-    runs-on: ubuntu-latest
+    # setup-python has no 3.14.4 build for Ubuntu 26.04 (ubuntu-latest).
+    runs-on: ubuntu-24.04
     timeout-minutes: 330
     steps:
       - name: Reserve final thirty minutes for checkpoint and upload
