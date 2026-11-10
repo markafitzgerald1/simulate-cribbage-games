@@ -8,6 +8,7 @@ mod common;
 use cfr_inputs::driver::{self, Outcome};
 use cfr_inputs::game::canonical;
 use cfr_inputs::menus::{self, FILES, NIL};
+use cfr_inputs::support::{Pair, support};
 use cfr_inputs::trees::{Menus, Tree, offsets_bytes};
 use common::{Small, SmallTrees, small};
 use std::path::{Path, PathBuf};
@@ -105,7 +106,13 @@ fn failing_commands_exit_with_one() {
     std::fs::write(&small_prior, [0u8; 8]).unwrap();
     let full_prior = dir.join("full-prior.bin");
     std::fs::write(&full_prior, vec![u8::MAX; 1820 * 1820 * 8]).unwrap();
-    let (small_prior, full_prior) = (small_prior.to_str().unwrap(), full_prior.to_str().unwrap());
+    let odd_policy = dir.join("odd-policy.bin");
+    std::fs::write(&odd_policy, [0u8; 3]).unwrap();
+    let (small_prior, full_prior, odd_policy) = (
+        small_prior.to_str().unwrap(),
+        full_prior.to_str().unwrap(),
+        odd_policy.to_str().unwrap(),
+    );
     for (args, message) in [
         (vec!["unknown", "--output", out], "unknown command unknown"),
         (
@@ -128,6 +135,16 @@ fn failing_commands_exit_with_one() {
         (
             vec!["solve", "--output", out, "--prior", full_prior],
             "prior mass overflows",
+        ),
+        (
+            vec!["support", "--output", out, "--policy", odd_policy],
+            "matching --policy and --prior",
+        ),
+        (
+            vec![
+                "support", "--output", out, "--policy", odd_policy, "--prior", full_prior,
+            ],
+            "policy must be little-endian u16",
         ),
     ] {
         let (_, stderr) = expect(&args, 1);
@@ -177,7 +194,7 @@ fn small_folder(name: &str) -> (Small, PathBuf, String) {
 }
 
 #[test]
-fn solve_and_digests_run_on_a_small_output() {
+fn solve_support_and_digests_run_on_a_small_output() {
     let (s, dir, prior) = small_folder("small");
     let (out, prior) = (dir.to_str().unwrap(), prior.as_str());
 
@@ -226,7 +243,29 @@ fn solve_and_digests_run_on_a_small_output() {
     let (stdout, _) = expect(&["solve", "--output", out, "--prior", prior], 0);
     assert_eq!(stdout.trim(), "Converged(128)");
 
-    assert_digests(&dir, &["policy"]);
+    let policy_path = dir.join("policy.bin");
+    let policy_arg = policy_path.to_str().unwrap();
+    expect(
+        &[
+            "support", "--output", out, "--policy", policy_arg, "--prior", prior,
+        ],
+        0,
+    );
+    let words: Vec<u16> = policy
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|&c| u16::from_le_bytes(c))
+        .collect();
+    let pair = Pair {
+        policy: &words,
+        prior: &s.chance,
+    };
+    let menus = Menus::load(&dir).unwrap();
+    let flags = support(&menus, &SmallTrees(&s.trees), &[pair]);
+    assert_eq!(std::fs::read(dir.join("support.bin")).unwrap(), flags);
+
+    assert_digests(&dir, &["policy", "support"]);
 }
 
 #[test]

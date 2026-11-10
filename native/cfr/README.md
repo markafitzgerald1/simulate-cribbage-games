@@ -14,9 +14,6 @@ It is a port of the unpublished research C++ (`stream.cpp`, `offsets.cpp`,
 operation order and uses no fused multiply-add, so its outputs match the
 research files byte for byte.
 
-The generator arrives in stacked pull requests. This one adds the solve and its
-resumable driver. The support bits follow.
-
 ## What each module mirrors
 
 | Module | Research source | Output |
@@ -26,6 +23,7 @@ resumable driver. The support bits follow.
 | `trees.rs` | `load`, `lookup`, `Tree`, `make_tree` in `stream.cpp`; `offsets.cpp` | `trees/{p}.bin`, 1,820 files; `offsets.bin` |
 | `solve.rs` | `walk`, `update`, `rounded`, `joint_value`, `response`, `br`, `certificate` in `stream.cpp` | the CFR+ iteration, the rounded policy, the exact `i128` certificate |
 | `driver.rs` | the `solve` mode of `stream.cpp` | checkpoints, `policy-N.bin`, `certificate-N.json`, `policy.bin` |
+| `support.rs` | `support.cpp` | `support.bin` |
 
 Deliberate differences from the research driver:
 
@@ -65,6 +63,7 @@ $B menus   --output OUT [--range START..END]
 $B offsets --output OUT
 $B trees   --output OUT [--range START..END]
 $B solve   --output OUT --prior PRIOR.bin [--pause-after-seconds S]
+$B support --output OUT --policy OUT/policy.bin --prior PRIOR.bin
 $B digests --output OUT
 ```
 
@@ -77,6 +76,10 @@ so the work can be split across jobs. `trees` needs every menu file.
   resume);
 - 4 at the iteration cap.
 
+`support` sets one bit per `--policy`/`--prior` pair, in the order given. The
+research `support.bin` has two bits: the mixture policy with the mixture
+prior, then the production policy with the iteration-4 prior.
+
 `digests` prints the SHA-256 of each output. For the menu and tree folders it
 prints the SHA-256 of the per-file digests, one per line in file order. The
 printed values can be compared with `research-digests.json`.
@@ -84,8 +87,7 @@ printed values can be compared with `research-digests.json`.
 ## Evidence
 
 Measured on an Apple M2 with 8 threads, 2026-11-10, with binary sha256
-`92f3bb24...`, built from the top of this stack of
-pull requests. The run built menus, offsets and
+`92f3bb24...`, built from this source. The run built menus, offsets and
 trees, then ran `solve --pause-after-seconds 600`, which paused at iteration
 27 with exit 3. The same command then resumed and converged at 128. Support
 and digests followed. Earlier builds of the same arithmetic produced the same
@@ -95,6 +97,8 @@ digests, two paused (at 37 and 27) and three uninterrupted.
 - **Menus, trees and offsets:** they match the research files byte for byte.
   The checks covered all 3,640 menus against PR A's manifest, all 1,820 trees
   against the research tree digests, and the offsets.
+- **Support:** fed the saved mixture and production policies and their two
+  priors, it reproduces `7e788918...`.
 - **Solve:** on the pinned prior `6685f548...` it converges at iteration 128
   and writes `policy.bin` with sha256 `ec93951f...`, the pinned research
   policy. The integers in certificates 1, 8, 32 and 128 equal the research
@@ -109,6 +113,7 @@ digests, two paused (at 37 and 27) and three uninterrupted.
 | menus | 60 s | 160 s on 4 threads |
 | trees | 73 s | 141 s on 4 threads |
 | solve | 32 to 34 min wall uninterrupted, 3.7 to 4.1 GB peak RSS | 71 min single-threaded |
+| support | 14 s | 22 s |
 
 The wall-clock gain comes from using more threads, not from faster code: the
 Rust solve spends about 260 thread-minutes against the C++'s 71
@@ -140,7 +145,7 @@ The tests are small-game checks:
 - determinism across thread counts;
 - pause, crash, cap and resume behavior, and damaged or mismatched saved
   state;
-- the joint value and both best responses against oracles
+- the joint value, both best responses and the support bits against oracles
   that replay each deal from the game rules and find menus by history,
   never through the trees;
 - a pinned digest of the small game's arithmetic;

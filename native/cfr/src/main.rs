@@ -6,6 +6,7 @@ use cfr_inputs::driver::{self, Outcome};
 use cfr_inputs::game::canonical;
 use cfr_inputs::menus::{self, FILES};
 use cfr_inputs::solve::{Game, TreeFiles};
+use cfr_inputs::support::Pair;
 use cfr_inputs::trees::{Menus, Tree, offsets_bytes};
 use rayon::prelude::*;
 use std::path::{Path, PathBuf};
@@ -14,13 +15,15 @@ use std::time::Instant;
 
 const USAGE: &str = "usage: cfr-inputs <menus|trees> --output DIR [--range START..END] [--threads N]
        cfr-inputs <offsets|digests> --output DIR [--threads N]
-       cfr-inputs solve --output DIR --prior FILE [--pause-after-seconds S] [--max-iterations N] [--threads N]";
+       cfr-inputs solve --output DIR --prior FILE [--pause-after-seconds S] [--max-iterations N] [--threads N]
+       cfr-inputs support --output DIR (--policy FILE --prior FILE)... [--threads N]";
 
 struct Options {
     command: String,
     output: PathBuf,
     threads: usize,
     priors: Vec<PathBuf>,
+    policies: Vec<PathBuf>,
     pause_after: Option<f64>,
     max_iterations: u32,
     range: Option<std::ops::Range<usize>>,
@@ -35,7 +38,7 @@ fn parse_range(value: &str) -> Option<std::ops::Range<usize>> {
 fn parse(args: &[String]) -> Result<Options, String> {
     let command = args.first().ok_or(USAGE)?.clone();
     let (mut output, mut threads, mut pause_after, mut max_iterations) = (None, 0, None, 4096);
-    let (mut priors, mut range) = (Vec::new(), None);
+    let (mut priors, mut policies, mut range) = (Vec::new(), Vec::new(), None);
     let mut rest = args[1..].iter();
     while let Some(flag) = rest.next() {
         let value = rest.next().ok_or(format!("{flag} needs a value"))?;
@@ -43,6 +46,7 @@ fn parse(args: &[String]) -> Result<Options, String> {
             "--output" => output = Some(PathBuf::from(value)),
             "--threads" => threads = value.parse().map_err(|_| "--threads must be a number")?,
             "--prior" => priors.push(PathBuf::from(value)),
+            "--policy" => policies.push(PathBuf::from(value)),
             "--range" => range = Some(parse_range(value).ok_or("--range must be START..END")?),
             "--pause-after-seconds" => {
                 pause_after = Some(
@@ -67,6 +71,7 @@ fn parse(args: &[String]) -> Result<Options, String> {
         output: output.ok_or(USAGE)?,
         threads,
         priors,
+        policies,
         pause_after,
         max_iterations,
         range,
@@ -95,6 +100,7 @@ fn digests(dir: &Path) -> std::io::Result<String> {
         ("trees", folder("trees", 1820)?),
         ("offsets", file("offsets.bin")?),
         ("policy", file("policy.bin")?),
+        ("support", file("support.bin")?),
     ];
     let body: Vec<String> = entries
         .iter()
@@ -115,6 +121,39 @@ fn read_prior(bytes: &[u8]) -> std::io::Result<Vec<u64>> {
         .iter()
         .map(|&c| u64::from_le_bytes(c))
         .collect())
+}
+
+fn support(o: &Options) -> std::io::Result<()> {
+    if o.policies.is_empty() || o.policies.len() != o.priors.len() {
+        return Err(std::io::Error::other(
+            "support needs matching --policy and --prior pairs",
+        ));
+    }
+    let policies = o
+        .policies
+        .iter()
+        .map(|p| {
+            let bytes = std::fs::read(p)?;
+            let (words, rest) = bytes.as_chunks::<2>();
+            if !rest.is_empty() {
+                return Err(std::io::Error::other("policy must be little-endian u16"));
+            }
+            Ok(words.iter().map(|&c| u16::from_le_bytes(c)).collect())
+        })
+        .collect::<std::io::Result<Vec<Vec<u16>>>>()?;
+    let priors = o
+        .priors
+        .iter()
+        .map(|p| read_prior(&std::fs::read(p)?))
+        .collect::<std::io::Result<Vec<_>>>()?;
+    let menus = Menus::load(&o.output)?;
+    let pairs: Vec<Pair> = policies
+        .iter()
+        .zip(&priors)
+        .map(|(policy, prior)| Pair { policy, prior })
+        .collect();
+    let flags = cfr_inputs::support::support(&menus, &TreeFiles(&o.output), &pairs);
+    driver::write_atomic(&o.output.join("support.bin"), &flags)
 }
 
 fn solve(o: &Options) -> std::io::Result<ExitCode> {
@@ -179,6 +218,7 @@ fn run(o: &Options) -> std::io::Result<()> {
                 driver::write_atomic(&dir.join(format!("{p}.bin")), &bytes)
             })
         }
+        "support" => support(o),
         "digests" => {
             println!("{}", digests(&o.output)?);
             Ok(())
