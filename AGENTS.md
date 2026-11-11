@@ -373,7 +373,11 @@ environment may lack it. A hook's `stages` only chooses when it runs; it does
 not install the Git hook. `default_install_hook_types` in
 `.pre-commit-config.yaml` makes plain `pre-commit install` install the pre-push
 hook too, without which every push-stage gate silently never ran on a fresh
-clone.
+clone. The Rust pegging rules are checked against the published Python engine
+through `native/cfr/tests/pegging_golden.txt`: after any change to the Python
+pegging rules, regenerate it with `python artifact_pipeline/pegging_golden.py`
+(its test fails until you do), and the Rust test `tests/rules.rs` must still
+pass.
 
 For browser UI changes, run `npm run tcm-build`, `npm run eslint`,
 `npm run tsc-build`, `npm run coverage`, `npm run spellcheck`, and the README

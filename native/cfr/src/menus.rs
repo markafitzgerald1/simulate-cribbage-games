@@ -14,7 +14,7 @@
 //! | 16..20 | legal ranks, ascending, zero padded |
 //! | 20 | stage: `seat + 2 * cards already played by the seat` |
 //! | 21 | width (number of legal ranks) |
-//! | 22 | index of the heuristic's rank |
+//! | 22 | reserved, always 0 |
 //! | 23 | action taken at the previous decision |
 
 use super::game::{Cards, State, feasible};
@@ -33,7 +33,6 @@ struct Temp {
     actions: [u8; 4],
     stage: u8,
     width: u8,
-    heuristic: u8,
     parent_action: u8,
     has_parent: bool,
 }
@@ -54,22 +53,15 @@ fn collect(
         let card = 4 - state.cards_left[state.next];
         let optional = legal.len() > 1 && card < 3;
         if optional && state.next == role {
-            let heuristic = state.heuristic();
             let mut candidate = Temp {
                 parent,
                 actions: [0; 4],
                 stage: u8::try_from(role + 2 * card).expect("stage"),
                 width: u8::try_from(legal.len()).expect("width"),
-                heuristic: 0,
                 parent_action,
                 has_parent,
             };
-            for (i, &rank) in legal.iter().enumerate() {
-                candidate.actions[i] = rank;
-                if Some(rank) == heuristic {
-                    candidate.heuristic = u8::try_from(i).expect("width");
-                }
-            }
+            candidate.actions[..legal.len()].copy_from_slice(&legal);
             let key = state.history_key();
             match map.get(&key) {
                 None => {
@@ -90,7 +82,7 @@ fn collect(
             }
         }
         if !optional {
-            let action = state.heuristic();
+            let action = state.forced();
             state.play(action);
             continue;
         }
@@ -146,12 +138,7 @@ pub fn build(file_index: usize, hands: &[Cards]) -> Vec<u8> {
         out.extend_from_slice(&parent.to_le_bytes());
         out.extend_from_slice(&0u32.to_le_bytes());
         out.extend_from_slice(&record.actions);
-        out.extend_from_slice(&[
-            record.stage,
-            record.width,
-            record.heuristic,
-            record.parent_action,
-        ]);
+        out.extend_from_slice(&[record.stage, record.width, 0, record.parent_action]);
     }
     out
 }

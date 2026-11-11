@@ -108,11 +108,28 @@ fn failing_commands_exit_with_one() {
     std::fs::write(&full_prior, vec![u8::MAX; 1820 * 1820 * 8]).unwrap();
     let odd_policy = dir.join("odd-policy.bin");
     std::fs::write(&odd_policy, [0u8; 3]).unwrap();
+    let empty_prior = dir.join("empty-prior.bin");
+    let mut weights = vec![0u8; 1820 * 1820 * 8];
+    std::fs::write(&empty_prior, &weights).unwrap();
+    // Weight on Pone and Dealer both holding four Aces (hand 0 each).
+    weights[0] = 1;
+    let impossible_prior = dir.join("impossible-prior.bin");
+    std::fs::write(&impossible_prior, &weights).unwrap();
+    // 2^59 on four Aces against four Kings (hands 0 and 1819), a deal that
+    // can happen, is over the certificate's mass limit of about 2^58.
+    weights[..8].fill(0);
+    let heavy = 1819 * 8;
+    weights[heavy..heavy + 8].copy_from_slice(&(1u64 << 59).to_le_bytes());
+    let heavy_prior = dir.join("heavy-prior.bin");
+    std::fs::write(&heavy_prior, &weights).unwrap();
     let (small_prior, full_prior, odd_policy) = (
         small_prior.to_str().unwrap(),
         full_prior.to_str().unwrap(),
         odd_policy.to_str().unwrap(),
     );
+    let empty_prior = empty_prior.to_str().unwrap();
+    let impossible_prior = impossible_prior.to_str().unwrap();
+    let heavy_prior = heavy_prior.to_str().unwrap();
     for (args, message) in [
         (vec!["unknown", "--output", out], "unknown command unknown"),
         (
@@ -135,6 +152,18 @@ fn failing_commands_exit_with_one() {
         (
             vec!["solve", "--output", out, "--prior", full_prior],
             "prior mass overflows",
+        ),
+        (
+            vec!["solve", "--output", out, "--prior", empty_prior],
+            "prior has no weight",
+        ),
+        (
+            vec!["solve", "--output", out, "--prior", impossible_prior],
+            "prior weights an impossible deal: Pone hand 0, Dealer hand 0",
+        ),
+        (
+            vec!["solve", "--output", out, "--prior", heavy_prior],
+            "exceeds the certificate's limit",
         ),
         (
             vec!["support", "--output", out, "--policy", odd_policy],
