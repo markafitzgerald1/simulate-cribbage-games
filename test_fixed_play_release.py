@@ -116,6 +116,22 @@ class TestFixedPlayRelease(unittest.TestCase):
             self.write_bundle(bad)
             with self.assertRaisesRegex(ValueError, "truthful"):
                 verify_bundle(self.paths, self.pin, 2)
+        # The sparse fixture falls back to the heuristic; a release may not.
+        self.assertGreater(
+            complete["__metadata__"]["decision_count_missing_menu_fallback"], 0
+        )
+        complete["__metadata__"]["decision_count_missing_menu_fallback"] = 0
+        complete["__metadata__"]["decision_count_off_support"] = 0
+        for category, wrong in [
+            ("missing_menu_fallback", 1),
+            ("off_support", 1),
+            ("off_support", None),
+        ]:
+            bad = deepcopy(complete)
+            bad["__metadata__"][f"decision_count_{category}"] = wrong
+            self.write_bundle(bad)
+            with self.assertRaisesRegex(ValueError, f"zero {category}"):
+                verify_bundle(self.paths, self.pin, 2)
         self.write_bundle(complete)
         self.assertEqual(
             verify_bundle(self.paths, self.pin, 2), complete["__metadata__"]

@@ -31,21 +31,29 @@ jobs:
           python-version-file: .python-version
       - name: Install dependencies
         run: pip install -r requirements.txt
-      # Reviewed inputs must be materialized regular files, not local research
-      # symlinks. The approved workflow run supplies a named input artifact;
-      # all bytes inside it are pinned by examples/fixed-play-inputs.json.
-      - name: Download approved fixed inputs
+      # The input run and the manifest digest it produced are committed
+      # together in examples/fixed-play-inputs.json; the manifest binds every
+      # other input byte. Unpinned values stop the job here.
+      - name: Capture one generation timestamp and the pinned inputs
+        id: generation
+        run: |
+          echo "timestamp=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
+          python - <<'PIN'
+          import json, os
+          pins = json.load(open("examples/fixed-play-inputs.json"))
+          if not pins["input_run_id"] or not pins["policy_manifest_sha256"]:
+              raise SystemExit("examples/fixed-play-inputs.json is not pinned")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"run_id={pins['input_run_id']}\n")
+              output.write(f"manifest_sha256={pins['policy_manifest_sha256']}\n")
+          PIN
+      - name: Download the pinned fixed inputs
         uses: actions/download-artifact@v8
         with:
           name: fixed-play-policy-inputs
           path: inputs
           github-token: ${{ github.token }}
-          run-id: ${{ vars.FIXED_PLAY_INPUT_RUN_ID }}
-      - name: Capture one generation timestamp and pin
-        id: generation
-        run: |
-          echo "timestamp=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
-          python -c 'import json; print("manifest_sha256=" + json.load(open("examples/fixed-play-inputs.json"))["policy_manifest_sha256"])' >> "$GITHUB_OUTPUT"
+          run-id: ${{ steps.generation.outputs.run_id }}
       - name: Measure fixed policy in four workers
         env:
           MANIFEST_SHA256: ${{ steps.generation.outputs.manifest_sha256 }}

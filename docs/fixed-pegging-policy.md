@@ -149,16 +149,26 @@ The bounded play workflow runs the same command on pull requests. The fixture
 covers 21 keeps and both roles at 25 samples, including live mixed-policy calls;
 it is not an approved production input bundle or a promotion-gate result.
 
-`examples/fixed-play-inputs.json` pins the current research candidate's manifest,
-discard document, keep fingerprint and prior. These digests attest bytes, not
-scientific correctness. Mark must review the input derivation and model limits,
-approve an input-distribution workflow and materialize its files without local
-research symlinks. The CLI itself never downloads inputs.
+`examples/fixed-play-inputs.json` is deliberately unpinned. Its two values are
+set together from one `generate-cfr-inputs.yml` run: the run id, and the
+`policy_manifest_sha256` that run's bundle job printed. That manifest binds the
+policy, offsets, menus, support, prior and discard population, so no other
+digest is committed. Every pin must come from such a run, never from local
+files. Pins attest bytes, not scientific correctness. The CLI itself never
+downloads inputs.
+
+`python -m artifact_pipeline.bundle_fixed_play_inputs --work DIR --prior-dir DIR
+--output DIR` builds that bundle. It reads the CFR input generator's work folder
+(`menus/<k>.bin`, `offsets.bin`, `policy.bin`, `support.bin`) and the prior
+folder (`prior.bin`, `population.json`), copies every component into the empty
+output folder, and writes `policy.json` with sorted keys and fixed separators,
+so the manifest digest depends only on the component bytes. It refuses a
+population that does not report `converged: false`, then loads the bundle once
+at full size and prints the manifest digest.
 
 `examples/generate-fixed-play-artifact.yml` is an inert job definition outside
 GitHub's workflow directory. It has no schedule. Before activation, Mark must
-approve the pins and inputs, provide `FIXED_PLAY_INPUT_RUN_ID` for an approved
-`fixed-play-policy-inputs` artifact, and configure required human reviewers on
+approve and commit the input pins, and configure required human reviewers on
 `approved-fixed-play-release`. Its 330-minute generation job measures 13,000
 samples per cell with four workers and an enforced promotion gate. Publication
 also requires the explicit `authorize_release` input and the main branch.

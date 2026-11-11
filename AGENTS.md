@@ -809,6 +809,14 @@ chosen model. Preserve both convergence flags and the frozen discard limits.
 It writes `measured_policy` in every gate mode, unlike the enforced-only rule
 for `generate_play_table`, because it never substitutes a fallback model.
 
+Commit no input pin that pushed code cannot reproduce. The fixed-play inputs
+file stays unpinned until a CFR input generation run produces the bytes, and
+then its run id is committed beside the manifest digest that run printed. A
+release requires zero missing-menu and zero off-support decisions. A missing
+menu means that decision was played by the heuristic fallback; an off-support
+decision still samples the stored row, but breaks the condition the support
+file certifies, so the input bundle no longer matches its approval.
+
 Historical opponent training reach was not retained. A saved counterfactual
 support mask cannot justify "never trained": it identifies zero opponent reach
 under a saved policy/prior while ignoring own-action reach. Automatic goes are

@@ -49,6 +49,11 @@ def verify_bundle(
             or metadata.get("discard_refinement_converged") is not False
         ):
             raise ValueError("Release requires truthful fixed-policy provenance")
+        # With complete menus every optional decision has a stored row, and with
+        # both seats on the stored policy no decision leaves the saved support.
+        for category in ("missing_menu_fallback", "off_support"):
+            if metadata.get(f"decision_count_{category}") != 0:
+                raise ValueError(f"Release requires zero {category} decisions")
     print(
         f"Fixed-play bundle verified; means SHA-256 {hashlib.sha256(means).hexdigest()}"
     )
