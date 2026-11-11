@@ -6,8 +6,9 @@ mod common;
 
 use cfr_inputs::driver::{self, Outcome};
 use cfr_inputs::game::State;
-use cfr_inputs::solve::{POLICY_UNITS, certificate};
+use cfr_inputs::solve::{MASS_LIMIT, POLICY_UNITS, certificate};
 use common::{Small, SmallTrees, bits, decides, info_of, matched, small, solve};
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 #[test]
@@ -40,7 +41,7 @@ fn replay(
                 * i128::from(POLICY_UNITS).pow(6 - depth);
         }
         if !decides(&state) {
-            let action = state.heuristic();
+            let action = state.forced();
             state.play(action);
             continue;
         }
@@ -394,4 +395,176 @@ fn a_finished_solve_is_not_continued() {
     std::fs::write(&finished, json.replace("\"identity\"", "\"gone\"")).unwrap();
     let err = run_to_end(&small_game, &dir, "inputs").unwrap_err();
     assert!(err.to_string().contains("lacks identity"), "{err}");
+}
+
+/// One deal in the bag behind a responder's public state: the replayed
+/// position, the deal's hands, its weight so far, and how many opponent
+/// policy factors that weight already includes.
+struct Branch {
+    state: State,
+    pone_hand: usize,
+    dealer_hand: usize,
+    weight: i128,
+    factors: u32,
+}
+
+/// Exact best-response value for `responder` against `policy`, computed by
+/// recursion over public states from the rules, without the trees. The bag
+/// holds every deal consistent with the responder's information, so a
+/// responder decision maximizes the sum over all of them at once.
+fn public_value(small_game: &Small, policy: &[u16], responder: usize, bag: Vec<Branch>) -> i128 {
+    let mut total = 0i128;
+    let mut live = Vec::new();
+    for mut branch in bag {
+        if branch.state.cards_left[0] <= 1 && branch.state.cards_left[1] <= 1 {
+            branch.state.finish();
+            let margin = i128::from(branch.state.points[0] - branch.state.points[1]);
+            let sign = if responder == 1 { -1 } else { 1 };
+            total +=
+                sign * margin * branch.weight * i128::from(POLICY_UNITS).pow(3 - branch.factors);
+        } else {
+            live.push(branch);
+        }
+    }
+    if live.is_empty() {
+        return total;
+    }
+    let actor = live[0].state.next;
+    assert!(live.iter().all(|branch| branch.state.next == actor));
+    if actor == responder {
+        let legal = live[0].state.legal();
+        assert!(live.iter().all(|branch| branch.state.legal() == legal));
+        let follow = |rank: Option<u8>| -> Vec<Branch> {
+            live.iter()
+                .map(|branch| {
+                    let mut state = branch.state.clone();
+                    state.play(rank);
+                    Branch { state, ..*branch }
+                })
+                .collect()
+        };
+        let best = if decides(&live[0].state) {
+            legal
+                .iter()
+                .map(|&rank| public_value(small_game, policy, responder, follow(Some(rank))))
+                .max()
+                .expect("a decision has legal ranks")
+        } else {
+            public_value(
+                small_game,
+                policy,
+                responder,
+                follow(live[0].state.forced()),
+            )
+        };
+        return total + best;
+    }
+    let mut groups: BTreeMap<Option<u8>, Vec<Branch>> = BTreeMap::new();
+    for branch in live {
+        if decides(&branch.state) {
+            let info = info_of(
+                small_game,
+                &branch.state,
+                branch.pone_hand,
+                branch.dealer_hand,
+            );
+            let offset = small_game.menus.offset[info] as usize;
+            for (action_index, &rank) in branch.state.legal().iter().enumerate() {
+                let units = policy[offset + action_index];
+                if units == 0 {
+                    continue;
+                }
+                let mut state = branch.state.clone();
+                state.play(Some(rank));
+                groups.entry(Some(rank)).or_default().push(Branch {
+                    state,
+                    weight: branch.weight * i128::from(units),
+                    factors: branch.factors + 1,
+                    ..branch
+                });
+            }
+        } else {
+            let action = branch.state.forced();
+            let mut state = branch.state.clone();
+            state.play(action);
+            groups
+                .entry(action)
+                .or_default()
+                .push(Branch { state, ..branch });
+        }
+    }
+    total
+        + groups
+            .into_values()
+            .map(|bag| public_value(small_game, policy, responder, bag))
+            .sum::<i128>()
+}
+
+/// The certificate's best responses against an oracle that sums each
+/// responder decision over every deal behind it. Catches a best response
+/// that ignores the deal weights when combining a decision's deals (mutant
+/// M1 in the #229 review), which `best_responses_match_an_expectimax_replay`
+/// misses because its game puts one deal behind every decision.
+#[test]
+fn best_responses_match_a_public_state_recursion() {
+    let small_game = small();
+    let game = small_game.game();
+    let mut shared_decisions = 0;
+    for iterations in [1, 3, 8, 64] {
+        let policy = solve(&small_game, 2, iterations).rounded(&game);
+        let exact = certificate(&game, &SmallTrees(&small_game.trees), &policy);
+        for responder in 0..2 {
+            let mut bags: BTreeMap<usize, Vec<Branch>> = BTreeMap::new();
+            for pone_hand in 0..1820 {
+                for dealer_hand in 0..1820 {
+                    let weight = small_game.chance[pone_hand * 1820 + dealer_hand];
+                    if weight == 0 {
+                        continue;
+                    }
+                    let own = if responder == 0 {
+                        pone_hand
+                    } else {
+                        dealer_hand
+                    };
+                    bags.entry(own).or_default().push(Branch {
+                        state: State::new(
+                            small_game.hands[pone_hand],
+                            small_game.hands[dealer_hand],
+                        ),
+                        pone_hand,
+                        dealer_hand,
+                        weight: i128::from(weight),
+                        factors: 0,
+                    });
+                }
+            }
+            shared_decisions += bags.values().filter(|bag| bag.len() > 1).count();
+            let value: i128 = bags
+                .into_values()
+                .map(|bag| public_value(&small_game, &policy, responder, bag))
+                .sum();
+            let expected = if responder == 0 {
+                exact.upper
+            } else {
+                -exact.lower
+            };
+            assert_eq!(
+                value, expected,
+                "responder {responder} after {iterations} iterations"
+            );
+        }
+    }
+    assert!(
+        shared_decisions > 0,
+        "the game must put several deals behind a decision"
+    );
+}
+
+#[test]
+fn mass_limit_is_the_certificate_bound() {
+    let units = i128::from(POLICY_UNITS);
+    assert_eq!(
+        i128::from(MASS_LIMIT),
+        ((1i128 << 125) - 1) / (128 * units.pow(6))
+    );
 }
