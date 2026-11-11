@@ -1,0 +1,116 @@
+name: Generate CFR inputs
+
+# Issue #203: regenerate the six-layer CFR pegging policy's inputs on a
+# hosted runner. Manual only, from main, once per dispatch; nothing here
+# publishes a release. Its outputs are 30-day Actions artifacts that the
+# measurement pull request re-pins by digest after a maintainer reviews them.
+#
+# The chain: the discard population and its 50/50 prior (Python), then the
+# Rust menus, offsets and trees (checked against the research digests, which
+# no prior can change), the CFR+ mixture solve and the one-bit support. The
+# solve pauses before its job's time limit; a second job resumes it from the
+# saved checkpoint and must converge. A second pause fails the run, and any
+# continuation needs a new approval.
+
+on:
+  workflow_dispatch:
+    inputs:
+      approval:
+        description: Enter generate to confirm the approved run
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfr-inputs
+  cancel-in-progress: false
+
+jobs:
+  prior:
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' &&
+      github.run_attempt == 1 && inputs.approval == 'generate'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      # Expression equality ignores case, so a branch named Main would pass
+      # the job guard; this exact comparison does not.
+      - name: Require main exactly
+        run: '[[ "$GITHUB_REF" == "refs/heads/main" ]]'
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+      - name: Install pinned dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Bootstrap the tally shelf
+        run: python -c "import shelve; shelve.open('start_of_hand_position_results_tallies_shelf', flag='c').close()"
+      - name: Refine the discard population
+        run: python -u artifact_pipeline/cfr_prior.py population --output cfr-prior/population.json
+      - name: Build the mixture prior
+        run: |
+          python -u artifact_pipeline/cfr_prior.py prior \
+            --population cfr-prior/population.json --output cfr-prior/prior.bin \
+            --production-output cfr-prior/production.bin --report cfr-prior/report.json
+          sha256sum cfr-prior/* | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Preserve the prior
+        uses: actions/upload-artifact@v7
+        with:
+          name: cfr-prior
+          path: cfr-prior/
+          if-no-files-found: error
+          retention-days: 30
+
+  solve-first:
+    needs: prior
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' &&
+      github.run_attempt == 1 && inputs.approval == 'generate'
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    outputs:
+      status: ${{ steps.solve-job.outputs.status }}
+    steps:
+      - name: Record the job start
+        run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v7
+      # The solve's budget ends 45 minutes before the limit. It pauses at
+      # the first iteration end after that, so the iteration under way, a
+      # certificate, support and the uploads must all fit in the margin.
+      - id: solve-job
+        uses: ./.github/actions/cfr-solve-job
+        with:
+          job: first
+          stop-minutes: '285'
+
+  solve-continue:
+    needs: solve-first
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' &&
+      github.run_attempt == 1 && inputs.approval == 'generate' &&
+      needs.solve-first.outputs.status == 'paused'
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - name: Record the job start
+        run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v7
+      - name: Restore the paused solve state
+        uses: actions/download-artifact@v8
+        with:
+          name: cfr-solve-state-first
+          path: cfr-work
+      - id: solve-job
+        uses: ./.github/actions/cfr-solve-job
+        with:
+          job: continue
+          stop-minutes: '285'
+      - name: Require convergence
+        if: steps.solve-job.outputs.status != 'converged'
+        env:
+          STATUS: ${{ steps.solve-job.outputs.status }}
+        run: |
+          echo "::error::The resumed solve ended as $STATUS; continuing needs a new approval."
+          exit 1

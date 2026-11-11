@@ -21,6 +21,10 @@
   ],
   "dictionaries": ["python", "softwareTerms"],
   "words": [
+    "getrusage",
+    "kibibytes",
+    "maxrss",
+    "RUSAGE",
     "byteswap",
     "tobytes",
     "pointwise",

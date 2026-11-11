@@ -714,6 +714,26 @@ caught by the card-level oracle test. And a mixture test whose two inputs
 have equal masses cannot tell an equal-probability mixture from a raw sum, so
 its vectors must have different totals.
 
+`.github/workflows/generate-cfr-inputs.yml` regenerates those inputs on a hosted
+runner: the prior, then the Rust menus, offsets and trees, the solve and the
+one-bit support. It is manual only, runs only from `main` on a first attempt
+with the approval input `generate`, and never publishes; outputs are 30-day
+Actions artifacts, re-pinned into the measurement manifest only after review.
+Dispatching it is a separate approval from merging it. Actions expression
+equality ignores case, so a job `if` comparing `github.ref` with
+`refs/heads/main` also accepts a branch named `Main`; each job therefore repeats
+the check as an exact bash comparison. The menus, trees and offsets do not
+depend on the prior, so every solve job checks them against
+`native/cfr/research-digests.json` before solving; a mismatch is a port or
+toolchain defect, never a reason to re-pin. The solve's budget ends 45 minutes
+before its job's limit, because the binary checks it only between iterations and
+a certificate can follow the last one; the second job resumes from the uploaded
+checkpoint, and a second pause fails the run rather than chaining further jobs
+without approval. The paused-state upload excludes the roughly 9 GB of menus,
+trees and offsets, which each job rebuilds in minutes rather than storing them
+as an artifact. `scripts/run_cfr_inputs.py` holds the job logic so it can be
+tested against a fake binary.
+
 ## Lint Configuration Expectations
 
 Do not assume lint rules are enforced unless they are present in local
