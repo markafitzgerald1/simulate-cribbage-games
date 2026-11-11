@@ -19,6 +19,8 @@
   ],
   "dictionaries": ["python", "softwareTerms"],
   "words": [
+    "byteswap",
+    "tobytes",
     "pointwise",
     "Bareiss",
     "Colvert",
