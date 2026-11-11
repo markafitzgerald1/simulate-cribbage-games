@@ -28,8 +28,8 @@ class TestV4ShadowWorkflow(unittest.TestCase):
         self.assertTrue(fragment in workflow, fragment)
 
     def test_activation_runtime_pins_match_the_repository_runtime(self):
-        # A Python or requirements bump must re-pin here, in review, rather
-        # than surface as a failed activation dispatch.
+        # A Python bump must re-pin here, in review. requirements.txt is left
+        # to fail closed at dispatch, so Dependabot bumps stay automatic.
         workflow = yaml.safe_load(WORKFLOW.read_text())
         steps = workflow["jobs"]["initialize"]["steps"]
         step = next(
@@ -41,9 +41,9 @@ class TestV4ShadowWorkflow(unittest.TestCase):
         self.assertEqual(
             sorted(name for _, name in pins), [".python-version", "requirements.txt"]
         )
-        for digest, name in pins:
-            data = (WORKFLOW.parents[2] / name).read_bytes()
-            self.assertEqual(hashlib.sha256(data).hexdigest(), digest, name)
+        digest = dict((name, pin) for pin, name in pins)[".python-version"]
+        data = (WORKFLOW.parents[2] / ".python-version").read_bytes()
+        self.assertEqual(hashlib.sha256(data).hexdigest(), digest)
 
     def test_every_sampling_entry_requires_explicit_manual_authorization(self):
         workflow = yaml.safe_load(WORKFLOW.read_text())

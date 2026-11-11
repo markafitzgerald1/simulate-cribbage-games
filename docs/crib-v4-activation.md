@@ -21,9 +21,11 @@ requires the approved SHA-256 of the rebuilt client bytes. Its final job exports
 the marginal v2 sidecar, attaches the verified assembly shift, and compresses
 the full JSON. The sidecar's source digest identifies the uncompressed full
 file. The runtime inputs are the SHA-256 digests of `.python-version` and
-`requirements.txt`. They were re-approved for CPython 3.14.10 in #231, and a
-test keeps them equal to those files, so a Python or dependency bump re-pins
-them in review.
+`requirements.txt`. They were re-approved for CPython 3.14.10 in #231. A test
+keeps the `.python-version` digest current, so a Python bump re-pins it in
+review. Dependency bumps are left to merge without a re-pin: a stale
+`requirements.txt` digest stops preparation at this first check, before any
+sampling, and the operator re-approves the current dependencies then.
 
 The reusable sampler checks manual dispatch, main, attempt 1 and explicit
 `prepare` confirmation before bootstrap and each measurement wave. A standalone

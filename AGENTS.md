@@ -197,8 +197,11 @@ A version bump therefore edits `.python-version`, those matrices, this line,
 and the versions named in `README.md`. It also re-pins the approved activation
 runtime in `shadow-crib-v4.yml`, a SHA-256 of `.python-version` and
 `requirements.txt` checked before v4 activation preparation; re-pinning
-re-approves the activation runtime and needs the maintainer's go, and a test
-fails until it is done, so a dependency bump needs the same re-pin. Run
+re-approves the activation runtime and needs the maintainer's go. A test fails
+until the `.python-version` digest is re-pinned. Dependency bumps deliberately
+skip that test so Dependabot stays automatic: a stale `requirements.txt`
+digest fails activation at its first step, before sampling, and is re-pinned
+then. Run
 `scratch/verify_upgrade.py` as described under Required Validation.
 Checkpoints from crib v4 record the interpreter version and will not resume
 under a different one. Pre-commit keys its hook environments on the minor
