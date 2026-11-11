@@ -354,8 +354,8 @@ coverage counts a line that holds only a `?` error branch as missed, so keep
 each `?` on a line that also runs when the call succeeds. The
 generator's outputs are pinned by digest, so a change that reorders a
 floating-point sum, or lets a sum cross threads, is a behavior change even
-when every test passes: it alters the policy's low bits and needs a re-pin
-and fresh certificates. Re-run the full-size digest check in
+when every test passes: it can alter the policy's low bits, so it needs the
+full-size check, and a re-pin and fresh certificates if the bytes change. Re-run the full-size digest check in
 `native/cfr/README.md` before claiming equivalence. Explain the generator in
 its own terms, by the tests, oracles and certificates in this repository;
 the unpublished research C++ it was ported from belongs only in a short port

@@ -18,8 +18,7 @@
 //!
 //! No reduction crosses threads. Certificate arithmetic is exact `i128`, so
 //! its order does not matter. Rust never fuses `a * b + c` into a
-//! multiply-add unless asked, so the bytes do not depend on the compiler or
-//! on the CPU's fused multiply-add support.
+//! multiply-add unless asked, so no fused multiply-add enters the result.
 
 use super::menus::NIL;
 use super::trees::{Menus, Node, TAG, Tree, leaf};
@@ -367,7 +366,8 @@ impl Certificate {
         (self.upper - self.lower) as f64 / (2.0 * self.denominator as f64)
     }
 
-    /// The stopping rule: exposure at most 0.001 points.
+    /// The stopping rule: exposure at most 0.001 points, so neither player
+    /// can gain more than 0.002 points by deviating.
     pub fn converged(&self, mass: u64) -> bool {
         let units_cubed = i128::from(POLICY_UNITS).pow(3);
         (self.upper - self.lower) * 1000 <= 2 * i128::from(mass) * units_cubed
