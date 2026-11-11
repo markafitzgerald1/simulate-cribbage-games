@@ -352,10 +352,14 @@ Coverage counters are shared by every thread, so the coverage run uses one
 rayon thread: a parallel instrumented solve was over ten times slower. Line
 coverage counts a line that holds only a `?` error branch as missed, so keep
 each `?` on a line that also runs when the call succeeds. The
-generator's outputs are compared byte for byte with research digests, so a
-change that reorders a floating-point sum, or lets a sum cross threads, is a
-behavior change even when every test passes. Re-run the full-size digest
-check in `native/cfr/README.md` before claiming equivalence. The spelling
+generator's outputs are pinned by digest, so a change that reorders a
+floating-point sum, or lets a sum cross threads, is a behavior change even
+when every test passes: it alters the policy's low bits and needs a re-pin
+and fresh certificates. Re-run the full-size digest check in
+`native/cfr/README.md` before claiming equivalence. Explain the generator in
+its own terms, by the tests, oracles and certificates in this repository;
+the unpublished research C++ it was ported from belongs only in a short port
+history, never in the correctness argument. The spelling
 hook reads Rust's root-module path keyword as a misspelling of "create", so
 module paths use `super::` rather than an ignore-list change to the hook.
 

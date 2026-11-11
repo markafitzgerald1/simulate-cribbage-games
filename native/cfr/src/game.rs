@@ -1,14 +1,12 @@
 //! Rank-only two-player pegging: the rules every later module walks, and the
-//! legacy pegging heuristic. The generator stores the heuristic's choice in
-//! every menu record, for the measurement to compare with and fall back to,
-//! and uses it to fill in forced moves.
+//! legacy pegging heuristic.
 //!
-//! It was ported from `joint::State` in the research header
-//! `cfr_joint_native.hpp` (sha256 5f707f5c...), which was validated against
-//! the Python pegging transitions in `artifact_pipeline/pegging.py`. What must
-//! stay fixed is the output, not the code's shape: the menus and trees built
-//! from this module must reproduce the research files byte for byte, and the
-//! order in which the heuristic breaks ties is part of that output.
+//! The heuristic is the rule-based policy in `artifact_pipeline/pegging.py`.
+//! The generator plays it only where the move is forced (one legal rank, a go
+//! or a player's last card), so its rules change no game value. Each menu
+//! record also stores its choice at the decision, and because that byte is
+//! part of the menu files, the order in which the heuristic breaks ties is
+//! part of the generated output.
 //!
 //! Ranks are 0 (Ace) through 12 (King).
 
