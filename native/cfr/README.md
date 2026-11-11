@@ -66,8 +66,10 @@ Each part of the evidence lives in this repository:
   check the trees' values. Other tests cover the rounding, falling exposure,
   the iteration cap, the certificate schedule, and pause, crash and resume
   behaviour, including damaged or mismatched saved state.
-- **Determinism:** the output bytes do not depend on the thread count
-  (`bytes_do_not_depend_on_thread_count`), and a pinned digest of a small
+- **Determinism:** the numerical outputs (regrets, averages and so the
+  policy) do not depend on the thread count
+  (`bytes_do_not_depend_on_thread_count`); only the measured seconds in
+  certificates and `curve.jsonl` vary between runs. And a pinned digest of a small
   game's arithmetic flags order changes that alter that game's results. Menus,
   trees and offsets depend on no prior: they are fixed by the pegging rules,
   the heuristic's stored choice, the canonical hand order and the file format.
@@ -196,7 +198,8 @@ cargo deny --locked check
 The `rust-cfr-inputs` CI job runs the same gates, mirroring the Python and
 TypeScript ones:
 - **Lint:** clippy's pedantic group is on in `Cargo.toml`, which explains
-  each exemption, and `min_ident_chars` rejects one-letter names.
+  each exemption, and `min_ident_chars` rejects one-letter names outside
+  clippy's default short list (i, j, n, w, x, y, z).
 - **Coverage:** 100% of lines.
 - **Copy/paste:** PMD 7 CPD at the TypeScript threshold of 40 tokens.
 - **Dependencies:** `deny.toml` fails on RustSec advisories, yanked crates,
