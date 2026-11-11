@@ -76,14 +76,18 @@ fn digests(dir: &Path) -> std::io::Result<String> {
     ];
     let body: Vec<String> = entries
         .iter()
-        .filter_map(|(k, v)| v.as_ref().map(|v| format!("\"{k}\":\"{v}\"")))
+        .filter_map(|(name, folder_digest)| {
+            folder_digest
+                .as_ref()
+                .map(|digest| format!("\"{name}\":\"{digest}\""))
+        })
         .collect();
     Ok(format!("{{{}}}", body.join(",")))
 }
 
 /// The files to write, which must lie within `0..count`.
-fn files(o: &Options, count: usize) -> std::io::Result<std::ops::Range<usize>> {
-    let range = o.range.clone().unwrap_or(0..count);
+fn files(options: &Options, count: usize) -> std::io::Result<std::ops::Range<usize>> {
+    let range = options.range.clone().unwrap_or(0..count);
     if range.start >= range.end || range.end > count {
         return Err(std::io::Error::other(format!(
             "--range must lie within 0..{count}"
@@ -92,34 +96,40 @@ fn files(o: &Options, count: usize) -> std::io::Result<std::ops::Range<usize>> {
     Ok(range)
 }
 
-fn run(o: &Options) -> std::io::Result<()> {
+fn run(options: &Options) -> std::io::Result<()> {
     let hands = canonical();
-    match o.command.as_str() {
+    match options.command.as_str() {
         "menus" => {
-            let range = files(o, FILES)?;
-            let dir = o.output.join("menus");
+            let range = files(options, FILES)?;
+            let dir = options.output.join("menus");
             std::fs::create_dir_all(&dir)?;
-            range.into_par_iter().try_for_each(|k| {
-                driver::write_atomic(&dir.join(format!("{k}.bin")), &menus::build(k, &hands))
+            range.into_par_iter().try_for_each(|file_index| {
+                driver::write_atomic(
+                    &dir.join(format!("{file_index}.bin")),
+                    &menus::build(file_index, &hands),
+                )
             })
         }
         "trees" => {
-            let range = files(o, 1820)?;
-            let m = Menus::load(&o.output)?;
-            let dir = o.output.join("trees");
+            let range = files(options, 1820)?;
+            let loaded_menus = Menus::load(&options.output)?;
+            let dir = options.output.join("trees");
             std::fs::create_dir_all(&dir)?;
-            range.into_par_iter().try_for_each(|p| {
-                let bytes = Tree::build(&m, &hands, p).to_bytes();
-                driver::write_atomic(&dir.join(format!("{p}.bin")), &bytes)
+            range.into_par_iter().try_for_each(|pone_hand| {
+                let bytes = Tree::build(&loaded_menus, &hands, pone_hand).to_bytes();
+                driver::write_atomic(&dir.join(format!("{pone_hand}.bin")), &bytes)
             })
         }
         "digests" => {
-            println!("{}", digests(&o.output)?);
+            println!("{}", digests(&options.output)?);
             Ok(())
         }
         "offsets" => {
-            let m = Menus::load(&o.output)?;
-            driver::write_atomic(&o.output.join("offsets.bin"), &offsets_bytes(&m))
+            let loaded_menus = Menus::load(&options.output)?;
+            driver::write_atomic(
+                &options.output.join("offsets.bin"),
+                &offsets_bytes(&loaded_menus),
+            )
         }
         other => Err(std::io::Error::other(format!(
             "unknown command {other}\n{USAGE}"
@@ -129,31 +139,31 @@ fn run(o: &Options) -> std::io::Result<()> {
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    let o = match parse(&args) {
-        Ok(o) => o,
-        Err(e) => {
-            eprintln!("{e}");
+    let options = match parse(&args) {
+        Ok(options) => options,
+        Err(error) => {
+            eprintln!("{error}");
             return ExitCode::from(2);
         }
     };
-    if o.threads > 0 {
+    if options.threads > 0 {
         rayon::ThreadPoolBuilder::new()
-            .num_threads(o.threads)
+            .num_threads(options.threads)
             .build_global()
             .expect("thread pool");
     }
     let start = Instant::now();
-    match run(&o) {
+    match run(&options) {
         Ok(()) => {
             println!(
                 "{{\"command\":\"{}\",\"seconds\":{:.3}}}",
-                o.command,
+                options.command,
                 start.elapsed().as_secs_f64()
             );
             ExitCode::SUCCESS
         }
-        Err(e) => {
-            eprintln!("{e}");
+        Err(error) => {
+            eprintln!("{error}");
             ExitCode::FAILURE
         }
     }

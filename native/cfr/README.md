@@ -68,10 +68,11 @@ printed values can be compared with `research-digests.json`.
 ## Evidence
 
 Measured on an Apple M2 with 8 threads, 2026-11-10, with binary sha256
-`92f3bb24...`, built from the top of this stack of pull requests. Menus,
+`42160cc1...`, built from the top of this stack of pull requests. Menus,
 trees and offsets match the research files byte for byte. The checks covered
-all 3,640 menus against PR A's manifest, all 1,820 trees against the research
-tree digests, and the offsets.
+all 3,640 menus against the measurement PR's manifest (`inputs/policy.json`
+on `feat/187-cfr-fixed-policy-measurement`), all 1,820 trees against the
+research tree digests, and the offsets.
 
 | Step | Rust (M2, 8 threads) | Research C++ |
 |---|---|---|
