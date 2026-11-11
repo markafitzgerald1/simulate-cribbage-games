@@ -22,12 +22,14 @@ release to bypass the check. ID-route downloads and all three hashes were
 verified; fallback retrieval was tested with network-free fixtures.
 
 Measurement loads saved `generation_accumulators`, preserving `policy_mu`.
-Ordinary `--bootstrap` would read displayed means and change the experiment.
-The runner pins CPython 3.14.4, generation zero and estimator/centering
-contracts. Its manifest also hashes producer modules, diagnostic scripts,
-legacy source and requirements. Checkpoints retain the engine's complete
-runtime/selector/RNG/deck contracts, source/policy hashes, raw integer joint
-moments and row indices. Group selection never enters the row seed.
+Ordinary `--bootstrap` would read displayed means and change the experiment. The
+runner pins the CPython in `.python-version`, generation zero and
+estimator/centering contracts. The November 2026 run used CPython 3.14.4; after
+the move to 3.14.10 its checkpoints no longer resume. Its manifest also hashes
+producer modules, diagnostic scripts, legacy source and requirements.
+Checkpoints retain the engine's complete runtime/selector/RNG/deck contracts,
+source/policy hashes, raw integer joint moments and row indices. Group selection
+never enters the row seed.
 
 The Actions artifact `crib-v4-diagnostic-checkpoints` retains separate
 `group-*.json` checkpoints, append-only progress logs, manifest and summary

@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.14.4"]
+        python-version: ["3.14.10"]
 
     steps:
       - uses: actions/checkout@v7
@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.14.4"]
+        python-version: ["3.14.10"]
 
     steps:
       - uses: actions/checkout@v7
@@ -70,7 +70,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.14.4"]
+        python-version: ["3.14.10"]
         group:
           - hessel-compat
           - zero-weights-coverage
@@ -106,7 +106,7 @@ jobs:
       - artifact-slow-tests
     strategy:
       matrix:
-        python-version: ["3.14.4"]
+        python-version: ["3.14.10"]
 
     steps:
       - uses: actions/checkout@v7
@@ -132,7 +132,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.14.4"]
+        python-version: ["3.14.10"]
 
     steps:
       - uses: actions/checkout@v7
