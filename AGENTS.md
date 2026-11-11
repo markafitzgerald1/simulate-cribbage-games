@@ -694,6 +694,26 @@ cap if a runner is much slower -- adopt the resume-across-runs checkpoint design
 above rather than risk a single-job timeout. Do not silently cut samples below
 the configured value to buy wall-clock time.
 
+`artifact_pipeline/cfr_prior.py` builds the chance prior for issue #203's
+Rust CFR+ solve: a timing-free heuristic-refined discard population, then the
+exact 50/50 mixture of uniform four-card deals and that population's physical
+twelve-card deals. Its output layout (1,820 x 1,820 little-endian u64, Pone
+keep major, `get_canonical_hands` order) is fixed by the Rust reader, so
+change it only together with `native/cfr`. Fed the research iteration-4
+keeps, it reproduces the research production matrix and the pinned
+`prior.bin` byte for byte; its own two stages do not rebuild that pin,
+which came from four unpublished research discard-loop transitions, so a
+population built here is not expected to reproduce it. Three facts are easy
+to get wrong here. There are 18,395 six-card rank multisets that can be
+dealt, not the 18,564 that `combinations_with_replacement` yields, because
+five of a rank cannot be dealt.
+The joint matrix is computed by an inclusion-exclusion expansion rather than
+by visiting every deal pair, and each Dealer factor must still include the
+ranks the shared sub-multiset does not use; omitting them was a real bug,
+caught by the card-level oracle test. And a mixture test whose two inputs
+have equal masses cannot tell an equal-probability mixture from a raw sum, so
+its vectors must have different totals.
+
 ## Lint Configuration Expectations
 
 Do not assume lint rules are enforced unless they are present in local

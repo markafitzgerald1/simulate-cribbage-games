@@ -443,6 +443,47 @@ diverge grossly from the reference. Only a small representative sample is kept,
 re-expressed in this project's keys with a no-copyright-claim note on the
 underlying averages.
 
+### CFR solver chance prior
+
+Issue #203's Rust CFR+ solve (`native/cfr`, PR #229, not yet on main) reads
+its chance prior as a
+1,820 x 1,820 matrix of little-endian u64 weights. Two Python stages make it.
+The first runs the play generator's analytical start and seeded
+heuristic-refined discards (the enforced promotion gate's fallback) and writes
+the discard population without timing fields, so equal inputs give equal
+bytes:
+
+```sh
+python artifact_pipeline/cfr_prior.py population \
+  --output=discard-population.json
+```
+
+The second turns that population into the exact 50/50 mixture of uniform
+four-card deals and the population's physical twelve-card deals:
+
+```sh
+python artifact_pipeline/cfr_prior.py prior \
+  --population=discard-population.json \
+  --output=prior.bin \
+  --production-output=keep_matrix.bin \
+  --report=prior.json
+```
+
+The defaults (analytical 40 and 2 iterations, two outer refinements of 200
+samples, seed 42) are the research configuration. The prior stage takes about
+ten seconds on an M2 and does no sampling. The population stage runs seeded
+sampling; the research run of the same configuration took about five and a
+half minutes on an M2.
+
+These two stages are the chain the project ships; they do not rebuild the
+pinned research prior (`6685f548...`). That prior came from four further
+research CFR discard-loop transitions that are not published here. Fed those
+transitions' iteration-4 keeps, which live outside this repository, the
+`prior` stage reproduces it and the research production matrix byte for byte;
+fed the research starting population, it gives a different prior, as
+expected. The population's bytes repeat on the same interpreter; its
+refinement report carries floating-point shift statistics.
+
 ### Expected opponent hand points research
 
 Issue #75's research command compares exact suitless conditional opponent hand
