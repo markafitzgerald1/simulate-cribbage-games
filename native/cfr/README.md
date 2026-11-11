@@ -83,8 +83,8 @@ The support bits follow, adding their own evidence above.
 - **Throughput:** native code with no runtime or garbage collector, so more
   simulation fits in the same time, which tightens error bounds.
 - **Safe parallelism:** the compiler rules out data races, `unsafe` is
-  forbidden here, and rayon spreads the work across cores while the output
-  bytes stay the same for any thread count. Joint discard-and-pegging
+  forbidden here, and rayon spreads the work across cores while the numerical
+  outputs stay byte-identical for any thread count. Joint discard-and-pegging
   solving, score-aware play and longer runs all need far more compute than
   this policy, so that headroom matters.
 - **A successor to C++:** comparable speed and control, with memory safety
