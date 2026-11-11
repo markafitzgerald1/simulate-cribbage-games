@@ -87,8 +87,10 @@ The support bits follow, adding their own evidence above.
   outputs stay byte-identical for any thread count. Joint discard-and-pegging
   solving, score-aware play and longer runs all need far more compute than
   this policy, so that headroom matters.
-- **A successor to C++:** comparable speed and control, with memory safety
-  checked at compile time.
+- **Memory safety at C++-class speed:** a systems language with the speed
+  and control of C++, whose compiler checks memory safety as well as ruling
+  out data races, so the parallel work this generator needs is safer to
+  write.
 
 ## Port history
 
