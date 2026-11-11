@@ -293,8 +293,9 @@ fn best_responses_match_an_expectimax_replay() {
 }
 
 /// Regression pin for floating-point operation order. A change to the order
-/// of additions changes these digests, and with them the full-size policy's
-/// bytes, so it needs a re-pin and fresh certificates.
+/// of additions that alters this small game's results changes these digests;
+/// a change that does not may still alter the full-size policy, so any such
+/// change needs the full-size check.
 #[test]
 fn small_game_arithmetic_is_pinned() {
     let small_game = small();
