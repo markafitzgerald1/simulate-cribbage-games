@@ -350,18 +350,22 @@ mod tests {
 
     #[test]
     fn run_detection_handles_out_of_order_runs() {
-        let mut state = State::new([2, 6, 9, 9], [3, 7, 9, 9]);
-        state.play(Some(2)); // 3
-        state.play(Some(3)); // 4
-        assert_eq!(state.run(1), 3); // a 2 completes 2-3-4
-        assert_eq!(state.run(4), 3); // a 5 completes 3-4-5
+        // 3, 4 then a 2: the low card arrives last and completes 2-3-4.
+        let state = after([2, 6, 9, 9], [3, 7, 9, 9], &[2, 3]);
+        assert_eq!(state.run(1), 3);
+        // 5, 3 then a 4: the middle card arrives last and completes 3-4-5.
+        let state = after([4, 6, 9, 9], [2, 7, 9, 9], &[4, 2]);
+        assert_eq!(state.run(3), 3);
+        // 5, 3 then a 6 leaves a gap at 4.
         assert_eq!(state.run(5), 0);
     }
 
     #[test]
     fn a_repeated_rank_breaks_a_run() {
-        // 2, 3, 3 then a 5: 2-3-3-5 and 3-3-5 span the right width but
-        // repeat the 3, so neither is a run.
+        // 2, 3, 3 then a 5: 2-3-3-5 spans four values and 3-3-5 spans three,
+        // the width of a run of their length, but each repeats the 3. Only
+        // the repeat rule rejects them; 2-3-3-4 would not test it, because a
+        // repeated rank already narrows its span below a run's width.
         let state = after([1, 2, 9, 9], [2, 4, 9, 9], &[1, 2, 2]);
         assert_eq!(state.run(4), 0);
     }
