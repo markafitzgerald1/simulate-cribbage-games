@@ -736,7 +736,9 @@ second pause fails the run rather than chaining further jobs without approval.
 The paused-state upload excludes the roughly 9 GB of menus, trees and offsets,
 which each job rebuilds in minutes rather than storing them as an artifact.
 `scripts/run_cfr_inputs.py` holds the job logic so it can be tested against a
-fake binary.
+fake binary. `scripts/run_cfr_inputs.py build-inputs` rebuilds and digest-checks
+only the menus and offsets, for a job that needs them without a solve, such as
+the measurement's input bundle.
 
 ## Lint Configuration Expectations
 

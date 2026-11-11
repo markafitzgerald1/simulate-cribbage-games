@@ -2,6 +2,7 @@
 
 import argparse
 import hashlib
+import io
 import json
 from pathlib import Path
 import subprocess
@@ -68,6 +69,7 @@ class SolveJobTest(unittest.TestCase):
 
     def arguments(self, stop_at: float) -> list[str]:
         return [
+            "solve-job",
             "--binary",
             str(self.binary),
             "--output",
@@ -190,7 +192,7 @@ class SolveJobTest(unittest.TestCase):
         # Catches any one argument made optional.
         complete = self.arguments(1.0)
         self.assertIsInstance(run_cfr_inputs.parse_args(complete), argparse.Namespace)
-        for index in range(0, len(complete), 2):
+        for index in range(1, len(complete), 2):
             with self.subTest(argument=complete[index]):
                 partial = complete[:index] + complete[index + 2 :]
                 with mock.patch("sys.stderr"), self.assertRaises(SystemExit):
@@ -204,6 +206,47 @@ class SolveJobTest(unittest.TestCase):
                 job.runner = lambda command, result=result: result
                 with self.assertRaisesRegex(RuntimeError, "digest record"):
                     job.digests()
+
+    def build_arguments(self) -> list[str]:
+        return [
+            "build-inputs",
+            "--binary",
+            str(self.binary),
+            "--output",
+            str(self.output),
+        ]
+
+    def test_build_inputs_builds_and_checks_menus_and_offsets_only(self) -> None:
+        # Catches building the 7.7 GB trees, or skipping the digest check,
+        # in the step the measurement bundle uses.
+        printed = io.StringIO()
+        with mock.patch.dict("os.environ", self.environment), mock.patch(
+            "sys.stdout", printed
+        ):
+            self.assertEqual(run_cfr_inputs.main(self.build_arguments()), 0)
+        self.assertTrue((self.output / "menus").is_dir())
+        self.assertTrue((self.output / "offsets.bin").exists())
+        self.assertFalse((self.output / "trees").exists())
+        self.assertEqual(json.loads(printed.getvalue())["menus"], PINNED["menus"])
+        self.environment["DIGEST_OVERRIDE"] = json.dumps({"offsets": "0" * 64})
+        with mock.patch.dict("os.environ", self.environment), mock.patch("sys.stdout"):
+            with self.assertRaisesRegex(RuntimeError, "offsets digest"):
+                run_cfr_inputs.main(self.build_arguments())
+
+    def test_build_inputs_needs_less_disk_than_a_solve(self) -> None:
+        usage = mock.Mock(free=run_cfr_inputs.INPUTS_FREE_BYTES - 1)
+        with mock.patch.object(run_cfr_inputs.shutil, "disk_usage", return_value=usage):
+            with self.assertRaisesRegex(RuntimeError, "bytes free"):
+                run_cfr_inputs.main(self.build_arguments())
+        usage = mock.Mock(free=run_cfr_inputs.INPUTS_FREE_BYTES)
+        with mock.patch.dict("os.environ", self.environment), mock.patch(
+            "sys.stdout"
+        ), mock.patch.object(run_cfr_inputs.shutil, "disk_usage", return_value=usage):
+            self.assertEqual(run_cfr_inputs.main(self.build_arguments()), 0)
+
+    def test_a_command_is_required(self) -> None:
+        with mock.patch("sys.stderr"), self.assertRaises(SystemExit):
+            run_cfr_inputs.parse_args(["--binary", "x", "--output", "y"])
 
 
 if __name__ == "__main__":

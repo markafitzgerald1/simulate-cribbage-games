@@ -61,7 +61,7 @@ runs:
       env:
         JOB_NAME: ${{ inputs.job }}
       run: |
-        python -u -m scripts.run_cfr_inputs \
+        python -u -m scripts.run_cfr_inputs solve-job \
           --binary native/cfr/target/release/cfr-inputs \
           --output cfr-work --prior cfr-prior/prior.bin \
           --evidence cfr-evidence --status-file "$GITHUB_OUTPUT" \

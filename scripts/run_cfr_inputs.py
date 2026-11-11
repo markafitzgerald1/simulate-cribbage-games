@@ -1,17 +1,20 @@
-"""Run one solve job of the manual CFR input workflow (issue #203).
+"""Run one job of the manual CFR input workflow (issue #203).
 
-The workflow `.github/workflows/generate-cfr-inputs.yml` calls this once per
-solve job. Each call rebuilds the prior-independent inputs (menus, offsets and
-trees) with the Rust `cfr-inputs` binary, checks them against the digests
-any build must reproduce, then runs or resumes the CFR+ solve until it converges or its time
-budget runs out. On convergence it also writes the one-bit counterfactual
-support. Every call leaves a summary of its steps (time, peak memory, free
-disk) and of each output's size and SHA-256.
+`solve-job`: the workflow `.github/workflows/generate-cfr-inputs.yml` calls
+this once per solve job. Each call rebuilds the prior-independent inputs
+(menus, offsets and trees) with the Rust `cfr-inputs` binary, checks them
+against the digests any build must reproduce, then runs or resumes the CFR+
+solve until it converges or its time budget runs out. On convergence it also
+writes the one-bit counterfactual support. Every call leaves a summary of its
+steps (time, peak memory, free disk) and of each output's size and SHA-256.
+The job's status (`converged` or `paused`) goes to the file named by
+`--status-file`, which the workflow points at `$GITHUB_OUTPUT`, so a paused
+first job can hand its checkpoint to a second.
 
-Nothing here publishes. The job's status (`converged` or `paused`) goes to
-the file named by `--status-file`, which the workflow points at
-`$GITHUB_OUTPUT`, so a paused first job can hand its checkpoint to a second.
-"""
+`build-inputs`: rebuild only the menus and offsets and check their digests,
+for a job that needs them without a solve (the measurement's input bundle).
+
+Nothing here publishes."""
 
 from __future__ import annotations
 
@@ -27,11 +30,12 @@ import sys
 import time
 
 PINNED_DIGESTS = Path(__file__).resolve().parents[1] / "native/cfr/digests.json"
-# Built from the menus alone, so the prior cannot change them.
-PRIOR_INDEPENDENT = ("menus", "trees", "offsets")
 # Peak disk on one runner is about 13.9 GB: menus, trees, two checkpoint
 # generations while one replaces the other, and the certified policies.
 MINIMUM_FREE_BYTES = 16 * 1000**3
+# Menus and offsets alone, for `build-inputs`, are about 1.3 GB.
+INPUTS_FREE_BYTES = 2 * 1000**3
+BUILD_ORDER = ("menus", "offsets", "trees")
 CONVERGED, PAUSED = 0, 3
 CONVERGED_OUTPUTS = ("policy.bin", "support.bin", "solve.json", "curve.jsonl")
 STATE_FILES = ("curve.jsonl", "solve.json", "checkpoint.json")
@@ -112,18 +116,17 @@ class SolveJob:
             raise RuntimeError(f"expected one digest record, got {len(found)}")
         return dict(found[0])
 
-    def build_inputs(self) -> dict[str, str]:
-        """Build menus, offsets and trees, and match their pinned digests."""
+    def build_inputs(self, names: Sequence[str] = BUILD_ORDER) -> dict[str, str]:
+        """Build the named prior-independent inputs and match their pins."""
+        needed = MINIMUM_FREE_BYTES if "trees" in names else INPUTS_FREE_BYTES
         free = shutil.disk_usage(self.arguments.output).free
-        if free < MINIMUM_FREE_BYTES:
-            raise RuntimeError(
-                f"only {free} bytes free; the solve needs {MINIMUM_FREE_BYTES}"
-            )
-        for name in ("menus", "offsets", "trees"):
+        if free < needed:
+            raise RuntimeError(f"only {free} bytes free; this step needs {needed}")
+        for name in names:
             self.require(name)
         built = self.digests()
         pinned = json.loads(PINNED_DIGESTS.read_text(encoding="utf-8"))["reproducible"]
-        for name in PRIOR_INDEPENDENT:
+        for name in names:
             if built.get(name) != pinned[name]:
                 raise RuntimeError(
                     f"{name} digest {built.get(name)} differs from the pinned one"
@@ -191,15 +194,24 @@ class SolveJob:
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    """Parse one solve job's paths and deadline."""
+    """Parse a solve job, or a build of the menus and offsets alone."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--binary", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--prior", type=Path, required=True)
-    parser.add_argument("--evidence", type=Path, required=True)
-    parser.add_argument("--status-file", type=Path, required=True)
-    parser.add_argument("--job", required=True)
-    parser.add_argument(
+    commands = parser.add_subparsers(dest="command", required=True)
+    solve_job = commands.add_parser(
+        "solve-job", help="Build the inputs, then run or resume the solve"
+    )
+    build = commands.add_parser(
+        "build-inputs",
+        help="Build menus and offsets only and check them against their pins",
+    )
+    for command in (solve_job, build):
+        command.add_argument("--binary", type=Path, required=True)
+        command.add_argument("--output", type=Path, required=True)
+    solve_job.add_argument("--prior", type=Path, required=True)
+    solve_job.add_argument("--evidence", type=Path, required=True)
+    solve_job.add_argument("--status-file", type=Path, required=True)
+    solve_job.add_argument("--job", required=True)
+    solve_job.add_argument(
         "--stop-at",
         type=float,
         required=True,
@@ -209,10 +221,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Run one solve job and print its status."""
+    """Run the chosen command and print its result."""
     arguments = parse_args(argv)
     arguments.output.mkdir(parents=True, exist_ok=True)
-    print(SolveJob(arguments).run())
+    job = SolveJob(arguments)
+    if arguments.command == "build-inputs":
+        built = job.build_inputs(("menus", "offsets"))
+        print(json.dumps(built, sort_keys=True))
+    else:
+        print(job.run())
     return 0
 
 
