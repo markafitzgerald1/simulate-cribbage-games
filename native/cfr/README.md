@@ -69,13 +69,14 @@ Each part of the evidence lives in this repository:
 - **Support** (`support.rs`): on a small game, the support bits are checked
   against a replay of each policy that walks every deal from the rules and
   never reads the trees.
-- **Determinism:** the output bytes do not depend on the thread count
-  (`bytes_do_not_depend_on_thread_count`), and a pinned digest of a small
-  game's arithmetic flags order changes that alter that game's results. Menus,
-  trees and offsets depend on no prior: they are fixed by the pegging rules,
-  the heuristic's stored choice, the canonical hand order and the file format.
-  Their digests are in `digests.json` under `reproducible`, and every build of
-  this source must reproduce them.
+- **Determinism:** the numerical outputs (regrets, averages and so the policy)
+  do not depend on the thread count (`bytes_do_not_depend_on_thread_count`);
+  only the measured seconds in certificates and `curve.jsonl` vary between runs.
+  And a pinned digest of a small game's arithmetic flags order changes that
+  alter that game's results. Menus, trees and offsets depend on no prior: they
+  are fixed by the pegging rules, the heuristic's stored choice, the canonical
+  hand order and the file format. Their digests are in `digests.json` under
+  `reproducible`, and every build of this source must reproduce them.
 
 The generator arrived in stacked pull requests: the pegging rules, then
 menus, trees and offsets, then the solve, then these support bits.
@@ -208,7 +209,8 @@ cargo deny --locked check
 The `rust-cfr-inputs` CI job runs the same gates, mirroring the Python and
 TypeScript ones:
 - **Lint:** clippy's pedantic group is on in `Cargo.toml`, which explains
-  each exemption, and `min_ident_chars` rejects one-letter names.
+  each exemption, and `min_ident_chars` rejects one-letter names outside
+  clippy's default short list (i, j, n, w, x, y, z).
 - **Coverage:** 100% of lines.
 - **Copy/paste:** PMD 7 CPD at the TypeScript threshold of 40 tokens.
 - **Dependencies:** `deny.toml` fails on RustSec advisories, yanked crates,
