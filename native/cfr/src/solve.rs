@@ -1,13 +1,11 @@
 //! Full-width alternating CFR+ with linear averaging, the 1,000-unit rounded
-//! policy and its exact integer certificate, mirroring `walk`, `update`,
-//! `rounded`, `joint_value`, `response`, `br` and `certificate` in the
-//! research `stream.cpp`.
+//! policy and its exact integer certificate.
 //!
 //! # Determinism
 //!
 //! Floating-point results depend on the order of additions, so the parallel
 //! schedule is chosen so that every accumulator slot receives its terms in
-//! exactly the serial C++ order, whatever the thread count:
+//! exactly the serial order, whatever the thread count:
 //!
 //! * In Pone's pass every counterfactual value written belongs to an
 //!   information set of the Pone hand `pone_hand` whose tree is being walked, so
@@ -20,8 +18,8 @@
 //!
 //! No reduction crosses threads. Certificate arithmetic is exact `i128`, so
 //! its order does not matter. Rust never fuses `a * b + c` into a
-//! multiply-add unless asked, matching the research build's
-//! `-ffp-contract=off`.
+//! multiply-add unless asked, so the bytes do not depend on the compiler or
+//! on the CPU's fused multiply-add support.
 
 use super::menus::NIL;
 use super::trees::{Menus, Node, TAG, Tree, leaf};
@@ -369,7 +367,7 @@ impl Certificate {
         (self.upper - self.lower) as f64 / (2.0 * self.denominator as f64)
     }
 
-    /// The research stopping rule: exposure at most 0.001 points.
+    /// The stopping rule: exposure at most 0.001 points.
     pub fn converged(&self, mass: u64) -> bool {
         let units_cubed = i128::from(POLICY_UNITS).pow(3);
         (self.upper - self.lower) * 1000 <= 2 * i128::from(mass) * units_cubed

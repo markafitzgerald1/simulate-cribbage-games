@@ -1,14 +1,12 @@
 //! Resumable solve driver: iterate, checkpoint after every iteration, and
 //! certify on a fixed schedule.
 //!
-//! The research driver certified whenever its time budget ran out, and stopped
-//! for good if that certificate met the 0.001 exposure target. A run paused
-//! and resumed could then end on a different iteration, and so a different
-//! policy, from an uninterrupted run. Here pausing never certifies: the
-//! certificate schedule depends only on the iteration number (1, 8, 32 and
-//! every multiple of 128, which includes the research schedule's 1, 8, 32 and
-//! 128), so a resumed solve ends on exactly the policy an uninterrupted one
-//! would.
+//! Pausing never certifies: the certificate schedule depends only on the
+//! iteration number (1, 8, 32 and every multiple of 128), so a resumed solve
+//! ends on exactly the policy an uninterrupted one would. A driver that
+//! certified whenever its time budget ran out, and stopped once that
+//! certificate met the target, could end a paused run on a different
+//! iteration, and so on a different policy.
 //!
 //! Layout under the output directory:
 //! * `checkpoint-N/regret.bin`, `checkpoint-N/average.bin`: little-endian
@@ -21,9 +19,6 @@
 //!   rewrites both identically.
 //! * `policy.bin`, `solve.json`: the final policy once the target is met;
 //!   `solve.json` is written last and marks the solve finished.
-//!
-//! The research driver certified only at 1, 8, 32 and 128; it never needed
-//! more, because the pinned solve met its target at 128.
 
 use super::solve::{Certificate, Game, POLICY_UNITS, Solver, Trees};
 use sha2::{Digest, Sha256};

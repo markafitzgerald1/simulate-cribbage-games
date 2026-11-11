@@ -292,12 +292,11 @@ fn best_responses_match_an_expectimax_replay() {
     }
 }
 
-/// Regression pin for floating-point operation order. Its authority is the
-/// full-size check in README.md: the code that produced these digests also
-/// reproduced the research policy ec93951f byte for byte, so any change here
-/// is a change in arithmetic order and needs that check re-run.
+/// Regression pin for floating-point operation order. A change to the order
+/// of additions changes these digests, and with them the full-size policy's
+/// bytes, so it needs a re-pin and fresh certificates.
 #[test]
-fn small_game_arithmetic_matches_the_reproducing_build() {
+fn small_game_arithmetic_is_pinned() {
     let small_game = small();
     let solver = solve(&small_game, 3, 6);
     let digest = |values: &[f64]| {
