@@ -66,15 +66,14 @@ Each part of the evidence lives in this repository:
   check the trees' values. Other tests cover the rounding, falling exposure,
   the iteration cap, the certificate schedule, and pause, crash and resume
   behaviour, including damaged or mismatched saved state.
-- **Determinism:** the numerical outputs (regrets, averages and so the
-  policy) do not depend on the thread count
-  (`bytes_do_not_depend_on_thread_count`); only the measured seconds in
-  certificates and `curve.jsonl` vary between runs. And a pinned digest of a small
-  game's arithmetic flags order changes that alter that game's results. Menus,
-  trees and offsets depend on no prior: they are fixed by the pegging rules,
-  the heuristic's stored choice, the canonical hand order and the file format.
-  Their digests are in `digests.json` under `reproducible`, and every build of
-  this source must reproduce them.
+- **Determinism:** the numerical outputs (regrets, averages and so the policy)
+  do not depend on the thread count (`bytes_do_not_depend_on_thread_count`);
+  only the measured seconds in certificates and `curve.jsonl` vary between runs.
+  And a pinned digest of a small game's arithmetic flags order changes that
+  alter that game's results. Menus, trees and offsets depend on no prior: they
+  are fixed by the pegging rules, the heuristic's stored choice, the canonical
+  hand order and the file format. Their digests are in `digests.json` under
+  `reproducible`, and every build of this source must reproduce them.
 
 The generator arrives in stacked pull requests. This one adds the solve.
 The support bits follow, adding their own evidence above.
