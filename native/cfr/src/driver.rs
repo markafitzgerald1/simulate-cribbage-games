@@ -40,8 +40,8 @@ pub fn sha256(bytes: &[u8]) -> String {
     use std::fmt::Write;
     Sha256::digest(bytes)
         .iter()
-        .fold(String::new(), |mut hex, b| {
-            write!(hex, "{b:02x}").expect("writing to a String");
+        .fold(String::new(), |mut hex, byte| {
+            write!(hex, "{byte:02x}").expect("writing to a String");
             hex
         })
 }
@@ -52,7 +52,7 @@ pub fn folder_sha256(dir: &Path, count: usize) -> io::Result<String> {
     use rayon::prelude::*;
     let lines = (0..count)
         .into_par_iter()
-        .map(|k| Ok(sha256(&std::fs::read(dir.join(format!("{k}.bin")))?) + "\n"))
+        .map(|file_index| Ok(sha256(&std::fs::read(dir.join(format!("{file_index}.bin")))?) + "\n"))
         .collect::<io::Result<Vec<String>>>()?;
     Ok(sha256(lines.concat().as_bytes()))
 }

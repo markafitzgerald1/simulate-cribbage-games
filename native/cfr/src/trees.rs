@@ -43,8 +43,11 @@ impl Menus {
 
     /// Parse menu files from their bytes, in file order.
     pub fn from_files<B: AsRef<[u8]>>(files: &[B]) -> Menus {
-        let total: usize = files.iter().map(|f| f.as_ref().len() / RECORD).sum();
-        let mut m = Menus {
+        let total: usize = files
+            .iter()
+            .map(|menu_file| menu_file.as_ref().len() / RECORD)
+            .sum();
+        let mut menus = Menus {
             history: Vec::with_capacity(total),
             parent: Vec::with_capacity(total),
             offset: Vec::with_capacity(total),
@@ -57,42 +60,54 @@ impl Menus {
         for file in files {
             let bytes = file.as_ref();
             assert_eq!(bytes.len() % RECORD, 0, "Menus truncated");
-            let start = u32::try_from(m.history.len()).expect("menu count");
-            m.starts.push(start);
-            for r in bytes.as_chunks::<RECORD>().0 {
-                let parent = u32::from_le_bytes(r[8..12].try_into().unwrap());
-                m.history
-                    .push(u64::from_le_bytes(r[0..8].try_into().unwrap()));
-                m.parent
+            let start = u32::try_from(menus.history.len()).expect("menu count");
+            menus.starts.push(start);
+            for record in bytes.as_chunks::<RECORD>().0 {
+                let parent = u32::from_le_bytes(record[8..12].try_into().unwrap());
+                menus
+                    .history
+                    .push(u64::from_le_bytes(record[0..8].try_into().unwrap()));
+                menus
+                    .parent
                     .push(if parent == NIL { NIL } else { parent + start });
-                m.offset
-                    .push(u32::try_from(m.actions).expect("action offset"));
-                m.stage.push(r[20]);
-                m.width.push(r[21]);
-                m.parent_action.push(r[23]);
-                m.actions += u64::from(r[21]);
+                menus
+                    .offset
+                    .push(u32::try_from(menus.actions).expect("action offset"));
+                menus.stage.push(record[20]);
+                menus.width.push(record[21]);
+                menus.parent_action.push(record[23]);
+                menus.actions += u64::from(record[21]);
             }
         }
-        m.starts
-            .push(u32::try_from(m.history.len()).expect("menu count"));
-        m
+        menus
+            .starts
+            .push(u32::try_from(menus.history.len()).expect("menu count"));
+        menus
     }
 
     /// Read all menu files from `dir/menus/{k}.bin`.
     pub fn load(dir: &Path) -> io::Result<Menus> {
         let files = (0..FILES)
-            .map(|k| std::fs::read(dir.join("menus").join(format!("{k}.bin"))))
+            .map(|file_index| std::fs::read(dir.join("menus").join(format!("{file_index}.bin"))))
             .collect::<io::Result<Vec<_>>>()?;
         Ok(Menus::from_files(&files))
     }
 
     /// Global menu index for the player to act in `s`.
-    fn lookup(&self, s: &State, p: usize, d: usize) -> u32 {
-        let k = s.next * 1820 + if s.next == 1 { d } else { p };
-        let (begin, end) = (self.starts[k] as usize, self.starts[k + 1] as usize);
-        let key = s.history_key();
+    fn lookup(&self, state: &State, pone_index: usize, dealer_index: usize) -> u32 {
+        let file_index = state.next * 1820
+            + if state.next == 1 {
+                dealer_index
+            } else {
+                pone_index
+            };
+        let (begin, end) = (
+            self.starts[file_index] as usize,
+            self.starts[file_index + 1] as usize,
+        );
+        let key = state.history_key();
         let range = &self.history[begin..end];
-        let at = range.partition_point(|&h| h < key);
+        let at = range.partition_point(|&candidate| candidate < key);
         assert!(at < range.len() && range[at] == key, "Missing info");
         u32::try_from(begin + at).expect("menu count")
     }
@@ -123,50 +138,56 @@ pub fn leaf(id: u32) -> i32 {
 
 impl Tree {
     /// Decision node `id`, read against its menu.
-    pub fn node(&self, m: &Menus, id: u32) -> Node {
+    pub fn node(&self, menus: &Menus, id: u32) -> Node {
         let at = 2 * id as usize;
         let info = self.nodes[at] as usize;
         Node {
             info,
             first: self.nodes[at + 1] as usize,
-            off: m.offset[info] as usize,
-            actor: m.stage[info] % 2,
-            width: usize::from(m.width[info]),
+            off: menus.offset[info] as usize,
+            actor: menus.stage[info] % 2,
+            width: usize::from(menus.width[info]),
         }
     }
 
-    fn grow(&mut self, menus: &Menus, mut s: State, p: usize, d: usize) -> u32 {
+    fn grow(
+        &mut self,
+        menus: &Menus,
+        mut state: State,
+        pone_index: usize,
+        dealer_index: usize,
+    ) -> u32 {
         loop {
-            if s.n[0] <= 1 && s.n[1] <= 1 {
-                s.finish();
-                let v = s.points[0] - s.points[1];
-                assert!((-127..=127).contains(&v), "Leaf bound");
-                return TAG | u32::from(i8::try_from(v).expect("Leaf bound").cast_unsigned());
+            if state.cards_left[0] <= 1 && state.cards_left[1] <= 1 {
+                state.finish();
+                let margin = state.points[0] - state.points[1];
+                assert!((-127..=127).contains(&margin), "Leaf bound");
+                return TAG | u32::from(i8::try_from(margin).expect("Leaf bound").cast_unsigned());
             }
-            let legal = s.legal();
-            if legal.len() < 2 || 4 - s.n[s.next] >= 3 {
-                let action = s.heuristic();
-                s.play(action);
+            let legal = state.legal();
+            if legal.len() < 2 || 4 - state.cards_left[state.next] >= 3 {
+                let action = state.heuristic();
+                state.play(action);
                 continue;
             }
-            let info = menus.lookup(&s, p, d);
+            let info = menus.lookup(&state, pone_index, dealer_index);
             let id = u32::try_from(self.nodes.len() / 2).expect("node count");
             let first = self.edges.len();
             self.nodes
                 .extend_from_slice(&[info, u32::try_from(first).expect("edge count")]);
             self.edges.resize(first + legal.len(), 0);
-            for (i, &r) in legal.iter().enumerate() {
-                let mut next = s.clone();
-                next.play(Some(r));
-                self.edges[first + i] = self.grow(menus, next, p, d);
+            for (i, &rank) in legal.iter().enumerate() {
+                let mut next = state.clone();
+                next.play(Some(rank));
+                self.edges[first + i] = self.grow(menus, next, pone_index, dealer_index);
             }
             return id;
         }
     }
 
     /// Build the trees for Pone hand `p`.
-    pub fn build(menus: &Menus, hands: &[Cards], p: usize) -> Tree {
-        Tree::build_some(menus, hands, p, |_| true)
+    pub fn build(menus: &Menus, hands: &[Cards], pone_index: usize) -> Tree {
+        Tree::build_some(menus, hands, pone_index, |_| true)
     }
 
     /// Build the trees for Pone hand `p` against the Dealer hands `wanted`
@@ -174,32 +195,37 @@ impl Tree {
     pub fn build_some(
         menus: &Menus,
         hands: &[Cards],
-        p: usize,
+        pone_index: usize,
         wanted: impl Fn(usize) -> bool,
     ) -> Tree {
-        let mut t = Tree {
+        let mut tree = Tree {
             roots: vec![NIL; 1820],
             nodes: Vec::new(),
             edges: Vec::new(),
         };
-        for d in 0..1820 {
-            if wanted(d) && feasible(&hands[p], &hands[d]) {
-                t.roots[d] = t.grow(menus, State::new(hands[p], hands[d]), p, d);
+        for dealer_index in 0..1820 {
+            if wanted(dealer_index) && feasible(&hands[pone_index], &hands[dealer_index]) {
+                tree.roots[dealer_index] = tree.grow(
+                    menus,
+                    State::new(hands[pone_index], hands[dealer_index]),
+                    pone_index,
+                    dealer_index,
+                );
             }
         }
-        t
+        tree
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        let n = u32::try_from(self.nodes.len() / 2).expect("node count");
-        let e = u32::try_from(self.edges.len()).expect("edge count");
-        let header = [n, e];
+        let node_count = u32::try_from(self.nodes.len() / 2).expect("node count");
+        let edge_count = u32::try_from(self.edges.len()).expect("edge count");
+        let header = [node_count, edge_count];
         let words = header
             .iter()
             .chain(&self.roots)
             .chain(&self.nodes)
             .chain(&self.edges);
-        words.flat_map(|w| w.to_le_bytes()).collect()
+        words.flat_map(|word| word.to_le_bytes()).collect()
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Tree {
@@ -208,20 +234,20 @@ impl Tree {
             .as_chunks::<4>()
             .0
             .iter()
-            .map(|&c| u32::from_le_bytes(c))
+            .map(|&chunk| u32::from_le_bytes(chunk))
             .collect();
         assert!(words.len() >= 1822, "Tree read");
-        let (n, e) = (words[0] as usize, words[1] as usize);
-        assert_eq!(words.len(), 1822 + 2 * n + e, "Tree read");
+        let (node_count, edge_count) = (words[0] as usize, words[1] as usize);
+        assert_eq!(words.len(), 1822 + 2 * node_count + edge_count, "Tree read");
         Tree {
             roots: words[2..1822].to_vec(),
-            nodes: words[1822..1822 + 2 * n].to_vec(),
-            edges: words[1822 + 2 * n..].to_vec(),
+            nodes: words[1822..1822 + 2 * node_count].to_vec(),
+            edges: words[1822 + 2 * node_count..].to_vec(),
         }
     }
 
-    pub fn read(dir: &Path, p: usize) -> io::Result<Tree> {
-        let bytes = std::fs::read(dir.join("trees").join(format!("{p}.bin")))?;
+    pub fn read(dir: &Path, pone_index: usize) -> io::Result<Tree> {
+        let bytes = std::fs::read(dir.join("trees").join(format!("{pone_index}.bin")))?;
         Ok(Tree::from_bytes(&bytes))
     }
 }
@@ -229,7 +255,11 @@ impl Tree {
 /// Action offsets for every menu, in global order, as little-endian `u32`
 /// (mirrors the research `offsets.cpp`).
 pub fn offsets_bytes(menus: &Menus) -> Vec<u8> {
-    menus.offset.iter().flat_map(|o| o.to_le_bytes()).collect()
+    menus
+        .offset
+        .iter()
+        .flat_map(|offset| offset.to_le_bytes())
+        .collect()
 }
 
 #[cfg(test)]
@@ -243,11 +273,13 @@ mod tests {
 
     /// Menus for one Pone hand and a few Dealer hands; other files stay
     /// empty, which is enough for those trees.
-    fn menus_for(p: usize, hands: &[Cards]) -> Menus {
+    fn menus_for(pone_index: usize, hands: &[Cards]) -> Menus {
         let files: Vec<Vec<u8>> = (0..FILES)
-            .map(|k| {
-                if k == p || (k >= 1820 && DEALERS.contains(&(k - 1820))) {
-                    menus::build(k, hands)
+            .map(|file_index| {
+                if file_index == pone_index
+                    || (file_index >= 1820 && DEALERS.contains(&(file_index - 1820)))
+                {
+                    menus::build(file_index, hands)
                 } else {
                     Vec::new()
                 }
@@ -259,49 +291,54 @@ mod tests {
     #[test]
     fn tree_round_trips_and_every_leaf_matches_a_heuristic_finish() {
         let hands = canonical();
-        let p = hands.iter().position(|h| h == &[0, 4, 9, 12]).unwrap();
-        let m = menus_for(p, &hands);
-        assert!(!m.is_empty() && m.len() == m.parent.len());
-        let t = Tree::build_some(&m, &hands, p, |d| DEALERS.contains(&d));
-        let again = Tree::from_bytes(&t.to_bytes());
-        assert_eq!(again.roots, t.roots);
-        assert_eq!(again.nodes, t.nodes);
-        assert_eq!(again.edges, t.edges);
+        let pone_index = hands
+            .iter()
+            .position(|hand| hand == &[0, 4, 9, 12])
+            .unwrap();
+        let menus = menus_for(pone_index, &hands);
+        assert!(!menus.is_empty() && menus.len() == menus.parent.len());
+        let tree = Tree::build_some(&menus, &hands, pone_index, |dealer_index| {
+            DEALERS.contains(&dealer_index)
+        });
+        let again = Tree::from_bytes(&tree.to_bytes());
+        assert_eq!(again.roots, tree.roots);
+        assert_eq!(again.nodes, tree.nodes);
+        assert_eq!(again.edges, tree.edges);
         // Following the heuristic at every node must reach the heuristic margin.
-        for d in DEALERS {
-            if t.roots[d] == NIL {
+        for dealer_index in DEALERS {
+            if tree.roots[dealer_index] == NIL {
                 continue;
             }
-            let mut s = State::new(hands[p], hands[d]);
-            let mut id = t.roots[d];
+            let mut state = State::new(hands[pone_index], hands[dealer_index]);
+            let mut id = tree.roots[dealer_index];
             while id & TAG == 0 {
-                let Node { info, first, .. } = t.node(&m, id);
+                let Node { info, first, .. } = tree.node(&menus, id);
                 // Advance the reference state to this decision.
-                while s.legal().len() < 2 || 4 - s.n[s.next] >= 3 {
-                    let a = s.heuristic();
-                    s.play(a);
+                while state.legal().len() < 2 || 4 - state.cards_left[state.next] >= 3 {
+                    let action = state.heuristic();
+                    state.play(action);
                 }
-                assert_eq!(m.history[info], s.history_key());
-                let legal = s.legal();
-                let choice = s.heuristic().unwrap();
-                let i = legal.iter().position(|&r| r == choice).unwrap();
-                s.play(Some(choice));
-                id = t.edges[first + i];
+                assert_eq!(menus.history[info], state.history_key());
+                let legal = state.legal();
+                let choice = state.heuristic().unwrap();
+                let i = legal.iter().position(|&rank| rank == choice).unwrap();
+                state.play(Some(choice));
+                id = tree.edges[first + i];
             }
-            s.finish();
-            assert_eq!(leaf(id), s.points[0] - s.points[1]);
+            state.finish();
+            assert_eq!(leaf(id), state.points[0] - state.points[1]);
         }
     }
 
     #[test]
     fn offsets_count_widths() {
         let files = vec![vec![0u8; 0]; FILES];
-        let m = Menus::from_files(&files);
-        assert_eq!(m.actions, 0);
-        assert!(m.is_empty());
+        let menus = Menus::from_files(&files);
+        assert_eq!(menus.actions, 0);
+        assert!(menus.is_empty());
         // A leaf stores its margin's low byte, which must read back signed.
         assert_eq!(leaf(TAG | u32::from((-5i8).cast_unsigned())), -5);
         assert_eq!(leaf(TAG | 127), 127);
-        assert_eq!(offsets_bytes(&m).len(), 0);
+        assert_eq!(offsets_bytes(&menus).len(), 0);
     }
 }

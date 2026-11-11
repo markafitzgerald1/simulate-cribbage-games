@@ -243,17 +243,20 @@ fn menus_and_trees_write_the_files_in_their_range() {
     let dir = scratch("range");
     let out = dir.to_str().unwrap();
     let hands = canonical();
-    let p = 77;
+    let pone_hand = 77;
     expect(&["menus", "--output", out, "--range", "1820..3640"], 0);
-    let one = format!("{p}..{}", p + 1);
+    let one = format!("{pone_hand}..{}", pone_hand + 1);
     expect(
         &["menus", "--output", out, "--range", &one, "--threads", "2"],
         0,
     );
-    for k in 0..1820 {
-        let path = dir.join("menus").join(format!("{k}.bin"));
-        if k == p {
-            assert_eq!(std::fs::read(&path).unwrap(), menus::build(k, &hands));
+    for file_index in 0..1820 {
+        let path = dir.join("menus").join(format!("{file_index}.bin"));
+        if file_index == pone_hand {
+            assert_eq!(
+                std::fs::read(&path).unwrap(),
+                menus::build(file_index, &hands)
+            );
         } else {
             assert!(!path.exists());
             std::fs::write(path, []).unwrap();
@@ -263,19 +266,27 @@ fn menus_and_trees_write_the_files_in_their_range() {
     assert_eq!(std::fs::read(dealer).unwrap(), menus::build(3000, &hands));
     expect(&["trees", "--output", out, "--range", &one], 0);
     let menus = Menus::load(&dir).unwrap();
-    let built = std::fs::read(dir.join("trees").join(format!("{p}.bin"))).unwrap();
-    let tree = Tree::build(&menus, &hands, p);
+    let built = std::fs::read(dir.join("trees").join(format!("{pone_hand}.bin"))).unwrap();
+    let tree = Tree::build(&menus, &hands, pone_hand);
     assert_eq!(built, tree.to_bytes());
-    assert_eq!(Tree::read(&dir, p).unwrap().to_bytes(), built);
-    assert!(!dir.join("trees").join(format!("{}.bin", p + 1)).exists());
+    assert_eq!(Tree::read(&dir, pone_hand).unwrap().to_bytes(), built);
+    assert!(
+        !dir.join("trees")
+            .join(format!("{}.bin", pone_hand + 1))
+            .exists()
+    );
 
     expect(&["offsets", "--output", out], 0);
     let offsets = std::fs::read(dir.join("offsets.bin")).unwrap();
     assert_eq!(offsets, offsets_bytes(&menus));
     // With every tree file present, `digests` covers all three outputs.
     let none = no_trees();
-    for q in (0..1820).filter(|&q| q != p) {
-        std::fs::write(dir.join("trees").join(format!("{q}.bin")), none.to_bytes()).unwrap();
+    for other_hand in (0..1820).filter(|&other_hand| other_hand != pone_hand) {
+        std::fs::write(
+            dir.join("trees").join(format!("{other_hand}.bin")),
+            none.to_bytes(),
+        )
+        .unwrap();
     }
     assert_digests(&dir, &["offsets"]);
 }
