@@ -135,11 +135,11 @@ class TestJointKeepMatrix(unittest.TestCase):
         self.assertEqual(sum(uniform), math.comb(52, 4) * math.comb(48, 4))
 
     def test_full_deck_rows_match_direct_pair_sums(self):
-        """Two full-size production rows equal the research counter's sum.
+        """Two full-size production rows equal a direct sum over deal pairs.
 
-        The research `exact_keep_population.cpp` visits every deal pair and
-        adds weight(p) * prod C(4 - p_r, d_r); this repeats that directly
-        for the Pone hands of two keeps.
+        A direct count visits every deal pair and adds
+        weight(p) * prod C(4 - p_r, d_r); this repeats that for the Pone
+        hands of two keeps.
         """
         rows = seeded_keeps(13, seed=11)
         matrix = cfr_prior.production_matrix(rows)
@@ -247,11 +247,18 @@ class TestMixture(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, message):
                 cfr_prior.mixture_weights(uniform, production)
 
-    def test_prior_mass_must_fit_the_solver_total(self):
-        """The Rust solve sums the prior in u64, so a larger total fails."""
-        huge = array("Q", [1 << 63, 1 << 63])
-        with patch.object(cfr_prior, "mixture_weights", return_value=huge):
-            with self.assertRaisesRegex(ValueError, "u64"):
+    def test_prior_mass_must_fit_the_solver_limit(self):
+        """A mass one over the Rust certificate's limit fails here, early.
+
+        Mutation caught: comparing against 2^64, the u64 total, instead of
+        the certificate's limit lets this prior through.
+        """
+        self.assertEqual(
+            cfr_prior.SOLVER_MASS_LIMIT, ((1 << 125) - 1) // (128 * 1000**6)
+        )
+        heavy = array("Q", [cfr_prior.SOLVER_MASS_LIMIT, 1])
+        with patch.object(cfr_prior, "mixture_weights", return_value=heavy):
+            with self.assertRaisesRegex(ValueError, "exceeds the solver's limit"):
                 cfr_prior.build_prior(lowest_keeps(3), 3)
 
 
@@ -354,7 +361,7 @@ class TestPopulation(unittest.TestCase):
             self.assertEqual(keep, hand[2:], (role, hand))
 
     def test_rows_are_sorted_dealer_then_pone(self):
-        """Rows follow the research order, so keeps_sha256 stays comparable.
+        """Rows are sorted by role then hand, so keeps_sha256 is stable.
 
         Mutation caught (shown failing in a scratch copy): R2, writing the
         policy's rows in dictionary order rather than sorted.
@@ -369,8 +376,7 @@ class TestPopulation(unittest.TestCase):
         """Two builds give identical bytes and no elapsed-time fields.
 
         Mutation caught (shown failing in a scratch copy): T1, recording an
-        elapsed time as the research writer did, which changed the file
-        digest on every run.
+        elapsed time, which would change the file digest on every run.
         """
         first, _ = self.build()
         second, _ = self.build()
