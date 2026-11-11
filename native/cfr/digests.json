@@ -1,15 +1,9 @@
 {
   "description": "SHA-256 digests as printed by `cfr-inputs digests`. A folder's entry is the SHA-256 of its per-file SHA-256 hex digests, one per line in file order.",
   "reproducible": {
-    "description": "They depend on no prior: they are fixed by the pegging rules, the heuristic's stored choice, the canonical hand order and the file format. Any build of this repository's source must reproduce them, and the generation workflow checks them before every solve.",
-    "menus": "4c660d241587a7d27ce15745b79f81145f3d20b4ec6446abbc7bd5091e72cb61",
+    "description": "They depend on no prior: they are fixed by the pegging rules, the canonical hand order and the file format. Any build of this repository's source must reproduce them, and the generation workflow checks them before every solve.",
+    "menus": "20de6dc7db54d7255ff8c9b3dd8f7dd794bc4d0330acfc139e703616647e5400",
     "trees": "d06cacaa6df7f3e75fc305cc7b21942a2ea574bd1030e77338d29271c0caabbc",
     "offsets": "8077f44a2f3ed48d48e42a0e80940d52e9f7f62cf3466a7ebb0120704457cf2e"
-  },
-  "port_evidence": {
-    "description": "Historical, and an input to nothing. The research prior, and the policy and two-bit support file of the unpublished research implementation this package was ported from. The prior came from research discard-loop steps that are not in this repository, so it cannot be regenerated here; the Rust solve, given that prior, reproduced the research policy byte for byte, and the Rust support command, given the research policies and priors, reproduced the support file.",
-    "prior": "6685f5481eb0ee149b6dc4401921497b69a26e0f1422abb6dd7964a62b1c3131",
-    "policy": "ec93951f827eefaf396dcbfa8673c9f50416acf8e37e65bbc9eaed7ffc10a042",
-    "support": "7e788918225185846f02041581d13519c923206f0c022e27b5074b4591493bbc"
   }
 }

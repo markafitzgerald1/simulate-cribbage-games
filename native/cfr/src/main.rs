@@ -3,9 +3,9 @@
 //! interrupted run never leaves a partial file under a final name.
 
 use cfr_inputs::driver::{self, Outcome};
-use cfr_inputs::game::canonical;
+use cfr_inputs::game::{canonical, feasible};
 use cfr_inputs::menus::{self, FILES};
-use cfr_inputs::solve::{Game, TreeFiles};
+use cfr_inputs::solve::{Game, MASS_LIMIT, TreeFiles};
 use cfr_inputs::trees::{Menus, Tree, offsets_bytes};
 use rayon::prelude::*;
 use std::path::{Path, PathBuf};
@@ -131,6 +131,25 @@ fn solve(options: &Options) -> std::io::Result<ExitCode> {
         .iter()
         .try_fold(0u64, |total, &weight| total.checked_add(weight))
         .ok_or_else(|| std::io::Error::other("prior mass overflows"))?;
+    if mass == 0 {
+        return Err(std::io::Error::other("prior has no weight"));
+    }
+    if mass > MASS_LIMIT {
+        return Err(std::io::Error::other(format!(
+            "prior mass {mass} exceeds the certificate's limit {MASS_LIMIT}"
+        )));
+    }
+    // A weighted deal with no tree would read its missing root as a leaf.
+    let hands = canonical();
+    if let Some(pair) = (0..chance.len())
+        .find(|&pair| chance[pair] != 0 && !feasible(&hands[pair / 1820], &hands[pair % 1820]))
+    {
+        return Err(std::io::Error::other(format!(
+            "prior weights an impossible deal: Pone hand {}, Dealer hand {}",
+            pair / 1820,
+            pair % 1820
+        )));
+    }
     let menus = Menus::load(&options.output)?;
     let game = Game {
         menus: &menus,
