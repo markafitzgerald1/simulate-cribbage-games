@@ -6,13 +6,13 @@ import io
 import json
 from pathlib import Path
 import shutil
-import tempfile
 import unittest
 
 from artifact_pipeline.bundle_fixed_play_inputs import bundle, main
 from artifact_pipeline.pegging import ROLES, get_canonical_hands
 from artifact_pipeline.six_layer_policy import SixLayerPolicy
 from artifact_pipeline.test_fixed_policy_fixtures import make_bundle
+from artifact_pipeline.test_six_layer_policy import temporary_directory
 
 
 def generator_layout(root: Path, converged: object = False) -> tuple[Path, Path, dict]:
@@ -47,7 +47,7 @@ def generator_layout(root: Path, converged: object = False) -> tuple[Path, Path,
 
 class BundleTest(unittest.TestCase):
     def setUp(self):
-        self.root = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        self.root = Path(self.enterContext(temporary_directory()))
 
     def test_bundle_loads_and_its_digest_is_reproducible(self):
         work, prior, source = generator_layout(self.root)
