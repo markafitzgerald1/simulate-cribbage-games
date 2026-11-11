@@ -351,22 +351,25 @@ cargo-llvm-cov and cargo-deny versions, which Dependabot does not bump. Coverage
 counters are shared by every thread, so the coverage run uses one rayon thread:
 a parallel instrumented solve was over ten times slower. Line coverage counts a
 line that holds only a `?` error branch as missed, so keep each `?` on a line
-that also runs when the call succeeds. The generator's outputs are compared byte
-for byte with research digests, so a change that reorders a floating-point sum,
-or lets a sum cross threads, is a behavior change even when every test passes.
-Re-run the full-size digest check in `native/cfr/README.md` before claiming
-equivalence. The spelling hook reads Rust's root-module path keyword as a
-misspelling of "create", so module paths use `super::` rather than an
-ignore-list change to the hook. Five end-to-end tests take 13 to 45 seconds each
-and carry `#[ignore]` with a reason saying so, the Rust book's idiom for
-expensive rather than broken tests; plain `cargo test` skips them, so CI passes
-`--include-ignored` to both the test and coverage steps, and
-`test_workflow_gates.py` fails if either flag goes. Local pre-commit hooks run
-only when `native/cfr/` changes: `cargo fmt --check` on commit, and clippy plus
-the fast tests (about 4 seconds of tests) on push, through
-`scripts/cargo_hook.sh`, which adds `~/.cargo/bin` to `PATH` because a hook's
-environment may lack it. A hook's `stages` only chooses when it runs; it does
-not install the Git hook. `default_install_hook_types` in
+that also runs when the call succeeds. The generator's outputs are pinned by
+digest, so a change that reorders a floating-point sum, or lets a sum cross
+threads, is a behavior change even when every test passes: it alters the
+policy's low bits and needs a re-pin and fresh certificates. Re-run the
+full-size digest check in `native/cfr/README.md` before claiming equivalence.
+Explain the generator in its own terms, by the tests, oracles and certificates
+in this repository; the unpublished research C++ it was ported from belongs only
+in a short port history, never in the correctness argument. The spelling hook
+reads Rust's root-module path keyword as a misspelling of "create", so module
+paths use `super::` rather than an ignore-list change to the hook. Five
+end-to-end tests take 13 to 45 seconds each and carry `#[ignore]` with a reason
+saying so, the Rust book's idiom for expensive rather than broken tests; plain
+`cargo test` skips them, so CI passes `--include-ignored` to both the test and
+coverage steps, and `test_workflow_gates.py` fails if either flag goes. Local
+pre-commit hooks run only when `native/cfr/` changes: `cargo fmt --check` on
+commit, and clippy plus the fast tests (about 4 seconds of tests) on push,
+through `scripts/cargo_hook.sh`, which adds `~/.cargo/bin` to `PATH` because a
+hook's environment may lack it. A hook's `stages` only chooses when it runs; it
+does not install the Git hook. `default_install_hook_types` in
 `.pre-commit-config.yaml` makes plain `pre-commit install` install the pre-push
 hook too, without which every push-stage gate silently never ran on a fresh
 clone.

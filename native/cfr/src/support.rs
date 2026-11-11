@@ -1,4 +1,4 @@
-//! Counterfactual opponent support, mirroring the research `support.cpp`.
+//! Counterfactual opponent support.
 //!
 //! For each (policy, prior) pair `k`, bit `k` of an information set's flag is
 //! set when the set is reached with positive prior weight while the

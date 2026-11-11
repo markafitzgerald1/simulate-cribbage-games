@@ -3,7 +3,7 @@ name = "cfr-inputs"
 version = "0.1.0"
 edition = "2024"
 license = "MPL-2.0"
-description = "Regenerates the six-layer CFR pegging inputs (menus, trees, offsets, policy, support) byte for byte."
+description = "Generates the inputs of the six-layer CFR pegging policy: menus, trees, offsets, policy and support."
 publish = false
 
 [dependencies]
@@ -22,11 +22,17 @@ unsafe_code = "forbid"
 
 # The pedantic group is on, as the strict lint gate for this code, and
 # `min_ident_chars` adds a ban on one-letter names outside Clippy's default
-# short list (i, j, n, w, x, y, z). The first three exemptions ask for
-# documentation or annotations aimed at a published library's callers, and
-# this package is never published. Integer-to-f64 conversions mirror the
-# research C++'s implicit ones, rounding identically, and that equality is
-# what the digests check.
+# short list (i, j, n, w, x, y, z). Four pedantic lints are exempt:
+# - must_use_candidate wants `#[must_use]` on every function returning a
+#   value; it guards a library's callers, and this package's only callers are
+#   its own binary and tests.
+# - missing_errors_doc and missing_panics_doc want "# Errors" and "# Panics"
+#   sections in public docs, again for an outside caller; the package is
+#   never published (`publish = false`).
+# - cast_precision_loss flags integer-to-f64 conversions. CFR+ works in
+#   floating point, so chance weights and menu widths must become
+#   probabilities; any rounding is part of the solve, and the policy's
+#   exploitability is then bounded exactly, in integers, by its certificate.
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
 min_ident_chars = "warn"
