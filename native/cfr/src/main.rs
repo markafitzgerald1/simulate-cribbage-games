@@ -104,7 +104,11 @@ fn digests(dir: &Path) -> std::io::Result<String> {
     ];
     let body: Vec<String> = entries
         .iter()
-        .filter_map(|(k, v)| v.as_ref().map(|v| format!("\"{k}\":\"{v}\"")))
+        .filter_map(|(name, folder_digest)| {
+            folder_digest
+                .as_ref()
+                .map(|digest| format!("\"{name}\":\"{digest}\""))
+        })
         .collect();
     Ok(format!("{{{}}}", body.join(",")))
 }
@@ -119,65 +123,68 @@ fn read_prior(bytes: &[u8]) -> std::io::Result<Vec<u64>> {
         .as_chunks::<8>()
         .0
         .iter()
-        .map(|&c| u64::from_le_bytes(c))
+        .map(|&chunk| u64::from_le_bytes(chunk))
         .collect())
 }
 
-fn support(o: &Options) -> std::io::Result<()> {
-    if o.policies.is_empty() || o.policies.len() != o.priors.len() {
+fn support(options: &Options) -> std::io::Result<()> {
+    if options.policies.is_empty() || options.policies.len() != options.priors.len() {
         return Err(std::io::Error::other(
             "support needs matching --policy and --prior pairs",
         ));
     }
-    let policies = o
+    let policies = options
         .policies
         .iter()
-        .map(|p| {
-            let bytes = std::fs::read(p)?;
+        .map(|path| {
+            let bytes = std::fs::read(path)?;
             let (words, rest) = bytes.as_chunks::<2>();
             if !rest.is_empty() {
                 return Err(std::io::Error::other("policy must be little-endian u16"));
             }
-            Ok(words.iter().map(|&c| u16::from_le_bytes(c)).collect())
+            Ok(words
+                .iter()
+                .map(|&chunk| u16::from_le_bytes(chunk))
+                .collect())
         })
         .collect::<std::io::Result<Vec<Vec<u16>>>>()?;
-    let priors = o
+    let priors = options
         .priors
         .iter()
-        .map(|p| read_prior(&std::fs::read(p)?))
+        .map(|path| read_prior(&std::fs::read(path)?))
         .collect::<std::io::Result<Vec<_>>>()?;
-    let menus = Menus::load(&o.output)?;
+    let menus = Menus::load(&options.output)?;
     let pairs: Vec<Pair> = policies
         .iter()
         .zip(&priors)
         .map(|(policy, prior)| Pair { policy, prior })
         .collect();
-    let flags = cfr_inputs::support::support(&menus, &TreeFiles(&o.output), &pairs);
-    driver::write_atomic(&o.output.join("support.bin"), &flags)
+    let flags = cfr_inputs::support::support(&menus, &TreeFiles(&options.output), &pairs);
+    driver::write_atomic(&options.output.join("support.bin"), &flags)
 }
 
-fn solve(o: &Options) -> std::io::Result<ExitCode> {
-    let [path] = o.priors.as_slice() else {
+fn solve(options: &Options) -> std::io::Result<ExitCode> {
+    let [path] = options.priors.as_slice() else {
         return Err(std::io::Error::other("solve needs exactly one --prior"));
     };
     let bytes = std::fs::read(path)?;
     let chance = read_prior(&bytes)?;
     let mass = chance
         .iter()
-        .try_fold(0u64, |s, &w| s.checked_add(w))
+        .try_fold(0u64, |total, &weight| total.checked_add(weight))
         .ok_or_else(|| std::io::Error::other("prior mass overflows"))?;
-    let menus = Menus::load(&o.output)?;
+    let menus = Menus::load(&options.output)?;
     let game = Game {
         menus: &menus,
         chance: &chance,
         mass,
     };
-    let menus_digest = driver::folder_sha256(&o.output.join("menus"), FILES)?;
-    let trees_digest = driver::folder_sha256(&o.output.join("trees"), 1820)?;
+    let menus_digest = driver::folder_sha256(&options.output.join("menus"), FILES)?;
+    let trees_digest = driver::folder_sha256(&options.output.join("trees"), 1820)?;
     let id = driver::identity(&driver::sha256(&bytes), &menus_digest, &trees_digest);
-    let trees = TreeFiles(&o.output);
-    let (pause, cap) = (o.pause_after, o.max_iterations);
-    let outcome = driver::run(&o.output, &game, &trees, &id, pause, cap)?;
+    let trees = TreeFiles(&options.output);
+    let (pause, cap) = (options.pause_after, options.max_iterations);
+    let outcome = driver::run(&options.output, &game, &trees, &id, pause, cap)?;
     println!("{outcome:?}");
     Ok(match outcome {
         Outcome::Converged(_) => ExitCode::SUCCESS,
@@ -187,8 +194,8 @@ fn solve(o: &Options) -> std::io::Result<ExitCode> {
 }
 
 /// The files to write, which must lie within `0..count`.
-fn files(o: &Options, count: usize) -> std::io::Result<std::ops::Range<usize>> {
-    let range = o.range.clone().unwrap_or(0..count);
+fn files(options: &Options, count: usize) -> std::io::Result<std::ops::Range<usize>> {
+    let range = options.range.clone().unwrap_or(0..count);
     if range.start >= range.end || range.end > count {
         return Err(std::io::Error::other(format!(
             "--range must lie within 0..{count}"
@@ -197,35 +204,41 @@ fn files(o: &Options, count: usize) -> std::io::Result<std::ops::Range<usize>> {
     Ok(range)
 }
 
-fn run(o: &Options) -> std::io::Result<()> {
+fn run(options: &Options) -> std::io::Result<()> {
     let hands = canonical();
-    match o.command.as_str() {
+    match options.command.as_str() {
         "menus" => {
-            let range = files(o, FILES)?;
-            let dir = o.output.join("menus");
+            let range = files(options, FILES)?;
+            let dir = options.output.join("menus");
             std::fs::create_dir_all(&dir)?;
-            range.into_par_iter().try_for_each(|k| {
-                driver::write_atomic(&dir.join(format!("{k}.bin")), &menus::build(k, &hands))
+            range.into_par_iter().try_for_each(|file_index| {
+                driver::write_atomic(
+                    &dir.join(format!("{file_index}.bin")),
+                    &menus::build(file_index, &hands),
+                )
             })
         }
         "trees" => {
-            let range = files(o, 1820)?;
-            let m = Menus::load(&o.output)?;
-            let dir = o.output.join("trees");
+            let range = files(options, 1820)?;
+            let loaded_menus = Menus::load(&options.output)?;
+            let dir = options.output.join("trees");
             std::fs::create_dir_all(&dir)?;
-            range.into_par_iter().try_for_each(|p| {
-                let bytes = Tree::build(&m, &hands, p).to_bytes();
-                driver::write_atomic(&dir.join(format!("{p}.bin")), &bytes)
+            range.into_par_iter().try_for_each(|pone_hand| {
+                let bytes = Tree::build(&loaded_menus, &hands, pone_hand).to_bytes();
+                driver::write_atomic(&dir.join(format!("{pone_hand}.bin")), &bytes)
             })
         }
-        "support" => support(o),
+        "support" => support(options),
         "digests" => {
-            println!("{}", digests(&o.output)?);
+            println!("{}", digests(&options.output)?);
             Ok(())
         }
         "offsets" => {
-            let m = Menus::load(&o.output)?;
-            driver::write_atomic(&o.output.join("offsets.bin"), &offsets_bytes(&m))
+            let loaded_menus = Menus::load(&options.output)?;
+            driver::write_atomic(
+                &options.output.join("offsets.bin"),
+                &offsets_bytes(&loaded_menus),
+            )
         }
         other => Err(std::io::Error::other(format!(
             "unknown command {other}\n{USAGE}"
@@ -235,37 +248,37 @@ fn run(o: &Options) -> std::io::Result<()> {
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    let o = match parse(&args) {
-        Ok(o) => o,
-        Err(e) => {
-            eprintln!("{e}");
+    let options = match parse(&args) {
+        Ok(options) => options,
+        Err(error) => {
+            eprintln!("{error}");
             return ExitCode::from(2);
         }
     };
-    if o.threads > 0 {
+    if options.threads > 0 {
         rayon::ThreadPoolBuilder::new()
-            .num_threads(o.threads)
+            .num_threads(options.threads)
             .build_global()
             .expect("thread pool");
     }
     let start = Instant::now();
-    if o.command == "solve" {
-        return solve(&o).unwrap_or_else(|e| {
-            eprintln!("{e}");
+    if options.command == "solve" {
+        return solve(&options).unwrap_or_else(|error| {
+            eprintln!("{error}");
             ExitCode::FAILURE
         });
     }
-    match run(&o) {
+    match run(&options) {
         Ok(()) => {
             println!(
                 "{{\"command\":\"{}\",\"seconds\":{:.3}}}",
-                o.command,
+                options.command,
                 start.elapsed().as_secs_f64()
             );
             ExitCode::SUCCESS
         }
-        Err(e) => {
-            eprintln!("{e}");
+        Err(error) => {
+            eprintln!("{error}");
             ExitCode::FAILURE
         }
     }

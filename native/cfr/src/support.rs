@@ -23,7 +23,15 @@ pub struct Pair<'a> {
     pub prior: &'a [u64],
 }
 
-fn walk(m: &Menus, pairs: &[Pair], t: &Tree, flags: &[AtomicU8], id: u32, pone: u8, dealer: u8) {
+fn walk(
+    menus: &Menus,
+    pairs: &[Pair],
+    tree: &Tree,
+    flags: &[AtomicU8],
+    id: u32,
+    pone: u8,
+    dealer: u8,
+) {
     if id & TAG != 0 {
         return;
     }
@@ -33,27 +41,35 @@ fn walk(m: &Menus, pairs: &[Pair], t: &Tree, flags: &[AtomicU8], id: u32, pone: 
         off,
         actor,
         width,
-    } = t.node(m, id);
+    } = tree.node(menus, id);
     let dealer_decides = actor == 1;
     flags[info].fetch_or(
         if dealer_decides { pone } else { dealer },
         Ordering::Relaxed,
     );
-    for a in 0..width {
+    for action in 0..width {
         let mut reach = 0u8;
-        for (k, pair) in pairs.iter().enumerate() {
-            if pair.policy[off + a] != 0 {
-                reach |= 1 << k;
+        for (pair_index, pair) in pairs.iter().enumerate() {
+            if pair.policy[off + action] != 0 {
+                reach |= 1 << pair_index;
             }
         }
-        let (mut p, mut d) = (pone, dealer);
+        let (mut next_pone, mut next_dealer) = (pone, dealer);
         if dealer_decides {
-            d &= reach;
+            next_dealer &= reach;
         } else {
-            p &= reach;
+            next_pone &= reach;
         }
-        if p != 0 || d != 0 {
-            walk(m, pairs, t, flags, t.edges[first + a], p, d);
+        if next_pone != 0 || next_dealer != 0 {
+            walk(
+                menus,
+                pairs,
+                tree,
+                flags,
+                tree.edges[first + action],
+                next_pone,
+                next_dealer,
+            );
         }
     }
 }
@@ -69,18 +85,26 @@ pub fn support(menus: &Menus, trees: &dyn Trees, pairs: &[Pair]) -> Vec<u8> {
         assert_eq!(pair.prior.len(), 1820 * 1820, "prior size");
     }
     let flags: Vec<AtomicU8> = (0..menus.len()).map(|_| AtomicU8::new(0)).collect();
-    (0..1820).into_par_iter().for_each(|p| {
-        let t = trees.tree(p);
-        for d in 0..1820 {
-            let mut r = 0u8;
-            for (k, pair) in pairs.iter().enumerate() {
-                if pair.prior[p * 1820 + d] != 0 {
-                    r |= 1 << k;
+    (0..1820).into_par_iter().for_each(|pone_hand| {
+        let tree = trees.tree(pone_hand);
+        for dealer_hand in 0..1820 {
+            let mut reached_pairs = 0u8;
+            for (pair_index, pair) in pairs.iter().enumerate() {
+                if pair.prior[pone_hand * 1820 + dealer_hand] != 0 {
+                    reached_pairs |= 1 << pair_index;
                 }
             }
-            if r != 0 {
-                assert!(t.roots[d] != NIL, "prior");
-                walk(menus, pairs, &t, &flags, t.roots[d], r, r);
+            if reached_pairs != 0 {
+                assert!(tree.roots[dealer_hand] != NIL, "prior");
+                walk(
+                    menus,
+                    pairs,
+                    &tree,
+                    &flags,
+                    tree.roots[dealer_hand],
+                    reached_pairs,
+                    reached_pairs,
+                );
             }
         }
     });

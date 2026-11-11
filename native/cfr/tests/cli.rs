@@ -155,31 +155,38 @@ fn failing_commands_exit_with_one() {
 /// Write the small game's menus and trees as the binary lays them out: every
 /// menu file (empty outside the small game) and every tree file (no roots
 /// outside its two Pone hands). Returns the prior's path.
-fn small_output(s: &Small, dir: &Path) -> PathBuf {
+fn small_output(small_game: &Small, dir: &Path) -> PathBuf {
     let hands = canonical();
     std::fs::create_dir_all(dir.join("menus")).unwrap();
     std::fs::create_dir_all(dir.join("trees")).unwrap();
-    let pones: Vec<usize> = s.trees.keys().copied().collect();
+    let pones: Vec<usize> = small_game.trees.keys().copied().collect();
     let mut dealers = Vec::new();
-    for p in &pones {
-        dealers.extend((0..1820).filter(|&d| s.chance[p * 1820 + d] != 0));
+    for pone_hand in &pones {
+        dealers.extend(
+            (0..1820).filter(|&dealer_hand| small_game.chance[pone_hand * 1820 + dealer_hand] != 0),
+        );
     }
-    for k in 0..FILES {
-        let wanted = pones.contains(&k) || (k >= 1820 && dealers.contains(&(k - 1820)));
+    for file_index in 0..FILES {
+        let wanted = pones.contains(&file_index)
+            || (file_index >= 1820 && dealers.contains(&(file_index - 1820)));
         let bytes = if wanted {
-            menus::build(k, &hands)
+            menus::build(file_index, &hands)
         } else {
             Vec::new()
         };
-        std::fs::write(dir.join("menus").join(format!("{k}.bin")), bytes).unwrap();
+        std::fs::write(dir.join("menus").join(format!("{file_index}.bin")), bytes).unwrap();
     }
     let none = no_trees();
-    for p in 0..1820 {
-        let bytes = s.trees.get(&p).unwrap_or(&none).to_bytes();
-        std::fs::write(dir.join("trees").join(format!("{p}.bin")), bytes).unwrap();
+    for pone_hand in 0..1820 {
+        let bytes = small_game.trees.get(&pone_hand).unwrap_or(&none).to_bytes();
+        std::fs::write(dir.join("trees").join(format!("{pone_hand}.bin")), bytes).unwrap();
     }
     let prior = dir.join("prior.bin");
-    let bytes: Vec<u8> = s.chance.iter().flat_map(|w| w.to_le_bytes()).collect();
+    let bytes: Vec<u8> = small_game
+        .chance
+        .iter()
+        .flat_map(|chance_weight| chance_weight.to_le_bytes())
+        .collect();
     std::fs::write(&prior, bytes).unwrap();
     prior
 }
@@ -187,15 +194,15 @@ fn small_output(s: &Small, dir: &Path) -> PathBuf {
 /// The small game written to a fresh folder: the game, the folder and the
 /// prior's path.
 fn small_folder(name: &str) -> (Small, PathBuf, String) {
-    let s = small();
+    let small_game = small();
     let dir = scratch(name);
-    let prior = small_output(&s, &dir).to_str().unwrap().to_owned();
-    (s, dir, prior)
+    let prior = small_output(&small_game, &dir).to_str().unwrap().to_owned();
+    (small_game, dir, prior)
 }
 
 #[test]
 fn solve_support_and_digests_run_on_a_small_output() {
-    let (s, dir, prior) = small_folder("small");
+    let (small_game, dir, prior) = small_folder("small");
     let (out, prior) = (dir.to_str().unwrap(), prior.as_str());
 
     let (stdout, _) = expect(
@@ -205,8 +212,16 @@ fn solve_support_and_digests_run_on_a_small_output() {
     assert_eq!(stdout.trim(), "Converged(128)");
     // The same solve run in process, from the same prior, writes the same policy.
     let reference = scratch("small-reference");
-    let game = s.game();
-    let outcome = driver::run(&reference, &game, &SmallTrees(&s.trees), "x", None, 4096).unwrap();
+    let game = small_game.game();
+    let outcome = driver::run(
+        &reference,
+        &game,
+        &SmallTrees(&small_game.trees),
+        "x",
+        None,
+        4096,
+    )
+    .unwrap();
     assert_eq!(outcome, Outcome::Converged(128));
     let policy = std::fs::read(dir.join("policy.bin")).unwrap();
     assert_eq!(policy, std::fs::read(reference.join("policy.bin")).unwrap());
@@ -255,14 +270,14 @@ fn solve_support_and_digests_run_on_a_small_output() {
         .as_chunks::<2>()
         .0
         .iter()
-        .map(|&c| u16::from_le_bytes(c))
+        .map(|&word| u16::from_le_bytes(word))
         .collect();
     let pair = Pair {
         policy: &words,
-        prior: &s.chance,
+        prior: &small_game.chance,
     };
     let menus = Menus::load(&dir).unwrap();
-    let flags = support(&menus, &SmallTrees(&s.trees), &[pair]);
+    let flags = support(&menus, &SmallTrees(&small_game.trees), &[pair]);
     assert_eq!(std::fs::read(dir.join("support.bin")).unwrap(), flags);
 
     assert_digests(&dir, &["policy", "support"]);
@@ -282,17 +297,20 @@ fn menus_and_trees_write_the_files_in_their_range() {
     let dir = scratch("range");
     let out = dir.to_str().unwrap();
     let hands = canonical();
-    let p = 77;
+    let pone_hand = 77;
     expect(&["menus", "--output", out, "--range", "1820..3640"], 0);
-    let one = format!("{p}..{}", p + 1);
+    let one = format!("{pone_hand}..{}", pone_hand + 1);
     expect(
         &["menus", "--output", out, "--range", &one, "--threads", "2"],
         0,
     );
-    for k in 0..1820 {
-        let path = dir.join("menus").join(format!("{k}.bin"));
-        if k == p {
-            assert_eq!(std::fs::read(&path).unwrap(), menus::build(k, &hands));
+    for file_index in 0..1820 {
+        let path = dir.join("menus").join(format!("{file_index}.bin"));
+        if file_index == pone_hand {
+            assert_eq!(
+                std::fs::read(&path).unwrap(),
+                menus::build(file_index, &hands)
+            );
         } else {
             assert!(!path.exists());
             std::fs::write(path, []).unwrap();
@@ -302,19 +320,27 @@ fn menus_and_trees_write_the_files_in_their_range() {
     assert_eq!(std::fs::read(dealer).unwrap(), menus::build(3000, &hands));
     expect(&["trees", "--output", out, "--range", &one], 0);
     let menus = Menus::load(&dir).unwrap();
-    let built = std::fs::read(dir.join("trees").join(format!("{p}.bin"))).unwrap();
-    let tree = Tree::build(&menus, &hands, p);
+    let built = std::fs::read(dir.join("trees").join(format!("{pone_hand}.bin"))).unwrap();
+    let tree = Tree::build(&menus, &hands, pone_hand);
     assert_eq!(built, tree.to_bytes());
-    assert_eq!(Tree::read(&dir, p).unwrap().to_bytes(), built);
-    assert!(!dir.join("trees").join(format!("{}.bin", p + 1)).exists());
+    assert_eq!(Tree::read(&dir, pone_hand).unwrap().to_bytes(), built);
+    assert!(
+        !dir.join("trees")
+            .join(format!("{}.bin", pone_hand + 1))
+            .exists()
+    );
 
     expect(&["offsets", "--output", out], 0);
     let offsets = std::fs::read(dir.join("offsets.bin")).unwrap();
     assert_eq!(offsets, offsets_bytes(&menus));
     // With every tree file present, `digests` covers all three outputs.
     let none = no_trees();
-    for q in (0..1820).filter(|&q| q != p) {
-        std::fs::write(dir.join("trees").join(format!("{q}.bin")), none.to_bytes()).unwrap();
+    for other_hand in (0..1820).filter(|&other_hand| other_hand != pone_hand) {
+        std::fs::write(
+            dir.join("trees").join(format!("{other_hand}.bin")),
+            none.to_bytes(),
+        )
+        .unwrap();
     }
     assert_digests(&dir, &["offsets"]);
 }
