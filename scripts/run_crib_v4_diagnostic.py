@@ -26,11 +26,12 @@ def verified_inputs(source, client):
     payload = json.loads(source.read_bytes())["__metadata__"]["generation_accumulators"]
     if crib_v4._policy_hash(payload) != POLICY_SHA256:
         raise ValueError("pinned saved generating policy differs")
+    runtime = (Path(__file__).resolve().parents[1] / ".python-version").read_text()
     if (
         platform.python_implementation() != "CPython"
-        or platform.python_version() != "3.14.4"
+        or platform.python_version() != runtime.strip()
     ):
-        raise ValueError("diagnostic requires CPython 3.14.4")
+        raise ValueError("diagnostic requires the CPython in .python-version")
     expected = ("shared-rank-relation-v1", "uniform-two-card-rank-completion-v1")
     if (crib_v4.ESTIMATOR_CONTRACT, crib_v4.CENTERING_CONTRACT) != expected:
         raise ValueError("diagnostic estimator contracts differ")
