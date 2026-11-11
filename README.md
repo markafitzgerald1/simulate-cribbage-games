@@ -729,3 +729,20 @@ above):
 - GCC 8.1.0 (non-parallel),
 - GCC 10.2.0 (parallel),
 - C#.NET Core 3.1.302.
+
+### Fixed CFR policy measurement
+
+A supplied six-layer mixed policy can be measured in both seats through the
+Python v3 sampler without training or refining discards:
+
+```sh
+python -m artifact_pipeline.measure_fixed_play_table \
+  --policy-manifest inputs/policy.json --samples 13000 --seed 42 \
+  --hand-limit 4 --promotion-gate report
+```
+
+See [the fixed-policy input contract](docs/fixed-pegging-policy.md) for digest
+binding, complete frozen keeps, resources, counters and honest lack of convergence
+provenance. Inputs are not fetched automatically. This serial mode leaves
+release workflows and published schemas unchanged; parallelism, resume and
+production activation need separate review.

@@ -419,6 +419,15 @@ def _stable_seed(*parts: object) -> int:
 
 def policy_fingerprint(policy: PeggingPolicy) -> str:
     """Return a stable digest for resume-compatibility checks."""
+    behavioral = getattr(policy, "behavioral_fingerprint", None)
+    if behavioral is not None:
+        if (
+            not isinstance(behavioral, str)
+            or len(behavioral) != 64
+            or any(character not in "0123456789abcdef" for character in behavioral)
+        ):
+            raise ValueError("Invalid behavioral policy fingerprint")
+        return behavioral
     if isinstance(policy, LegacyHeuristicPolicy):
         payload: object = ("legacy-heuristic-v1",)
     elif isinstance(policy, TabularPeggingPolicy):

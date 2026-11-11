@@ -322,6 +322,24 @@ legacy `simulate_cribbage_games.py` dependency. Do not replace mathematical
 simulation with subjective heuristics. Do not build on untested legacy behavior
 or skip end-to-end smoke coverage for code changes.
 
+For fixed six-layer pegging measurement, follow
+[the producer input contract](../docs/fixed-pegging-policy.md). Keep the frozen
+model in both seats, bind actual policy bytes and complete discard choices,
+and distinguish saved counterfactual support from unavailable historical
+training reach. The serial entry point samples fresh Python v3 observations;
+parallel/resume and release activation remain separately reviewed work.
+
+The pre-commit mypy hook pins mirrors-mypy 1.13, older than the mypy in
+`requirements.txt`, and can reject code the direct `mypy` gate accepts, so run
+`pre-commit run --all-files` as well. That hook also runs under whichever
+Python `pre-commit install` used: a hook installed by an older interpreter
+rejects newer typing such as `typing.TypeGuard`, so check `INSTALL_PYTHON` in
+`.git/hooks/pre-commit` before changing code to satisfy it. The pinned
+spelling hook rejects the unittest membership assertion's name as a typo;
+prefer `assertRegex` for message checks. A test that edits a digest-pinned
+manifest must re-pin the digest and assert the expected refusal message, or
+the digest check refuses first and the test passes for the wrong reason.
+
 The [eight-shard production design](../docs/v4-production-layout.md) requires
 complete table assembly before any policy transition. A shard-local key list
 is an explicit subset of the global plan, not a different sampling identity.
