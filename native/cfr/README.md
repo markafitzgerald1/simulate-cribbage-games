@@ -66,15 +66,13 @@ own evidence above.
 
 ## Why Rust
 
-- **Throughput:** native code with no runtime or garbage collector, so more
-  simulation fits in the same time, which tightens error bounds.
-- **Safe parallelism:** the compiler rules out data races, `unsafe` is
-  forbidden here, and rayon spreads the work across cores while the numerical
-  outputs stay byte-identical for any thread count.
-- **Memory safety at C++-class speed:** a systems language with the speed
-  and control of C++, whose compiler checks memory safety as well as ruling
-  out data races, so the parallel work this generator needs is safer to
-  write.
+- **Memory safety at C++-class speed:** a compiled systems language with the
+  speed and control of C++ and no garbage collector, whose compiler checks
+  memory safety; `unsafe` is forbidden here.
+- **Safe parallelism:** the compiler rules out data races, and the rayon
+  thread-pool library spreads the work across cores. Tests check that the
+  solver's numerical outputs are identical for 1 to 4 threads on a small game;
+  the full-size run used 8.
 
 ## Port history
 
