@@ -185,26 +185,32 @@ skills unless the work product shows it.
 ## Python Setup
 
 Use Python 3.14.10 unless a task updates the supported version.
-`.python-version` is the source of truth for that default: pyenv reads it
-locally, and ordinary single-interpreter workflows pass it to
-`actions/setup-python` as `python-version-file`. The manual
-`diagnose-crib-v4.yml` and `survey-crib-v4.yml` are deliberate exceptions:
-their historical experiments pin CPython 3.14.4 independently of future
-repository upgrades. setup-python only installs versions prebuilt for the
-runner image, and `ubuntu-latest` moved to Ubuntu 26.04, which has no build
-before 3.14.6, so those two jobs also pin `runs-on: ubuntu-24.04`. A frozen
-interpreter needs a frozen image as well; check the setup-python
-`versions-manifest.json` for the image before pinning an older version.
-The matrix jobs in `python-install-and-test.yml` keep a literal version,
-because a `strategy` block is evaluated before checkout and can read neither
-that file nor the `env` context; that list is also where a second supported
-version would be added. A version bump therefore edits `.python-version`,
-those matrices, this line and the versions named in `README.md`. It also
-breaks the approved activation runtime pin in `shadow-crib-v4.yml`, a
-SHA-256 of `.python-version` checked before v4 activation preparation;
-updating that hash re-approves the activation runtime and needs the
-maintainer's go. Checkpoints from crib v4 record the interpreter version and
-will not resume under a different one.
+`.python-version` is the source of truth for that version: pyenv reads it
+locally, every single-interpreter workflow passes it to `actions/setup-python`
+as `python-version-file`, and the v4 diagnostic runner compares the running
+interpreter with it. The matrix jobs in `python-install-and-test.yml` keep a
+literal version, because a `strategy` block is evaluated before checkout and
+can read neither that file nor the `env` context; that list is also where a
+second supported version would be added.
+
+A version bump therefore edits `.python-version`, those matrices, this line,
+and the versions named in `README.md`. It also re-pins the approved activation
+runtime in `shadow-crib-v4.yml`, a SHA-256 of `.python-version` and
+`requirements.txt` checked before v4 activation preparation; re-pinning
+re-approves the activation runtime and needs the maintainer's go, and a test
+fails until it is done, so a dependency bump needs the same re-pin. Run
+`scratch/verify_upgrade.py` as described under Required Validation.
+Checkpoints from crib v4 record the interpreter version and will not resume
+under a different one. Pre-commit keys its hook environments on the minor
+version only, so after a patch bump run `pre-commit clean` and then
+`pre-commit install-hooks`; otherwise local hooks keep running on the old
+interpreter.
+
+setup-python only installs versions prebuilt for the runner image. Before
+pinning a version or an image, check that the setup-python
+`versions-manifest.json` has that version for that image: when
+`ubuntu-latest` moved to Ubuntu 26.04, every 3.14 release before 3.14.6
+stopped installing.
 
 Install dependencies with:
 

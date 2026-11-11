@@ -14,11 +14,13 @@ literal group lists are committed in `scripts/run_crib_v4_survey.py`: 20, 20,
 cost. Together they cover the 78 distinct-rank groups exactly once, both roles
 and complete twins (156 comparisons). Same-rank groups have no suited twin.
 
-Each active stream targets N=22,000 complete rows with seed 42, generation
-zero, CPython 3.14.4 and the original source/client/saved-policy hashes from
-[the pilot](v4-pilot.md). The [first diagnostic's](v4-diagnostic.md) input
-verification, exact moments, contracts and per-group checkpoint handling are
-reused. Group allocation never changes row seeds. No policy is trained.
+Each active stream targets N=22,000 complete rows with seed 42, generation zero,
+the CPython in `.python-version` and the original source/client/saved-policy
+hashes from [the pilot](v4-pilot.md). The [first diagnostic's](v4-diagnostic.md)
+input verification, exact moments, contracts and per-group checkpoint handling
+are reused. Group allocation never changes row seeds. No policy is trained. The
+November 2026 survey ran on CPython 3.14.4; its checkpoints do not resume under
+3.14.10.
 
 Measured generation costs are about 21 seconds per 1,000 rows per group,
 including both roles (about 22 seconds for Jack groups). Expect about ten

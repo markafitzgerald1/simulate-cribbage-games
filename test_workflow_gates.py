@@ -124,10 +124,8 @@ class TestDiagnosticWorkflow(unittest.TestCase):
         self.assertEqual(len(workflow["jobs"]), 1)
         job = workflow["jobs"]["first-shard"]
         self.assertEqual(job["timeout-minutes"], "240")
-        # The frozen 3.14.4 runtime has no Ubuntu 26.04 build.
-        self.assertEqual(job["runs-on"], "ubuntu-24.04")
         runtime = next(s for s in job["steps"] if "setup-python@" in s.get("uses", ""))
-        self.assertEqual(runtime["with"]["python-version"], "3.14.4")
+        self.assertEqual(runtime["with"], {"python-version-file": ".python-version"})
         self.assertNotIn("strategy", job)
         upload = job["steps"][-1]
         self.assertEqual(upload["if"], "always()")
@@ -232,13 +230,12 @@ class TestSurveyWorkflow(unittest.TestCase):
         self.assertEqual(job["strategy"]["max-parallel"], "4")
         self.assertEqual(job["strategy"]["fail-fast"], "false")
         self.assertEqual(job["timeout-minutes"], "330")
-        self.assertEqual(job["runs-on"], "ubuntu-24.04")
         self.assertTrue("${{ matrix.shard }}" in job["concurrency"]["group"])
         self.assertEqual(job["concurrency"]["cancel-in-progress"], "false")
         steps = job["steps"]
         self.assertTrue("300 * 60" in steps[0]["run"])
         runtime = next(s for s in steps if "setup-python@" in s.get("uses", ""))
-        self.assertEqual(runtime["with"]["python-version"], "3.14.4")
+        self.assertEqual(runtime["with"], {"python-version-file": ".python-version"})
         names = [s.get("name") for s in steps]
         validate = names.index("Verify resume run provenance")
         restore = names.index("Restore compatible per-group checkpoints")

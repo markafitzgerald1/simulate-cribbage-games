@@ -1,5 +1,6 @@
 """Guard the approved manual shadow budget without dispatching a workflow."""
 
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -25,6 +26,24 @@ def guard_accepts(expression, **context):
 class TestV4ShadowWorkflow(unittest.TestCase):
     def _require_fragment(self, fragment, workflow):
         self.assertTrue(fragment in workflow, fragment)
+
+    def test_activation_runtime_pins_match_the_repository_runtime(self):
+        # A Python or requirements bump must re-pin here, in review, rather
+        # than surface as a failed activation dispatch.
+        workflow = yaml.safe_load(WORKFLOW.read_text())
+        steps = workflow["jobs"]["initialize"]["steps"]
+        step = next(
+            s
+            for s in steps
+            if s.get("name") == "Verify approved activation runtime pins"
+        )
+        pins = re.findall(r"^([0-9a-f]{64})  (\S+)$", step["run"], re.MULTILINE)
+        self.assertEqual(
+            sorted(name for _, name in pins), [".python-version", "requirements.txt"]
+        )
+        for digest, name in pins:
+            data = (WORKFLOW.parents[2] / name).read_bytes()
+            self.assertEqual(hashlib.sha256(data).hexdigest(), digest, name)
 
     def test_every_sampling_entry_requires_explicit_manual_authorization(self):
         workflow = yaml.safe_load(WORKFLOW.read_text())

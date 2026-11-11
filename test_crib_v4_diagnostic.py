@@ -344,6 +344,7 @@ class TestShardCoordinator(unittest.TestCase):
                 alias.unlink()
 
     def test_verified_inputs_reject_hash_policy_runtime_and_contract_drift(self):
+        runtime = (Path(__file__).parent / ".python-version").read_text().strip()
         raw = json.dumps({"__metadata__": {"generation_accumulators": None}}).encode()
         self.source.write_bytes(raw)
         with self.assertRaises(ValueError):
@@ -363,16 +364,29 @@ class TestShardCoordinator(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.runner.verified_inputs(self.source, self.client)
             with patch.object(self.runner, "POLICY_SHA256", crib_v4._policy_hash(None)):
-                for other in ("3.14.3", "3.14.10"):
+                # 3.14.4 ran the original November 2026 experiment.
+                for other in ("3.14.3", "3.14.4", runtime + "1"):
                     with patch.object(
                         self.runner.platform, "python_version", return_value=other
                     ):
-                        with self.assertRaisesRegex(ValueError, "requires CPython"):
+                        with self.assertRaisesRegex(ValueError, "requires the CPython"):
                             self.runner.verified_inputs(self.source, self.client)
-                # The repository default may move past the frozen runtime, so
-                # report it here rather than relying on the test interpreter.
-                with patch.object(
+                # The pin is the repository's, not whatever the working
+                # directory happens to hold.
+                with tempfile.TemporaryDirectory() as elsewhere, contextlib.chdir(
+                    elsewhere
+                ), patch.object(
                     self.runner.platform, "python_version", return_value="3.14.4"
+                ):
+                    Path(".python-version").write_text("3.14.4\n")
+                    with self.assertRaisesRegex(ValueError, "requires the CPython"):
+                        self.runner.verified_inputs(
+                            self.source.resolve(), self.client.resolve()
+                        )
+                # Report the pinned version rather than rely on the interpreter
+                # running the tests.
+                with patch.object(
+                    self.runner.platform, "python_version", return_value=runtime
                 ):
                     with patch.object(crib_v4, "ESTIMATOR_CONTRACT", "different"):
                         with self.assertRaisesRegex(ValueError, "contracts differ"):

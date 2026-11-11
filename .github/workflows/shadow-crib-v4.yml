@@ -49,7 +49,7 @@ jobs:
         if: inputs.prepare_activation
         run: |
           sha256sum --check --strict <<'SUMS'
-          bb90877c5ee8c4703cfd03421e92ef2a17a10b67ecc822524baeea4c8da3dc9f  .python-version
+          4f4c88910b6d485ae689143880e5e81b595a48a51ecb391b2f14feaec106d180  .python-version
           9e7e590675174d95195553a21dfc7179ed30424de1208690c6cad6f1cb5c040f  requirements.txt
           SUMS
       - name: Pin the archived v3 reference

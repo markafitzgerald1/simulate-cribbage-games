@@ -15,12 +15,15 @@ historical crib backfill. Keep historical scheduled and manual runs from both
 workflows out of the retry path. GitHub reruns use the original workflow
 definition and ref, so this change cannot retroactively disable those writers.
 
-The activation path calls the read-only eight-shard shadow workflow. It pins
-the archived v3 reference and approved runtime inputs, preserves the 0.10
-gate, then requires the approved SHA-256 of the rebuilt client bytes. Its
-final job exports the marginal v2 sidecar, attaches the verified assembly
-shift, and compresses the full JSON. The sidecar's source digest identifies
-the uncompressed full file.
+The activation path calls the read-only eight-shard shadow workflow. It pins the
+archived v3 reference and approved runtime inputs, preserves the 0.10 gate, then
+requires the approved SHA-256 of the rebuilt client bytes. Its final job exports
+the marginal v2 sidecar, attaches the verified assembly shift, and compresses
+the full JSON. The sidecar's source digest identifies the uncompressed full
+file. The runtime inputs are the SHA-256 digests of `.python-version` and
+`requirements.txt`. They were re-approved for CPython 3.14.10 in #231, and a
+test keeps them equal to those files, so a Python or dependency bump re-pins
+them in review.
 
 The reusable sampler checks manual dispatch, main, attempt 1 and explicit
 `prepare` confirmation before bootstrap and each measurement wave. A standalone
