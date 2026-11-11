@@ -5,7 +5,7 @@
 //! hand, `u32::MAX` when infeasible), `n` nodes of (global menu index, first
 //! edge), then `e` edges. A child id with the high bit set is a terminal; its
 //! low byte is the signed Pone-minus-Dealer pegging margin after both players
-//! finish with the heuristic.
+//! play out their forced last cards.
 
 use super::game::{Cards, State, feasible};
 use super::menus::{FILES, NIL, RECORD};
@@ -164,7 +164,7 @@ impl Tree {
             }
             let legal = state.legal();
             if legal.len() < 2 || 4 - state.cards_left[state.next] >= 3 {
-                let action = state.heuristic();
+                let action = state.forced();
                 state.play(action);
                 continue;
             }
@@ -285,8 +285,33 @@ mod tests {
         Menus::from_files(&files)
     }
 
+    /// Walk every edge below `id` alongside a replay of the rules: each node
+    /// must be the menu for the replayed public history, and each leaf's
+    /// margin must equal the replayed hand's. Returns the leaves checked.
+    fn check_subtree(tree: &Tree, menus: &Menus, id: u32, mut state: State) -> usize {
+        if id & TAG != 0 {
+            state.finish();
+            assert_eq!(leaf(id), state.points[0] - state.points[1]);
+            return 1;
+        }
+        while state.legal().len() < 2 || 4 - state.cards_left[state.next] >= 3 {
+            let action = state.forced();
+            state.play(action);
+        }
+        let Node { info, first, .. } = tree.node(menus, id);
+        assert_eq!(menus.history[info], state.history_key());
+        let legal = state.legal();
+        let mut leaves = 0;
+        for (i, &rank) in legal.iter().enumerate() {
+            let mut next = state.clone();
+            next.play(Some(rank));
+            leaves += check_subtree(tree, menus, tree.edges[first + i], next);
+        }
+        leaves
+    }
+
     #[test]
-    fn tree_round_trips_and_its_heuristic_path_matches_a_replay() {
+    fn tree_round_trips_and_every_leaf_matches_a_replay() {
         let hands = canonical();
         let pone_index = hands
             .iter()
@@ -301,30 +326,15 @@ mod tests {
         assert_eq!(again.roots, tree.roots);
         assert_eq!(again.nodes, tree.nodes);
         assert_eq!(again.edges, tree.edges);
-        // Following the heuristic at every node must reach the heuristic margin.
+        let mut leaves = 0;
         for dealer_index in DEALERS {
             if tree.roots[dealer_index] == NIL {
                 continue;
             }
-            let mut state = State::new(hands[pone_index], hands[dealer_index]);
-            let mut id = tree.roots[dealer_index];
-            while id & TAG == 0 {
-                let Node { info, first, .. } = tree.node(&menus, id);
-                // Advance the reference state to this decision.
-                while state.legal().len() < 2 || 4 - state.cards_left[state.next] >= 3 {
-                    let action = state.heuristic();
-                    state.play(action);
-                }
-                assert_eq!(menus.history[info], state.history_key());
-                let legal = state.legal();
-                let choice = state.heuristic().unwrap();
-                let i = legal.iter().position(|&rank| rank == choice).unwrap();
-                state.play(Some(choice));
-                id = tree.edges[first + i];
-            }
-            state.finish();
-            assert_eq!(leaf(id), state.points[0] - state.points[1]);
+            let state = State::new(hands[pone_index], hands[dealer_index]);
+            leaves += check_subtree(&tree, &menus, tree.roots[dealer_index], state);
         }
+        assert!(leaves > 100, "only {leaves} leaves checked");
     }
 
     #[test]

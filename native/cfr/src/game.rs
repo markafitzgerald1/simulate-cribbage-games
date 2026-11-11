@@ -1,12 +1,7 @@
-//! Rank-only two-player pegging: the rules every later module walks, and the
-//! legacy pegging heuristic.
+//! Rank-only two-player pegging: the rules every later module walks.
 //!
-//! The heuristic is the rule-based policy in `artifact_pipeline/pegging.py`.
-//! The generator plays it only where the move is forced (one legal rank, a go
-//! or a player's last card), so its rules change no game value. Each menu
-//! record also stores its choice at the decision, and because that byte is
-//! part of the menu files, the order in which the heuristic breaks ties is
-//! part of the generated output.
+//! The policy makes every real choice. Where the move is forced (one legal
+//! rank, a go, or a player's last card), `State::forced` plays it.
 //!
 //! Ranks are 0 (Ace) through 12 (King).
 
@@ -132,62 +127,16 @@ impl State {
         0
     }
 
-    /// The legacy pegging heuristic; `None` means go.
+    /// The forced move: the only legal rank, or `None` for a go.
     ///
-    /// It takes the first rule that applies, and within a rule the lowest
-    /// legal rank, unless the rule says otherwise:
-    /// 1. leading: the highest card worth less than five;
-    /// 2. after a pair: three of a kind;
-    /// 3. the longest run;
-    /// 4. fifteen;
-    /// 5. a pair with the last card;
-    /// 6. thirty-one;
-    /// 7. a count of 16 to 20;
-    /// 8. otherwise the highest count value.
-    pub fn heuristic(&self) -> Option<u8> {
+    /// # Panics
+    ///
+    /// If more than one rank is legal, because the policy, not this
+    /// function, makes real choices.
+    pub fn forced(&self) -> Option<u8> {
         let ranks = self.legal();
-        if ranks.is_empty() {
-            return None;
-        }
-        if self.count == 0
-            && let Some(&lead) = ranks.iter().rev().find(|&&rank| count_value(rank) < 5)
-        {
-            return Some(lead);
-        }
-        let last_card = self.played_length.checked_sub(1).map(|i| self.played[i]);
-        let after_pair = self.played_length >= 2
-            && self.played[self.played_length - 1] == self.played[self.played_length - 2];
-        if after_pair && let Some(&trips) = ranks.iter().find(|&&rank| Some(rank) == last_card) {
-            return Some(trips);
-        }
-        // The first rank reaching the strictly longest run wins.
-        let mut longest: Option<(u8, usize)> = None;
-        for &rank in &ranks {
-            let run_length = self.run(rank);
-            if run_length > longest.map_or(0, |(_, best)| best) {
-                longest = Some((rank, run_length));
-            }
-        }
-        if let Some((rank, _)) = longest {
-            return Some(rank);
-        }
-        let count_after = |rank: u8| self.count + count_value(rank);
-        let first_where =
-            |rule: &dyn Fn(u8) -> bool| ranks.iter().copied().find(|&rank| rule(rank));
-        first_where(&|rank| count_after(rank) == 15)
-            .or_else(|| first_where(&|rank| Some(rank) == last_card))
-            .or_else(|| first_where(&|rank| count_after(rank) == 31))
-            .or_else(|| first_where(&|rank| (16..=20).contains(&count_after(rank))))
-            .or_else(|| {
-                // The first rank with the strictly highest count value.
-                let mut highest = ranks[0];
-                for &rank in &ranks {
-                    if count_value(rank) > count_value(highest) {
-                        highest = rank;
-                    }
-                }
-                Some(highest)
-            })
+        assert!(ranks.len() <= 1, "Forced move with a choice");
+        ranks.first().copied()
     }
 
     fn reset(&mut self, to_act: usize) {
@@ -262,10 +211,11 @@ impl State {
         false
     }
 
-    /// Play the heuristic for both players until the hand ends.
+    /// Play out the hand once every remaining move is forced: each player
+    /// holds at most one card.
     pub fn finish(&mut self) {
         while self.cards_left != [0, 0] {
-            let action = self.heuristic();
+            let action = self.forced();
             if self.play(action) {
                 break;
             }
@@ -350,18 +300,22 @@ mod tests {
 
     #[test]
     fn run_detection_handles_out_of_order_runs() {
-        let mut state = State::new([2, 6, 9, 9], [3, 7, 9, 9]);
-        state.play(Some(2)); // 3
-        state.play(Some(3)); // 4
-        assert_eq!(state.run(1), 3); // a 2 completes 2-3-4
-        assert_eq!(state.run(4), 3); // a 5 completes 3-4-5
+        // 3, 4 then a 2: the low card arrives last and completes 2-3-4.
+        let state = after([2, 6, 9, 9], [3, 7, 9, 9], &[2, 3]);
+        assert_eq!(state.run(1), 3);
+        // 5, 3 then a 4: the middle card arrives last and completes 3-4-5.
+        let state = after([4, 6, 9, 9], [2, 7, 9, 9], &[4, 2]);
+        assert_eq!(state.run(3), 3);
+        // 5, 3 then a 6 leaves a gap at 4.
         assert_eq!(state.run(5), 0);
     }
 
     #[test]
     fn a_repeated_rank_breaks_a_run() {
-        // 2, 3, 3 then a 5: 2-3-3-5 and 3-3-5 span the right width but
-        // repeat the 3, so neither is a run.
+        // 2, 3, 3 then a 5: 2-3-3-5 spans four values and 3-3-5 spans three,
+        // the width of a run of their length, but each repeats the 3. Only
+        // the repeat rule rejects them; 2-3-3-4 would not test it, because a
+        // repeated rank already narrows its span below a run's width.
         let state = after([1, 2, 9, 9], [2, 4, 9, 9], &[1, 2, 2]);
         assert_eq!(state.run(4), 0);
     }
@@ -390,92 +344,23 @@ mod tests {
         state
     }
 
-    // One test per heuristic rule, in priority order. Ranks are 0 (ace) to
-    // 12 (king); 9-12 count ten.
-
     #[test]
-    fn heuristic_goes_when_nothing_fits() {
-        // Nothing fits under 31 after 10-J-Q.
-        let state = after([9, 10, 11, 12], [9, 10, 11, 12], &[9, 10, 11]);
-        assert_eq!(state.heuristic(), None);
+    fn the_forced_move_is_the_only_legal_rank_or_a_go() {
+        // K A K 9 makes 30; Pone's 10 and Jack cannot be played, so Pone goes.
+        let state = after([9, 10, 12, 12], [0, 8, 10, 11], &[12, 0, 12, 8]);
+        assert_eq!(state.next, 0);
+        assert_eq!(state.legal(), Vec::<u8>::new());
+        assert_eq!(state.forced(), None);
+        // 10 A 10 2 makes 23 and Pone holds two 5s: one legal rank.
+        let state = after([4, 4, 9, 9], [0, 1, 2, 3], &[9, 0, 9, 1]);
+        assert_eq!(state.legal(), vec![4]);
+        assert_eq!(state.forced(), Some(4));
     }
 
     #[test]
-    fn heuristic_leads_highest_card_under_five() {
-        let state = State::new([0, 3, 4, 12], [1, 2, 3, 4]);
-        assert_eq!(state.heuristic(), Some(3));
-    }
-
-    #[test]
-    fn heuristic_prefers_three_of_a_kind_to_fifteen() {
-        // A pair of 3s on the table: the 3 beats the 9 that makes fifteen.
-        let state = after([2, 2, 8, 12], [2, 5, 6, 7], &[2, 2]);
-        assert_eq!(state.heuristic(), Some(2));
-    }
-
-    #[test]
-    fn heuristic_completes_a_run() {
-        // 3 then 4: the 5 completes a run.
-        let state = after([2, 4, 9, 12], [3, 5, 6, 7], &[2, 3]);
-        assert_eq!(state.heuristic(), Some(4));
-    }
-
-    #[test]
-    fn heuristic_prefers_the_longer_run() {
-        // 2, A, 3 played: a 4 makes a run of four, a 2 only of three.
-        let state = after([1, 2, 9, 9], [0, 1, 3, 12], &[1, 0, 2]);
-        assert_eq!(state.heuristic(), Some(3));
-    }
-
-    #[test]
-    fn heuristic_takes_the_lowest_of_equal_runs() {
-        // 3 then 4: a 2 and a 5 both make a run of three; the 2 is lower.
-        let state = after([1, 2, 4, 9], [3, 9, 9, 9], &[2, 3]);
-        assert_eq!(state.heuristic(), Some(1));
-    }
-
-    #[test]
-    fn heuristic_prefers_fifteen_to_a_pair() {
-        // After a 10: the 5 makes fifteen, ahead of pairing the 10.
-        let state = after([0, 2, 3, 9], [1, 4, 9, 11], &[9]);
-        assert_eq!(state.heuristic(), Some(4));
-    }
-
-    #[test]
-    fn heuristic_pairs_the_last_card() {
-        // After a 10, with nothing making fifteen: pair it.
-        let state = after([0, 2, 3, 9], [1, 2, 6, 9], &[9]);
-        assert_eq!(state.heuristic(), Some(9));
-    }
-
-    #[test]
-    fn heuristic_makes_thirty_one() {
-        // At 21: the jack makes 31. No case can tell this rule from the
-        // highest-value fallback: from 21 nothing reaches 16 to 20, and the
-        // card making 31 is the highest legal value, lowest rank first.
-        let state = after([0, 5, 7, 12], [3, 5, 9, 10], &[12, 9, 0]);
-        assert_eq!(state.heuristic(), Some(10));
-    }
-
-    #[test]
-    fn heuristic_reaches_sixteen_to_twenty_with_the_lowest_card() {
-        // After a 10: the 6 is the lowest card reaching 16 to 20.
-        let state = after([0, 2, 3, 9], [0, 5, 8, 12], &[9]);
-        assert_eq!(state.heuristic(), Some(5));
-    }
-
-    #[test]
-    fn heuristic_falls_back_to_the_highest_value() {
-        // After a 10, with only low cards: the highest value.
-        let state = after([4, 6, 7, 9], [0, 1, 2, 3], &[9]);
-        assert_eq!(state.heuristic(), Some(3));
-    }
-
-    #[test]
-    fn heuristic_takes_the_lowest_of_equal_values() {
-        // Leading with only ten-cards: the 10, the lowest of four equal values.
-        let state = State::new([9, 10, 11, 12], [0, 1, 2, 3]);
-        assert_eq!(state.heuristic(), Some(9));
+    #[should_panic(expected = "Forced move with a choice")]
+    fn a_real_choice_is_not_forced() {
+        let _ = State::new([0, 1, 2, 3], [4, 5, 6, 7]).forced();
     }
 
     #[test]
