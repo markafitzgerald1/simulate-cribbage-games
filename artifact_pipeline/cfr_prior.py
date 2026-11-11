@@ -19,12 +19,6 @@ does not:
 
 Every weight is an exact count of physical deals, so the output depends on
 no floating-point order.
-
-These two stages are the shipped chain, not a rebuild of the pinned research
-prior `6685f548...`. That prior came from four further research CFR
-discard-loop transitions, which this module does not implement; given those
-transitions' iteration-4 keeps (outside this repository), the `prior` stage
-reproduces it byte for byte.
 """
 
 from __future__ import annotations
@@ -58,9 +52,9 @@ DEALT = 6
 KEPT = 4
 POPULATION_METHOD = "artifact_pipeline.cfr_prior.population.v1"
 PRIOR_METHOD = "artifact_pipeline.cfr_prior.mixture.v1"
-# The configuration of the research starting population (discard policy
-# fingerprint 326f6541...): production analytical initialization, then two
-# outer heuristic refinements of 200 samples per hand, seed 42.
+# The production play-table workflow's settings for these stages: analytical
+# initialization (40 and 2 iterations), then two outer heuristic refinements
+# of 200 samples per hand, seed 42.
 DEFAULT_CONFIGURATION = {
     "analytical_max_iterations": 40,
     "full_hand_policy_max_iterations": 2,
@@ -68,7 +62,9 @@ DEFAULT_CONFIGURATION = {
     "policy_table_samples": 200,
     "seed": 42,
 }
-U64_LIMIT = 1 << 64
+# The Rust solver's MASS_LIMIT (native/cfr/src/solve.rs): the largest prior
+# mass its exact i128 certificate can carry, (2^125 - 1) // (128 * 1000^6).
+SOLVER_MASS_LIMIT = 332_306_998_946_228_968
 REQUIRED_POPULATION_KEYS = frozenset(
     ("keeps", "keeps_sha256", "discard_policy_fingerprint")
 )
@@ -96,7 +92,7 @@ def physical_weight(hand: Sequence[int]) -> int:
 
 
 def keeps_digest(rows: Sequence[Sequence[Any]]) -> str:
-    """Digest the keep rows exactly as the research population did."""
+    """Digest the keep rows as compact JSON, in their sorted order."""
     return hashlib.sha256(json.dumps(rows, separators=(",", ":")).encode()).hexdigest()
 
 
@@ -244,8 +240,8 @@ def joint_keep_matrix(pone: Weighted, dealer: Weighted, keep_count: int) -> byte
     the hand it keeps. Cell `[i * keep_count + j]` counts the physical ways
     to deal Pone a hand that keeps key `i` and then Dealer, from the
     remaining cards, a hand that keeps key `j`. This is the same quantity
-    the research counter `exact_keep_population.cpp` summed one deal pair at
-    a time:
+    the quantity a direct count over every pair of dealt hands would sum
+    one pair at a time:
 
         weight(p) * prod_r C(4 - p_r, d_r)
 
@@ -366,7 +362,7 @@ def mixture_weights(uniform: Sequence[int], production: Sequence[int]) -> array:
     Each input is first normalized to probabilities, so the result is
     proportional to `uniform / sum(uniform) + production / sum(production)`.
     Scaling by the masses' greatest common divisor keeps the integers as
-    small as exactness allows. This is the research `mixture_weights`.
+    small as exactness allows.
     """
     if len(uniform) != len(production) or min(uniform) < 0 or min(production) < 0:
         raise ValueError("Incompatible chance vectors")
@@ -391,8 +387,10 @@ def build_prior(
     production = production_matrix(rows, ranks)
     prior = mixture_weights(uniform, production)
     mixture_mass = sum(prior)
-    if mixture_mass >= U64_LIMIT:
-        raise ValueError("Prior mass overflows the solver's u64 total")
+    if mixture_mass > SOLVER_MASS_LIMIT:
+        raise ValueError(
+            f"Prior mass {mixture_mass} exceeds the solver's limit {SOLVER_MASS_LIMIT}"
+        )
     production_bytes, prior_bytes = _little_endian(production), _little_endian(prior)
     report = {
         "prior_method": PRIOR_METHOD,
