@@ -1,5 +1,4 @@
-//! Optional-decision menus, mirroring `collect` and `make_menu` in the research
-//! `stream.cpp` (sha256 4e95ce60... before its include paths were relocated).
+//! Optional-decision menus: the decisions the policy has to make.
 //!
 //! There is one menu file per (seat, own hand): file `k` covers seat `k / 1820`
 //! and own hand `k % 1820`. It lists every information set at which that seat
