@@ -112,8 +112,8 @@ fn failing_commands_exit_with_one() {
     weights[0] = 1;
     let impossible_prior = dir.join("impossible-prior.bin");
     std::fs::write(&impossible_prior, &weights).unwrap();
-    // 2^59 on four Aces against four Kings (hands 0 and 1819), a possible deal,
-    // pair, is over the certificate's mass limit of about 2^58.
+    // 2^59 on four Aces against four Kings (hands 0 and 1819), a deal that
+    // can happen, is over the certificate's mass limit of about 2^58.
     weights[..8].fill(0);
     let heavy = 1819 * 8;
     weights[heavy..heavy + 8].copy_from_slice(&(1u64 << 59).to_le_bytes());
