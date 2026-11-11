@@ -137,7 +137,8 @@ cargo deny --locked check
 The `rust-cfr-inputs` CI job runs the same gates, mirroring the Python and
 TypeScript ones:
 - **Lint:** clippy's pedantic group is on in `Cargo.toml`, which explains
-  each exemption, and `min_ident_chars` rejects one-letter names.
+  each exemption, and `min_ident_chars` rejects one-letter names outside
+  clippy's default short list (i, j, n, w, x, y, z).
 - **Coverage:** 100% of lines.
 - **Copy/paste:** PMD 7 CPD at the TypeScript threshold of 40 tokens.
 - **Dependencies:** `deny.toml` fails on RustSec advisories, yanked crates,
