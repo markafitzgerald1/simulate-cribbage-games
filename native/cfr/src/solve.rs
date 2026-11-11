@@ -10,7 +10,7 @@
 //! exactly the serial C++ order, whatever the thread count:
 //!
 //! * In Pone's pass every counterfactual value written belongs to an
-//!   information set of the Pone hand `p` whose tree is being walked, so
+//!   information set of the Pone hand `pone_hand` whose tree is being walked, so
 //!   Pone hands run in parallel, each over Dealer hands in order.
 //! * In Dealer's pass the slots belong to the Dealer hand `d`, and the serial
 //!   order is Pone hand, then Dealer hand. Pone hands therefore stay
@@ -29,7 +29,7 @@ use rayon::prelude::*;
 use std::path::Path;
 
 /// Probability units per menu in the rounded policy.
-pub const Q: u32 = 1000;
+pub const POLICY_UNITS: u32 = 1000;
 
 /// Everything the solver reads, kept in memory.
 pub struct Game<'a> {
@@ -40,23 +40,23 @@ pub struct Game<'a> {
 }
 
 impl Game<'_> {
-    fn weight(&self, p: usize, d: usize) -> u64 {
-        self.chance[p * 1820 + d]
+    fn weight(&self, pone_hand: usize, dealer_hand: usize) -> u64 {
+        self.chance[pone_hand * 1820 + dealer_hand]
     }
 
     /// Action-slot range of menu file `k`.
-    fn slots(&self, k: usize) -> std::ops::Range<usize> {
-        let m = self.menus;
-        let at = |i: u32| {
-            let i = i as usize;
-            usize::try_from(if i < m.len() {
-                u64::from(m.offset[i])
+    fn slots(&self, file_index: usize) -> std::ops::Range<usize> {
+        let menus = self.menus;
+        let at = |menu_index: u32| {
+            let menu_index = menu_index as usize;
+            usize::try_from(if menu_index < menus.len() {
+                u64::from(menus.offset[menu_index])
             } else {
-                m.actions
+                menus.actions
             })
             .expect("action count")
         };
-        at(m.starts[k])..at(m.starts[k + 1])
+        at(menus.starts[file_index])..at(menus.starts[file_index + 1])
     }
 }
 
@@ -65,8 +65,8 @@ fn file_slices<'v, T>(game: &Game, values: &'v mut [T], first: usize) -> Vec<&'v
     let base = game.slots(first).start;
     let mut rest = &mut values[base..game.slots(first + 1819).end];
     let mut out = Vec::with_capacity(1820);
-    for k in first..first + 1820 {
-        let (head, tail) = rest.split_at_mut(game.slots(k).len());
+    for file_index in first..first + 1820 {
+        let (head, tail) = rest.split_at_mut(game.slots(file_index).len());
         out.push(head);
         rest = tail;
     }
@@ -77,14 +77,14 @@ fn file_slices<'v, T>(game: &Game, values: &'v mut [T], first: usize) -> Vec<&'v
 /// is action slot `base`. Returns the node value for Pone.
 #[allow(clippy::too_many_arguments)]
 fn walk(
-    m: &Menus,
+    menus: &Menus,
     sigma: &[f64],
-    t: &Tree,
+    tree: &Tree,
     out: &mut [f64],
     base: usize,
     id: u32,
-    p: f64,
-    d: f64,
+    pone_reach: f64,
+    dealer_reach: f64,
     role: u8,
     weight: f64,
 ) -> f64 {
@@ -97,30 +97,30 @@ fn walk(
         actor,
         width,
         ..
-    } = t.node(m, id);
+    } = tree.node(menus, id);
     let mut total = 0.0;
-    for a in 0..width {
-        let prob = sigma[off + a];
+    for action in 0..width {
+        let prob = sigma[off + action];
         if actor != role && prob == 0.0 {
             continue;
         }
         let child = walk(
-            m,
+            menus,
             sigma,
-            t,
+            tree,
             out,
             base,
-            t.edges[first + a],
-            p * if actor == 0 { prob } else { 1.0 },
-            d * if actor == 1 { prob } else { 1.0 },
+            tree.edges[first + action],
+            pone_reach * if actor == 0 { prob } else { 1.0 },
+            dealer_reach * if actor == 1 { prob } else { 1.0 },
             role,
             weight,
         );
         total += prob * child;
         if actor == role {
-            let reach = if role == 1 { p } else { d };
+            let reach = if role == 1 { pone_reach } else { dealer_reach };
             let sign = if role == 1 { -1.0 } else { 1.0 };
-            out[off + a - base] += weight * reach * child * sign;
+            out[off + action - base] += weight * reach * child * sign;
         }
     }
     total
@@ -137,25 +137,27 @@ pub struct Solver {
 
 /// Source of trees for Pone hand `p`.
 pub trait Trees: Sync {
-    fn tree(&self, p: usize) -> Tree;
+    fn tree(&self, pone_hand: usize) -> Tree;
 }
 
 /// Trees read from `dir/trees/{p}.bin` on demand.
 pub struct TreeFiles<'a>(pub &'a Path);
 
 impl Trees for TreeFiles<'_> {
-    fn tree(&self, p: usize) -> Tree {
-        Tree::read(self.0, p).expect("Tree read")
+    fn tree(&self, pone_hand: usize) -> Tree {
+        Tree::read(self.0, pone_hand).expect("Tree read")
     }
 }
 
 fn strategy(regret: &[f64], sigma: &mut [f64]) {
-    let total = regret.iter().fold(0.0, |s, &r| s + r);
-    for (s, &r) in sigma.iter_mut().zip(regret) {
-        *s = if total == 0.0 {
+    let total = regret
+        .iter()
+        .fold(0.0, |sum, &positive_regret| sum + positive_regret);
+    for (probability, &positive_regret) in sigma.iter_mut().zip(regret) {
+        *probability = if total == 0.0 {
             1.0 / regret.len() as f64
         } else {
-            r / total
+            positive_regret / total
         };
     }
 }
@@ -163,54 +165,82 @@ fn strategy(regret: &[f64], sigma: &mut [f64]) {
 impl Solver {
     /// Start from saved regrets and averages (zeros for a fresh solve).
     pub fn new(game: &Game, regret: Vec<f64>, average: Vec<f64>) -> Solver {
-        let n = usize::try_from(game.menus.actions).expect("action count");
-        assert!(regret.len() == n && average.len() == n, "Checkpoint size");
-        let mut sigma = vec![0.0; n];
-        let m = game.menus;
-        for i in 0..m.len() {
-            let r = m.offset[i] as usize..m.offset[i] as usize + usize::from(m.width[i]);
-            strategy(&regret[r.clone()], &mut sigma[r]);
+        let action_count = usize::try_from(game.menus.actions).expect("action count");
+        assert!(
+            regret.len() == action_count && average.len() == action_count,
+            "Checkpoint size"
+        );
+        let mut sigma = vec![0.0; action_count];
+        let menus = game.menus;
+        for i in 0..menus.len() {
+            let slot_range =
+                menus.offset[i] as usize..menus.offset[i] as usize + usize::from(menus.width[i]);
+            strategy(&regret[slot_range.clone()], &mut sigma[slot_range]);
         }
         Solver {
             regret,
             average,
             sigma,
-            values: vec![0.0; n],
+            values: vec![0.0; action_count],
         }
     }
 
     fn values_for(&mut self, game: &Game, trees: &dyn Trees, role: u8) {
         self.values.fill(0.0);
-        let (m, sigma) = (game.menus, &self.sigma);
-        let visit = |t: &Tree, p: usize, d: usize, out: &mut [f64], base: usize| {
-            let w = game.weight(p, d);
-            if w != 0 {
-                assert!(t.roots[d] != NIL, "Chance mismatch");
-                let weight = w as f64 / game.mass as f64;
-                walk(m, sigma, t, out, base, t.roots[d], 1.0, 1.0, role, weight);
-            }
-        };
+        let (menus, sigma) = (game.menus, &self.sigma);
+        let visit =
+            |tree: &Tree, pone_hand: usize, dealer_hand: usize, out: &mut [f64], base: usize| {
+                let deal_weight = game.weight(pone_hand, dealer_hand);
+                if deal_weight != 0 {
+                    assert!(tree.roots[dealer_hand] != NIL, "Chance mismatch");
+                    let weight = deal_weight as f64 / game.mass as f64;
+                    walk(
+                        menus,
+                        sigma,
+                        tree,
+                        out,
+                        base,
+                        tree.roots[dealer_hand],
+                        1.0,
+                        1.0,
+                        role,
+                        weight,
+                    );
+                }
+            };
         if role == 0 {
             let slices = file_slices(game, &mut self.values, 0);
-            slices.into_par_iter().enumerate().for_each(|(p, out)| {
-                let t = trees.tree(p);
-                let base = game.slots(p).start;
-                for d in 0..1820 {
-                    visit(&t, p, d, out, base);
-                }
-            });
+            slices
+                .into_par_iter()
+                .enumerate()
+                .for_each(|(pone_hand, out)| {
+                    let tree = trees.tree(pone_hand);
+                    let base = game.slots(pone_hand).start;
+                    for dealer_hand in 0..1820 {
+                        visit(&tree, pone_hand, dealer_hand, out, base);
+                    }
+                });
         } else {
             let mut slices = file_slices(game, &mut self.values, 1820);
             let mut next = Some(trees.tree(0));
-            for p in 0..1820 {
-                let t = next.take().expect("tree");
+            for pone_hand in 0..1820 {
+                let tree = next.take().expect("tree");
                 let mut work = || {
-                    slices.par_iter_mut().enumerate().for_each(|(d, out)| {
-                        visit(&t, p, d, out, game.slots(1820 + d).start);
-                    });
+                    slices
+                        .par_iter_mut()
+                        .enumerate()
+                        .for_each(|(dealer_hand, out)| {
+                            visit(
+                                &tree,
+                                pone_hand,
+                                dealer_hand,
+                                out,
+                                game.slots(1820 + dealer_hand).start,
+                            );
+                        });
                 };
-                if p + 1 < 1820 {
-                    let ((), loaded) = rayon::join(work, || trees.tree(p + 1));
+                if pone_hand + 1 < 1820 {
+                    let ((), loaded) = rayon::join(work, || trees.tree(pone_hand + 1));
                     next = Some(loaded);
                 } else {
                     work();
@@ -222,7 +252,7 @@ impl Solver {
     /// One CFR+ half-iteration for `role` (0 Pone, 1 Dealer).
     pub fn update(&mut self, game: &Game, trees: &dyn Trees, role: u8, iteration: u32) {
         self.values_for(game, trees, role);
-        let m = game.menus;
+        let menus = game.menus;
         let first = usize::from(role) * 1820;
         let base = game.slots(first).start;
         let end = game.slots(first + 1819).end;
@@ -237,77 +267,90 @@ impl Solver {
             .zip(average.par_iter_mut())
             .enumerate()
             .for_each(|(i, ((regret, sigma), average))| {
-                let k = first + i;
-                let lo = game.slots(k).start;
-                let menus = m.starts[k] as usize..m.starts[k + 1] as usize;
-                for j in menus.clone() {
-                    let r = m.offset[j] as usize - lo
-                        ..m.offset[j] as usize - lo + usize::from(m.width[j]);
-                    let vals = &values[r.start + lo - base..r.end + lo - base];
-                    let mut v = 0.0;
-                    for (s, x) in sigma[r.clone()].iter().zip(vals) {
-                        v += s * x;
+                let file_index = first + i;
+                let lo = game.slots(file_index).start;
+                let menu_range =
+                    menus.starts[file_index] as usize..menus.starts[file_index + 1] as usize;
+                for j in menu_range.clone() {
+                    let action_slots = menus.offset[j] as usize - lo
+                        ..menus.offset[j] as usize - lo + usize::from(menus.width[j]);
+                    let vals =
+                        &values[action_slots.start + lo - base..action_slots.end + lo - base];
+                    let mut value = 0.0;
+                    for (probability, action_value) in sigma[action_slots.clone()].iter().zip(vals)
+                    {
+                        value += probability * action_value;
                     }
-                    for (g, x) in regret[r.clone()].iter_mut().zip(vals) {
-                        let next = *g + x - v;
-                        *g = if 0.0 < next { next } else { 0.0 };
+                    for (regret_entry, action_value) in
+                        regret[action_slots.clone()].iter_mut().zip(vals)
+                    {
+                        let next = *regret_entry + action_value - value;
+                        *regret_entry = if 0.0 < next { next } else { 0.0 };
                     }
-                    strategy(&regret[r.clone()], &mut sigma[r]);
+                    strategy(&regret[action_slots.clone()], &mut sigma[action_slots]);
                 }
-                for j in menus {
+                for j in menu_range {
                     let mut reach = 1.0;
-                    let (mut parent, mut a) = (m.parent[j], m.parent_action[j]);
+                    let (mut parent, mut parent_action) = (menus.parent[j], menus.parent_action[j]);
                     while parent != NIL {
-                        let q = parent as usize;
-                        reach *= sigma[m.offset[q] as usize - lo + usize::from(a)];
-                        a = m.parent_action[q];
-                        parent = m.parent[q];
+                        let parent_index = parent as usize;
+                        reach *= sigma
+                            [menus.offset[parent_index] as usize - lo + usize::from(parent_action)];
+                        parent_action = menus.parent_action[parent_index];
+                        parent = menus.parent[parent_index];
                     }
-                    let o = m.offset[j] as usize - lo;
-                    for x in o..o + usize::from(m.width[j]) {
-                        average[x] += it * reach * sigma[x];
+                    let action_start = menus.offset[j] as usize - lo;
+                    for slot in action_start..action_start + usize::from(menus.width[j]) {
+                        average[slot] += it * reach * sigma[slot];
                     }
                 }
             });
     }
 
-    /// The average strategy rounded to `Q` units per menu: floor, then hand
+    /// The average strategy rounded to `POLICY_UNITS` units per menu: floor, then hand
     /// the remaining units to the largest remainders, ties to the lower index.
     pub fn rounded(&self, game: &Game) -> Vec<u16> {
-        let m = game.menus;
-        let mut s = vec![0u16; usize::try_from(m.actions).expect("action count")];
-        for i in 0..m.len() {
-            let (off, w) = (m.offset[i] as usize, usize::from(m.width[i]));
-            let avg = &self.average[off..off + w];
-            let total = avg.iter().fold(0.0, |t, &x| t + x);
+        let menus = game.menus;
+        let mut rounded = vec![0u16; usize::try_from(menus.actions).expect("action count")];
+        for i in 0..menus.len() {
+            let (off, width) = (menus.offset[i] as usize, usize::from(menus.width[i]));
+            let avg = &self.average[off..off + width];
+            let total = avg
+                .iter()
+                .fold(0.0, |sum, &average_weight| sum + average_weight);
             let mut used = 0u32;
             let mut rem = [(0.0f64, 0usize); 4];
-            for a in 0..w {
-                let x = if total == 0.0 {
-                    f64::from(Q) / w as f64
+            for action in 0..width {
+                let scaled = if total == 0.0 {
+                    f64::from(POLICY_UNITS) / width as f64
                 } else {
-                    f64::from(Q) * avg[a] / total
+                    f64::from(POLICY_UNITS) * avg[action] / total
                 };
                 #[expect(
                     clippy::cast_possible_truncation,
                     clippy::cast_sign_loss,
-                    reason = "x lies in [0, Q], so its floor fits a u16"
+                    reason = "scaled lies in [0, POLICY_UNITS], so its floor fits a u16"
                 )]
-                let floor = x.floor() as u16;
-                s[off + a] = floor;
+                let floor = scaled.floor() as u16;
+                rounded[off + action] = floor;
                 used += u32::from(floor);
-                rem[a] = (-(x - f64::from(floor)), a);
+                rem[action] = (-(scaled - f64::from(floor)), action);
             }
-            rem[..w].sort_by(|x, y| x.0.partial_cmp(&y.0).expect("NaN").then(x.1.cmp(&y.1)));
+            rem[..width].sort_by(|left, right| {
+                left.0
+                    .partial_cmp(&right.0)
+                    .expect("NaN")
+                    .then(left.1.cmp(&right.1))
+            });
             assert!(
-                used <= Q && Q - used <= u32::try_from(w).expect("width"),
+                used <= POLICY_UNITS && POLICY_UNITS - used <= u32::try_from(width).expect("width"),
                 "Rounding"
             );
-            for &(_, a) in &rem[..(Q - used) as usize] {
-                s[off + a] += 1;
+            for &(_, action) in &rem[..(POLICY_UNITS - used) as usize] {
+                rounded[off + action] += 1;
             }
         }
-        s
+        rounded
     }
 }
 
@@ -316,7 +359,7 @@ pub struct Certificate {
     pub joint: i128,
     pub upper: i128,
     pub lower: i128,
-    /// `mass * Q^3`; the joint value's denominator is this times `Q^3`.
+    /// `mass * POLICY_UNITS^3`; the joint value's denominator is this times that cube.
     pub denominator: i128,
 }
 
@@ -328,35 +371,36 @@ impl Certificate {
 
     /// The research stopping rule: exposure at most 0.001 points.
     pub fn converged(&self, mass: u64) -> bool {
-        let q3 = i128::from(Q).pow(3);
-        (self.upper - self.lower) * 1000 <= 2 * i128::from(mass) * q3
+        let units_cubed = i128::from(POLICY_UNITS).pow(3);
+        (self.upper - self.lower) * 1000 <= 2 * i128::from(mass) * units_cubed
     }
 }
 
-fn joint_value(m: &Menus, t: &Tree, id: u32, s: &[u16], depth: u32) -> i128 {
+fn joint_value(menus: &Menus, tree: &Tree, id: u32, policy: &[u16], depth: u32) -> i128 {
     if id & TAG != 0 {
-        let mut v = i128::from(leaf(id));
+        let mut value = i128::from(leaf(id));
         for _ in depth..6 {
-            v *= i128::from(Q);
+            value *= i128::from(POLICY_UNITS);
         }
-        return v;
+        return value;
     }
     let Node {
         first, off, width, ..
-    } = t.node(m, id);
-    let mut v = 0i128;
-    for a in 0..width {
-        let prob = s[off + a];
+    } = tree.node(menus, id);
+    let mut value = 0i128;
+    for action in 0..width {
+        let prob = policy[off + action];
         if prob != 0 {
-            v += i128::from(prob) * joint_value(m, t, t.edges[first + a], s, depth + 1);
+            value += i128::from(prob)
+                * joint_value(menus, tree, tree.edges[first + action], policy, depth + 1);
         }
     }
-    v
+    value
 }
 
 struct Response<'a> {
-    m: &'a Menus,
-    s: &'a [u16],
+    menus: &'a Menus,
+    policy: &'a [u16],
     choice: &'a [u8],
     role: u8,
     stage: i32,
@@ -368,7 +412,7 @@ impl Response<'_> {
     #[allow(clippy::too_many_arguments)]
     fn walk(
         &self,
-        t: &Tree,
+        tree: &Tree,
         id: u32,
         weight: i128,
         current: u32,
@@ -376,14 +420,14 @@ impl Response<'_> {
         vals: &mut [i128],
         base: usize,
     ) -> i128 {
-        let m = self.m;
+        let menus = self.menus;
         if id & TAG != 0 {
-            let v = weight * i128::from(leaf(id)) * if self.role == 1 { -1 } else { 1 };
+            let payoff = weight * i128::from(leaf(id)) * if self.role == 1 { -1 } else { 1 };
             if current != NIL {
-                vals[m.offset[current as usize] as usize + action - base] += v;
+                vals[menus.offset[current as usize] as usize + action - base] += payoff;
                 return 0;
             }
-            return v;
+            return payoff;
         }
         let Node {
             info,
@@ -391,28 +435,42 @@ impl Response<'_> {
             off,
             actor,
             width,
-        } = t.node(m, id);
-        let card = i32::from(m.stage[info] / 2);
+        } = tree.node(menus, id);
+        let card = i32::from(menus.stage[info] / 2);
         let mut out = 0;
-        for a in 0..width {
-            if actor == self.role && card > self.stage && a != usize::from(self.choice[info]) {
+        for action_index in 0..width {
+            if actor == self.role
+                && card > self.stage
+                && action_index != usize::from(self.choice[info])
+            {
                 continue;
             }
-            let (mut w, mut selected, mut act) = (weight, current, action);
+            let (mut scaled_weight, mut selected, mut selected_action) = (weight, current, action);
             if actor != self.role {
-                let prob = self.s[off + a];
+                let prob = self.policy[off + action_index];
                 if prob == 0 {
                     continue;
                 }
-                if u32::from(prob) != Q {
-                    assert!(w % i128::from(Q) == 0, "Denominator exhausted");
-                    w = w / i128::from(Q) * i128::from(prob);
+                if u32::from(prob) != POLICY_UNITS {
+                    assert!(
+                        scaled_weight % i128::from(POLICY_UNITS) == 0,
+                        "Denominator exhausted"
+                    );
+                    scaled_weight = scaled_weight / i128::from(POLICY_UNITS) * i128::from(prob);
                 }
             } else if card == self.stage {
                 selected = u32::try_from(info).expect("menu index");
-                act = a;
+                selected_action = action_index;
             }
-            out += self.walk(t, t.edges[first + a], w, selected, act, vals, base);
+            out += self.walk(
+                tree,
+                tree.edges[first + action_index],
+                scaled_weight,
+                selected,
+                selected_action,
+                vals,
+                base,
+            );
         }
         out
     }
@@ -420,53 +478,61 @@ impl Response<'_> {
 
 /// Exact value of `role`'s best response to policy `s`, chosen card by card
 /// from the last decision back to the first.
-fn best_response(game: &Game, trees: &dyn Trees, s: &[u16], role: u8) -> i128 {
-    let m = game.menus;
-    let mut choice = vec![0u8; m.len()];
-    let mut vals = vec![0i128; usize::try_from(m.actions).expect("action count")];
-    let q3 = i128::from(Q).pow(3);
+fn best_response(game: &Game, trees: &dyn Trees, policy: &[u16], role: u8) -> i128 {
+    let menus = game.menus;
+    let mut choice = vec![0u8; menus.len()];
+    let mut vals = vec![0i128; usize::try_from(menus.actions).expect("action count")];
+    let units_cubed = i128::from(POLICY_UNITS).pow(3);
     let first = usize::from(role) * 1820;
     for stage in (0..=2).rev() {
         vals.fill(0);
         {
-            let r = Response {
-                m,
-                s,
+            let response = Response {
+                menus,
+                policy,
                 choice: &choice,
                 role,
                 stage,
             };
             let mut slices = file_slices(game, &mut vals, first);
-            let root = |t: &Tree, p: usize, d: usize, out: &mut [i128], base: usize| {
-                let w = game.weight(p, d);
-                if w != 0 {
-                    r.walk(t, t.roots[d], i128::from(w) * q3, NIL, 0, out, base);
+            let root = |tree: &Tree, pone: usize, dealer: usize, out: &mut [i128], base: usize| {
+                let weight = game.weight(pone, dealer);
+                if weight != 0 {
+                    response.walk(
+                        tree,
+                        tree.roots[dealer],
+                        i128::from(weight) * units_cubed,
+                        NIL,
+                        0,
+                        out,
+                        base,
+                    );
                 }
             };
             if role == 0 {
-                slices.into_par_iter().enumerate().for_each(|(p, out)| {
-                    let t = trees.tree(p);
-                    for d in 0..1820 {
-                        root(&t, p, d, out, game.slots(p).start);
+                slices.into_par_iter().enumerate().for_each(|(pone, out)| {
+                    let tree = trees.tree(pone);
+                    for dealer in 0..1820 {
+                        root(&tree, pone, dealer, out, game.slots(pone).start);
                     }
                 });
             } else {
-                for p in 0..1820 {
-                    let t = trees.tree(p);
-                    slices.par_iter_mut().enumerate().for_each(|(d, out)| {
-                        root(&t, p, d, out, game.slots(1820 + d).start);
+                for pone in 0..1820 {
+                    let tree = trees.tree(pone);
+                    slices.par_iter_mut().enumerate().for_each(|(dealer, out)| {
+                        root(&tree, pone, dealer, out, game.slots(1820 + dealer).start);
                     });
                 }
             }
         }
-        let own = m.starts[first] as usize..m.starts[first + 1820] as usize;
+        let own = menus.starts[first] as usize..menus.starts[first + 1820] as usize;
         for (i, slot) in own.clone().zip(&mut choice[own]) {
-            if i32::from(m.stage[i] / 2) == stage {
-                let off = m.offset[i] as usize;
+            if i32::from(menus.stage[i] / 2) == stage {
+                let off = menus.offset[i] as usize;
                 let mut best = 0;
-                for a in 1..usize::from(m.width[i]) {
-                    if vals[off + a] > vals[off + best] {
-                        best = a;
+                for action in 1..usize::from(menus.width[i]) {
+                    if vals[off + action] > vals[off + best] {
+                        best = action;
                     }
                 }
                 *slot = u8::try_from(best).expect("width");
@@ -474,22 +540,30 @@ fn best_response(game: &Game, trees: &dyn Trees, s: &[u16], role: u8) -> i128 {
         }
     }
     drop(vals);
-    let r = Response {
-        m,
-        s,
+    let response = Response {
+        menus,
+        policy,
         choice: &choice,
         role,
         stage: -1,
     };
     let out: i128 = (0..1820)
         .into_par_iter()
-        .map(|p| {
-            let t = trees.tree(p);
+        .map(|pone| {
+            let tree = trees.tree(pone);
             let mut total = 0;
-            for d in 0..1820 {
-                let w = game.weight(p, d);
-                if w != 0 {
-                    total += r.walk(&t, t.roots[d], i128::from(w) * q3, NIL, 0, &mut [], 0);
+            for dealer in 0..1820 {
+                let weight = game.weight(pone, dealer);
+                if weight != 0 {
+                    total += response.walk(
+                        &tree,
+                        tree.roots[dealer],
+                        i128::from(weight) * units_cubed,
+                        NIL,
+                        0,
+                        &mut [],
+                        0,
+                    );
                 }
             }
             total
@@ -499,32 +573,34 @@ fn best_response(game: &Game, trees: &dyn Trees, s: &[u16], role: u8) -> i128 {
 }
 
 /// Exact joint value and both best-response values of the rounded policy.
-pub fn certificate(game: &Game, trees: &dyn Trees, s: &[u16]) -> Certificate {
-    let q = i128::from(Q);
+pub fn certificate(game: &Game, trees: &dyn Trees, policy: &[u16]) -> Certificate {
+    let units = i128::from(POLICY_UNITS);
     assert!(
-        i128::from(game.mass) <= ((1i128 << 125) - 1) / (128 * q * q * q * q * q * q),
+        i128::from(game.mass)
+            <= ((1i128 << 125) - 1) / (128 * units * units * units * units * units * units),
         "Bound"
     );
     let joint: i128 = (0..1820)
         .into_par_iter()
-        .map(|p| {
-            let t = trees.tree(p);
-            let mut j = 0;
-            for d in 0..1820 {
-                let w = game.weight(p, d);
-                if w != 0 {
-                    j += i128::from(w) * joint_value(game.menus, &t, t.roots[d], s, 0);
+        .map(|pone_hand| {
+            let tree = trees.tree(pone_hand);
+            let mut pone_total = 0;
+            for dealer_hand in 0..1820 {
+                let deal_weight = game.weight(pone_hand, dealer_hand);
+                if deal_weight != 0 {
+                    pone_total += i128::from(deal_weight)
+                        * joint_value(game.menus, &tree, tree.roots[dealer_hand], policy, 0);
                 }
             }
-            j
+            pone_total
         })
         .sum();
-    let upper = best_response(game, trees, s, 0);
-    let lower = best_response(game, trees, s, 1);
+    let upper = best_response(game, trees, policy, 0);
+    let lower = best_response(game, trees, policy, 1);
     Certificate {
         joint,
         upper,
         lower,
-        denominator: i128::from(game.mass) * q * q * q,
+        denominator: i128::from(game.mass) * units * units * units,
     }
 }
