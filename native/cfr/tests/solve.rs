@@ -172,6 +172,7 @@ fn assert_same_files(first_dir: &Path, second_dir: &Path, names: &[&str]) {
 }
 
 #[test]
+#[ignore = "slow (13-45 s), not broken: CI always runs it; locally run cargo test -- --include-ignored"]
 fn a_paused_and_resumed_solve_matches_an_uninterrupted_one() {
     // This game first meets the 0.001 target between iterations 64 and 128,
     // so an uninterrupted run converges at the scheduled 128. A driver that
@@ -319,6 +320,7 @@ fn small_game_arithmetic_matches_the_reproducing_build() {
 }
 
 #[test]
+#[ignore = "slow (13-45 s), not broken: CI always runs it; locally run cargo test -- --include-ignored"]
 fn a_crash_during_certification_is_certified_on_resume() {
     let small_game = small();
     let straight = scratch("crash-straight");
@@ -366,6 +368,7 @@ fn a_crash_during_certification_is_certified_on_resume() {
 }
 
 #[test]
+#[ignore = "slow (13-45 s), not broken: CI always runs it; locally run cargo test -- --include-ignored"]
 fn a_finished_solve_is_not_continued() {
     let small_game = small();
     let dir = scratch("finished");

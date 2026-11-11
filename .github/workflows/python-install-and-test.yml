@@ -267,8 +267,10 @@ jobs:
         run: cargo fmt --check
       - name: Lint
         run: cargo clippy --locked --release --all-targets -- -D warnings
+      # Five tests take 13-45 s each and are #[ignore]d so local runs stay
+      # fast; CI runs every test.
       - name: Test
-        run: cargo test --locked --release
+        run: cargo test --locked --release -- --include-ignored
       # Coverage counters are shared by every thread, so a parallel solve
       # spends its time contending for them (12 s against 148 s for one
       # test). One rayon thread keeps the run short; the plain test step
@@ -276,7 +278,7 @@ jobs:
       - name: Check 100% line coverage
         env:
           RAYON_NUM_THREADS: "1"
-        run: cargo llvm-cov --locked --release --fail-under-lines 100 --show-missing-lines
+        run: cargo llvm-cov --locked --release --fail-under-lines 100 --show-missing-lines -- --include-ignored
       - name: Run PMD Copy/Paste Detector
         run: pmd cpd --language rust --minimum-tokens 40 --dir src --dir tests
       - name: Check dependency advisories, licenses and sources

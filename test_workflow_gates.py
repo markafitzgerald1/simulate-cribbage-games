@@ -48,6 +48,21 @@ class TestWorkflowGates(unittest.TestCase):
         )
 
 
+class TestRustCiRunsEveryTest(unittest.TestCase):
+    """Slow Rust tests are #[ignore]d locally; CI must still run them."""
+
+    def test_rust_test_and_coverage_steps_include_ignored_tests(self) -> None:
+        # Catches dropping --include-ignored from either step, which would
+        # silently skip the slow tests everywhere.
+        with open(WORKFLOW_PATH, encoding="utf-8") as f:
+            steps = yaml.safe_load(f)["jobs"]["rust-cfr-inputs"]["steps"]
+        commands = {step.get("name"): step.get("run", "") for step in steps}
+        for name in ("Test", "Check 100% line coverage"):
+            self.assertTrue(
+                commands[name].rstrip().endswith("-- --include-ignored"), name
+            )
+
+
 class TestPlayReleaseWorkflow(unittest.TestCase):
     """Production enforces the gate and the release notes state its outcome."""
 
