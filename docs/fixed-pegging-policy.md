@@ -3,8 +3,8 @@
 `python -m artifact_pipeline.measure_fixed_play_table` measures a supplied
 rank-only mixed policy in **both** seats through the existing Python v3
 physical-card sampler, paired accumulators and opening-line observations.
-It does not train, refine discards, load measured research statistics or call
-native code. This is an internal producer input contract, not a published
+It does not train, refine discards, load previously measured statistics or
+call native code. This is an internal producer input contract, not a published
 browser policy format or an authorization to replace release assets.
 
 ```sh
@@ -28,9 +28,9 @@ The UTF-8 JSON object has schema `six-layer-pegging-policy.v1` and integer
 `probability_denominator: 1000`. Duplicate names are rejected. Components
 `probabilities`, `offsets`, `support`, `prior` and `discard_population` carry
 `file`, `bytes` and lowercase hexadecimal `sha256`. Files are relative to the
-manifest; parent traversal and absolute names are rejected. Local symlinks can
-refer to existing large research inputs. Inputs must remain immutable during
-measurement. The reader maps files read-only and verifies the same opened bytes.
+manifest; parent traversal and absolute names are rejected. Inputs must remain
+immutable during measurement. The reader maps files read-only and verifies the
+same opened bytes.
 
 The probability file is little-endian unsigned 16-bit action counts. Offsets
 are little-endian unsigned 32-bit action indices, one per optional row. Rows
@@ -42,9 +42,11 @@ choices are never selected; pure distributions consume no random draw.
 `menus` is an array of component descriptors with `role` and `own_hand` (sorted
 zero-based ranks, Ace=0 through King=12). Each file contains 24-byte records:
 `<QII8B`: packed history, unused training parent/offset fields, four action
-bytes, layer (0 through 5), width (2 through 4), heuristic action index and
-unused parent-action byte. History uses low-to-high nibbles: rank+1, go=14,
-reset=15. Forced menus need no row. Missing shards/histories use the immutable
+bytes, layer (0 through 5), width (2 through 4), a heuristic action index and an
+unused parent-action byte. The loader checks only that the index is below the
+width and computes its own heuristic, so a generator may also write 0 there.
+History uses low-to-high nibbles: rank+1, go=14, reset=15. Forced menus need
+no row. Missing shards/histories use the immutable
 heuristic; a declared missing/corrupt file is an error, never a silent fallback.
 The loader reconstructs the original own keep and validates count, sequence,
 opponent card count, passed roles and actor from the complete public history.
@@ -71,10 +73,10 @@ and a nonempty `description` of its limits. Its JSON contains `keeps` rows
 `[role, dealt_six_ranks, kept_four_ranks]`. There must be exactly every physically
 possible six-rank hand in each role (18,395 each), no duplicates, invalid ranks
 or unavailable kept cards. This frozen distribution can differ from the
-training prior and the crib table's opponent. For the research candidate it
-is the nonconverged two-by-200 heuristic refinement, fingerprint
-`326f6541973eeb44d763f3efc4182f0884f77e6473013e3bef739c4c6856c720`;
-that is a chosen input, not a claim that the discard/pegging loop settled.
+training prior and the crib table's opponent. The population comes from the
+CFR prior generator's nonconverged refinement (#234); that is a chosen
+input, not a claim that the discard/pegging loop settled. Its fingerprint is
+pinned from the generation run that produces it, never from local files.
 
 ## Provenance and counters
 
