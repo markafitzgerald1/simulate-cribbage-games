@@ -570,14 +570,17 @@ fn best_response(game: &Game, trees: &dyn Trees, policy: &[u16], role: u8) -> i1
     if role == 1 { -out } else { out }
 }
 
+/// The largest prior mass the certificate's exact `i128` arithmetic can
+/// carry: products of a deal weight, a leaf margin and up to six policy unit
+/// factors must stay below 2^125, so the limit is
+/// `(2^125 - 1) / (128 * POLICY_UNITS^6)`, about 2^58.3. A unit test checks
+/// this literal against that formula.
+pub const MASS_LIMIT: u64 = 332_306_998_946_228_968;
+
 /// Exact joint value and both best-response values of the rounded policy.
 pub fn certificate(game: &Game, trees: &dyn Trees, policy: &[u16]) -> Certificate {
+    assert!(game.mass <= MASS_LIMIT, "Bound");
     let units = i128::from(POLICY_UNITS);
-    assert!(
-        i128::from(game.mass)
-            <= ((1i128 << 125) - 1) / (128 * units * units * units * units * units * units),
-        "Bound"
-    );
     let joint: i128 = (0..1820)
         .into_par_iter()
         .map(|pone_hand| {

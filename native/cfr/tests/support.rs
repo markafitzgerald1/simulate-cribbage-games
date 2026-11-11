@@ -26,7 +26,7 @@ fn reach(
         if decides(&state) {
             break;
         }
-        let action = state.heuristic();
+        let action = state.forced();
         state.play(action);
     }
     let actor = state.next;
