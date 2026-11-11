@@ -504,11 +504,12 @@ mod tests {
 
     #[test]
     fn the_last_card_scores_one() {
-        // A A A A 2 3 2 K: the Dealer's King is the last card, at a count of
-        // 21, with no pair, run, fifteen or 31.
-        let mut state = after([0, 0, 1, 1], [0, 0, 2, 12], &[0, 0, 0, 0, 1, 2, 1]);
+        // A A A A 2 3 2 K: `finish` plays each player's only remaining card.
+        // Pone's 2 makes 11 with no pair, run or fifteen, and the Dealer's
+        // King is the last card, at 21 with no pair, run, fifteen or 31.
+        let mut state = after([0, 0, 1, 1], [0, 0, 2, 12], &[0, 0, 0, 0, 1, 2]);
         let before = state.points;
-        state.play(Some(12));
+        state.finish();
         assert_eq!(state.cards_left, [0, 0]);
         assert_eq!(state.points, [before[0], before[1] + 1]);
     }
