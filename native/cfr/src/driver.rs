@@ -25,7 +25,7 @@
 //! The research driver certified only at 1, 8, 32 and 128; it never needed
 //! more, because the pinned solve met its target at 128.
 
-use super::solve::{Certificate, Game, Q, Solver, Trees};
+use super::solve::{Certificate, Game, POLICY_UNITS, Solver, Trees};
 use sha2::{Digest, Sha256};
 use std::io;
 use std::path::Path;
@@ -57,14 +57,20 @@ pub fn folder_sha256(dir: &Path, count: usize) -> io::Result<String> {
     Ok(sha256(lines.concat().as_bytes()))
 }
 
-fn f64_bytes(v: &[f64]) -> Vec<u8> {
-    v.iter().flat_map(|x| x.to_le_bytes()).collect()
+fn f64_bytes(values: &[f64]) -> Vec<u8> {
+    values
+        .iter()
+        .flat_map(|value| value.to_le_bytes())
+        .collect()
 }
 
 fn f64s(bytes: &[u8]) -> Vec<f64> {
     let (chunks, rest) = bytes.as_chunks::<8>();
     assert!(rest.is_empty(), "f64 array length");
-    chunks.iter().map(|&c| f64::from_le_bytes(c)).collect()
+    chunks
+        .iter()
+        .map(|&chunk| f64::from_le_bytes(chunk))
+        .collect()
 }
 
 /// Write to a temporary name, flush it to disk, then rename over `path`, so a
@@ -116,16 +122,16 @@ pub enum Outcome {
     Capped(u32),
 }
 
-fn certificate_json(it: u32, c: &Certificate, seconds: f64) -> String {
-    let q3 = i128::from(Q).pow(3);
+fn certificate_json(it: u32, certificate: &Certificate, seconds: f64) -> String {
+    let units_cubed = i128::from(POLICY_UNITS).pow(3);
     format!(
         "{{\"iteration\":{it},\"joint_num\":\"{}\",\"joint_den\":\"{}\",\"upper_num\":\"{}\",\"lower_num\":\"{}\",\"br_den\":\"{}\",\"exposure\":{},\"seconds\":{seconds:.3}}}\n",
-        c.joint,
-        c.denominator * q3,
-        c.upper,
-        c.lower,
-        c.denominator,
-        c.exposure()
+        certificate.joint,
+        certificate.denominator * units_cubed,
+        certificate.upper,
+        certificate.lower,
+        certificate.denominator,
+        certificate.exposure()
     )
 }
 
@@ -141,12 +147,15 @@ fn certify(
 ) -> io::Result<bool> {
     let began = Instant::now();
     let policy = solver.rounded(game);
-    let bytes: Vec<u8> = policy.iter().flat_map(|x| x.to_le_bytes()).collect();
+    let bytes: Vec<u8> = policy
+        .iter()
+        .flat_map(|probability_units| probability_units.to_le_bytes())
+        .collect();
     write_atomic(&dir.join(format!("policy-{it}.bin")), &bytes)?;
-    let c = super::solve::certificate(game, trees, &policy);
-    let json = certificate_json(it, &c, began.elapsed().as_secs_f64());
+    let certificate = super::solve::certificate(game, trees, &policy);
+    let json = certificate_json(it, &certificate, began.elapsed().as_secs_f64());
     write_atomic(&dir.join(format!("certificate-{it}.json")), json.as_bytes())?;
-    if !c.converged(game.mass) {
+    if !certificate.converged(game.mass) {
         return Ok(false);
     }
     write_atomic(&dir.join("policy.bin"), &bytes)?;
@@ -155,7 +164,7 @@ fn certify(
     let finished = format!(
         "{{\"iteration\":{it},\"policy_sha256\":\"{}\",\"identity\":\"{identity}\",\"exposure\":{}}}\n",
         sha256(&bytes),
-        c.exposure()
+        certificate.exposure()
     );
     write_atomic(&dir.join("solve.json"), finished.as_bytes())?;
     Ok(true)
@@ -169,10 +178,10 @@ fn finished(dir: &Path, identity: &str) -> io::Result<Option<u32>> {
         return Ok(None);
     }
     let json = std::fs::read_to_string(&path)?;
-    let get = |k: &str| {
-        field(&json, k)
+    let get = |field_name: &str| {
+        field(&json, field_name)
             .map(str::to_owned)
-            .ok_or_else(|| io::Error::other(format!("solve.json lacks {k}")))
+            .ok_or_else(|| io::Error::other(format!("solve.json lacks {field_name}")))
     };
     if get("identity")? != identity {
         return Err(io::Error::other(
@@ -187,16 +196,20 @@ fn finished(dir: &Path, identity: &str) -> io::Result<Option<u32>> {
 
 /// The committed checkpoint's iteration and arrays, after checking its input
 /// identity and array digests, or iteration zero with zeroed arrays.
-fn resume(dir: &Path, identity: &str, n: usize) -> io::Result<(u32, Vec<f64>, Vec<f64>)> {
+fn resume(
+    dir: &Path,
+    identity: &str,
+    action_count: usize,
+) -> io::Result<(u32, Vec<f64>, Vec<f64>)> {
     let manifest = dir.join("checkpoint.json");
     if !manifest.exists() {
-        return Ok((0, vec![0.0; n], vec![0.0; n]));
+        return Ok((0, vec![0.0; action_count], vec![0.0; action_count]));
     }
     let json = std::fs::read_to_string(&manifest)?;
-    let get = |k: &str| -> io::Result<String> {
-        field(&json, k)
+    let get = |field_name: &str| -> io::Result<String> {
+        field(&json, field_name)
             .map(str::to_owned)
-            .ok_or_else(|| io::Error::other(format!("checkpoint.json lacks {k}")))
+            .ok_or_else(|| io::Error::other(format!("checkpoint.json lacks {field_name}")))
     };
     if get("identity")? != identity {
         return Err(io::Error::other(
@@ -209,7 +222,7 @@ fn resume(dir: &Path, identity: &str, n: usize) -> io::Result<(u32, Vec<f64>, Ve
     for name in ["regret", "average"] {
         let bytes = std::fs::read(folder.join(format!("{name}.bin")))?;
         let key = format!("{name}_sha256");
-        if bytes.len() != n * 8 || sha256(&bytes) != get(&key)? {
+        if bytes.len() != action_count * 8 || sha256(&bytes) != get(&key)? {
             return Err(io::Error::other(format!(
                 "checkpoint {name} does not match its digest"
             )));
@@ -240,12 +253,12 @@ pub fn run(
 ) -> io::Result<Outcome> {
     use std::io::Write;
     let start = Instant::now();
-    let n = usize::try_from(game.menus.actions).expect("action count");
+    let action_count = usize::try_from(game.menus.actions).expect("action count");
     if let Some(it) = finished(dir, identity)? {
         return Ok(Outcome::Converged(it));
     }
     let manifest = dir.join("checkpoint.json");
-    let (previous, regret, average) = resume(dir, identity, n)?;
+    let (previous, regret, average) = resume(dir, identity, action_count)?;
     let mut solver = Solver::new(game, regret, average);
     // `solve.json` is absent here, so a scheduled checkpoint may have crashed
     // anywhere inside certification; certifying again is deterministic and
@@ -272,7 +285,7 @@ pub fn run(
         sync_dir(&folder)?;
         sync_dir(dir)?;
         let committed = format!(
-            "{{\"iteration\":{it},\"regret_sha256\":\"{}\",\"average_sha256\":\"{}\",\"identity\":\"{identity}\",\"actions\":{n}}}\n",
+            "{{\"iteration\":{it},\"regret_sha256\":\"{}\",\"average_sha256\":\"{}\",\"identity\":\"{identity}\",\"actions\":{action_count}}}\n",
             sha256(&regret),
             sha256(&average)
         );
@@ -294,7 +307,7 @@ pub fn run(
         if scheduled(it) && certify(dir, game, trees, &solver, it, identity)? {
             return Ok(Outcome::Converged(it));
         }
-        if budget_seconds.is_some_and(|b| start.elapsed().as_secs_f64() >= b) {
+        if budget_seconds.is_some_and(|budget| start.elapsed().as_secs_f64() >= budget) {
             return Ok(Outcome::Paused(it));
         }
     }
