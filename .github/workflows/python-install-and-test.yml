@@ -278,7 +278,7 @@ jobs:
           RAYON_NUM_THREADS: "1"
         run: cargo llvm-cov --locked --release --fail-under-lines 100 --show-missing-lines
       - name: Run PMD Copy/Paste Detector
-        run: pmd cpd --language rust --minimum-tokens 40 --dir src
+        run: pmd cpd --language rust --minimum-tokens 40 --dir src --dir tests
       - name: Check dependency advisories, licenses and sources
         run: cargo deny --locked check
 
