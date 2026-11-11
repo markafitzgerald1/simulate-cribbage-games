@@ -503,10 +503,24 @@ mod tests {
     }
 
     #[test]
-    fn last_card_scores_one_unless_thirty_one() {
-        let mut state = State::new([0, 0, 0, 0], [1, 1, 1, 1]);
-        state.finish();
+    fn the_last_card_scores_one() {
+        // A A A A 2 3 2 K: the Dealer's King is the last card, at a count of
+        // 21, with no pair, run, fifteen or 31.
+        let mut state = after([0, 0, 1, 1], [0, 0, 2, 12], &[0, 0, 0, 0, 1, 2, 1]);
+        let before = state.points;
+        state.play(Some(12));
         assert_eq!(state.cards_left, [0, 0]);
-        assert!(state.points[0] + state.points[1] > 0);
+        assert_eq!(state.points, [before[0], before[1] + 1]);
+    }
+
+    #[test]
+    fn a_last_card_making_thirty_one_scores_two_not_three() {
+        // K A K 2 A 2 4 A: the Dealer's last Ace makes 31, with no pair or
+        // run, so it scores the 31's two points and no extra last-card point.
+        let mut state = after([0, 3, 12, 12], [0, 0, 1, 1], &[12, 0, 12, 1, 0, 1, 3]);
+        let before = state.points;
+        state.play(Some(0));
+        assert_eq!(state.cards_left, [0, 0]);
+        assert_eq!(state.points, [before[0], before[1] + 2]);
     }
 }
