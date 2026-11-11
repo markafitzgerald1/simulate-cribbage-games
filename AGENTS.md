@@ -803,7 +803,7 @@ too high. No further optimization is required for this survey budget.
 
 The fixed six-layer Python measurement path is described in
 [its input contract](docs/fixed-pegging-policy.md). It measures fresh v3 samples
-in both seats; it must never import research measurement statistics, train or
+in both seats; it must never import previously measured statistics, train or
 refine discards. A failed enforced gate aborts instead of silently changing the
 chosen model. Preserve both convergence flags and the frozen discard limits.
 It writes `measured_policy` in every gate mode, unlike the enforced-only rule
