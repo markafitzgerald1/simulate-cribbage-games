@@ -58,9 +58,9 @@ Each part of the evidence lives in this repository:
 - **Solve** (`solve.rs`, `driver.rs`): the solver's certificate, computed
   in exact `i128` arithmetic, bounds how many points a best-responding
   opponent could gain against the rounded policy, and the solve stops only
-  when that bound is at most 0.001 points. Tests check the certificate's
-  joint value against a replay of every deal from the rules, and both best
-  responses against an expectimax replay; neither replay reads the trees, so
+  when that bound is at most 0.001 points. On a small game, tests check the
+  certificate's joint value against a replay of every deal from the rules,
+  and both best responses against an expectimax replay; neither replay reads the trees, so
   they also check the trees' values. Other tests cover the rounding, falling
   exposure, the iteration cap, the certificate schedule, and pause, crash
   and resume behaviour, including damaged or mismatched saved state.
