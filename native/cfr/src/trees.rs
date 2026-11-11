@@ -1,6 +1,4 @@
-//! Loaded menus and per-Pone-hand game trees, mirroring `load`, `lookup`,
-//! `Tree::build`, `Tree::save`, `Tree::read` and `make_tree` in the research
-//! `stream.cpp`.
+//! Loaded menus and per-Pone-hand game trees.
 //!
 //! Tree file `p` holds every feasible deal with Pone hand `p`, as little-endian
 //! `u32` words: node count `n`, edge count `e`, 1,820 root ids (one per Dealer
@@ -252,8 +250,7 @@ impl Tree {
     }
 }
 
-/// Action offsets for every menu, in global order, as little-endian `u32`
-/// (mirrors the research `offsets.cpp`).
+/// Action offsets for every menu, in global order, as little-endian `u32`.
 pub fn offsets_bytes(menus: &Menus) -> Vec<u8> {
     menus
         .offset
@@ -289,7 +286,7 @@ mod tests {
     }
 
     #[test]
-    fn tree_round_trips_and_every_leaf_matches_a_heuristic_finish() {
+    fn tree_round_trips_and_its_heuristic_path_matches_a_replay() {
         let hands = canonical();
         let pone_index = hands
             .iter()

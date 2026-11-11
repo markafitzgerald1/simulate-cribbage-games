@@ -1,9 +1,0 @@
-{
-  "description": "Digests of the research inputs pinned by the #203 fixed-policy measurement (inputs/policy.json on branch feat/187-cfr-fixed-policy-measurement), as printed by `cfr-inputs digests`. Folder entries are the SHA-256 of the per-file SHA-256 hex digests, one per line in file order. support is the two-bit research file (mixture policy and prior, then production policy and iteration-4 prior).",
-  "menus": "4c660d241587a7d27ce15745b79f81145f3d20b4ec6446abbc7bd5091e72cb61",
-  "trees": "d06cacaa6df7f3e75fc305cc7b21942a2ea574bd1030e77338d29271c0caabbc",
-  "offsets": "8077f44a2f3ed48d48e42a0e80940d52e9f7f62cf3466a7ebb0120704457cf2e",
-  "policy": "ec93951f827eefaf396dcbfa8673c9f50416acf8e37e65bbc9eaed7ffc10a042",
-  "support": "7e788918225185846f02041581d13519c923206f0c022e27b5074b4591493bbc",
-  "prior": "6685f5481eb0ee149b6dc4401921497b69a26e0f1422abb6dd7964a62b1c3131"
-}
