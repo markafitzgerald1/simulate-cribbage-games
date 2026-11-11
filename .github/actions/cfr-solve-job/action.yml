@@ -1,7 +1,7 @@
 name: CFR solve job
 description: >-
   Build the Rust CFR input generator, rebuild the prior-independent inputs,
-  check them against the research digests and run or resume the CFR+ solve.
+  check them against their pinned digests and run or resume the CFR+ solve.
   Uploads Actions artifacts only; it never publishes a release.
 
 inputs:

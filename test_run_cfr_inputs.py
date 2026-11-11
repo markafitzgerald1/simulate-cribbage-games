@@ -13,7 +13,9 @@ from unittest import mock
 
 from scripts import run_cfr_inputs
 
-RESEARCH = json.loads(run_cfr_inputs.RESEARCH_DIGESTS.read_text(encoding="utf-8"))
+PINNED = json.loads(run_cfr_inputs.PINNED_DIGESTS.read_text(encoding="utf-8"))[
+    "reproducible"
+]
 
 # Stands in for the Rust binary: writes the files each subcommand would and
 # prints what `digests` prints. SOLVE_EXIT picks the solve's outcome.
@@ -21,13 +23,13 @@ FAKE_BINARY = r"""
 import json, os, sys
 from pathlib import Path
 command, output = sys.argv[1], Path(sys.argv[3])
-research = json.loads(os.environ["RESEARCH"])
+pinned = json.loads(os.environ["PINNED"])
 if command in ("menus", "trees"):
     (output / command).mkdir(exist_ok=True)
 elif command == "offsets":
     (output / "offsets.bin").write_bytes(b"offsets")
 elif command == "digests":
-    built = {name: research[name] for name in ("menus", "trees", "offsets")}
+    built = {name: pinned[name] for name in ("menus", "trees", "offsets")}
     built.update(json.loads(os.environ.get("DIGEST_OVERRIDE", "{}")))
     print(json.dumps(built))
     print(json.dumps({"command": "digests", "seconds": 0.5}))
@@ -62,7 +64,7 @@ class SolveJobTest(unittest.TestCase):
         self.output = self.root / "work"
         self.evidence = self.root / "evidence"
         self.status = self.root / "github-output"
-        self.environment = {"RESEARCH": json.dumps(RESEARCH), "SOLVE_EXIT": "0"}
+        self.environment = {"PINNED": json.dumps(PINNED), "SOLVE_EXIT": "0"}
 
     def arguments(self, stop_at: float) -> list[str]:
         return [
@@ -148,7 +150,7 @@ class SolveJobTest(unittest.TestCase):
         self.assertEqual(self.summary()["status"], "failed")
         self.assertFalse(self.status.exists())
 
-    def test_inputs_that_differ_from_the_research_stop_the_job(self) -> None:
+    def test_inputs_that_differ_from_their_pinned_digests_stop_the_job(self) -> None:
         # Catches dropping the comparison, or comparing only some inputs:
         # each prior-independent digest is changed in turn.
         for name in ("menus", "trees", "offsets"):

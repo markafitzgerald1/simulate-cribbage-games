@@ -352,10 +352,14 @@ Coverage counters are shared by every thread, so the coverage run uses one
 rayon thread: a parallel instrumented solve was over ten times slower. Line
 coverage counts a line that holds only a `?` error branch as missed, so keep
 each `?` on a line that also runs when the call succeeds. The
-generator's outputs are compared byte for byte with research digests, so a
-change that reorders a floating-point sum, or lets a sum cross threads, is a
-behavior change even when every test passes. Re-run the full-size digest
-check in `native/cfr/README.md` before claiming equivalence. The spelling
+generator's outputs are pinned by digest, so a change that reorders a
+floating-point sum, or lets a sum cross threads, is a behavior change even
+when every test passes: it alters the policy's low bits and needs a re-pin
+and fresh certificates. Re-run the full-size digest check in
+`native/cfr/README.md` before claiming equivalence. Explain the generator in
+its own terms, by the tests, oracles and certificates in this repository;
+the unpublished research C++ it was ported from belongs only in a short port
+history, never in the correctness argument. The spelling
 hook reads Rust's root-module path keyword as a misspelling of "create", so
 module paths use `super::` rather than an ignore-list change to the hook.
 
@@ -723,16 +727,17 @@ Dispatching it is a separate approval from merging it. Actions expression
 equality ignores case, so a job `if` comparing `github.ref` with
 `refs/heads/main` also accepts a branch named `Main`; each job therefore repeats
 the check as an exact bash comparison. The menus, trees and offsets do not
-depend on the prior, so every solve job checks them against
-`native/cfr/research-digests.json` before solving; a mismatch is a port or
-toolchain defect, never a reason to re-pin. The solve's budget ends 45 minutes
-before its job's limit, because the binary checks it only between iterations and
-a certificate can follow the last one; the second job resumes from the uploaded
-checkpoint, and a second pause fails the run rather than chaining further jobs
-without approval. The paused-state upload excludes the roughly 9 GB of menus,
-trees and offsets, which each job rebuilds in minutes rather than storing them
-as an artifact. `scripts/run_cfr_inputs.py` holds the job logic so it can be
-tested against a fake binary.
+depend on the prior, so every solve job checks them against the `reproducible`
+digests in `native/cfr/digests.json` before solving; a mismatch means the rules,
+the menu and tree code or the toolchain changed their output, and a re-pin needs
+a reviewed reason. The solve's budget ends 45 minutes before its job's limit,
+because the binary checks it only between iterations and a certificate can
+follow the last one; the second job resumes from the uploaded checkpoint, and a
+second pause fails the run rather than chaining further jobs without approval.
+The paused-state upload excludes the roughly 9 GB of menus, trees and offsets,
+which each job rebuilds in minutes rather than storing them as an artifact.
+`scripts/run_cfr_inputs.py` holds the job logic so it can be tested against a
+fake binary.
 
 ## Lint Configuration Expectations
 

@@ -6,7 +6,7 @@ name: Generate CFR inputs
 # measurement pull request re-pins by digest after a maintainer reviews them.
 #
 # The chain: the discard population and its 50/50 prior (Python), then the
-# Rust menus, offsets and trees (checked against the research digests, which
+# Rust menus, offsets and trees (checked against their pinned digests, which
 # no prior can change), the CFR+ mixture solve and the one-bit support. The
 # solve pauses before its job's time limit; a second job resumes it from the
 # saved checkpoint and must converge. A second pause fails the run, and any
