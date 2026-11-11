@@ -108,7 +108,8 @@ printed values can be compared with `research-digests.json`.
 Measured on an Apple M2 with 8 threads, 2026-11-10, with binary sha256
 `42160cc1...`, built from the top of this stack of pull requests. The run
 built menus, offsets and trees, then ran `solve --pause-after-seconds 600`,
-which paused at iteration 31 with exit 3. The same command then resumed and converged at 128. Support
+which paused at iteration 31 with exit 3. The same command then resumed and
+converged at 128. Support
 and digests followed. Earlier builds of the same arithmetic produced the same
 digests, three paused (at 37, 27 and 27) and three uninterrupted.
 
