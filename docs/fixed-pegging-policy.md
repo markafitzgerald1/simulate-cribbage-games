@@ -154,7 +154,9 @@ it is not an approved production input bundle or a promotion-gate result.
 
 `examples/fixed-play-inputs.json` is deliberately unpinned. Its two values are
 set together from one `generate-cfr-inputs.yml` run: the run id, and the
-`policy_manifest_sha256` that run's bundle job printed. That manifest binds the
+`policy_manifest_sha256` that run's bundle step printed. That workflow does not
+run the bundler yet; a job that does is planned once it and this tool have
+merged. The manifest binds the
 policy, offsets, menus, support, prior and discard population, so no other
 digest is committed. Every pin must come from such a run, never from local
 files. Pins attest bytes, not scientific correctness. The CLI itself never
@@ -184,7 +186,8 @@ the full/means/sidecar/lines bundle and uses the existing
 attachment boundary. `python -m scripts.verify_fixed_play_bundle` verifies the
 exact means pairing and recomputes both companions from that full table. With
 `--release-samples 13000` it additionally requires every canonical cell, its
-approved sample count, a passed enforced gate and truthful model limits.
+approved sample count, a passed enforced gate, truthful model limits, and zero
+missing-menu and off-support decisions.
 The release job repeats that check after download and before attachment.
 
 Because it reuses that tag, activating the example also requires retiring or

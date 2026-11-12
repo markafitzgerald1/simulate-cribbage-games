@@ -79,7 +79,10 @@ class BundleTest(unittest.TestCase):
 
     def test_bundle_rejects_inputs_its_readers_would_reject(self):
         # Each case is caught only by the bundler's own full-size load check.
-        for name in ("policy", "population"):
+        for name, message in [
+            ("policy", "sum to 1000"),
+            ("population", "cover every canonical"),
+        ]:
             with self.subTest(name=name):
                 root = self.root / name
                 root.mkdir()
@@ -92,7 +95,7 @@ class BundleTest(unittest.TestCase):
                     population = json.loads((prior / "population.json").read_bytes())
                     population["keeps"].pop()
                     (prior / "population.json").write_text(json.dumps(population))
-                with self.assertRaises(ValueError):
+                with self.assertRaisesRegex(ValueError, message):
                     bundle(work, prior, root / "out")
 
     def test_output_folder_must_be_empty(self):

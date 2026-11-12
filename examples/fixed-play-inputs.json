@@ -1,5 +1,5 @@
 {
   "input_run_id": null,
   "policy_manifest_sha256": null,
-  "description": "Unpinned. Set both values together from one generate-cfr-inputs.yml run: its run id and the policy_manifest_sha256 its bundle job printed. Never pin from local files."
+  "description": "Unpinned. Set both values together from one generate-cfr-inputs.yml run: its run id and the policy_manifest_sha256 its bundle step printed (that step is not in the workflow yet). Never pin from local files."
 }
