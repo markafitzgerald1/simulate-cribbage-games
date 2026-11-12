@@ -90,9 +90,9 @@ The support bits follow, adding their own evidence above.
   speed and control of C++ and no garbage collector, whose compiler checks
   memory safety; `unsafe` is forbidden here.
 - **Safe parallelism:** the compiler rules out data races, and the rayon
-  thread-pool library spreads the work across cores. Tests check that the
-  solver's numerical outputs are identical for 1 to 4 threads on a small game;
-  the full-size run used 8.
+  thread-pool library spreads the work across cores. A test checks that the
+  solver's numerical outputs are identical with 1 and 4 threads on a small
+  game.
 
 ## Port history
 
@@ -169,14 +169,11 @@ printed values can be compared with `digests.json`.
 
 ## Evidence
 
-Measured on an Apple M2 with 8 threads. Menus, offsets and trees, on
-2026-11-11: menus took 74 s, offsets 3 s and trees 64 s, and all three outputs
-matched the `reproducible` digests in `digests.json`. The solve, on 2026-11-10
-with a full-size prior: 32 to 34 min uninterrupted, 3.7 to 4.1 GB peak RSS,
-converging at iteration 128. A run paused at iteration 31 with
-`--pause-after-seconds 600` (exit 3) resumed with the same command and ended on
-the same policy as uninterrupted runs. The solver's arithmetic has not changed
-since, as the pinned small-game digest checks.
+Measured on an Apple M2 with 8 threads, 2026-11-11: menus took 74 s, offsets
+3 s and trees 64 s, and all three outputs matched the `reproducible` digests in
+`digests.json`. The full-size solve's time, memory and convergence on the
+shipped prior will be measured by the first run of the generation workflow
+(#235).
 
 ## Validation
 
