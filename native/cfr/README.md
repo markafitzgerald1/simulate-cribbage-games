@@ -190,11 +190,17 @@ on the shipped prior will be measured by the first run of the generation workflo
 ```sh
 cargo fmt --check
 cargo clippy --locked --release --all-targets -- -D warnings
-cargo test --locked --release
-RAYON_NUM_THREADS=1 cargo llvm-cov --locked --release --fail-under-lines 100 --show-missing-lines
+cargo test --locked --release -- --include-ignored
+RAYON_NUM_THREADS=1 cargo llvm-cov --locked --release --fail-under-lines 100 --show-missing-lines -- --include-ignored
 pmd cpd --language rust --minimum-tokens 40 --dir src --dir tests
 cargo deny --locked check
 ```
+
+Plain `cargo test` skips five end-to-end tests that take 13 to 45 seconds
+each; they are marked `#[ignore]` with that reason and are not broken. The
+rest run in about four seconds. CI always passes `--include-ignored`. The
+repository's pre-commit hooks run `cargo fmt --check` on commit and clippy
+plus the fast tests on push, only when files here change.
 
 The `rust-cfr-inputs` CI job runs the same gates, mirroring the Python and
 TypeScript ones:
