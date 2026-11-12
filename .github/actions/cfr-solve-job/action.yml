@@ -1,0 +1,113 @@
+name: CFR solve job
+description: >-
+  Build the Rust CFR input generator, rebuild the prior-independent inputs,
+  check them against their pinned digests and run or resume the CFR+ solve.
+  Uploads Actions artifacts only; it never publishes a release.
+
+inputs:
+  job:
+    description: Name of the calling job, used in artifact and file names
+    required: true
+  stop-minutes:
+    description: >-
+      Minutes after the job starts when the solve budget ends; the solve
+      then finishes its current iteration and any scheduled certificate
+    required: true
+
+outputs:
+  status:
+    description: converged, paused or failed
+    value: ${{ steps.solve.outputs.status }}
+
+runs:
+  using: composite
+  steps:
+    - name: Require main exactly
+      shell: bash
+      run: '[[ "$GITHUB_REF" == "refs/heads/main" ]]'
+    # Peak disk is about 13.9 GB against about 14 GB free on a fresh runner,
+    # so drop preinstalled SDKs this chain never uses.
+    - name: Free disk
+      shell: bash
+      run: |
+        df -h /
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+          /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+        df -h /
+    - name: Record the solve deadline
+      shell: bash
+      env:
+        STOP_MINUTES: ${{ inputs.stop-minutes }}
+      run: echo "CFR_STOP_AT=$(( JOB_STARTED_AT + STOP_MINUTES * 60 ))" >> "$GITHUB_ENV"
+    - name: Install the pinned Rust toolchain
+      shell: bash
+      working-directory: native/cfr
+      run: rustup toolchain install
+    - name: Build the release binary
+      shell: bash
+      working-directory: native/cfr
+      run: cargo build --locked --release
+    - uses: actions/setup-python@v7
+      with:
+        python-version-file: .python-version
+    - name: Download the prior
+      uses: actions/download-artifact@v8
+      with:
+        name: cfr-prior
+        path: cfr-prior
+    - name: Build the inputs and run the solve
+      id: solve
+      shell: bash
+      env:
+        JOB_NAME: ${{ inputs.job }}
+      run: |
+        python -u -m scripts.run_cfr_inputs solve-job \
+          --binary native/cfr/target/release/cfr-inputs \
+          --output cfr-work --prior cfr-prior/prior.bin \
+          --evidence cfr-evidence --status-file "$GITHUB_OUTPUT" \
+          --job "$JOB_NAME" --stop-at "$CFR_STOP_AT"
+    # The checkpoint and the certified policies, without the inputs the
+    # next job rebuilds (menus, trees, offsets: about 9 GB).
+    - name: Preserve the paused solve state
+      if: steps.solve.outputs.status == 'paused'
+      uses: actions/upload-artifact@v7
+      with:
+        name: cfr-solve-state-${{ inputs.job }}
+        path: |
+          cfr-work/
+          !cfr-work/menus/**
+          !cfr-work/trees/**
+          !cfr-work/offsets.bin
+        if-no-files-found: error
+        retention-days: 30
+        compression-level: 1
+    - name: Preserve the converged outputs
+      if: steps.solve.outputs.status == 'converged'
+      uses: actions/upload-artifact@v7
+      with:
+        name: cfr-inputs
+        path: |
+          cfr-work/policy.bin
+          cfr-work/support.bin
+          cfr-work/solve.json
+          cfr-work/curve.jsonl
+          cfr-work/certificate-*.json
+        if-no-files-found: error
+        retention-days: 30
+    - name: Summarize the job
+      if: always()
+      shell: bash
+      run: |
+        df -h . >> "$GITHUB_STEP_SUMMARY"
+        for summary in cfr-evidence/summary-*.json; do
+          [ -f "$summary" ] || continue
+          { echo '```json'; cat "$summary"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+        done
+    - name: Preserve the evidence
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: cfr-evidence-${{ inputs.job }}
+        path: cfr-evidence/
+        if-no-files-found: warn
+        retention-days: 30

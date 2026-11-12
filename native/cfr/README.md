@@ -177,6 +177,19 @@ chain passes one pair, the solved policy with the prior it was solved on.
 prints the SHA-256 of the per-file digests, one per line in file order. The
 printed values can be compared with `digests.json`.
 
+## Hosted run
+
+`.github/workflows/generate-cfr-inputs.yml` runs the whole shipped chain on
+GitHub's runners: the Python prior, then `menus`, `offsets`, `trees`, `solve`
+and a one-bit `support`. It is manual only and publishes nothing. Each solve job
+first checks its menus, trees and offsets against the `reproducible` digests in
+`digests.json`, since no prior changes them. The first solve job's budget ends
+45 minutes before its time limit, and it pauses at the next iteration end; a
+second job resumes from the uploaded checkpoint and must converge. The converged
+policy, support, certificates and per-step timings, peak memory and free disk
+are kept as 30-day Actions artifacts. Dispatching it needs the maintainer's
+approval and the input `generate`.
+
 ## Evidence
 
 Measured on an Apple M2 with 8 threads, 2026-11-11: menus took 74 s, offsets
