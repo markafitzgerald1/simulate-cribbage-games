@@ -3,10 +3,13 @@
 //! compared with the library functions they wrap, so these tests check the
 //! wiring (paths, parsing, exit codes), not the arithmetic.
 
-use cfr_inputs::driver;
+mod common;
+
+use cfr_inputs::driver::{self, Outcome};
 use cfr_inputs::game::canonical;
 use cfr_inputs::menus::{self, FILES, NIL};
 use cfr_inputs::trees::{Menus, Tree, offsets_bytes};
+use common::{Small, SmallTrees, small};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
@@ -74,6 +77,11 @@ fn bad_arguments_exit_with_usage_errors() {
             &["menus", "--threads", "x"][..],
             "--threads must be a number",
         ),
+        (
+            &["solve", "--pause-after-seconds", "x"][..],
+            "--pause-after-seconds",
+        ),
+        (&["solve", "--max-iterations", "x"][..], "--max-iterations"),
         (&["menus", "--range", "5"][..], "--range must be START..END"),
         (
             &["menus", "--range", "a..5"][..],
@@ -93,6 +101,28 @@ fn bad_arguments_exit_with_usage_errors() {
 fn failing_commands_exit_with_one() {
     let dir = scratch("failing");
     let out = dir.to_str().unwrap();
+    let small_prior = dir.join("small-prior.bin");
+    std::fs::write(&small_prior, [0u8; 8]).unwrap();
+    let full_prior = dir.join("full-prior.bin");
+    std::fs::write(&full_prior, vec![u8::MAX; 1820 * 1820 * 8]).unwrap();
+    let empty_prior = dir.join("empty-prior.bin");
+    let mut weights = vec![0u8; 1820 * 1820 * 8];
+    std::fs::write(&empty_prior, &weights).unwrap();
+    // Weight on Pone and Dealer both holding four Aces (hand 0 each).
+    weights[0] = 1;
+    let impossible_prior = dir.join("impossible-prior.bin");
+    std::fs::write(&impossible_prior, &weights).unwrap();
+    // 2^59 on four Aces against four Kings (hands 0 and 1819), a deal that
+    // can happen, is over the certificate's mass limit of about 2^58.
+    weights[..8].fill(0);
+    let heavy = 1819 * 8;
+    weights[heavy..heavy + 8].copy_from_slice(&(1u64 << 59).to_le_bytes());
+    let heavy_prior = dir.join("heavy-prior.bin");
+    std::fs::write(&heavy_prior, &weights).unwrap();
+    let (small_prior, full_prior) = (small_prior.to_str().unwrap(), full_prior.to_str().unwrap());
+    let empty_prior = empty_prior.to_str().unwrap();
+    let impossible_prior = impossible_prior.to_str().unwrap();
+    let heavy_prior = heavy_prior.to_str().unwrap();
     for (args, message) in [
         (vec!["unknown", "--output", out], "unknown command unknown"),
         (
@@ -104,10 +134,143 @@ fn failing_commands_exit_with_one() {
             "--range must lie within 0..1820",
         ),
         (vec!["trees", "--output", out], "No such file"),
+        (
+            vec!["solve", "--output", out],
+            "solve needs exactly one --prior",
+        ),
+        (
+            vec!["solve", "--output", out, "--prior", small_prior],
+            "prior must be 1820 x 1820",
+        ),
+        (
+            vec!["solve", "--output", out, "--prior", full_prior],
+            "prior mass overflows",
+        ),
+        (
+            vec!["solve", "--output", out, "--prior", empty_prior],
+            "prior has no weight",
+        ),
+        (
+            vec!["solve", "--output", out, "--prior", impossible_prior],
+            "prior weights an impossible deal: Pone hand 0, Dealer hand 0",
+        ),
+        (
+            vec!["solve", "--output", out, "--prior", heavy_prior],
+            "exceeds the certificate's limit",
+        ),
     ] {
         let (_, stderr) = expect(&args, 1);
         assert!(stderr.contains(message), "{args:?}: {stderr}");
     }
+}
+
+/// Write the small game's menus and trees as the binary lays them out: every
+/// menu file (empty outside the small game) and every tree file (no roots
+/// outside its two Pone hands). Returns the prior's path.
+fn small_output(small_game: &Small, dir: &Path) -> PathBuf {
+    let hands = canonical();
+    std::fs::create_dir_all(dir.join("menus")).unwrap();
+    std::fs::create_dir_all(dir.join("trees")).unwrap();
+    let pones: Vec<usize> = small_game.trees.keys().copied().collect();
+    let mut dealers = Vec::new();
+    for pone_hand in &pones {
+        dealers.extend(
+            (0..1820).filter(|&dealer_hand| small_game.chance[pone_hand * 1820 + dealer_hand] != 0),
+        );
+    }
+    for file_index in 0..FILES {
+        let wanted = pones.contains(&file_index)
+            || (file_index >= 1820 && dealers.contains(&(file_index - 1820)));
+        let bytes = if wanted {
+            menus::build(file_index, &hands)
+        } else {
+            Vec::new()
+        };
+        std::fs::write(dir.join("menus").join(format!("{file_index}.bin")), bytes).unwrap();
+    }
+    let none = no_trees();
+    for pone_hand in 0..1820 {
+        let bytes = small_game.trees.get(&pone_hand).unwrap_or(&none).to_bytes();
+        std::fs::write(dir.join("trees").join(format!("{pone_hand}.bin")), bytes).unwrap();
+    }
+    let prior = dir.join("prior.bin");
+    let bytes: Vec<u8> = small_game
+        .chance
+        .iter()
+        .flat_map(|chance_weight| chance_weight.to_le_bytes())
+        .collect();
+    std::fs::write(&prior, bytes).unwrap();
+    prior
+}
+
+/// The small game written to a fresh folder: the game, the folder and the
+/// prior's path.
+fn small_folder(name: &str) -> (Small, PathBuf, String) {
+    let small_game = small();
+    let dir = scratch(name);
+    let prior = small_output(&small_game, &dir).to_str().unwrap().to_owned();
+    (small_game, dir, prior)
+}
+
+#[test]
+fn solve_and_digests_run_on_a_small_output() {
+    let (small_game, dir, prior) = small_folder("small");
+    let (out, prior) = (dir.to_str().unwrap(), prior.as_str());
+
+    let (stdout, _) = expect(
+        &["solve", "--output", out, "--prior", prior, "--threads", "2"],
+        0,
+    );
+    assert_eq!(stdout.trim(), "Converged(128)");
+    // The same solve run in process, from the same prior, writes the same policy.
+    let reference = scratch("small-reference");
+    let game = small_game.game();
+    let outcome = driver::run(
+        &reference,
+        &game,
+        &SmallTrees(&small_game.trees),
+        "x",
+        None,
+        4096,
+    )
+    .unwrap();
+    assert_eq!(outcome, Outcome::Converged(128));
+    let policy = std::fs::read(dir.join("policy.bin")).unwrap();
+    assert_eq!(policy, std::fs::read(reference.join("policy.bin")).unwrap());
+    // A zero budget pauses after one iteration, and a cap stops at it.
+    let (_, held, held_prior) = small_folder("paused");
+    let (out_held, prior_held) = (held.to_str().unwrap(), held_prior.as_str());
+    let (stdout, _) = expect(
+        &[
+            "solve",
+            "--output",
+            out_held,
+            "--prior",
+            prior_held,
+            "--pause-after-seconds",
+            "0",
+        ],
+        3,
+    );
+    assert_eq!(stdout.trim(), "Paused(1)");
+    let (stdout, _) = expect(
+        &[
+            "solve",
+            "--output",
+            out_held,
+            "--prior",
+            prior_held,
+            "--max-iterations",
+            "2",
+        ],
+        4,
+    );
+    assert_eq!(stdout.trim(), "Capped(2)");
+    // Running the converged solve again returns the recorded result.
+    let (stdout, _) = expect(&["solve", "--output", out, "--prior", prior], 0);
+    assert_eq!(stdout.trim(), "Converged(128)");
+
+    assert_digests(&dir, &["policy"]);
 }
 
 #[test]

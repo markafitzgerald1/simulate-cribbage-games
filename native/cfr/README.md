@@ -54,15 +54,35 @@ Each part of the evidence lives in this repository:
   walk of every edge alongside a replay of the rules checks each node's menu
   and each leaf's margin. The binary's subcommands, exit codes and argument
   errors are tested on output folders small enough for a test.
-- **Determinism:** menus, trees and offsets depend on no prior: they are
-  fixed by the pegging rules, the canonical hand order and the file format.
-  Their digests are in `digests.json` under `reproducible`, and every build
-  of this source must reproduce them. The generation workflow (#235) checks
-  them before every solve; that check has not yet run on Actions.
+- **Solve** (`solve.rs`, `driver.rs`): the solver's certificate computes, in
+  exact `i128` arithmetic, each player's best-response value against the rounded
+  policy. Its exposure is half the gap between them, the average of the two
+  players' possible gains from deviating. The solve stops only when exposure is
+  at most 0.001 points, so neither player could gain more than 0.002 points
+  within the solved model: rank-only hands, a pegging-margin objective, and a
+  chance prior over the two kept hands that does not condition on a player's own
+  discards or the starter. On a small game, tests check the certificate's joint
+  value against a replay of every deal from the rules, and both best responses
+  against an expectimax replay and against a public-state recursion that sums
+  each decision over every deal behind it; none of these reads the trees, so
+  they also check the trees' values. Other tests cover the rounding, falling
+  exposure, the iteration cap, the certificate schedule, and pause, crash and
+  resume behavior, including damaged or mismatched saved state. `solve` rejects
+  a prior with no weight, with weight on a deal no pair of hands can make, or
+  with more mass than the certificate's exact arithmetic can carry
+  (`MASS_LIMIT`, about 2^58).
+- **Determinism:** the numerical outputs (regrets, averages and so the policy)
+  do not depend on the thread count (`bytes_do_not_depend_on_thread_count`);
+  only the measured seconds in certificates and `curve.jsonl` vary between
+  runs. A pinned digest of a small game's arithmetic flags order changes that
+  alter that game's results. Menus, trees and offsets depend on no prior: they
+  are fixed by the pegging rules, the canonical hand order and the file
+  format. Their digests are in `digests.json` under `reproducible`, and every
+  build of this source must reproduce them. The generation workflow (#235)
+  checks them before every solve; that check has not yet run on Actions.
 
-The generator arrives in stacked pull requests. This one adds the menus,
-trees and offsets. The solve and the support bits follow, each adding its
-own evidence above.
+The generator arrives in stacked pull requests. This one adds the solve.
+The support bits follow, adding their own evidence above.
 
 ## Why Rust
 
@@ -94,6 +114,33 @@ and a re-pin and fresh certificates if the bytes change.
 | `game.rs` | rank-only pegging rules and the forced move |
 | `menus.rs` | `menus/{k}.bin`, 3,640 files |
 | `trees.rs` | `trees/{p}.bin`, 1,820 files; `offsets.bin` |
+| `solve.rs` | the CFR+ iteration, the rounded policy, the exact `i128` certificate |
+| `driver.rs` | checkpoints, `policy-N.bin`, `certificate-N.json`, `policy.bin` |
+
+The solve driver's behavior:
+
+- **Pausing never certifies.** Certificates come only at iterations 1, 8,
+  32 and every multiple of 128, so a resumed solve ends on the same policy
+  as an uninterrupted one.
+- **A crash during certification is repaired.** A resume first certifies a
+  scheduled checkpoint that has no certificate yet.
+- **A finished solve is never continued.** Running `solve` again returns the
+  recorded result.
+- **Resume checks the saved state.** It verifies the checkpoint's SHA-256
+  digests and the inputs' identity: the prior plus the menu and tree
+  digests. Files are flushed to disk before each rename.
+
+## Parallelism without changing bytes
+
+Every floating-point accumulator receives its terms in the serial order,
+whatever the thread count.
+
+- **Pone's pass** runs Pone hands in parallel.
+- **Dealer's pass** keeps Pone hands sequential and runs Dealer hands in
+  parallel.
+- **Per-menu updates** run per file.
+
+`solve.rs` explains why each choice preserves the order.
 
 ## Usage
 
@@ -103,11 +150,18 @@ B=target/release/cfr-inputs
 $B menus   --output OUT [--range START..END]
 $B offsets --output OUT
 $B trees   --output OUT [--range START..END]
+$B solve   --output OUT --prior PRIOR.bin [--pause-after-seconds S]
 $B digests --output OUT
 ```
 
 `--range` writes only those menu files (0..3640) or tree files (0..1820),
 so the work can be split across jobs. `trees` needs every menu file.
+
+`solve` exits with:
+- 0 when the 0.001-point exposure target is met;
+- 3 when it pauses on its time budget (run the same command again to
+  resume);
+- 4 at the iteration cap.
 
 `digests` prints the SHA-256 of each output. For the menu and tree folders it
 prints the SHA-256 of the per-file digests, one per line in file order. The
@@ -117,7 +171,9 @@ printed values can be compared with `digests.json`.
 
 Measured on an Apple M2 with 8 threads, 2026-11-11: menus took 74 s, offsets
 3 s and trees 64 s, and all three outputs matched the `reproducible` digests in
-`digests.json`.
+`digests.json`. The full-size solve's time, memory and convergence on the
+shipped prior will be measured by the first run of the generation workflow
+(#235).
 
 ## Validation
 
