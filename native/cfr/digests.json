@@ -1,0 +1,9 @@
+{
+  "description": "SHA-256 digests as printed by `cfr-inputs digests`. A folder's entry is the SHA-256 of its per-file SHA-256 hex digests, one per line in file order.",
+  "reproducible": {
+    "description": "They depend on no prior: they are fixed by the pegging rules, the canonical hand order and the file format. Any build of this repository's source must reproduce them, and the generation workflow checks them before every solve.",
+    "menus": "20de6dc7db54d7255ff8c9b3dd8f7dd794bc4d0330acfc139e703616647e5400",
+    "trees": "d06cacaa6df7f3e75fc305cc7b21942a2ea574bd1030e77338d29271c0caabbc",
+    "offsets": "8077f44a2f3ed48d48e42a0e80940d52e9f7f62cf3466a7ebb0120704457cf2e"
+  }
+}

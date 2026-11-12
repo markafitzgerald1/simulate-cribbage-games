@@ -47,10 +47,22 @@ Each part of the evidence lives in this repository:
   points to `tests/pegging_golden.txt`; `tests/rules.rs` replays them with
   `State` and must match every line, and a Python test checks the file is
   current.
+- **Menus and trees** (`menus.rs`, `trees.rs`): menu records are checked for
+  order and parent links, and the builder asserts perfect recall (the same
+  public history always implies the same earlier own decision and the same
+  legal ranks). A tree survives a round trip through its file format, and a
+  walk of every edge alongside a replay of the rules checks each node's menu
+  and each leaf's margin. The binary's subcommands, exit codes and argument
+  errors are tested on output folders small enough for a test.
+- **Determinism:** menus, trees and offsets depend on no prior: they are
+  fixed by the pegging rules, the canonical hand order and the file format.
+  Their digests are in `digests.json` under `reproducible`, and every build
+  of this source must reproduce them. The generation workflow (#235) checks
+  them before every solve; that check has not yet run on Actions.
 
-The generator arrives in stacked pull requests. This first one holds the
-pegging rules every later module walks. Menus, trees and offsets come next,
-then the solve, then the support bits; each adds its own evidence above.
+The generator arrives in stacked pull requests. This one adds the menus,
+trees and offsets. The solve and the support bits follow, each adding its
+own evidence above.
 
 ## Why Rust
 
@@ -80,6 +92,32 @@ and a re-pin and fresh certificates if the bytes change.
 | Module | Output |
 |---|---|
 | `game.rs` | rank-only pegging rules and the forced move |
+| `menus.rs` | `menus/{k}.bin`, 3,640 files |
+| `trees.rs` | `trees/{p}.bin`, 1,820 files; `offsets.bin` |
+
+## Usage
+
+```sh
+cargo build --release
+B=target/release/cfr-inputs
+$B menus   --output OUT [--range START..END]
+$B offsets --output OUT
+$B trees   --output OUT [--range START..END]
+$B digests --output OUT
+```
+
+`--range` writes only those menu files (0..3640) or tree files (0..1820),
+so the work can be split across jobs. `trees` needs every menu file.
+
+`digests` prints the SHA-256 of each output. For the menu and tree folders it
+prints the SHA-256 of the per-file digests, one per line in file order. The
+printed values can be compared with `digests.json`.
+
+## Evidence
+
+Measured on an Apple M2 with 8 threads, 2026-11-11: menus took 74 s, offsets
+3 s and trees 64 s, and all three outputs matched the `reproducible` digests in
+`digests.json`.
 
 ## Validation
 
