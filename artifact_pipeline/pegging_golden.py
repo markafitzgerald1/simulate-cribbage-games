@@ -36,7 +36,8 @@ GOLDEN = Path(__file__).resolve().parents[1] / "native/cfr/tests/pegging_golden.
 PONE_STEP, DEALER_STEP = 37, 11
 
 
-class RotatingRule:
+# One method is the whole `PeggingPolicy` interface, as in pegging.py.
+class RotatingRule:  # pylint: disable=too-few-public-methods
     """Pick legal rank number (count + cards held) modulo the legal ranks.
 
     It depends only on public facts both engines expose, and it varies the
