@@ -6,7 +6,7 @@ mod common;
 
 use cfr_inputs::driver::{self, Outcome};
 use cfr_inputs::game::State;
-use cfr_inputs::solve::{MASS_LIMIT, POLICY_UNITS, certificate};
+use cfr_inputs::solve::{Certificate, MASS_LIMIT, POLICY_UNITS, certificate};
 use common::{Small, SmallTrees, bits, decides, info_of, matched, small, solve};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -266,13 +266,20 @@ fn certificates_follow_the_fixed_schedule() {
     assert_eq!(certified, [1, 8, 32, 128, 256]);
 }
 
+/// The rounded policy after `iterations` of a two-thread solve, and its
+/// exact certificate.
+fn certified(small_game: &Small, iterations: u32) -> (Vec<u16>, Certificate) {
+    let game = small_game.game();
+    let policy = solve(small_game, 2, iterations).rounded(&game);
+    let exact = certificate(&game, &SmallTrees(&small_game.trees), &policy);
+    (policy, exact)
+}
+
 #[test]
 fn best_responses_match_an_expectimax_replay() {
     let small_game = matched();
-    let game = small_game.game();
     for iterations in [1, 3] {
-        let policy = solve(&small_game, 2, iterations).rounded(&game);
-        let exact = certificate(&game, &SmallTrees(&small_game.trees), &policy);
+        let (policy, exact) = certified(&small_game, iterations);
         let best = |responder| {
             small_game.over_deals(|state, pone_hand, dealer_hand| {
                 replay(
@@ -511,11 +518,9 @@ fn public_value(small_game: &Small, policy: &[u16], responder: usize, bag: Vec<B
 #[test]
 fn best_responses_match_a_public_state_recursion() {
     let small_game = small();
-    let game = small_game.game();
     let mut shared_decisions = 0;
     for iterations in [1, 3, 8, 64] {
-        let policy = solve(&small_game, 2, iterations).rounded(&game);
-        let exact = certificate(&game, &SmallTrees(&small_game.trees), &policy);
+        let (policy, exact) = certified(&small_game, iterations);
         for responder in 0..2 {
             let mut bags: BTreeMap<usize, Vec<Branch>> = BTreeMap::new();
             for pone_hand in 0..1820 {
