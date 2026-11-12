@@ -33,6 +33,9 @@ default skill for documentation and Python backend work.
    before `pre-commit install` so the local cspell hook can find its npm
    dependency.
 8. Run the required checks from `AGENTS.md`, or record why a check was skipped.
+   For `native/cfr/`, passing `cargo test` is not evidence of byte
+   equivalence. Any change to floating-point order, or to how work is split
+   across threads, needs the full-size digest check in its README.
 9. For long-running Monte Carlo artifact generation, preserve resumability,
    checkpoint progress periodically, and keep sample counts with means and
    standard errors so summary tables can show uncertainty honestly.
