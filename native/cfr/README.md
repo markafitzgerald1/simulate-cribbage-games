@@ -58,9 +58,9 @@ then the solve, then the support bits; each adds its own evidence above.
   speed and control of C++ and no garbage collector, whose compiler checks
   memory safety; `unsafe` is forbidden here.
 - **Safe parallelism:** the compiler rules out data races, and the rayon
-  thread-pool library spreads the work across cores. Tests check that the
-  solver's numerical outputs are identical for 1 to 4 threads on a small game;
-  the full-size run used 8.
+  thread-pool library spreads the work across cores. A test checks that the
+  solver's numerical outputs are identical with 1 and 4 threads on a small
+  game.
 
 ## Port history
 
