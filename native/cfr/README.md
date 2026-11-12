@@ -71,6 +71,9 @@ Each part of the evidence lives in this repository:
   a prior with no weight, with weight on a deal no pair of hands can make, or
   with more mass than the certificate's exact arithmetic can carry
   (`MASS_LIMIT`, about 2^58).
+- **Support** (`support.rs`): on a small game, the support bits are checked
+  against a replay of each policy that walks every deal from the rules and
+  never reads the trees.
 - **Determinism:** the numerical outputs (regrets, averages and so the policy)
   do not depend on the thread count (`bytes_do_not_depend_on_thread_count`);
   only the measured seconds in certificates and `curve.jsonl` vary between
@@ -81,8 +84,8 @@ Each part of the evidence lives in this repository:
   build of this source must reproduce them. The generation workflow (#235)
   checks them before every solve; that check has not yet run on Actions.
 
-The generator arrives in stacked pull requests. This one adds the solve.
-The support bits follow, adding their own evidence above.
+The generator arrived in stacked pull requests: the pegging rules, then
+menus, trees and offsets, then the solve, then these support bits.
 
 ## Why Rust
 
@@ -116,6 +119,7 @@ and a re-pin and fresh certificates if the bytes change.
 | `trees.rs` | `trees/{p}.bin`, 1,820 files; `offsets.bin` |
 | `solve.rs` | the CFR+ iteration, the rounded policy, the exact `i128` certificate |
 | `driver.rs` | checkpoints, `policy-N.bin`, `certificate-N.json`, `policy.bin` |
+| `support.rs` | `support.bin` |
 
 The solve driver's behavior:
 
@@ -151,6 +155,7 @@ $B menus   --output OUT [--range START..END]
 $B offsets --output OUT
 $B trees   --output OUT [--range START..END]
 $B solve   --output OUT --prior PRIOR.bin [--pause-after-seconds S]
+$B support --output OUT (--policy POLICY.bin --prior PRIOR.bin)...
 $B digests --output OUT
 ```
 
@@ -163,6 +168,11 @@ so the work can be split across jobs. `trees` needs every menu file.
   resume);
 - 4 at the iteration cap.
 
+`support` sets one bit per `--policy`/`--prior` pair, in the order given:
+bit `k` of a menu's byte says whether the opponent, following policy `k`,
+reaches that decision with positive weight under prior `k`. The shipped
+chain passes one pair, the solved policy with the prior it was solved on.
+
 `digests` prints the SHA-256 of each output. For the menu and tree folders it
 prints the SHA-256 of the per-file digests, one per line in file order. The
 printed values can be compared with `digests.json`.
@@ -171,8 +181,8 @@ printed values can be compared with `digests.json`.
 
 Measured on an Apple M2 with 8 threads, 2026-11-11: menus took 74 s, offsets
 3 s and trees 64 s, and all three outputs matched the `reproducible` digests in
-`digests.json`. The full-size solve's time, memory and convergence on the
-shipped prior will be measured by the first run of the generation workflow
+`digests.json`. The full-size solve's and support's time, memory and convergence
+on the shipped prior will be measured by the first run of the generation workflow
 (#235).
 
 ## Validation
