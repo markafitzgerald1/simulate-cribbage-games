@@ -14,6 +14,7 @@ on:
       - simulate_cribbage_games.py
       - requirements.txt
       - .python-version
+      - scripts/run_fixed_play_smoke.py
       - .github/workflows/generate-play-artifact.yml
   workflow_dispatch:
   schedule:
@@ -64,6 +65,10 @@ jobs:
             --hand-limit=4 \
             --no-resume \
             --seed=42
+
+      - name: Exercise bounded fixed-policy parallel CLI
+        if: github.event_name == 'pull_request'
+        run: python -m scripts.run_fixed_play_smoke --output-dir dist/fixed-play-smoke
 
       # Single-run, time-capped production generation -- no resume-across-runs.
       # Cost model measured on this code (Apple M2 laptop, single-threaded):
