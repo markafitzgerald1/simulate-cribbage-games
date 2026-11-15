@@ -71,10 +71,10 @@ impl Menus {
                 menus
                     .offset
                     .push(u32::try_from(menus.actions).expect("action offset"));
-                menus.stage.push(record[20]);
-                menus.width.push(record[21]);
-                menus.parent_action.push(record[23]);
-                menus.actions += u64::from(record[21]);
+                menus.stage.push(record[16]);
+                menus.width.push(record[17]);
+                menus.parent_action.push(record[18]);
+                menus.actions += u64::from(record[17]);
             }
         }
         menus

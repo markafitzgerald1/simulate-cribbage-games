@@ -32,8 +32,7 @@ seat's first three cards, wherever more than one rank is legal. Two seats
 times three cards are the six layers; a seat's fourth card is always forced.
 
 **Forced moves.** Where only one move is possible (one legal rank, a go, or a
-player's last card), the generator plays it. Menu records keep one reserved
-byte, always 0.
+player's last card), the generator plays it; menus list only real choices.
 
 ## Why the output is correct
 
@@ -169,10 +168,10 @@ printed values can be compared with `digests.json`.
 
 ## Evidence
 
-Measured on an Apple M2 with 8 threads, 2026-11-11: menus took 74 s, offsets
-3 s and trees 64 s, and all three outputs matched the `reproducible` digests in
-`digests.json`. The full-size solve's time, memory and convergence on the
-shipped prior will be measured by the first run of the generation workflow
+Measured on an Apple M2 with 8 threads, 2026-11-15: menus took 67 s (829 MB),
+offsets 2 s and trees 53 s, and all three outputs matched the `reproducible`
+digests in `digests.json`. The full-size solve's time, memory and convergence on
+the shipped prior will be measured by the first run of the generation workflow
 (#235).
 
 ## Validation
