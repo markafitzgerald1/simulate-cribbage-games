@@ -30,6 +30,21 @@ updates:
           - "*"
         update-types: ["minor", "patch"]
 
+  # Maintain dependencies for the Rust CFR input generator (native/cfr)
+  - package-ecosystem: "cargo"
+    directory: "/native/cfr"
+    schedule:
+      interval: "weekly"
+    groups:
+      cargo-dependencies:
+        patterns:
+          - "*"
+      cargo-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+        update-types: ["minor", "patch"]
+
   # Maintain dependencies for npm (package.json)
   - package-ecosystem: "npm"
     directory: "/"
