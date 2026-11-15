@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 import argparse
-from collections import Counter
 from dataclasses import dataclass
+from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from artifact_pipeline.fixed_play_inputs import load_fixed_discards
 from artifact_pipeline.export_uncertainty import build_sidecar, encode_json
 from artifact_pipeline.generate_play_table import (
-    DiscardPolicy,
     build_client_table,
     discard_keeps_fingerprint,
     generate_play_table,
@@ -22,13 +22,16 @@ from artifact_pipeline.generate_play_table import (
     _write_lines,
 )
 from artifact_pipeline.pegging import ROLES, get_canonical_hands, policy_fingerprint
+from artifact_pipeline.play_measurement_jobs import (
+    CellWorker,
+    MeasurementJobs,
+    measure_cells,
+    sampler_digest,
+)
 from artifact_pipeline.promotion_gate import DEFAULT_GATE_DEALS, MINIMUM_GATE_DEALS
 from artifact_pipeline.six_layer_policy import (
     SixLayerPolicy,
     read_manifest,
-    verified_component,
-    close_component,
-    _unique_object,
 )
 
 
@@ -40,64 +43,6 @@ class GateSettings:
     deals: int = DEFAULT_GATE_DEALS
 
 
-def load_fixed_discards(root: Path, spec: Mapping[str, Any]) -> DiscardPolicy:
-    """Validate a complete frozen rank keep map; never refine or invent keeps."""
-    data = verified_component(root, spec)
-    try:
-        document = json.loads(data[:], object_pairs_hook=_unique_object)
-    finally:
-        close_component(data)
-    if not isinstance(document, dict) or not isinstance(document.get("keeps"), list):
-        raise ValueError("Frozen discard document needs keep rows")
-    keeps = {}
-    for row in document["keeps"]:
-        if (
-            not isinstance(row, list)
-            or len(row) != 3
-            or not isinstance(row[1], list)
-            or not isinstance(row[2], list)
-        ):
-            raise ValueError("Malformed discard row")
-        role, dealt, kept = row
-        if (
-            role not in ROLES
-            or len(dealt) != 6
-            or len(kept) != 4
-            or dealt != sorted(dealt)
-            or kept != sorted(kept)
-        ):
-            raise ValueError("Invalid canonical discard row")
-        if any(
-            not isinstance(rank, int) or isinstance(rank, bool) or not 0 <= rank < 13
-            for rank in (*dealt, *kept)
-        ):
-            raise ValueError("Invalid discard rank")
-        available: Counter[int] = Counter(dealt)
-        chosen: Counter[int] = Counter(kept)
-        if max(available.values()) > 4 or chosen - available:
-            raise ValueError("Impossible discard row")
-        key = (role, tuple(dealt))
-        if key in keeps:
-            raise ValueError("Duplicate discard row")
-        keeps[key] = tuple(kept)
-    if len(keeps) != 2 * 18395:
-        raise ValueError(
-            "Frozen discards must cover every canonical six-card hand/role"
-        )
-    policy = DiscardPolicy(keeps)
-    if discard_keeps_fingerprint(policy) != spec.get("keep_fingerprint"):
-        raise ValueError("Discard population fingerprint mismatch")
-    if (
-        spec.get("converged") is not False
-        or not isinstance(spec.get("description"), str)
-        or not spec["description"].strip()
-    ):
-        raise ValueError(
-            "Frozen discard population needs honest lack of convergence/limits"
-        )
-    return policy
-
-
 def measure_fixed_table(
     manifest_path: Path,
     samples: int,
@@ -105,11 +50,90 @@ def measure_fixed_table(
     hands: Sequence[tuple[int, ...]] | None = None,
     gate: GateSettings = GateSettings(),
 ) -> dict[str, Any]:
+    """Retain the original serial entry point as a reference path."""
+    return _measure_fixed(
+        manifest_path, MeasurementRequest(samples, seed, hands), gate, None
+    )
+
+
+@dataclass(frozen=True)
+class MeasurementRequest:
+    """Observation inputs, independent of worker scheduling."""
+
+    samples: int
+    seed: int
+    hands: Sequence[tuple[int, ...]] | None = None
+
+
+def measure_fixed_parallel(
+    manifest_path: Path,
+    request: MeasurementRequest,
+    gate: GateSettings,
+    jobs: MeasurementJobs,
+) -> dict[str, Any]:
+    """Measure single-owner streams with explicit pinned execution settings."""
+    return _measure_fixed(manifest_path, request, gate, jobs)
+
+
+def _parallel_cells(
+    worker: CellWorker,
+    request: MeasurementRequest,
+    jobs: MeasurementJobs,
+    metadata: Mapping[str, Any],
+) -> dict[str, Any]:
+    requested = sorted(
+        request.hands if request.hands is not None else get_canonical_hands()
+    )
+    canonical = get_canonical_hands()
+    if len(set(requested)) != len(requested) or any(
+        hand not in canonical for hand in requested
+    ):
+        raise ValueError("Measurement hands must be unique canonical keeps")
+    binding = {
+        "schema": "fixed-play-complete-cells.v1",
+        "generation_method": metadata["generation_method"],
+        "sampler_sha256": sampler_digest(),
+        "policy_manifest_sha256": metadata["policy_manifest_sha256"],
+        "policy_fingerprint": metadata["policy_fingerprint"],
+        "discard_policy_fingerprint": metadata["discard_policy_fingerprint"],
+        "seed": request.seed,
+        "samples": request.samples,
+        "promotion_gate": metadata.get("promotion_gate", {}),
+        "hands": [list(hand) for hand in requested],
+        "generated_at": jobs.generated_at,
+    }
+    cells, counts = measure_cells(worker.policy_path, binding, jobs, worker)
+    return {
+        "cells": cells,
+        "counts": counts,
+        "generated_at": jobs.generated_at,
+        "hand_count": len(requested),
+        "sampler_sha256": binding["sampler_sha256"],
+    }
+
+
+def _measure_fixed(
+    manifest_path: Path,
+    request: MeasurementRequest,
+    gate: GateSettings,
+    jobs: MeasurementJobs | None,
+) -> dict[str, Any]:
     """Generate new observations only; no training, refinement or native input."""
     if gate.mode not in ("off", "report", "enforce"):
         raise ValueError("Invalid promotion gate mode")
     if gate.mode != "off" and gate.deals < MINIMUM_GATE_DEALS:
         raise ValueError("Too few promotion gate deals")
+    if (
+        not isinstance(request.samples, int)
+        or isinstance(request.samples, bool)
+        or request.samples < 1
+    ):
+        raise ValueError("Samples must be a positive integer")
+    manifest_digest = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    if jobs is not None:
+        jobs.validate()
+        if jobs.manifest_sha256 is not None and manifest_digest != jobs.manifest_sha256:
+            raise ValueError("Pinned policy manifest digest mismatch")
     with SixLayerPolicy(manifest_path) as policy:
         manifest = policy.manifest
         discards = load_fixed_discards(
@@ -119,7 +143,9 @@ def measure_fixed_table(
         gate_report = promotion_gate_metadata(
             policies,
             argparse.Namespace(
-                promotion_gate=gate.mode, promotion_gate_deals=gate.deals, seed=seed
+                promotion_gate=gate.mode,
+                promotion_gate_deals=gate.deals,
+                seed=request.seed,
             ),
         )
         if gate.mode == "enforce" and not gate_report["promotion_gate"]["passed"]:
@@ -127,17 +153,27 @@ def measure_fixed_table(
                 "Fixed policy failed the safety gate; no replacement or refinement is allowed"
             )
         policy.reset_counts()
-        fingerprint = ":".join(policy_fingerprint(policies[role]) for role in ROLES)
         table = generate_play_table(
             discards,
             policies,
-            samples,
-            seed,
-            hands=hands,
-            play_policy_fingerprint=fingerprint,
+            request.samples,
+            request.seed,
+            hands=request.hands if jobs is None else [],
+            play_policy_fingerprint=":".join(
+                policy_fingerprint(policies[role]) for role in ROLES
+            ),
             discard_policy_fingerprint=discard_keeps_fingerprint(discards),
         )
         counts = policy.decision_counts()
+        if jobs is not None:
+            table["__metadata__"]["policy_manifest_sha256"] = manifest_digest
+            worker = CellWorker(policy, discards, manifest_path)
+            parallel = _parallel_cells(
+                worker, request, jobs, {**table["__metadata__"], **gate_report}
+            )
+            table.update(parallel.pop("cells"))
+            counts = parallel.pop("counts")
+            table["__metadata__"].update(parallel)
         total = sum(counts.values())
         table["__metadata__"].update(
             {
@@ -166,6 +202,8 @@ def measure_fixed_table(
                 },
             }
         )
+        if hashlib.sha256(manifest_path.read_bytes()).hexdigest() != manifest_digest:
+            raise ValueError("Policy manifest changed during measurement")
         return table
 
 
@@ -173,6 +211,13 @@ def main() -> None:
     """Write the same full/means/lines/uncertainty schemas as the v3 pipeline."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--policy-manifest", type=Path, required=True)
+    parser.add_argument("--policy-manifest-sha256", required=True)
+    parser.add_argument("--workers", type=positive_int, default=1)
+    parser.add_argument("--checkpoint-dir", type=Path)
+    parser.add_argument(
+        "--generated-at",
+        help="One timezone-qualified timestamp for all workers/resumes",
+    )
     parser.add_argument("--samples", type=positive_int, default=13000)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--hand-limit", type=positive_int)
@@ -229,15 +274,32 @@ def main() -> None:
         for directory, stem in staging
     ):
         parser.error("Outputs must not alias fixed policy inputs")
+    if args.checkpoint_dir is not None:
+        checkpoint = args.checkpoint_dir.resolve()
+        if args.generated_at is None:
+            parser.error(
+                "--checkpoint-dir requires the original --generated-at timestamp"
+            )
+        if any(
+            path == checkpoint or checkpoint in path.parents
+            for path in (*inputs, *outputs)
+        ):
+            parser.error(
+                "Checkpoint directory must be separate from inputs and outputs"
+            )
     hands = get_canonical_hands()
     if args.hand_limit is not None:
         hands = hands[: args.hand_limit]
-    full = measure_fixed_table(
+    full = measure_fixed_parallel(
         args.policy_manifest,
-        args.samples,
-        args.seed,
-        hands,
+        MeasurementRequest(args.samples, args.seed, hands),
         GateSettings(args.promotion_gate, args.promotion_gate_deals),
+        MeasurementJobs(
+            args.generated_at or datetime.now(timezone.utc).isoformat(),
+            args.workers,
+            args.checkpoint_dir,
+            args.policy_manifest_sha256,
+        ),
     )
     _write_json(args.output, full)
     _write_json(args.client_output, build_client_table(full), compact=True)

@@ -326,8 +326,18 @@ For fixed six-layer pegging measurement, follow
 [the producer input contract](../docs/fixed-pegging-policy.md). Keep the frozen
 model in both seats, bind actual policy bytes and complete discard choices,
 and distinguish saved counterfactual support from unavailable historical
-training reach. The serial entry point samples fresh Python v3 observations;
-parallel/resume and release activation remain separately reviewed work.
+training reach. The entry points sample fresh Python v3 observations. Parallel measurement uses
+single-owner complete cells and canonical parent reduction; preserve the caller's
+timestamp and input/code/schedule binding on resume. Do not reconstruct moments
+from displayed SEs or merge floating partial streams. Include real worker-failure
+recovery and multi-digit opening-key byte tests. Run the offline bounded CLI
+fixture and lint the inert release example; input-distribution approval,
+workflow activation and release authorization remain human decisions.
+After artifact-only coverage resets the default data, append the root release
+acceptance and legacy ratchet tests before the combined local threshold. CI
+combines those default-suite observations with artifact-suite data.
+Retain the offline Cribbage Pro gate in the inert release example. Record its
+metadata before exporting the sidecar against the final full bytes.
 
 The pre-commit mypy hook pins mirrors-mypy 1.13, older than the mypy in
 `requirements.txt`, and can reject code the direct `mypy` gate accepts, so run

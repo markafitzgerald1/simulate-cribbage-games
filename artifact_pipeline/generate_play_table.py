@@ -290,6 +290,40 @@ def _sample_seed(entry_seed: int, sample_index: int) -> int:
     return entry_seed + sample_index * 3_640_003
 
 
+def measure_play_cell(
+    discard_policy: DiscardPolicy,
+    policies: Mapping[str, PeggingPolicy],
+    cell: tuple[Sequence[int], str, int],
+    accumulators: EntryAccumulators,
+    limits: tuple[int, int, float | None],
+) -> dict[str, Any]:
+    """Accumulate one ordered v3 stream; never reduce floating partial cells."""
+    hand, target_role, seed = cell
+    samples, sample_limit, target_standard_error = limits
+    entry_seed = _entry_seed(seed, hand, target_role)
+    while accumulators.delta.n < sample_limit:
+        rng = random.Random(_sample_seed(entry_seed, accumulators.delta.n))
+        opponent_keep = sample_opponent_keep(
+            hand, other_role(target_role), discard_policy, rng
+        )
+        _record_result(
+            accumulators,
+            target_role,
+            simulate_pegging(
+                hand if target_role == PONE else opponent_keep,
+                hand if target_role == DEALER else opponent_keep,
+                policies,
+                rng,
+            ),
+        )
+        if accumulators.delta.n >= samples and (
+            target_standard_error is None
+            or accumulators.delta.standard_error <= target_standard_error
+        ):
+            break
+    return _entry_to_output(accumulators)
+
+
 def _format_duration(seconds: float) -> str:
     """Render an elapsed or remaining duration as Hh MMm or MMmSSs."""
     minutes, secs = divmod(int(seconds), 60)
@@ -440,28 +474,13 @@ def generate_play_table(
                 if existing_entry is not None
                 else _empty_entry_accumulators()
             )
-            sample_limit = max_samples or samples
-            # Invariant across the sample loop, so hash the entry seed once.
-            entry_seed = _entry_seed(seed, hand, target_role)
-            while accumulators.delta.n < sample_limit:
-                rng = random.Random(_sample_seed(entry_seed, accumulators.delta.n))
-                opponent_role = other_role(target_role)
-                opponent_keep = sample_opponent_keep(
-                    hand, opponent_role, discard_policy, rng
-                )
-                pone_hand = hand if target_role == PONE else opponent_keep
-                dealer_hand = hand if target_role == DEALER else opponent_keep
-                result = simulate_pegging(pone_hand, dealer_hand, policies, rng)
-                _record_result(accumulators, target_role, result)
-                if (
-                    accumulators.delta.n >= samples
-                    and target_standard_error is not None
-                    and accumulators.delta.standard_error <= target_standard_error
-                ):
-                    break
-                if accumulators.delta.n >= samples and target_standard_error is None:
-                    break
-            role_entries[target_role] = _entry_to_output(accumulators)
+            role_entries[target_role] = measure_play_cell(
+                discard_policy,
+                policies,
+                (hand, target_role, seed),
+                accumulators,
+                (samples, max_samples or samples, target_standard_error),
+            )
             completed_entry_standard_errors.append(accumulators.delta.standard_error)
         at_checkpoint = (hand_index + 1) % checkpoint_frequency == 0 or (
             hand_index + 1 == total_hands

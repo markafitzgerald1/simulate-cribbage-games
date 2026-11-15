@@ -263,7 +263,7 @@ coverage xml
 coverage report
 coverage run -m unittest discover artifact_pipeline
 coverage run --append scripts/run_slow_analytical_tests.py
-coverage run --append -m unittest test_check_legacy_pylint_ratchet
+coverage run --append -m unittest test_fixed_play_release test_check_legacy_pylint_ratchet
 coverage report --fail-under=100 -m --include='artifact_pipeline/*,scripts/check_legacy_pylint_ratchet.py'
 mypy simulate_cribbage_games.py artifact_pipeline
 npm run spellcheck
@@ -555,14 +555,15 @@ client means digest must match throughout export and publication.
 On pull requests both generation workflows are filtered to the paths that can
 reach generation or the export step: `artifact_pipeline/**`,
 `simulate_cribbage_games.py` (which `adapter.py` imports), `requirements.txt`,
-`.python-version`, and the workflow's own file. Keep that list in step with
-what generation actually reads, because a path the filter omits is a path whose
-changes reach `main` without the bounded run ever having exercised them. The
-filter is safe only while neither workflow supplies a required status check: a
-path-filtered workflow reports no check at all rather than a skipped one, so
-making `generate-table` required would leave every filtered pull request
-waiting on a check that never arrives. The scheduled and dispatched triggers
-are unfiltered and unaffected.
+`.python-version`, and the workflow's own file; the play workflow also lists
+`scripts/run_fixed_play_smoke.py` for its bounded fixed-policy step. Keep that
+list in step with what generation actually reads, because a path the filter
+omits is a path whose changes reach `main` without the bounded run ever having
+exercised them. The filter is safe only while neither workflow supplies a
+required status check: a path-filtered workflow reports no check at all rather
+than a skipped one, so making `generate-table` required would leave every
+filtered pull request waiting on a check that never arrives. The scheduled and
+dispatched triggers are unfiltered and unaffected.
 
 A manual generation dispatch runs a full generation. The play workflow can
 publish on main, and the crib v4 preparation path consumes the full eight-shard
@@ -808,6 +809,14 @@ chosen model. Preserve both convergence flags and the frozen discard limits.
 It writes `measured_policy` in every gate mode, unlike the enforced-only rule
 for `generate_play_table`, because it never substitutes a fallback model.
 
+Commit no input pin that pushed code cannot reproduce. The fixed-play inputs
+file stays unpinned until a CFR input generation run produces the bytes, and
+then its run id is committed beside the manifest digest that run printed. A
+release requires zero missing-menu and zero off-support decisions. A missing
+menu means that decision was played by the heuristic fallback; an off-support
+decision still samples the stored row, but breaks the condition the support
+file certifies, so the input bundle no longer matches its approval.
+
 Historical opponent training reach was not retained. A saved counterfactual
 support mask cannot justify "never trained": it identifies zero opponent reach
 under a saved policy/prior while ignoring own-action reach. Automatic goes are
@@ -815,3 +824,20 @@ not policy calls; count final measurement calls only, excluding gate calls.
 Behavioral fingerprints must bind actual components, not a Python class name.
 Test live real-state selections and fractional outcome mixtures; literal views
 and constant payoffs alone miss policy activation and sampler mistakes.
+
+Fixed-policy parallel measurement keeps each complete key/role stream on one
+worker. Complete-cell checkpoints bind code, interpreter, inputs, timestamp,
+seed and schedule; reject changes rather than reconstructing M2 from displayed
+SEs. Normalize opening-response JSON key types before computing checksums and merging,
+including multi-digit ranks. Test a real killed worker and verify surviving
+complete files byte-for-byte. The draft fixed-policy release definition lives
+outside `.github/workflows`; activation, approved input distribution and release
+authorization remain human decisions. Its bounded fixture is an offline CLI
+acceptance check, not a production policy or gate result.
+The inert release example retains the offline Cribbage Pro check before
+companion export. Its metadata write changes no parsed observation; derive the
+sidecar afterward from the final full bytes.
+
+Artifact-only discovery replaces the default coverage data. Append the root
+release acceptance and legacy ratchet tests before the combined local threshold;
+CI combines their default-suite data with artifact data instead.
