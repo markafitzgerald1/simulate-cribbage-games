@@ -55,15 +55,13 @@ def bind(root: Path, name: str) -> dict[str, Any]:
 def _menu_record(row: dict[str, Any]) -> bytes:
     history = sum((rank + 1) << (4 * i) for i, rank in enumerate(row["history"]))
     return struct.pack(
-        "<QII8B",
+        "<QI7B",
         history,
         0xFFFFFFFF,
-        0,
         *row["actions"],
         0,
         row["stage"],
         3,
-        row["heuristic_index"],
         0,
     )
 

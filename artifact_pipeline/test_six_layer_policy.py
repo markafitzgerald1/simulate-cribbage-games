@@ -354,10 +354,10 @@ class TestSixLayerPolicy(unittest.TestCase):
         original_menu = menu_path.read_bytes()
         for offset, format_code, value in [
             (0, "<Q", 1),
-            (18, "<B", 13),
-            (20, "<B", 6),
-            (21, "<B", 1),
-            (22, "<B", 3),
+            (14, "<B", 13),
+            (16, "<B", 6),
+            (17, "<B", 1),
+            (18, "<B", 4),
         ]:
             data = bytearray(original_menu)
             struct.pack_into(format_code, data, offset, value)
@@ -403,7 +403,7 @@ class TestSixLayerPolicy(unittest.TestCase):
         document = json.loads(self.path.read_text())
         destination = self.root / document["menus"][0]["file"]
         data = bytearray(destination.read_bytes())
-        data[18] = 12
+        data[14] = 12  # third legal rank: valid order, not the real legal ranks
         destination.write_bytes(data)
         document["menus"][0].update(bind(self.root, destination.name))
         self.path.write_text(json.dumps(document))

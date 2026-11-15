@@ -40,11 +40,12 @@ stored action menu must equal the actual legal ranks when used. Zero-mass
 choices are never selected; pure distributions consume no random draw.
 
 `menus` is an array of component descriptors with `role` and `own_hand` (sorted
-zero-based ranks, Ace=0 through King=12). Each file contains 24-byte records:
-`<QII8B`: packed history, unused training parent/offset fields, four action
-bytes, layer (0 through 5), width (2 through 4), a heuristic action index and an
-unused parent-action byte. The loader checks only that the index is below the
-width and computes its own heuristic, so a generator may also write 0 there.
+zero-based ranks, Ace=0 through King=12). Each file contains 19-byte records,
+`<QI4B3B`: packed history, the parent record's index in the file (unused here),
+four action bytes (the legal ranks ascending, zero padded), layer (0 through
+5), width (2 through 4) and the action index taken at the seat's previous
+decision (0 when there is none). The loader checks only that the last byte is
+below 4.
 History uses low-to-high nibbles: rank+1, go=14, reset=15. Forced menus need
 no row. Missing shards/histories use the immutable
 heuristic; a declared missing/corrupt file is an error, never a silent fallback.
