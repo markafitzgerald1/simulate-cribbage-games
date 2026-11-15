@@ -182,8 +182,7 @@ Measured on an Apple M2 with 8 threads, 2026-11-15: menus took 67 s (829 MB),
 offsets 2 s and trees 53 s, and all three outputs matched the `reproducible`
 digests in `digests.json`. The full-size solve's and support's time, memory and
 convergence on the shipped prior will be measured by the first run of the
-generation workflow
-(#235).
+generation workflow (#235).
 
 ## Validation
 
