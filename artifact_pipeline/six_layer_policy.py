@@ -27,7 +27,7 @@ from artifact_pipeline.pegging import (
 
 SCHEMA = "six-layer-pegging-policy.v1"
 DENOMINATOR = 1000
-MENU = struct.Struct("<QII4B4B")
+MENU = struct.Struct("<QI4B3B")
 PUBLIC_ACTIONS = frozenset(range(-2, 13))
 CATEGORIES = (
     "trained",
@@ -239,12 +239,12 @@ def _binding_fingerprint(
 def _validate_record(
     record: tuple[int, ...], key: int, previous: int
 ) -> tuple[int, int]:
-    history, stage, width, heuristic = record[0], record[7], record[8], record[9]
+    history, stage, width, prior_action = record[0], record[6], record[7], record[8]
     if history <= previous or width not in (2, 3, 4):
         raise ValueError("Invalid menu ordering/width")
-    legal = record[3 : 3 + width]
-    if stage not in range(6) or stage % 2 != key // len(HANDS) or heuristic >= width:
-        raise ValueError("Invalid menu stage/heuristic index")
+    legal = record[2 : 2 + width]
+    if stage not in range(6) or stage % 2 != key // len(HANDS) or prior_action >= 4:
+        raise ValueError("Invalid menu stage/previous action")
     if legal != tuple(sorted(set(legal))) or max(legal) >= 13:
         raise ValueError("Invalid menu actions")
     return history, width
@@ -443,13 +443,13 @@ class SixLayerPolicy:
         ):
             return None
         record = MENU.unpack_from(data, MENU.size * low)
-        ranks = record[3 : 3 + record[8]]
+        ranks = record[2 : 2 + record[7]]
         if ranks != view.legal_ranks:
             raise ValueError("Stored menu differs from the real legal ranks")
         row = self._index.starts[key] + low
         offset = struct.unpack_from("<I", self._buffers["offsets"], row * 4)[0]
         weights = struct.unpack_from(
-            f"<{record[8]}H", self._buffers["probabilities"], offset * 2
+            f"<{record[7]}H", self._buffers["probabilities"], offset * 2
         )
         supported = (
             self._buffers["support"][row] & self._index.manifest["support"]["mask"]
