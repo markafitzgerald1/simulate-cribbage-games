@@ -4,18 +4,19 @@
 //! and own hand `k % 1820`. It lists every information set at which that seat
 //! has a real choice among its first three cards (the fourth card and single
 //! legal plays are forced), sorted by packed public history. Each record is
-//! 24 little-endian bytes:
+//! 19 little-endian bytes:
 //!
 //! | bytes | field |
 //! |---|---|
 //! | 0..8 | packed history key |
 //! | 8..12 | index of the seat's previous decision in this file, or `u32::MAX` |
-//! | 12..16 | zero (the solver assigns global action offsets when loading) |
-//! | 16..20 | legal ranks, ascending, zero padded |
-//! | 20 | stage: `seat + 2 * cards already played by the seat` |
-//! | 21 | width (number of legal ranks) |
-//! | 22 | reserved, always 0 |
-//! | 23 | action taken at the previous decision |
+//! | 12..16 | legal ranks, ascending, zero padded |
+//! | 16 | stage: `seat + 2 * cards already played by the seat` |
+//! | 17 | width (number of legal ranks) |
+//! | 18 | action taken at the previous decision |
+//!
+//! Global action offsets are not stored: the solver assigns them when it
+//! loads the menus, in file order.
 
 use super::game::{Cards, State, feasible};
 use std::collections::HashMap;
@@ -23,7 +24,7 @@ use std::collections::HashMap;
 /// Marks "no previous decision" in the parent field.
 pub const NIL: u32 = u32::MAX;
 /// Bytes per menu record.
-pub const RECORD: usize = 24;
+pub const RECORD: usize = 19;
 /// Number of menu files: two seats times 1,820 own hands.
 pub const FILES: usize = 3640;
 
@@ -136,9 +137,8 @@ pub fn build(file_index: usize, hands: &[Cards]) -> Vec<u8> {
         };
         out.extend_from_slice(&key.to_le_bytes());
         out.extend_from_slice(&parent.to_le_bytes());
-        out.extend_from_slice(&0u32.to_le_bytes());
         out.extend_from_slice(&record.actions);
-        out.extend_from_slice(&[record.stage, record.width, 0, record.parent_action]);
+        out.extend_from_slice(&[record.stage, record.width, record.parent_action]);
     }
     out
 }
@@ -171,14 +171,18 @@ mod tests {
         let mut parents = 0;
         for (i, row) in rows.iter().enumerate() {
             let parent = u32::from_le_bytes(row[8..12].try_into().unwrap());
-            assert_eq!(&row[12..16], &[0, 0, 0, 0]);
-            assert_eq!(row[20] % 2, 1, "Dealer stages are odd");
-            assert!((2..=4).contains(&row[21]));
-            assert!(row[22] < row[21] && row[23] < 4);
+            assert_eq!(row[16] % 2, 1, "Dealer stages are odd");
+            assert!((2..=4).contains(&row[17]));
+            assert!(row[18] < 4);
+            let width = usize::from(row[17]);
+            let ranks = &row[12..16];
+            assert!(ranks[..width].windows(2).all(|pair| pair[0] < pair[1]));
+            assert!(ranks[width..].iter().all(|&rank| rank == 0));
+            assert!(ranks[..width].iter().all(|&rank| rank < 13));
             if parent != NIL {
                 parents += 1;
                 assert!((parent as usize) < i, "a parent is a shorter history");
-                assert!(rows[parent as usize][20] < row[20]);
+                assert!(rows[parent as usize][16] < row[16]);
             }
         }
         assert!(parents > 0);
