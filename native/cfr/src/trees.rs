@@ -286,9 +286,17 @@ mod tests {
     }
 
     /// Walk every edge below `id` alongside a replay of the rules: each node
-    /// must be the menu for the replayed public history, and each leaf's
-    /// margin must equal the replayed hand's. Returns the leaves checked.
-    fn check_subtree(tree: &Tree, menus: &Menus, id: u32, mut state: State) -> usize {
+    /// must be the menu for the replayed public history, with the seat, width
+    /// and stage the replay implies and a link to that seat's previous
+    /// decision and action, and each leaf's margin must equal the replayed
+    /// hand's. Returns the leaves checked.
+    fn check_subtree(
+        tree: &Tree,
+        menus: &Menus,
+        id: u32,
+        mut state: State,
+        previous: [Option<(u32, u8)>; 2],
+    ) -> usize {
         if id & TAG != 0 {
             state.finish();
             assert_eq!(leaf(id), state.points[0] - state.points[1]);
@@ -298,14 +306,32 @@ mod tests {
             let action = state.forced();
             state.play(action);
         }
-        let Node { info, first, .. } = tree.node(menus, id);
-        assert_eq!(menus.history[info], state.history_key());
+        let Node {
+            info,
+            first,
+            actor,
+            width,
+            ..
+        } = tree.node(menus, id);
+        let seat = state.next;
         let legal = state.legal();
+        assert_eq!(menus.history[info], state.history_key());
+        assert_eq!(usize::from(actor), seat);
+        assert_eq!(width, legal.len());
+        let played = 4 - state.cards_left[seat];
+        assert_eq!(usize::from(menus.stage[info]), seat + 2 * played);
+        let (parent, parent_action) = previous[seat].unwrap_or((NIL, 0));
+        assert_eq!(
+            (menus.parent[info], menus.parent_action[info]),
+            (parent, parent_action)
+        );
         let mut leaves = 0;
         for (i, &rank) in legal.iter().enumerate() {
             let mut next = state.clone();
             next.play(Some(rank));
-            leaves += check_subtree(tree, menus, tree.edges[first + i], next);
+            let mut after = previous;
+            after[seat] = Some((u32::try_from(info).unwrap(), u8::try_from(i).unwrap()));
+            leaves += check_subtree(tree, menus, tree.edges[first + i], next, after);
         }
         leaves
     }
@@ -332,7 +358,7 @@ mod tests {
                 continue;
             }
             let state = State::new(hands[pone_index], hands[dealer_index]);
-            leaves += check_subtree(&tree, &menus, tree.roots[dealer_index], state);
+            leaves += check_subtree(&tree, &menus, tree.roots[dealer_index], state, [None; 2]);
         }
         assert!(leaves > 100, "only {leaves} leaves checked");
     }
