@@ -16,6 +16,7 @@ const USAGE: &str = "usage: cfr-inputs <menus|trees> --output DIR [--range START
        cfr-inputs <offsets|digests> --output DIR [--threads N]
        cfr-inputs solve --output DIR --prior FILE [--pause-after-seconds S] [--max-iterations N] [--threads N]";
 
+/// The parsed command line.
 struct Options {
     command: String,
     output: PathBuf,
@@ -32,6 +33,9 @@ fn parse_range(value: &str) -> Option<std::ops::Range<usize>> {
     Some(start.parse().ok()?..end.parse().ok()?)
 }
 
+/// Parse the arguments after the program name: the subcommand, then
+/// `--flag value` pairs in any order. An error is the message to print; `main`
+/// exits with status 2 for it, the usual code for a usage error.
 fn parse(args: &[String]) -> Result<Options, String> {
     let command = args.first().ok_or(USAGE)?.clone();
     let (mut output, mut threads, mut pause_after, mut max_iterations) = (None, 0, None, 4096);
@@ -181,6 +185,9 @@ fn files(options: &Options, count: usize) -> std::io::Result<std::ops::Range<usi
     Ok(range)
 }
 
+/// Run one subcommand. `menus` and `trees` spread their files across the
+/// rayon threads; `trees` and `offsets` first load every menu file, so they
+/// need a complete `menus` folder.
 fn run(options: &Options) -> std::io::Result<()> {
     let hands = canonical();
     match options.command.as_str() {
@@ -222,6 +229,9 @@ fn run(options: &Options) -> std::io::Result<()> {
     }
 }
 
+/// Exit status 0 on success, 2 when the options cannot be parsed, and 1 when
+/// the command fails (an I/O error, bad input or an unknown subcommand). On
+/// success it prints the subcommand and its elapsed seconds as one JSON line.
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let options = match parse(&args) {
