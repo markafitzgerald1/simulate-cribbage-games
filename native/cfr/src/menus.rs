@@ -151,7 +151,9 @@ mod tests {
     #[test]
     fn records_are_sorted_and_parents_point_backwards() {
         let hands = canonical();
-        // Dealer holding 5-5-J-K: a modest file that still has parents.
+        // Dealer holding 5-5-J-K: a small file, so the test is fast, in which
+        // some lines give the Dealer a choice at both its first and second
+        // card, so some records link back to an earlier choice (a parent).
         let file_index = 1820
             + hands
                 .iter()
