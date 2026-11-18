@@ -443,6 +443,42 @@ diverge grossly from the reference. Only a small representative sample is kept,
 re-expressed in this project's keys with a no-copyright-claim note on the
 underlying averages.
 
+### CFR solver chance prior
+
+Issue #203's Rust CFR+ solve (`native/cfr`) reads its chance prior as a
+1,820 x 1,820 matrix of little-endian u64 weights. Two Python stages make it.
+The first runs the play generator's analytical start and seeded
+heuristic-refined discards (the enforced promotion gate's fallback) and writes
+the discard population without timing fields, so equal inputs give equal
+bytes:
+
+```sh
+python artifact_pipeline/cfr_prior.py population \
+  --output=discard-population.json
+```
+
+The second turns that population into the exact 50/50 mixture of uniform
+four-card deals and the population's physical twelve-card deals:
+
+```sh
+python artifact_pipeline/cfr_prior.py prior \
+  --population=discard-population.json \
+  --output=prior.bin \
+  --production-output=keep_matrix.bin \
+  --report=prior.json
+```
+
+The defaults (analytical 40 and 2 iterations, two outer refinements of 200
+samples, seed 42) are the production play-table workflow's settings for these
+stages. The prior stage takes about ten seconds on an M2 and does no sampling.
+The population stage runs seeded sampling and takes several minutes. The
+population's bytes repeat on the same interpreter; its refinement report
+carries floating-point shift statistics.
+
+The manual workflow `.github/workflows/generate-cfr-inputs.yml` runs both
+stages and the Rust chain on a hosted runner without publishing anything; see
+`native/cfr/README.md`. Dispatching it needs the maintainer's approval.
+
 ### Expected opponent hand points research
 
 Issue #75's research command compares exact suitless conditional opponent hand
