@@ -237,8 +237,11 @@ fn run(options: &Options) -> std::io::Result<()> {
 }
 
 /// Exit status 0 on success, 2 when the options cannot be parsed, and 1 when
-/// the command fails (an I/O error, bad input or an unknown subcommand). On
-/// success it prints the subcommand and its elapsed seconds as one JSON line.
+/// the command returns an error (an I/O error, rejected input, or an unknown
+/// subcommand given valid options). Input that breaks an internal check,
+/// such as a truncated menu file, panics and aborts instead. On success the
+/// last line printed is JSON naming the subcommand and its elapsed seconds;
+/// `digests` prints its digest object on the line before.
 /// `solve` instead prints its outcome and exits 0 when converged, 3 when it
 /// pauses on its time budget and 4 at the iteration cap, so a workflow can
 /// resume a pause and fail a cap without mistaking either for a crash.
