@@ -133,6 +133,10 @@ fn read_prior(bytes: &[u8]) -> std::io::Result<Vec<u64>> {
         .collect())
 }
 
+/// Compute the support bits for the `--policy`/`--prior` pairs, matched in
+/// the order given, and write `support.bin`: one byte per menu, with bit `k`
+/// set when the menu is reached with positive weight under prior `k` while
+/// the opponent follows policy `k`.
 fn support(options: &Options) -> std::io::Result<()> {
     if options.policies.is_empty() || options.policies.len() != options.priors.len() {
         return Err(std::io::Error::other(
