@@ -291,9 +291,11 @@ fn run(options: &Options) -> std::io::Result<()> {
 /// `digests` prints its digest object on the line before.
 /// `solve` instead prints its outcome and exits 0 when converged, 3 when it
 /// pauses on its time budget and 4 at the iteration cap, so a workflow can
-/// resume a pause and fail a cap without mistaking either for a crash. The
-/// budget is checked after every iteration, so a budget that runs out on the
-/// last allowed iteration gives 3, and the resumed run then gives 4.
+/// resume a pause and fail a cap without mistaking either for a crash. An
+/// iteration that meets the target converges even if the budget has run out;
+/// otherwise the budget is checked after every iteration, so a budget that
+/// runs out on the last allowed iteration gives 3, and resuming with the same
+/// `--max-iterations` then gives 4.
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let options = match parse(&args) {
