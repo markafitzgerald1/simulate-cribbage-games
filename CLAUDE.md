@@ -37,6 +37,13 @@ shared contract should not carry guidance only one tool can use.
   interpreter. A failed `import numpy` is therefore evidence of nothing, and
   is not a reason to go looking for a "real" interpreter — check
   `requirements.txt` before concluding an environment is incomplete.
+- `pre-commit install` refuses to run here because `core.hooksPath` points at
+  a global dispatcher (set globally and in each worktree's config) that
+  guards work hours and then calls the repository's own hook. With Mark's
+  consent, reinstall from the main checkout with that global setting hidden
+  for the one command: `GIT_CONFIG_GLOBAL=/dev/null python -m pre_commit
+  install --hook-type pre-commit --hook-type pre-push`. Never unset the
+  dispatcher.
 - Workflow runs can take a couple of minutes to appear after `gh pr create`.
   During that window `gh run list --branch`, the commit's `check-runs`, and
   `actions/runs?head_sha=` all report zero, which reads exactly like
