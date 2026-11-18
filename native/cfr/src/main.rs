@@ -111,6 +111,8 @@ fn digests(dir: &Path) -> std::io::Result<String> {
     Ok(format!("{{{}}}", body.join(",")))
 }
 
+/// Read a prior: the integer weight of every (Pone hand, Dealer hand) deal,
+/// 1,820 x 1,820 little-endian `u64` in Pone-major order.
 fn read_prior(bytes: &[u8]) -> std::io::Result<Vec<u64>> {
     if bytes.len() != 1820 * 1820 * 8 {
         return Err(std::io::Error::other(
@@ -125,6 +127,11 @@ fn read_prior(bytes: &[u8]) -> std::io::Result<Vec<u64>> {
         .collect())
 }
 
+/// Run or resume the CFR+ solve on one prior. Before any work it rejects a
+/// prior with no weight, one whose total weight exceeds what the certificate's
+/// exact arithmetic can carry, and one that weights a deal no tree covers.
+/// The input identity (digests of the prior, menus and trees) ties every
+/// checkpoint to these inputs, so a resume on different inputs is refused.
 fn solve(options: &Options) -> std::io::Result<ExitCode> {
     let [path] = options.priors.as_slice() else {
         return Err(std::io::Error::other("solve needs exactly one --prior"));
@@ -232,6 +239,9 @@ fn run(options: &Options) -> std::io::Result<()> {
 /// Exit status 0 on success, 2 when the options cannot be parsed, and 1 when
 /// the command fails (an I/O error, bad input or an unknown subcommand). On
 /// success it prints the subcommand and its elapsed seconds as one JSON line.
+/// `solve` instead prints its outcome and exits 0 when converged, 3 when it
+/// pauses on its time budget and 4 at the iteration cap, so a workflow can
+/// resume a pause and fail a cap without mistaking either for a crash.
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let options = match parse(&args) {
