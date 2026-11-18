@@ -145,8 +145,11 @@ fn run(options: &Options) -> std::io::Result<()> {
 }
 
 /// Exit status 0 on success, 2 when the options cannot be parsed, and 1 when
-/// the command fails (an I/O error, bad input or an unknown subcommand). On
-/// success it prints the subcommand and its elapsed seconds as one JSON line.
+/// the command returns an error (an I/O error, rejected input, or an unknown
+/// subcommand given valid options). Input that breaks an internal check,
+/// such as a truncated menu file, panics and aborts instead. On success the
+/// last line printed is JSON naming the subcommand and its elapsed seconds;
+/// `digests` prints its digest object on the line before.
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let options = match parse(&args) {
