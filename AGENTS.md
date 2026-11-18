@@ -340,31 +340,44 @@ When validating upgrades or writing regression checkers, observe these rules:
 For changes under `native/cfr/`, the Rust CFR input generator, run these from
 that directory: `cargo fmt --check`, `cargo clippy --locked --release
 --all-targets -- -D warnings` (clippy's pedantic group is on in `Cargo.toml`),
-`cargo test --locked --release`, `RAYON_NUM_THREADS=1 cargo llvm-cov --locked
---release --fail-under-lines 100`, `pmd cpd --language rust --minimum-tokens 40
---dir src --dir tests` and `cargo deny --locked check`. These mirror the Python
-and TypeScript gates: lint, full line coverage, copy/paste detection, and
-dependency advisories, licenses and sources. The `rust-cfr-inputs` CI job runs
-all of them under `ci-passed`; `native/cfr/rust-toolchain.toml` pins the
-toolchain, and the workflow pins the cargo-llvm-cov and cargo-deny versions,
-which Dependabot does not bump. Coverage counters are shared by every thread, so
-the coverage run uses one rayon thread: a parallel instrumented solve was over
-ten times slower. Line coverage counts a line that holds only a `?` error branch
-as missed, so keep each `?` on a line that also runs when the call succeeds. The
-generator's outputs are pinned by digest, so a change that reorders a
-floating-point sum, or lets a sum cross threads, is a behavior change even when
-every test passes: it can alter the policy's low bits, so it needs the full-size
-check, and a re-pin and fresh certificates if the bytes change. Re-run the
-full-size digest check in `native/cfr/README.md` before claiming equivalence.
-Explain the generator in its own terms, by the tests, oracles and certificates
-in this repository; the unpublished research C++ it was ported from belongs only
-in a short port history, never in the correctness argument. The spelling hook
-reads Rust's root-module path keyword as a misspelling of "create", so module
-paths use `super::` rather than an ignore-list change to the hook. The Rust
-pegging rules are checked against the published Python engine through
-`native/cfr/tests/pegging_golden.txt`: after any change to the Python pegging
-rules, regenerate it with `python artifact_pipeline/pegging_golden.py` (its test
-fails until you do), and the Rust test `tests/rules.rs` must still pass.
+`cargo test --locked --release -- --include-ignored`, `RAYON_NUM_THREADS=1 cargo
+llvm-cov --locked --release --fail-under-lines 100 -- --include-ignored`, `pmd
+cpd --language rust --minimum-tokens 40 --dir src --dir tests` and `cargo deny
+--locked check`. These mirror the Python and TypeScript gates: lint, full line
+coverage, copy/paste detection, and dependency advisories, licenses and sources.
+The `rust-cfr-inputs` CI job runs all of them under `ci-passed`;
+`native/cfr/rust-toolchain.toml` pins the toolchain, and the workflow pins the
+cargo-llvm-cov and cargo-deny versions, which Dependabot does not bump. Coverage
+counters are shared by every thread, so the coverage run uses one rayon thread:
+a parallel instrumented solve was over ten times slower. Line coverage counts a
+line that holds only a `?` error branch as missed, so keep each `?` on a line
+that also runs when the call succeeds. The generator's outputs are pinned by
+digest, so a change that reorders a floating-point sum, or lets a sum cross
+threads, is a behavior change even when every test passes: it can alter the
+policy's low bits, so it needs the full-size check, and a re-pin and fresh
+certificates if the bytes change. Re-run the full-size digest check in
+`native/cfr/README.md` before claiming equivalence. Explain the generator in its
+own terms, by the tests, oracles and certificates in this repository; the
+unpublished research C++ it was ported from belongs only in a short port
+history, never in the correctness argument. The spelling hook reads Rust's
+root-module path keyword as a misspelling of "create", so module paths use
+`super::` rather than an ignore-list change to the hook. Five end-to-end tests
+take 13 to 45 seconds each and carry `#[ignore]` with a reason saying so, the
+Rust book's idiom for expensive rather than broken tests; plain `cargo test`
+skips them, so CI passes `--include-ignored` to both the test and coverage
+steps, and `test_workflow_gates.py` fails if either flag goes. Local pre-commit
+hooks run only when `native/cfr/` changes: `cargo fmt --check` on commit, and
+clippy plus the fast tests (about 4 seconds of tests) on push, through
+`scripts/cargo_hook.sh`, which adds `~/.cargo/bin` to `PATH` because a hook's
+environment may lack it. A hook's `stages` only chooses when it runs; it does
+not install the Git hook. `default_install_hook_types` in
+`.pre-commit-config.yaml` makes plain `pre-commit install` install the pre-push
+hook too, without which every push-stage gate silently never ran on a fresh
+clone. The Rust pegging rules are checked against the published Python engine
+through `native/cfr/tests/pegging_golden.txt`: after any change to the Python
+pegging rules, regenerate it with `python artifact_pipeline/pegging_golden.py`
+(its test fails until you do), and the Rust test `tests/rules.rs` must still
+pass.
 
 For browser UI changes, run `npm run tcm-build`, `npm run eslint`,
 `npm run tsc-build`, `npm run coverage`, `npm run spellcheck`, and the README

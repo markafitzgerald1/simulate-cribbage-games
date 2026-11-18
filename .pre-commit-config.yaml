@@ -1,5 +1,7 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
+# Plain `pre-commit install` installs both, so the push-stage gates run.
+default_install_hook_types: [pre-commit, pre-push]
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -78,6 +80,28 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+      # Rust (native/cfr): only when its files change. The tests skip the
+      # five slow #[ignore]d ones, which CI runs.
+      - id: rust-fmt
+        name: rust-fmt
+        entry: scripts/cargo_hook.sh fmt --check
+        language: system
+        pass_filenames: false
+        files: ^native/cfr/
+      - id: rust-clippy
+        name: rust-clippy
+        entry: scripts/cargo_hook.sh clippy --locked --release --all-targets -- -D warnings
+        language: system
+        pass_filenames: false
+        files: ^native/cfr/
+        stages: [pre-push]
+      - id: rust-fast-tests
+        name: rust-fast-tests
+        entry: scripts/cargo_hook.sh test --locked --release
+        language: system
+        pass_filenames: false
+        files: ^native/cfr/
+        stages: [pre-push]
   - repo: https://github.com/PyCQA/flake8
     rev: "7.1.1"
     hooks:

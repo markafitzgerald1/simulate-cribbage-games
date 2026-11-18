@@ -230,6 +230,7 @@ fn small_folder(name: &str) -> (Small, PathBuf, String) {
 }
 
 #[test]
+#[ignore = "slow (13-45 s), not broken: CI always runs it; locally run cargo test -- --include-ignored"]
 fn solve_support_and_digests_run_on_a_small_output() {
     let (small_game, dir, prior) = small_folder("small");
     let (out, prior) = (dir.to_str().unwrap(), prior.as_str());
@@ -320,6 +321,7 @@ fn digests_of_an_empty_output_are_empty() {
 }
 
 #[test]
+#[ignore = "slow (13-45 s), not broken: CI always runs it; locally run cargo test -- --include-ignored"]
 fn menus_and_trees_write_the_files_in_their_range() {
     // Every Dealer menu, since a Pone hand's trees reach almost every Dealer
     // hand, plus one Pone menu and its trees.
