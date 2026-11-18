@@ -18,6 +18,7 @@ const USAGE: &str = "usage: cfr-inputs <menus|trees> --output DIR [--range START
        cfr-inputs solve --output DIR --prior FILE [--pause-after-seconds S] [--max-iterations N] [--threads N]
        cfr-inputs support --output DIR (--policy FILE --prior FILE)... [--threads N]";
 
+/// The parsed command line.
 struct Options {
     command: String,
     output: PathBuf,
@@ -35,6 +36,9 @@ fn parse_range(value: &str) -> Option<std::ops::Range<usize>> {
     Some(start.parse().ok()?..end.parse().ok()?)
 }
 
+/// Parse the arguments after the program name: the subcommand, then
+/// `--flag value` pairs in any order. An error is the message to print; `main`
+/// exits with status 2 for it, the usual code for a usage error.
 fn parse(args: &[String]) -> Result<Options, String> {
     let command = args.first().ok_or(USAGE)?.clone();
     let (mut output, mut threads, mut pause_after, mut max_iterations) = (None, 0, None, 4096);
@@ -113,6 +117,8 @@ fn digests(dir: &Path) -> std::io::Result<String> {
     Ok(format!("{{{}}}", body.join(",")))
 }
 
+/// Read a prior: the integer weight of every (Pone hand, Dealer hand) deal,
+/// 1,820 x 1,820 little-endian `u64` in Pone-major order.
 fn read_prior(bytes: &[u8]) -> std::io::Result<Vec<u64>> {
     if bytes.len() != 1820 * 1820 * 8 {
         return Err(std::io::Error::other(
@@ -163,6 +169,11 @@ fn support(options: &Options) -> std::io::Result<()> {
     driver::write_atomic(&options.output.join("support.bin"), &flags)
 }
 
+/// Run or resume the CFR+ solve on one prior. Before any work it rejects a
+/// prior with no weight, one whose total weight exceeds what the certificate's
+/// exact arithmetic can carry, and one that weights a deal no tree covers.
+/// The input identity (digests of the prior, menus and trees) ties every
+/// checkpoint to these inputs, so a resume on different inputs is refused.
 fn solve(options: &Options) -> std::io::Result<ExitCode> {
     let [path] = options.priors.as_slice() else {
         return Err(std::io::Error::other("solve needs exactly one --prior"));
@@ -223,6 +234,9 @@ fn files(options: &Options, count: usize) -> std::io::Result<std::ops::Range<usi
     Ok(range)
 }
 
+/// Run one subcommand. `menus` and `trees` spread their files across the
+/// rayon threads; `trees` and `offsets` first load every menu file, so they
+/// need a complete `menus` folder.
 fn run(options: &Options) -> std::io::Result<()> {
     let hands = canonical();
     match options.command.as_str() {
@@ -265,6 +279,12 @@ fn run(options: &Options) -> std::io::Result<()> {
     }
 }
 
+/// Exit status 0 on success, 2 when the options cannot be parsed, and 1 when
+/// the command fails (an I/O error, bad input or an unknown subcommand). On
+/// success it prints the subcommand and its elapsed seconds as one JSON line.
+/// `solve` instead prints its outcome and exits 0 when converged, 3 when it
+/// pauses on its time budget and 4 at the iteration cap, so a workflow can
+/// resume a pause and fail a cap without mistaking either for a crash.
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let options = match parse(&args) {

@@ -148,7 +148,11 @@ impl Tree {
         }
     }
 
-    fn grow(
+    /// Append the subtree that starts at `state` and return its id: a tagged
+    /// leaf once only forced last cards remain, otherwise a new decision node
+    /// whose children are added depth first. Forced plays are made here
+    /// exactly as `menus::collect` makes them, so every node has a menu.
+    fn add_subtree(
         &mut self,
         menus: &Menus,
         mut state: State,
@@ -177,7 +181,7 @@ impl Tree {
             for (i, &rank) in legal.iter().enumerate() {
                 let mut next = state.clone();
                 next.play(Some(rank));
-                self.edges[first + i] = self.grow(menus, next, pone_index, dealer_index);
+                self.edges[first + i] = self.add_subtree(menus, next, pone_index, dealer_index);
             }
             return id;
         }
@@ -203,7 +207,7 @@ impl Tree {
         };
         for dealer_index in 0..1820 {
             if wanted(dealer_index) && feasible(&hands[pone_index], &hands[dealer_index]) {
-                tree.roots[dealer_index] = tree.grow(
+                tree.roots[dealer_index] = tree.add_subtree(
                     menus,
                     State::new(hands[pone_index], hands[dealer_index]),
                     pone_index,
