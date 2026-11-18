@@ -2,24 +2,28 @@
 //! flushing each file under a temporary name before renaming it, so an
 //! interrupted run never leaves a partial file under a final name.
 
-use cfr_inputs::driver;
-use cfr_inputs::game::canonical;
+use cfr_inputs::driver::{self, Outcome};
+use cfr_inputs::game::{canonical, feasible};
 use cfr_inputs::menus::{self, FILES};
+use cfr_inputs::solve::{Game, MASS_LIMIT, TreeFiles};
 use cfr_inputs::trees::{Menus, Tree, offsets_bytes};
 use rayon::prelude::*;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::Instant;
 
-const USAGE: &str =
-    "usage: cfr-inputs <menus|trees> --output DIR [--range START..END] [--threads N]
-       cfr-inputs <offsets|digests> --output DIR [--threads N]";
+const USAGE: &str = "usage: cfr-inputs <menus|trees> --output DIR [--range START..END] [--threads N]
+       cfr-inputs <offsets|digests> --output DIR [--threads N]
+       cfr-inputs solve --output DIR --prior FILE [--pause-after-seconds S] [--max-iterations N] [--threads N]";
 
 /// The parsed command line.
 struct Options {
     command: String,
     output: PathBuf,
     threads: usize,
+    priors: Vec<PathBuf>,
+    pause_after: Option<f64>,
+    max_iterations: u32,
     range: Option<std::ops::Range<usize>>,
 }
 
@@ -34,14 +38,28 @@ fn parse_range(value: &str) -> Option<std::ops::Range<usize>> {
 /// exits with status 2 for it, the usual code for a usage error.
 fn parse(args: &[String]) -> Result<Options, String> {
     let command = args.first().ok_or(USAGE)?.clone();
-    let (mut output, mut threads, mut range) = (None, 0, None);
+    let (mut output, mut threads, mut pause_after, mut max_iterations) = (None, 0, None, 4096);
+    let (mut priors, mut range) = (Vec::new(), None);
     let mut rest = args[1..].iter();
     while let Some(flag) = rest.next() {
         let value = rest.next().ok_or(format!("{flag} needs a value"))?;
         match flag.as_str() {
             "--output" => output = Some(PathBuf::from(value)),
             "--threads" => threads = value.parse().map_err(|_| "--threads must be a number")?,
+            "--prior" => priors.push(PathBuf::from(value)),
             "--range" => range = Some(parse_range(value).ok_or("--range must be START..END")?),
+            "--pause-after-seconds" => {
+                pause_after = Some(
+                    value
+                        .parse()
+                        .map_err(|_| "--pause-after-seconds must be a number")?,
+                );
+            }
+            "--max-iterations" => {
+                max_iterations = value
+                    .parse()
+                    .map_err(|_| "--max-iterations must be a number")?;
+            }
             _ => return Err(format!("unknown option {flag}\n{USAGE}")),
         }
     }
@@ -52,6 +70,9 @@ fn parse(args: &[String]) -> Result<Options, String> {
         command,
         output: output.ok_or(USAGE)?,
         threads,
+        priors,
+        pause_after,
+        max_iterations,
         range,
     })
 }
@@ -77,6 +98,7 @@ fn digests(dir: &Path) -> std::io::Result<String> {
         ("menus", folder("menus", FILES)?),
         ("trees", folder("trees", 1820)?),
         ("offsets", file("offsets.bin")?),
+        ("policy", file("policy.bin")?),
     ];
     let body: Vec<String> = entries
         .iter()
@@ -87,6 +109,76 @@ fn digests(dir: &Path) -> std::io::Result<String> {
         })
         .collect();
     Ok(format!("{{{}}}", body.join(",")))
+}
+
+/// Read a prior: the integer weight of every (Pone hand, Dealer hand) deal,
+/// 1,820 x 1,820 little-endian `u64` in Pone-major order.
+fn read_prior(bytes: &[u8]) -> std::io::Result<Vec<u64>> {
+    if bytes.len() != 1820 * 1820 * 8 {
+        return Err(std::io::Error::other(
+            "prior must be 1820 x 1820 little-endian u64",
+        ));
+    }
+    Ok(bytes
+        .as_chunks::<8>()
+        .0
+        .iter()
+        .map(|&chunk| u64::from_le_bytes(chunk))
+        .collect())
+}
+
+/// Run or resume the CFR+ solve on one prior. Before any work it rejects a
+/// prior with no weight, one whose total weight exceeds what the certificate's
+/// exact arithmetic can carry, and one that weights a deal no tree covers.
+/// The input identity (digests of the prior, menus and trees) ties every
+/// checkpoint to these inputs, so a resume on different inputs is refused.
+fn solve(options: &Options) -> std::io::Result<ExitCode> {
+    let [path] = options.priors.as_slice() else {
+        return Err(std::io::Error::other("solve needs exactly one --prior"));
+    };
+    let bytes = std::fs::read(path)?;
+    let chance = read_prior(&bytes)?;
+    let mass = chance
+        .iter()
+        .try_fold(0u64, |total, &weight| total.checked_add(weight))
+        .ok_or_else(|| std::io::Error::other("prior mass overflows"))?;
+    if mass == 0 {
+        return Err(std::io::Error::other("prior has no weight"));
+    }
+    if mass > MASS_LIMIT {
+        return Err(std::io::Error::other(format!(
+            "prior mass {mass} exceeds the certificate's limit {MASS_LIMIT}"
+        )));
+    }
+    // A weighted deal with no tree would read its missing root as a leaf.
+    let hands = canonical();
+    if let Some(pair) = (0..chance.len())
+        .find(|&pair| chance[pair] != 0 && !feasible(&hands[pair / 1820], &hands[pair % 1820]))
+    {
+        return Err(std::io::Error::other(format!(
+            "prior weights an impossible deal: Pone hand {}, Dealer hand {}",
+            pair / 1820,
+            pair % 1820
+        )));
+    }
+    let menus = Menus::load(&options.output)?;
+    let game = Game {
+        menus: &menus,
+        chance: &chance,
+        mass,
+    };
+    let menus_digest = driver::folder_sha256(&options.output.join("menus"), FILES)?;
+    let trees_digest = driver::folder_sha256(&options.output.join("trees"), 1820)?;
+    let id = driver::identity(&driver::sha256(&bytes), &menus_digest, &trees_digest);
+    let trees = TreeFiles(&options.output);
+    let (pause, cap) = (options.pause_after, options.max_iterations);
+    let outcome = driver::run(&options.output, &game, &trees, &id, pause, cap)?;
+    println!("{outcome:?}");
+    Ok(match outcome {
+        Outcome::Converged(_) => ExitCode::SUCCESS,
+        Outcome::Paused(_) => ExitCode::from(3),
+        Outcome::Capped(_) => ExitCode::from(4),
+    })
 }
 
 /// The files to write, which must lie within `0..count`.
@@ -150,6 +242,13 @@ fn run(options: &Options) -> std::io::Result<()> {
 /// such as a truncated menu file, panics and aborts instead. On success the
 /// last line printed is JSON naming the subcommand and its elapsed seconds;
 /// `digests` prints its digest object on the line before.
+/// `solve` instead prints its outcome and exits 0 when converged, 3 when it
+/// pauses on its time budget and 4 at the iteration cap, so a workflow can
+/// resume a pause and fail a cap without mistaking either for a crash. An
+/// iteration that meets the target converges even if the budget has run out;
+/// otherwise the budget is checked after every iteration, so a budget that
+/// runs out on the last allowed iteration gives 3, and resuming with the same
+/// `--max-iterations` then gives 4.
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let options = match parse(&args) {
@@ -166,6 +265,12 @@ fn main() -> ExitCode {
             .expect("thread pool");
     }
     let start = Instant::now();
+    if options.command == "solve" {
+        return solve(&options).unwrap_or_else(|error| {
+            eprintln!("{error}");
+            ExitCode::FAILURE
+        });
+    }
     match run(&options) {
         Ok(()) => {
             println!(
