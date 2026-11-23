@@ -150,7 +150,7 @@ fn certify(
     let certificate = super::solve::certificate(game, trees, &policy);
     let json = certificate_json(it, &certificate, began.elapsed().as_secs_f64());
     write_atomic(&dir.join(format!("certificate-{it}.json")), json.as_bytes())?;
-    if !certificate.converged(game.mass) {
+    if !certificate.converged() {
         return Ok(false);
     }
     write_atomic(&dir.join("policy.bin"), &bytes)?;

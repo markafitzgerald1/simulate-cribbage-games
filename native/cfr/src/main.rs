@@ -162,11 +162,7 @@ fn solve(options: &Options) -> std::io::Result<ExitCode> {
         )));
     }
     let menus = Menus::load(&options.output)?;
-    let game = Game {
-        menus: &menus,
-        chance: &chance,
-        mass,
-    };
+    let game = Game::new(&menus, &chance);
     let menus_digest = driver::folder_sha256(&options.output.join("menus"), FILES)?;
     let trees_digest = driver::folder_sha256(&options.output.join("trees"), 1820)?;
     let id = driver::identity(&driver::sha256(&bytes), &menus_digest, &trees_digest);

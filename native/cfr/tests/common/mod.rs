@@ -27,11 +27,7 @@ pub struct Small {
 
 impl Small {
     pub fn game(&self) -> Game<'_> {
-        Game {
-            menus: &self.menus,
-            chance: &self.chance,
-            mass: self.chance.iter().sum(),
-        }
+        Game::new(&self.menus, &self.chance)
     }
 
     /// Sum `per_deal(state, pone_hand, dealer_hand)` times the deal's weight over every deal.
@@ -95,9 +91,19 @@ pub fn matched() -> Small {
 }
 
 pub fn build_small(weight: impl Fn(usize, usize) -> u64) -> Small {
+    build_game(&PONES, &DEALERS, weight)
+}
+
+/// A game on the given Pone and Dealer hands, weighting each feasible pair
+/// `(i, j)` of them by `weight(i, j)`.
+pub fn build_game(
+    pones: &[[u8; 4]],
+    dealers: &[[u8; 4]],
+    weight: impl Fn(usize, usize) -> u64,
+) -> Small {
     let hands = canonical();
-    let pone_hands: Vec<usize> = PONES.iter().map(|&hand| index(&hands, hand)).collect();
-    let dealer_hands: Vec<usize> = DEALERS.iter().map(|&hand| index(&hands, hand)).collect();
+    let pone_hands: Vec<usize> = pones.iter().map(|&hand| index(&hands, hand)).collect();
+    let dealer_hands: Vec<usize> = dealers.iter().map(|&hand| index(&hands, hand)).collect();
     let files: Vec<Vec<u8>> = (0..FILES)
         .map(|file_index| {
             if pone_hands.contains(&file_index)
