@@ -236,6 +236,15 @@ fn support(options: &Options) -> std::io::Result<()> {
         .zip(&priors)
         .map(|(policy, prior)| Pair { policy, prior })
         .collect();
+    // A missing tree file is an I/O error, reported as one, not a panic.
+    for pone_hand in 0..1820 {
+        std::fs::metadata(
+            options
+                .output
+                .join("trees")
+                .join(format!("{pone_hand}.bin")),
+        )?;
+    }
     let flags = cfr_inputs::support::support(&menus, &TreeFiles(&options.output), &pairs);
     driver::write_atomic(&options.output.join("support.bin"), &flags)
 }

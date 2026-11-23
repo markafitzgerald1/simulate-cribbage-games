@@ -8,6 +8,7 @@ mod common;
 use cfr_inputs::driver::{self, Outcome};
 use cfr_inputs::game::canonical;
 use cfr_inputs::menus::{self, FILES, NIL};
+use cfr_inputs::solve::Solver;
 use cfr_inputs::support::{Pair, support};
 use cfr_inputs::trees::{Menus, Tree, offsets_bytes};
 use common::{Small, SmallTrees, small};
@@ -295,6 +296,35 @@ fn small_folder(name: &str) -> (Small, PathBuf, String) {
     let dir = scratch(name);
     let prior = small_output(&small_game, &dir).to_str().unwrap().to_owned();
     (small_game, dir, prior)
+}
+
+/// `support` reports a missing tree file as an I/O error, exit status 1.
+#[test]
+fn support_reports_a_missing_tree_file() {
+    let (small_game, dir, prior) = small_folder("no-tree");
+    let game = small_game.game();
+    let actions = usize::try_from(small_game.menus.actions).unwrap();
+    let uniform = Solver::new(&game, vec![0.0; actions], vec![0.0; actions]).rounded(&game);
+    let policy = dir.join("uniform-policy.bin");
+    let bytes: Vec<u8> = uniform
+        .iter()
+        .flat_map(|units| units.to_le_bytes())
+        .collect();
+    std::fs::write(&policy, bytes).unwrap();
+    std::fs::remove_file(dir.join("trees").join("1819.bin")).unwrap();
+    let (_, stderr) = expect(
+        &[
+            "support",
+            "--output",
+            dir.to_str().unwrap(),
+            "--policy",
+            policy.to_str().unwrap(),
+            "--prior",
+            &prior,
+        ],
+        1,
+    );
+    assert!(stderr.contains("No such file"), "{stderr}");
 }
 
 #[test]
