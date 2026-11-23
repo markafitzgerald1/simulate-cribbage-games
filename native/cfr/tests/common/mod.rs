@@ -1,5 +1,13 @@
-//! The small game shared by the integration tests: two Pone hands against
-//! three Dealer hands, with menus and trees built by the library itself.
+//! The small game shared by the integration tests, with menus and trees built
+//! by the library itself. The full game lets each seat keep any of 1,820
+//! rank-only hands; this one allows Pone 2 hands and Dealer 3, so `small()`
+//! weights only six deals, all of which can be dealt. No two of a seat's hands
+//! share a rank, so each seat's first card gives its hand away, and only
+//! Pone's lead has several deals (three) behind it. That shared lead is what
+//! lets `best_responses_match_a_public_state_recursion` catch a best response
+//! that ignores deal weights when it combines a decision's deals. No hand
+//! belongs to both seats, so a Pone and Dealer hand swapped somewhere names a
+//! pair with no tree root and zero weight.
 
 #![allow(dead_code)] // Each test binary uses a different part of this module.
 
@@ -9,8 +17,9 @@ use cfr_inputs::solve::{Game, Solver, Trees};
 use cfr_inputs::trees::{Menus, Tree};
 use std::collections::HashMap;
 
-/// Two Pone hands against three Dealer hands each.
+/// Pone's hands, as ranks from 0 (ace) to 12 (king): A-5-10-K and 3-4-7-J.
 pub const PONES: [[u8; 4]; 2] = [[0, 4, 9, 12], [2, 3, 6, 10]];
+/// Dealer's hands: 2-5-8-Q, 4-6-6-10 and A-9-J-K.
 pub const DEALERS: [[u8; 4]; 3] = [[1, 4, 7, 11], [3, 5, 5, 9], [0, 8, 10, 12]];
 
 /// Each Pone hand meets exactly one Dealer hand and vice versa, so every
@@ -76,6 +85,9 @@ pub fn index(hands: &[Cards], hand: Cards) -> usize {
         .unwrap()
 }
 
+/// The game with every pair weighted, by distinct weights (3 + i + 2j for
+/// Pone hand i and Dealer hand j), so the three deals behind Pone's lead
+/// weigh differently.
 pub fn small() -> Small {
     build_small(|i, j| (3 + i + 2 * j) as u64)
 }
