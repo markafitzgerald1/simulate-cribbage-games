@@ -128,7 +128,8 @@ explicit `--limit`, because the default hides most of the items on a board this
 size. A limit below the board's size drops items without any error: the board
 passed 400 items in November 2026, and a new item went missing from a
 `--limit 400` listing. The JSON output reports the board's `totalCount` beside
-its `items`, so check that the two match, and raise the limit if they do not:
+its `items`; check that the number of items equals it, and raise the limit if
+not:
 
 ```bash
 gh project item-list 1 --owner markafitzgerald1 --limit 1000 --format json
