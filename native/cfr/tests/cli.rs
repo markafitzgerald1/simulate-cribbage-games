@@ -8,6 +8,7 @@ mod common;
 use cfr_inputs::driver::{self, Outcome};
 use cfr_inputs::game::canonical;
 use cfr_inputs::menus::{self, FILES, NIL};
+use cfr_inputs::solve::Solver;
 use cfr_inputs::support::{Pair, support};
 use cfr_inputs::trees::{Menus, Tree, offsets_bytes};
 use common::{Small, SmallTrees, small};
@@ -98,6 +99,70 @@ fn bad_arguments_exit_with_usage_errors() {
     }
 }
 
+/// Write two priors no command may accept: one with no weight, and one on
+/// Pone and Dealer both holding four aces (hand 0 each).
+fn bad_priors(dir: &Path) -> (PathBuf, PathBuf) {
+    let mut weights = vec![0u8; 1820 * 1820 * 8];
+    let empty = dir.join("empty-prior.bin");
+    std::fs::write(&empty, &weights).unwrap();
+    weights[0] = 1;
+    let impossible = dir.join("impossible-prior.bin");
+    std::fs::write(&impossible, &weights).unwrap();
+    (empty, impossible)
+}
+
+/// `support` refuses the priors both commands refuse (no weight, an
+/// impossible deal; the mass limit is `solve`'s alone), and caps the pairs
+/// before reading any file.
+#[test]
+fn support_refuses_bad_priors_and_too_many_pairs() {
+    let dir = scratch("support-refusals");
+    let out = dir.to_str().unwrap();
+    let (empty_prior, impossible_prior) = bad_priors(&dir);
+    let (empty_prior, impossible_prior) = (
+        empty_prior.to_str().unwrap(),
+        impossible_prior.to_str().unwrap(),
+    );
+    let word_policy = dir.join("word-policy.bin");
+    std::fs::write(&word_policy, [0u8; 2]).unwrap();
+    let word_policy = word_policy.to_str().unwrap();
+    // The pair cap is checked before any file is read.
+    let mut nine_pairs = vec!["support", "--output", out];
+    for _ in 0..9 {
+        nine_pairs.extend(["--policy", "missing.bin", "--prior", "missing.bin"]);
+    }
+    for (args, message) in [
+        (
+            vec![
+                "support",
+                "--output",
+                out,
+                "--policy",
+                word_policy,
+                "--prior",
+                empty_prior,
+            ],
+            "prior has no weight",
+        ),
+        (
+            vec![
+                "support",
+                "--output",
+                out,
+                "--policy",
+                word_policy,
+                "--prior",
+                impossible_prior,
+            ],
+            "prior weights an impossible deal: Pone hand 0, Dealer hand 0",
+        ),
+        (nine_pairs, "at most eight --policy and --prior pairs"),
+    ] {
+        let (_, stderr) = expect(&args, 1);
+        assert!(stderr.contains(message), "{args:?}: {stderr}");
+    }
+}
+
 #[test]
 fn failing_commands_exit_with_one() {
     let dir = scratch("failing");
@@ -108,20 +173,20 @@ fn failing_commands_exit_with_one() {
     std::fs::write(&full_prior, vec![u8::MAX; 1820 * 1820 * 8]).unwrap();
     let odd_policy = dir.join("odd-policy.bin");
     std::fs::write(&odd_policy, [0u8; 3]).unwrap();
-    let empty_prior = dir.join("empty-prior.bin");
+    let (empty_prior, impossible_prior) = bad_priors(&dir);
     let mut weights = vec![0u8; 1820 * 1820 * 8];
-    std::fs::write(&empty_prior, &weights).unwrap();
-    // Weight on Pone and Dealer both holding four Aces (hand 0 each).
-    weights[0] = 1;
-    let impossible_prior = dir.join("impossible-prior.bin");
-    std::fs::write(&impossible_prior, &weights).unwrap();
     // 2^59 on four Aces against four Kings (hands 0 and 1819), a deal that
     // can happen, is over the certificate's mass limit of about 2^58.
-    weights[..8].fill(0);
     let heavy = 1819 * 8;
     weights[heavy..heavy + 8].copy_from_slice(&(1u64 << 59).to_le_bytes());
     let heavy_prior = dir.join("heavy-prior.bin");
     std::fs::write(&heavy_prior, &weights).unwrap();
+    // The same weight on four Aces against four Aces, which cannot be dealt.
+    weights[heavy..heavy + 8].fill(0);
+    weights[..8].copy_from_slice(&(1u64 << 59).to_le_bytes());
+    let heavy_impossible = dir.join("heavy-impossible-prior.bin");
+    std::fs::write(&heavy_impossible, &weights).unwrap();
+    let heavy_impossible = heavy_impossible.to_str().unwrap();
     let (small_prior, full_prior, odd_policy) = (
         small_prior.to_str().unwrap(),
         full_prior.to_str().unwrap(),
@@ -163,6 +228,11 @@ fn failing_commands_exit_with_one() {
         ),
         (
             vec!["solve", "--output", out, "--prior", heavy_prior],
+            "exceeds the certificate's limit",
+        ),
+        // Over the limit and impossible: the limit is reported first.
+        (
+            vec!["solve", "--output", out, "--prior", heavy_impossible],
             "exceeds the certificate's limit",
         ),
         (
@@ -227,6 +297,39 @@ fn small_folder(name: &str) -> (Small, PathBuf, String) {
     let dir = scratch(name);
     let prior = small_output(&small_game, &dir).to_str().unwrap().to_owned();
     (small_game, dir, prior)
+}
+
+/// `support` reports a missing tree file, or a directory in its place, as an
+/// I/O error with exit status 1.
+#[test]
+fn support_reports_a_missing_tree_file() {
+    let (small_game, dir, prior) = small_folder("no-tree");
+    let game = small_game.game();
+    let actions = usize::try_from(small_game.menus.actions).unwrap();
+    let uniform = Solver::new(&game, vec![0.0; actions], vec![0.0; actions]).rounded(&game);
+    let policy = dir.join("uniform-policy.bin");
+    let bytes: Vec<u8> = uniform
+        .iter()
+        .flat_map(|units| units.to_le_bytes())
+        .collect();
+    std::fs::write(&policy, bytes).unwrap();
+    let args = [
+        "support",
+        "--output",
+        dir.to_str().unwrap(),
+        "--policy",
+        policy.to_str().unwrap(),
+        "--prior",
+        &prior,
+    ];
+    let missing = dir.join("trees").join("1819.bin");
+    std::fs::remove_file(&missing).unwrap();
+    let (_, stderr) = expect(&args, 1);
+    assert!(stderr.contains("No such file"), "{stderr}");
+    // A directory where a tree file belongs is refused the same way.
+    std::fs::create_dir(&missing).unwrap();
+    let (_, stderr) = expect(&args, 1);
+    assert!(stderr.contains("is not a file"), "{stderr}");
 }
 
 #[test]
@@ -308,6 +411,33 @@ fn solve_support_and_digests_run_on_a_small_output() {
     let menus = Menus::load(&dir).unwrap();
     let flags = support(&menus, &SmallTrees(&small_game.trees), &[pair]);
     assert_eq!(std::fs::read(dir.join("support.bin")).unwrap(), flags);
+
+    // A policy one action short, or with a menu not holding 1,000 units, is
+    // refused rather than read as a rounded policy.
+    let short = dir.join("short-policy.bin");
+    std::fs::write(&short, &policy[..policy.len() - 2]).unwrap();
+    let mut emptied = policy.clone();
+    emptied[..2 * usize::from(menus.width[0])].fill(0);
+    let emptied_path = dir.join("emptied-policy.bin");
+    std::fs::write(&emptied_path, &emptied).unwrap();
+    for (bad, message) in [
+        (&short, "policy has"),
+        (&emptied_path, "policy menu 0 holds 0 units, not 1000"),
+    ] {
+        let (_, stderr) = expect(
+            &[
+                "support",
+                "--output",
+                out,
+                "--policy",
+                bad.to_str().unwrap(),
+                "--prior",
+                prior,
+            ],
+            1,
+        );
+        assert!(stderr.contains(message), "{stderr}");
+    }
 
     assert_digests(&dir, &["policy", "support"]);
 }
