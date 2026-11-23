@@ -20,6 +20,7 @@
 //! its order does not matter. Rust never fuses `a * b + c` into a
 //! multiply-add unless asked, so no fused multiply-add enters the result.
 
+use super::game::{canonical, feasible};
 use super::menus::NIL;
 use super::trees::{Menus, Node, TAG, Tree, leaf};
 use rayon::prelude::*;
@@ -31,12 +32,39 @@ pub const POLICY_UNITS: u32 = 1000;
 /// Everything the solver reads, kept in memory.
 pub struct Game<'a> {
     pub menus: &'a Menus,
-    /// 1,820 x 1,820 joint deal weights, Pone hand major.
-    pub chance: &'a [u64],
-    pub mass: u64,
+    /// 1,820 x 1,820 joint deal weights, Pone hand major. Private, like
+    /// `mass`, so the weights cannot change after `new` checks them.
+    chance: &'a [u64],
+    /// The weights' total, computed here so no caller can pass another.
+    mass: u64,
 }
 
-impl Game<'_> {
+impl<'a> Game<'a> {
+    /// The game on `chance`, whose total weight must be positive and at most
+    /// `MASS_LIMIT`, the most the certificate's exact arithmetic can carry,
+    /// and which may weight only deals the cards allow, since those are the
+    /// deals the trees cover. The `solve` command checks all three first and
+    /// reports them as errors.
+    pub fn new(menus: &'a Menus, chance: &'a [u64]) -> Game<'a> {
+        assert_eq!(chance.len(), 1820 * 1820, "prior size");
+        let mass = chance
+            .iter()
+            .try_fold(0u64, |total, &weight| total.checked_add(weight))
+            .expect("prior mass overflows");
+        assert!(0 < mass && mass <= MASS_LIMIT, "prior mass {mass}");
+        let hands = canonical();
+        assert!(
+            (0..chance.len())
+                .all(|pair| chance[pair] == 0 || feasible(&hands[pair / 1820], &hands[pair % 1820])),
+            "prior weights an impossible deal"
+        );
+        Game {
+            menus,
+            chance,
+            mass,
+        }
+    }
+
     fn weight(&self, pone_hand: usize, dealer_hand: usize) -> u64 {
         self.chance[pone_hand * 1820 + dealer_hand]
     }
@@ -55,6 +83,14 @@ impl Game<'_> {
         };
         at(menus.starts[file_index])..at(menus.starts[file_index + 1])
     }
+}
+
+/// The root of `dealer_hand`'s game in `tree`, which must exist: a missing
+/// root would otherwise read as a leaf. Every weighted deal is looked up here.
+fn root(tree: &Tree, dealer_hand: usize) -> u32 {
+    let id = tree.roots[dealer_hand];
+    assert!(id != NIL, "Chance mismatch");
+    id
 }
 
 /// Split `values` into the action-slot slices of files `first..first+1820`.
@@ -189,7 +225,6 @@ impl Solver {
             |tree: &Tree, pone_hand: usize, dealer_hand: usize, out: &mut [f64], base: usize| {
                 let deal_weight = game.weight(pone_hand, dealer_hand);
                 if deal_weight != 0 {
-                    assert!(tree.roots[dealer_hand] != NIL, "Chance mismatch");
                     let weight = deal_weight as f64 / game.mass as f64;
                     walk(
                         menus,
@@ -197,7 +232,7 @@ impl Solver {
                         tree,
                         out,
                         base,
-                        tree.roots[dealer_hand],
+                        root(tree, dealer_hand),
                         1.0,
                         1.0,
                         role,
@@ -246,7 +281,16 @@ impl Solver {
         }
     }
 
-    /// One CFR+ half-iteration for `role` (0 Pone, 1 Dealer).
+    /// One CFR+ half-iteration for `role` (0 Pone, 1 Dealer): regret matching+
+    /// on `role`'s menus, and `role`'s share of the linearly weighted average.
+    ///
+    /// The average follows the alternating schedule of Tammelin (2014),
+    /// Algorithm 1, where each player's traversal adds the opponent's current
+    /// strategy to the opponent's average. Pone updates first, so Pone's pass
+    /// sees Dealer's strategy from before Dealer's update, and Dealer's pass
+    /// sees Pone's freshly updated one. Each seat therefore averages the
+    /// strategy its opponent just played against: Pone its strategy after this
+    /// update, Dealer its strategy from before it.
     pub fn update(&mut self, game: &Game, trees: &dyn Trees, role: u8, iteration: u32) {
         self.values_for(game, trees, role);
         let menus = game.menus;
@@ -268,6 +312,29 @@ impl Solver {
                 let lo = game.slots(file_index).start;
                 let menu_range =
                     menus.starts[file_index] as usize..menus.starts[file_index + 1] as usize;
+                // Adds iteration x own reach x strategy, the own reach being
+                // the product of this seat's earlier choices along its parents.
+                let accumulate = |sigma: &[f64], average: &mut [f64]| {
+                    for j in menu_range.clone() {
+                        let mut reach = 1.0;
+                        let (mut parent, mut parent_action) =
+                            (menus.parent[j], menus.parent_action[j]);
+                        while parent != NIL {
+                            let parent_index = parent as usize;
+                            reach *= sigma[menus.offset[parent_index] as usize - lo
+                                + usize::from(parent_action)];
+                            parent_action = menus.parent_action[parent_index];
+                            parent = menus.parent[parent_index];
+                        }
+                        let action_start = menus.offset[j] as usize - lo;
+                        for slot in action_start..action_start + usize::from(menus.width[j]) {
+                            average[slot] += it * reach * sigma[slot];
+                        }
+                    }
+                };
+                if role == 1 {
+                    accumulate(sigma, average);
+                }
                 for j in menu_range.clone() {
                     let action_slots = menus.offset[j] as usize - lo
                         ..menus.offset[j] as usize - lo + usize::from(menus.width[j]);
@@ -286,20 +353,8 @@ impl Solver {
                     }
                     strategy(&regret[action_slots.clone()], &mut sigma[action_slots]);
                 }
-                for j in menu_range {
-                    let mut reach = 1.0;
-                    let (mut parent, mut parent_action) = (menus.parent[j], menus.parent_action[j]);
-                    while parent != NIL {
-                        let parent_index = parent as usize;
-                        reach *= sigma
-                            [menus.offset[parent_index] as usize - lo + usize::from(parent_action)];
-                        parent_action = menus.parent_action[parent_index];
-                        parent = menus.parent[parent_index];
-                    }
-                    let action_start = menus.offset[j] as usize - lo;
-                    for slot in action_start..action_start + usize::from(menus.width[j]) {
-                        average[slot] += it * reach * sigma[slot];
-                    }
+                if role == 0 {
+                    accumulate(sigma, average);
                 }
             });
     }
@@ -368,9 +423,8 @@ impl Certificate {
 
     /// The stopping rule: exposure at most 0.001 points, so neither player
     /// can gain more than 0.002 points by deviating.
-    pub fn converged(&self, mass: u64) -> bool {
-        let units_cubed = i128::from(POLICY_UNITS).pow(3);
-        (self.upper - self.lower) * 1000 <= 2 * i128::from(mass) * units_cubed
+    pub fn converged(&self) -> bool {
+        (self.upper - self.lower) * 1000 <= 2 * self.denominator
     }
 }
 
@@ -498,7 +552,7 @@ fn best_response(game: &Game, trees: &dyn Trees, policy: &[u16], role: u8) -> i1
                 if weight != 0 {
                     response.walk(
                         tree,
-                        tree.roots[dealer],
+                        root(tree, dealer),
                         i128::from(weight) * units_cubed,
                         NIL,
                         0,
@@ -555,7 +609,7 @@ fn best_response(game: &Game, trees: &dyn Trees, policy: &[u16], role: u8) -> i1
                 if weight != 0 {
                     total += response.walk(
                         &tree,
-                        tree.roots[dealer],
+                        root(&tree, dealer),
                         i128::from(weight) * units_cubed,
                         NIL,
                         0,
@@ -573,7 +627,7 @@ fn best_response(game: &Game, trees: &dyn Trees, policy: &[u16], role: u8) -> i1
 /// The largest prior mass the certificate's exact `i128` arithmetic can
 /// carry: products of a deal weight, a leaf margin and up to six policy unit
 /// factors must stay below 2^125, so the limit is
-/// `(2^125 - 1) / (128 * POLICY_UNITS^6)`, about 2^58.3. A unit test checks
+/// `(2^125 - 1) / (128 * POLICY_UNITS^6)`, about 2^58.2. A unit test checks
 /// this literal against that formula.
 pub const MASS_LIMIT: u64 = 332_306_998_946_228_968;
 
@@ -590,7 +644,7 @@ pub fn certificate(game: &Game, trees: &dyn Trees, policy: &[u16]) -> Certificat
                 let deal_weight = game.weight(pone_hand, dealer_hand);
                 if deal_weight != 0 {
                     pone_total += i128::from(deal_weight)
-                        * joint_value(game.menus, &tree, tree.roots[dealer_hand], policy, 0);
+                        * joint_value(game.menus, &tree, root(&tree, dealer_hand), policy, 0);
                 }
             }
             pone_total
