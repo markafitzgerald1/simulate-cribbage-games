@@ -133,10 +133,9 @@ fn read_prior(bytes: &[u8]) -> std::io::Result<Vec<u64>> {
         .collect())
 }
 
-/// The prior's total weight, after refusing a prior whose total overflows,
-/// one with no weight, and one that weights a deal no pair of hands can make
-/// (no tree covers it, so its missing root would read as a leaf).
-fn checked_mass(chance: &[u64]) -> std::io::Result<u64> {
+/// The prior's total weight, after refusing a prior whose total overflows
+/// and one with no weight.
+fn prior_mass(chance: &[u64]) -> std::io::Result<u64> {
     let mass = chance
         .iter()
         .try_fold(0u64, |total, &weight| total.checked_add(weight))
@@ -144,6 +143,12 @@ fn checked_mass(chance: &[u64]) -> std::io::Result<u64> {
     if mass == 0 {
         return Err(std::io::Error::other("prior has no weight"));
     }
+    Ok(mass)
+}
+
+/// Refuse a prior that weights a deal no pair of hands can make: no tree
+/// covers it, so its missing root would read as a leaf.
+fn check_feasible(chance: &[u64]) -> std::io::Result<()> {
     let hands = canonical();
     if let Some(pair) = (0..chance.len())
         .find(|&pair| chance[pair] != 0 && !feasible(&hands[pair / 1820], &hands[pair % 1820]))
@@ -154,7 +159,7 @@ fn checked_mass(chance: &[u64]) -> std::io::Result<u64> {
             pair % 1820
         )));
     }
-    Ok(mass)
+    Ok(())
 }
 
 /// Refuse a policy that is not a rounded policy for `menus`: one value per
@@ -217,7 +222,8 @@ fn support(options: &Options) -> std::io::Result<()> {
         .iter()
         .map(|path| {
             let prior = read_prior(&std::fs::read(path)?)?;
-            checked_mass(&prior)?;
+            prior_mass(&prior)?;
+            check_feasible(&prior)?;
             Ok(prior)
         })
         .collect::<std::io::Result<Vec<_>>>()?;
@@ -245,12 +251,13 @@ fn solve(options: &Options) -> std::io::Result<ExitCode> {
     };
     let bytes = std::fs::read(path)?;
     let chance = read_prior(&bytes)?;
-    let mass = checked_mass(&chance)?;
+    let mass = prior_mass(&chance)?;
     if mass > MASS_LIMIT {
         return Err(std::io::Error::other(format!(
             "prior mass {mass} exceeds the certificate's limit {MASS_LIMIT}"
         )));
     }
+    check_feasible(&chance)?;
     let menus = Menus::load(&options.output)?;
     let game = Game::new(&menus, &chance);
     let menus_digest = driver::folder_sha256(&options.output.join("menus"), FILES)?;

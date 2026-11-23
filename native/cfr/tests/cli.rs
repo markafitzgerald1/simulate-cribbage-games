@@ -179,6 +179,12 @@ fn failing_commands_exit_with_one() {
     weights[heavy..heavy + 8].copy_from_slice(&(1u64 << 59).to_le_bytes());
     let heavy_prior = dir.join("heavy-prior.bin");
     std::fs::write(&heavy_prior, &weights).unwrap();
+    // The same weight on four Aces against four Aces, which cannot be dealt.
+    weights[heavy..heavy + 8].fill(0);
+    weights[..8].copy_from_slice(&(1u64 << 59).to_le_bytes());
+    let heavy_impossible = dir.join("heavy-impossible-prior.bin");
+    std::fs::write(&heavy_impossible, &weights).unwrap();
+    let heavy_impossible = heavy_impossible.to_str().unwrap();
     let (small_prior, full_prior, odd_policy) = (
         small_prior.to_str().unwrap(),
         full_prior.to_str().unwrap(),
@@ -220,6 +226,11 @@ fn failing_commands_exit_with_one() {
         ),
         (
             vec!["solve", "--output", out, "--prior", heavy_prior],
+            "exceeds the certificate's limit",
+        ),
+        // Over the limit and impossible: the limit is reported first.
+        (
+            vec!["solve", "--output", out, "--prior", heavy_impossible],
             "exceeds the certificate's limit",
         ),
         (
