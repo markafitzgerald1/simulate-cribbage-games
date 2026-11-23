@@ -125,10 +125,13 @@ gh project field-list 1 --owner markafitzgerald1 --format json
 
 Then find the new item's identifier and set the value. The item listing needs an
 explicit `--limit`, because the default hides most of the items on a board this
-size:
+size. A limit below the board's size drops items without any error: the board
+passed 400 items in November 2026, and a new item went missing from a
+`--limit 400` listing. So check that the listing returned fewer items than the
+limit, and raise the limit if it did not:
 
 ```bash
-gh project item-list 1 --owner markafitzgerald1 --limit 400 --format json
+gh project item-list 1 --owner markafitzgerald1 --limit 1000 --format json
 gh project item-edit --id <item-id> --project-id <project-id> \
   --field-id <status-field-id> --single-select-option-id <option-id>
 ```
