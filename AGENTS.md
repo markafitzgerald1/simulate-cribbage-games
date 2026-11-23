@@ -361,7 +361,13 @@ floating-point sum, or lets a sum cross threads, is a behavior change even when
 every test passes: it can alter the policy's low bits, so it needs the full-size
 check, and a re-pin and fresh certificates if the bytes change. Re-run the
 full-size digest check in `native/cfr/README.md` before claiming equivalence.
-Explain the generator in its own terms, by the tests, oracles and certificates
+A change to what an iteration adds to the saved regrets or averages must also
+raise `SOLVER_VERSION` in `native/cfr/src/driver.rs`, which binds every
+checkpoint, so a paused solve is never resumed under different arithmetic.
+The average follows Tammelin's alternating CFR+ schedule: Pone averages its
+strategy after its own update and Dealer its strategy from before its own,
+each being the strategy the opponent's pass just played against. Explain the
+generator in its own terms, by the tests, oracles and certificates
 in this repository; the unpublished research C++ it was ported from belongs only
 in a short port history, never in the correctness argument. The spelling hook
 reads Rust's root-module path keyword as a misspelling of "create", so module

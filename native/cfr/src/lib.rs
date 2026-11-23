@@ -5,4 +5,5 @@
 pub mod driver;
 pub mod game;
 pub mod menus;
+pub mod solve;
 pub mod trees;
