@@ -98,6 +98,69 @@ fn bad_arguments_exit_with_usage_errors() {
     }
 }
 
+/// Write two priors no command may accept: one with no weight, and one on
+/// Pone and Dealer both holding four aces (hand 0 each).
+fn bad_priors(dir: &Path) -> (PathBuf, PathBuf) {
+    let mut weights = vec![0u8; 1820 * 1820 * 8];
+    let empty = dir.join("empty-prior.bin");
+    std::fs::write(&empty, &weights).unwrap();
+    weights[0] = 1;
+    let impossible = dir.join("impossible-prior.bin");
+    std::fs::write(&impossible, &weights).unwrap();
+    (empty, impossible)
+}
+
+/// `support` applies the same prior checks as `solve`, and caps the pairs
+/// before reading any file.
+#[test]
+fn support_refuses_bad_priors_and_too_many_pairs() {
+    let dir = scratch("support-refusals");
+    let out = dir.to_str().unwrap();
+    let (empty_prior, impossible_prior) = bad_priors(&dir);
+    let (empty_prior, impossible_prior) = (
+        empty_prior.to_str().unwrap(),
+        impossible_prior.to_str().unwrap(),
+    );
+    let word_policy = dir.join("word-policy.bin");
+    std::fs::write(&word_policy, [0u8; 2]).unwrap();
+    let word_policy = word_policy.to_str().unwrap();
+    // The pair cap is checked before any file is read.
+    let mut nine_pairs = vec!["support", "--output", out];
+    for _ in 0..9 {
+        nine_pairs.extend(["--policy", "missing.bin", "--prior", "missing.bin"]);
+    }
+    for (args, message) in [
+        (
+            vec![
+                "support",
+                "--output",
+                out,
+                "--policy",
+                word_policy,
+                "--prior",
+                empty_prior,
+            ],
+            "prior has no weight",
+        ),
+        (
+            vec![
+                "support",
+                "--output",
+                out,
+                "--policy",
+                word_policy,
+                "--prior",
+                impossible_prior,
+            ],
+            "prior weights an impossible deal: Pone hand 0, Dealer hand 0",
+        ),
+        (nine_pairs, "at most eight --policy and --prior pairs"),
+    ] {
+        let (_, stderr) = expect(&args, 1);
+        assert!(stderr.contains(message), "{args:?}: {stderr}");
+    }
+}
+
 #[test]
 fn failing_commands_exit_with_one() {
     let dir = scratch("failing");
@@ -108,16 +171,10 @@ fn failing_commands_exit_with_one() {
     std::fs::write(&full_prior, vec![u8::MAX; 1820 * 1820 * 8]).unwrap();
     let odd_policy = dir.join("odd-policy.bin");
     std::fs::write(&odd_policy, [0u8; 3]).unwrap();
-    let empty_prior = dir.join("empty-prior.bin");
+    let (empty_prior, impossible_prior) = bad_priors(&dir);
     let mut weights = vec![0u8; 1820 * 1820 * 8];
-    std::fs::write(&empty_prior, &weights).unwrap();
-    // Weight on Pone and Dealer both holding four Aces (hand 0 each).
-    weights[0] = 1;
-    let impossible_prior = dir.join("impossible-prior.bin");
-    std::fs::write(&impossible_prior, &weights).unwrap();
     // 2^59 on four Aces against four Kings (hands 0 and 1819), a deal that
     // can happen, is over the certificate's mass limit of about 2^58.
-    weights[..8].fill(0);
     let heavy = 1819 * 8;
     weights[heavy..heavy + 8].copy_from_slice(&(1u64 << 59).to_le_bytes());
     let heavy_prior = dir.join("heavy-prior.bin");
@@ -308,6 +365,33 @@ fn solve_support_and_digests_run_on_a_small_output() {
     let menus = Menus::load(&dir).unwrap();
     let flags = support(&menus, &SmallTrees(&small_game.trees), &[pair]);
     assert_eq!(std::fs::read(dir.join("support.bin")).unwrap(), flags);
+
+    // A policy one action short, or with a menu not holding 1,000 units, is
+    // refused rather than read as a rounded policy.
+    let short = dir.join("short-policy.bin");
+    std::fs::write(&short, &policy[..policy.len() - 2]).unwrap();
+    let mut emptied = policy.clone();
+    emptied[..2 * usize::from(menus.width[0])].fill(0);
+    let emptied_path = dir.join("emptied-policy.bin");
+    std::fs::write(&emptied_path, &emptied).unwrap();
+    for (bad, message) in [
+        (&short, "policy has"),
+        (&emptied_path, "policy menu 0 holds 0 units, not 1000"),
+    ] {
+        let (_, stderr) = expect(
+            &[
+                "support",
+                "--output",
+                out,
+                "--policy",
+                bad.to_str().unwrap(),
+                "--prior",
+                prior,
+            ],
+            1,
+        );
+        assert!(stderr.contains(message), "{stderr}");
+    }
 
     assert_digests(&dir, &["policy", "support"]);
 }

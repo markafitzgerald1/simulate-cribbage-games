@@ -167,10 +167,13 @@ so the work can be split across jobs. `trees` needs every menu file.
   resume);
 - 4 at the iteration cap.
 
-`support` sets one bit per `--policy`/`--prior` pair, in the order given:
-bit `k` of a menu's byte says whether the opponent, following policy `k`,
-reaches that decision with positive weight under prior `k`. The shipped
-chain passes one pair, the solved policy with the prior it was solved on.
+`support` takes one to eight `--policy`/`--prior` pairs and sets one bit per
+pair, in the order given: bit `k` of a menu's byte says whether the opponent,
+following policy `k`, reaches that decision with positive weight under prior
+`k`. It refuses the priors `solve` refuses (no weight, or weight on an
+impossible deal) and any policy that does not hold exactly 1,000 units in every
+menu. The shipped chain passes one pair, the solved policy with the prior it
+was solved on.
 
 `digests` prints the SHA-256 of each output. For the menu and tree folders it
 prints the SHA-256 of the per-file digests, one per line in file order. The
