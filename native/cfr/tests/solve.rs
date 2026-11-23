@@ -6,8 +6,10 @@ mod common;
 
 use cfr_inputs::driver::{self, Outcome};
 use cfr_inputs::game::State;
-use cfr_inputs::solve::{Certificate, MASS_LIMIT, POLICY_UNITS, certificate};
-use common::{Small, SmallTrees, bits, decides, info_of, matched, small, solve};
+use cfr_inputs::solve::{Certificate, Game, MASS_LIMIT, POLICY_UNITS, Solver, certificate};
+use common::{
+    DEALERS, PONES, Small, SmallTrees, bits, build_game, decides, info_of, matched, small, solve,
+};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
@@ -78,23 +80,27 @@ fn replay(
     }
 }
 
+/// The joint value of `policy` in both seats, by replaying every deal.
+fn replayed_joint(small_game: &Small, policy: &[u16]) -> i128 {
+    small_game.over_deals(|state, pone_hand, dealer_hand| {
+        replay(small_game, policy, state, pone_hand, dealer_hand, 0, None)
+    })
+}
+
 #[test]
 fn certificate_joint_value_matches_a_direct_replay() {
     let small_game = small();
     let game = small_game.game();
     let policy = solve(&small_game, 2, 4).rounded(&game);
     let exact = certificate(&game, &SmallTrees(&small_game.trees), &policy);
-    let expected = small_game.over_deals(|state, pone_hand, dealer_hand| {
-        replay(&small_game, &policy, state, pone_hand, dealer_hand, 0, None)
-    });
-    assert_eq!(exact.joint, expected);
+    assert_eq!(exact.joint, replayed_joint(&small_game, &policy));
     // Each player's best response does at least as well as the policy itself.
     assert!(exact.upper * i128::from(POLICY_UNITS).pow(3) >= exact.joint);
     assert!(exact.lower * i128::from(POLICY_UNITS).pow(3) <= exact.joint);
 }
 
 #[test]
-fn rounded_policy_has_q_units_per_menu() {
+fn rounded_policy_has_1000_units_per_menu() {
     let small_game = small();
     let policy = solve(&small_game, 2, 3).rounded(&small_game.game());
     for i in 0..small_game.menus.len() {
@@ -105,6 +111,158 @@ fn rounded_policy_has_q_units_per_menu() {
             .sum();
         assert_eq!(sum, POLICY_UNITS);
     }
+}
+
+/// The average follows Tammelin's alternating schedule: after one iteration
+/// Pone's average holds its strategy after its update and Dealer's holds its
+/// strategy before its update, which is uniform at every first decision.
+#[test]
+fn each_seat_averages_the_strategy_its_opponent_played_against() {
+    let small_game = small();
+    let solver = solve(&small_game, 2, 1);
+    let menus = &small_game.menus;
+    let dealer_menus = menus.starts[1820] as usize..menus.len();
+    let mut dealer_moved = false;
+    for i in 0..menus.len() {
+        if menus.parent[i] != u32::MAX {
+            continue;
+        }
+        let slots =
+            menus.offset[i] as usize..menus.offset[i] as usize + usize::from(menus.width[i]);
+        if dealer_menus.contains(&i) {
+            let uniform = 1.0 / f64::from(menus.width[i]);
+            assert!(
+                solver.average[slots.clone()]
+                    .iter()
+                    .all(|&weight| weight.to_bits() == uniform.to_bits())
+            );
+            dealer_moved |= solver.sigma[slots]
+                .iter()
+                .any(|&probability| probability.to_bits() != uniform.to_bits());
+        } else {
+            assert_eq!(
+                bits(&solver.average[slots.clone()]),
+                bits(&solver.sigma[slots])
+            );
+        }
+    }
+    assert!(
+        dealer_moved,
+        "Dealer's first update must change some first decision"
+    );
+}
+
+/// Own reach is conserved down each seat's choices: a menu's average weights
+/// sum to the average weight of the parent action that leads to it, because
+/// every term carries the same iteration weight and the same strategy, with
+/// the menu's own reach equal to its parent's reach times that action. At a
+/// first decision own reach is one, so after three iterations the linear
+/// weights sum to 1 + 2 + 3 = 6.
+#[test]
+fn average_weights_sum_to_their_parent_action() {
+    let small_game = small();
+    let solver = solve(&small_game, 2, 3);
+    let menus = &small_game.menus;
+    let mut children = 0;
+    for i in 0..menus.len() {
+        let off = menus.offset[i] as usize;
+        let total: f64 = solver.average[off..off + usize::from(menus.width[i])]
+            .iter()
+            .sum();
+        if menus.parent[i] == u32::MAX {
+            assert!((total - 6.0).abs() <= 1e-12, "first decision {i}");
+            continue;
+        }
+        let parent = menus.parent[i] as usize;
+        let expected =
+            solver.average[menus.offset[parent] as usize + usize::from(menus.parent_action[i])];
+        if expected == 0.0 {
+            assert!(total == 0.0, "menu {i}");
+        } else {
+            assert!((total - expected).abs() <= 1e-12 * expected, "menu {i}");
+        }
+        children += 1;
+    }
+    assert!(children > 0, "the game must have later decisions");
+}
+
+/// The stopping rule at its exact boundary: exposure 0.001 points converges,
+/// and one more unit of best-response gap does not.
+#[test]
+fn convergence_flips_one_unit_past_exposure_one_thousandth() {
+    let denominator = 7 * i128::from(POLICY_UNITS).pow(3);
+    // Both bounds sit off zero, so a rule that ignored either one would show.
+    let at = |gap: i128| Certificate {
+        joint: 0,
+        upper: gap - 11,
+        lower: -11,
+        denominator,
+    };
+    let boundary = 2 * denominator / 1000;
+    assert_eq!(at(boundary).exposure(), 0.001);
+    assert!(at(boundary).converged());
+    assert!(!at(boundary + 1).converged());
+}
+
+/// Rounding hands each menu's spare units to the largest remainders, ties to
+/// the lower action, and splits a menu with no average weight evenly.
+#[test]
+fn rounding_gives_spare_units_to_the_largest_remainders() {
+    let small_game = small();
+    let game = small_game.game();
+    let menus = &small_game.menus;
+    let action_count = usize::try_from(menus.actions).unwrap();
+    let width_of = |width| (0..menus.len()).find(|&i| menus.width[i] == width).unwrap();
+    let (two, three) = (width_of(2), width_of(3));
+    let mut average = vec![0.0; action_count];
+    // 1/3 and 2/3 of 1,000: floors 333 and 666, the spare unit to the larger remainder.
+    average[menus.offset[two] as usize] = 1.0;
+    average[menus.offset[two] as usize + 1] = 2.0;
+    // Equal thirds tie, so the spare unit goes to the first action.
+    for slot in 0..3 {
+        average[menus.offset[three] as usize + slot] = 1.0;
+    }
+    let solver = Solver::new(&game, vec![0.0; action_count], average);
+    let rounded = solver.rounded(&game);
+    let units = |menu: usize| {
+        let off = menus.offset[menu] as usize;
+        rounded[off..off + usize::from(menus.width[menu])].to_vec()
+    };
+    assert_eq!(units(two), [333, 667]);
+    assert_eq!(units(three), [334, 333, 333]);
+    let untouched = (0..menus.len())
+        .find(|&i| menus.width[i] == 3 && i != three)
+        .unwrap();
+    assert_eq!(units(untouched), [334, 333, 333]);
+}
+
+#[test]
+#[should_panic(expected = "prior mass 0")]
+fn a_prior_with_no_weight_is_refused() {
+    let small_game = small();
+    let chance = vec![0u64; 1820 * 1820];
+    let _ = Game::new(&small_game.menus, &chance);
+}
+
+#[test]
+#[should_panic(expected = "prior mass")]
+fn a_prior_over_the_mass_limit_is_refused() {
+    let small_game = small();
+    let mut chance = small_game.chance.clone();
+    let pair = chance.iter().position(|&weight| weight != 0).unwrap();
+    chance[pair] = MASS_LIMIT;
+    let _ = Game::new(&small_game.menus, &chance);
+}
+
+#[test]
+#[should_panic(expected = "prior weights an impossible deal")]
+fn a_prior_on_an_impossible_deal_is_refused() {
+    let small_game = small();
+    let mut chance = small_game.chance.clone();
+    // Four aces each: eight aces cannot be dealt.
+    let aces = common::index(&small_game.hands, [0, 0, 0, 0]);
+    chance[aces * 1820 + aces] = 1;
+    let _ = Game::new(&small_game.menus, &chance);
 }
 
 #[test]
@@ -222,6 +380,40 @@ fn resume_rejects_a_checkpoint_made_from_different_inputs() {
     assert!(err.to_string().contains("different inputs"), "{err}");
 }
 
+/// A checkpoint saved by an older solver version is refused, since its
+/// averages were accumulated by different arithmetic.
+#[test]
+fn resume_rejects_a_checkpoint_from_an_older_solver() {
+    let small_game = small();
+    let dir = scratch("older-solver");
+    assert_eq!(
+        run_one(&small_game, &dir, "prior").unwrap(),
+        Outcome::Paused(1)
+    );
+    let manifest = dir.join("checkpoint.json");
+    let json = std::fs::read_to_string(&manifest).unwrap();
+    let current = format!("solver:{}", driver::SOLVER_VERSION);
+    let older = format!("solver:{}", driver::SOLVER_VERSION - 1);
+    assert!(json.contains(&current), "{json}");
+    std::fs::write(&manifest, json.replace(&current, &older)).unwrap();
+    let err = run_one(&small_game, &dir, "prior").unwrap_err();
+    assert!(err.to_string().contains("different inputs"), "{err}");
+}
+
+#[test]
+#[should_panic(expected = "Chance mismatch")]
+fn a_weighted_deal_without_a_tree_is_refused() {
+    let small_game = build_game(&PONES[..1], &DEALERS[..1], |_, _| 1);
+    let mut chance = small_game.chance.clone();
+    // A feasible deal whose Pone hand has no tree in this game.
+    let other = common::index(&small_game.hands, PONES[1]);
+    let dealer = common::index(&small_game.hands, DEALERS[0]);
+    chance[other * 1820 + dealer] = 1;
+    let game = Game::new(&small_game.menus, &chance);
+    let policy = vec![0u16; usize::try_from(small_game.menus.actions).unwrap()];
+    let _ = certificate(&game, &SmallTrees(&small_game.trees), &policy);
+}
+
 #[test]
 fn resume_rejects_a_damaged_checkpoint() {
     let small_game = small();
@@ -322,7 +514,7 @@ fn small_game_arithmetic_is_pinned() {
     );
     assert_eq!(
         digest(&solver.average),
-        "4ca385fa5d67e1b17c49e1ec9bcd7a1d2208ec8897b51021fae934166c4d4d28"
+        "78c5a2e1ef7f015324e217a398028515f3ce277924f6d88de44de1f5e00636b3"
     );
 }
 
@@ -518,51 +710,79 @@ fn best_responses_match_a_public_state_recursion() {
     let mut shared_decisions = 0;
     for iterations in [1, 3, 8, 64] {
         let (policy, exact) = certified(&small_game, iterations);
-        for responder in 0..2 {
-            let mut bags: BTreeMap<usize, Vec<Branch>> = BTreeMap::new();
-            for pone_hand in 0..1820 {
-                for dealer_hand in 0..1820 {
-                    let weight = small_game.chance[pone_hand * 1820 + dealer_hand];
-                    if weight == 0 {
-                        continue;
-                    }
-                    let own = if responder == 0 {
-                        pone_hand
-                    } else {
-                        dealer_hand
-                    };
-                    bags.entry(own).or_default().push(Branch {
-                        state: State::new(
-                            small_game.hands[pone_hand],
-                            small_game.hands[dealer_hand],
-                        ),
-                        pone_hand,
-                        dealer_hand,
-                        weight: i128::from(weight),
-                        factors: 0,
-                    });
-                }
-            }
-            shared_decisions += bags.values().filter(|bag| bag.len() > 1).count();
-            let value: i128 = bags
-                .into_values()
-                .map(|bag| public_value(&small_game, &policy, responder, bag))
-                .sum();
-            let expected = if responder == 0 {
-                exact.upper
-            } else {
-                -exact.lower
-            };
-            assert_eq!(
-                value, expected,
-                "responder {responder} after {iterations} iterations"
-            );
-        }
+        shared_decisions += check_against_recursion(&small_game, &policy, &exact, iterations);
     }
     assert!(
         shared_decisions > 0,
         "the game must put several deals behind a decision"
     );
+}
+
+/// Asserts both best responses in `exact` equal the public-state recursion's,
+/// and returns how many responder hands had several deals behind them.
+fn check_against_recursion(
+    small_game: &Small,
+    policy: &[u16],
+    exact: &Certificate,
+    iterations: u32,
+) -> usize {
+    let mut shared_decisions = 0;
+    for responder in 0..2 {
+        let mut bags: BTreeMap<usize, Vec<Branch>> = BTreeMap::new();
+        for pone_hand in 0..1820 {
+            for dealer_hand in 0..1820 {
+                let weight = small_game.chance[pone_hand * 1820 + dealer_hand];
+                if weight == 0 {
+                    continue;
+                }
+                let own = if responder == 0 {
+                    pone_hand
+                } else {
+                    dealer_hand
+                };
+                bags.entry(own).or_default().push(Branch {
+                    state: State::new(small_game.hands[pone_hand], small_game.hands[dealer_hand]),
+                    pone_hand,
+                    dealer_hand,
+                    weight: i128::from(weight),
+                    factors: 0,
+                });
+            }
+        }
+        shared_decisions += bags.values().filter(|bag| bag.len() > 1).count();
+        let value: i128 = bags
+            .into_values()
+            .map(|bag| public_value(small_game, policy, responder, bag))
+            .sum();
+        let expected = if responder == 0 {
+            exact.upper
+        } else {
+            -exact.lower
+        };
+        assert_eq!(
+            value, expected,
+            "responder {responder} after {iterations} iterations"
+        );
+    }
+    shared_decisions
+}
+
+/// A deal weighted near `MASS_LIMIT` keeps exact values. This weight times
+/// `POLICY_UNITS^3` overflows `u64` (to zero), so the certificate must form
+/// those products in `i128`. A light second deal shares Pone's decisions, so
+/// a heavy weight lost at any stage would change Pone's best response.
+#[test]
+fn a_deal_weight_near_the_mass_limit_keeps_exact_values() {
+    let heavy: u64 = 9 << 55;
+    assert!(heavy < MASS_LIMIT && heavy.wrapping_mul(1_000_000_000) == 0);
+    let small_game = build_game(&PONES[..1], &DEALERS[..2], |_, dealer| {
+        if dealer == 0 { heavy } else { 1 }
+    });
+    let (policy, exact) = certified(&small_game, 3);
+    assert_eq!(exact.joint, replayed_joint(&small_game, &policy));
+    assert!(check_against_recursion(&small_game, &policy, &exact, 3) > 0);
+    let units = i128::from(POLICY_UNITS);
+    assert_eq!(exact.denominator, i128::from(heavy + 1) * units.pow(3));
 }
 
 #[test]

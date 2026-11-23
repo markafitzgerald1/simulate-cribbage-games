@@ -95,8 +95,14 @@ fn field<'a>(json: &'a str, name: &str) -> Option<&'a str> {
     Some(rest[..rest.find([',', '}'])?].trim())
 }
 
+/// The solver's arithmetic version. Raise it whenever a change alters what
+/// an iteration adds to the saved regrets or averages, so that a checkpoint
+/// saved by older code is refused instead of mixed with newer iterations.
+/// Version 2 averages Dealer's strategy from before its update.
+pub const SOLVER_VERSION: u32 = 2;
+
 /// The input identity a checkpoint is bound to: the prior's SHA-256 and the
-/// menu and tree folder digests.
+/// menu and tree folder digests. [`run`] adds the solver version to it.
 pub fn identity(prior_sha256: &str, menus: &str, trees: &str) -> String {
     format!("prior:{prior_sha256},menus:{menus},trees:{trees}")
 }
@@ -150,7 +156,7 @@ fn certify(
     let certificate = super::solve::certificate(game, trees, &policy);
     let json = certificate_json(it, &certificate, began.elapsed().as_secs_f64());
     write_atomic(&dir.join(format!("certificate-{it}.json")), json.as_bytes())?;
-    if !certificate.converged(game.mass) {
+    if !certificate.converged() {
         return Ok(false);
     }
     write_atomic(&dir.join("policy.bin"), &bytes)?;
@@ -248,6 +254,9 @@ pub fn run(
 ) -> io::Result<Outcome> {
     use std::io::Write;
     let start = Instant::now();
+    // Bound to the solver version here, so no caller can resume another
+    // version's arithmetic by reusing an identity.
+    let identity = &format!("solver:{SOLVER_VERSION},{identity}");
     let action_count = usize::try_from(game.menus.actions).expect("action count");
     if let Some(it) = finished(dir, identity)? {
         return Ok(Outcome::Converged(it));
