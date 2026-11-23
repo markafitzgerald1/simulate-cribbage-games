@@ -155,7 +155,9 @@ fn each_seat_averages_the_strategy_its_opponent_played_against() {
 /// Own reach is conserved down each seat's choices: a menu's average weights
 /// sum to the average weight of the parent action that leads to it, because
 /// every term carries the same iteration weight and the same strategy, with
-/// the menu's own reach equal to its parent's reach times that action.
+/// the menu's own reach equal to its parent's reach times that action. At a
+/// first decision own reach is one, so after three iterations the linear
+/// weights sum to 1 + 2 + 3 = 6.
 #[test]
 fn average_weights_sum_to_their_parent_action() {
     let small_game = small();
@@ -163,20 +165,22 @@ fn average_weights_sum_to_their_parent_action() {
     let menus = &small_game.menus;
     let mut children = 0;
     for i in 0..menus.len() {
-        if menus.parent[i] == u32::MAX {
-            continue;
-        }
         let off = menus.offset[i] as usize;
         let total: f64 = solver.average[off..off + usize::from(menus.width[i])]
             .iter()
             .sum();
+        if menus.parent[i] == u32::MAX {
+            assert!((total - 6.0).abs() <= 1e-12, "first decision {i}");
+            continue;
+        }
         let parent = menus.parent[i] as usize;
         let expected =
             solver.average[menus.offset[parent] as usize + usize::from(menus.parent_action[i])];
-        assert!(
-            (total - expected).abs() <= 1e-12 * expected.abs().max(1.0),
-            "menu {i}"
-        );
+        if expected == 0.0 {
+            assert!(total == 0.0, "menu {i}");
+        } else {
+            assert!((total - expected).abs() <= 1e-12 * expected, "menu {i}");
+        }
         children += 1;
     }
     assert!(children > 0, "the game must have later decisions");

@@ -101,10 +101,10 @@ fn field<'a>(json: &'a str, name: &str) -> Option<&'a str> {
 /// Version 2 averages Dealer's strategy from before its update.
 pub const SOLVER_VERSION: u32 = 2;
 
-/// The input identity a checkpoint is bound to: the solver version, the
-/// prior's SHA-256 and the menu and tree folder digests.
+/// The input identity a checkpoint is bound to: the prior's SHA-256 and the
+/// menu and tree folder digests. [`run`] adds the solver version to it.
 pub fn identity(prior_sha256: &str, menus: &str, trees: &str) -> String {
-    format!("solver:{SOLVER_VERSION},prior:{prior_sha256},menus:{menus},trees:{trees}")
+    format!("prior:{prior_sha256},menus:{menus},trees:{trees}")
 }
 
 /// Flush a directory's entries (new names, renames, removals) to disk.
@@ -254,6 +254,9 @@ pub fn run(
 ) -> io::Result<Outcome> {
     use std::io::Write;
     let start = Instant::now();
+    // Bound to the solver version here, so no caller can resume another
+    // version's arithmetic by reusing an identity.
+    let identity = &format!("solver:{SOLVER_VERSION},{identity}");
     let action_count = usize::try_from(game.menus.actions).expect("action count");
     if let Some(it) = finished(dir, identity)? {
         return Ok(Outcome::Converged(it));

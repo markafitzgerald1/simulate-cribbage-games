@@ -85,6 +85,14 @@ impl<'a> Game<'a> {
     }
 }
 
+/// The root of `dealer_hand`'s game in `tree`, which must exist: a missing
+/// root would otherwise read as a leaf. Every weighted deal is looked up here.
+fn root(tree: &Tree, dealer_hand: usize) -> u32 {
+    let id = tree.roots[dealer_hand];
+    assert!(id != NIL, "Chance mismatch");
+    id
+}
+
 /// Split `values` into the action-slot slices of files `first..first+1820`.
 fn file_slices<'v, T>(game: &Game, values: &'v mut [T], first: usize) -> Vec<&'v mut [T]> {
     let base = game.slots(first).start;
@@ -217,7 +225,6 @@ impl Solver {
             |tree: &Tree, pone_hand: usize, dealer_hand: usize, out: &mut [f64], base: usize| {
                 let deal_weight = game.weight(pone_hand, dealer_hand);
                 if deal_weight != 0 {
-                    assert!(tree.roots[dealer_hand] != NIL, "Chance mismatch");
                     let weight = deal_weight as f64 / game.mass as f64;
                     walk(
                         menus,
@@ -225,7 +232,7 @@ impl Solver {
                         tree,
                         out,
                         base,
-                        tree.roots[dealer_hand],
+                        root(tree, dealer_hand),
                         1.0,
                         1.0,
                         role,
@@ -545,7 +552,7 @@ fn best_response(game: &Game, trees: &dyn Trees, policy: &[u16], role: u8) -> i1
                 if weight != 0 {
                     response.walk(
                         tree,
-                        tree.roots[dealer],
+                        root(tree, dealer),
                         i128::from(weight) * units_cubed,
                         NIL,
                         0,
@@ -602,7 +609,7 @@ fn best_response(game: &Game, trees: &dyn Trees, policy: &[u16], role: u8) -> i1
                 if weight != 0 {
                     total += response.walk(
                         &tree,
-                        tree.roots[dealer],
+                        root(&tree, dealer),
                         i128::from(weight) * units_cubed,
                         NIL,
                         0,
@@ -636,11 +643,8 @@ pub fn certificate(game: &Game, trees: &dyn Trees, policy: &[u16]) -> Certificat
             for dealer_hand in 0..1820 {
                 let deal_weight = game.weight(pone_hand, dealer_hand);
                 if deal_weight != 0 {
-                    // A missing root would read as a leaf; the best responses
-                    // walk the same weighted deals, so this check covers them.
-                    assert!(tree.roots[dealer_hand] != NIL, "Chance mismatch");
                     pone_total += i128::from(deal_weight)
-                        * joint_value(game.menus, &tree, tree.roots[dealer_hand], policy, 0);
+                        * joint_value(game.menus, &tree, root(&tree, dealer_hand), policy, 0);
                 }
             }
             pone_total
