@@ -111,7 +111,8 @@ fn bad_priors(dir: &Path) -> (PathBuf, PathBuf) {
     (empty, impossible)
 }
 
-/// `support` applies the same prior checks as `solve`, and caps the pairs
+/// `support` refuses the priors both commands refuse (no weight, an
+/// impossible deal; the mass limit is `solve`'s alone), and caps the pairs
 /// before reading any file.
 #[test]
 fn support_refuses_bad_priors_and_too_many_pairs() {
