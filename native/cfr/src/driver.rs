@@ -95,10 +95,16 @@ fn field<'a>(json: &'a str, name: &str) -> Option<&'a str> {
     Some(rest[..rest.find([',', '}'])?].trim())
 }
 
-/// The input identity a checkpoint is bound to: the prior's SHA-256 and the
-/// menu and tree folder digests.
+/// The solver's arithmetic version. Raise it whenever a change alters what
+/// an iteration adds to the saved regrets or averages, so that a checkpoint
+/// saved by older code is refused instead of mixed with newer iterations.
+/// Version 2 averages Dealer's strategy from before its update.
+pub const SOLVER_VERSION: u32 = 2;
+
+/// The input identity a checkpoint is bound to: the solver version, the
+/// prior's SHA-256 and the menu and tree folder digests.
 pub fn identity(prior_sha256: &str, menus: &str, trees: &str) -> String {
-    format!("prior:{prior_sha256},menus:{menus},trees:{trees}")
+    format!("solver:{SOLVER_VERSION},prior:{prior_sha256},menus:{menus},trees:{trees}")
 }
 
 /// Flush a directory's entries (new names, renames, removals) to disk.

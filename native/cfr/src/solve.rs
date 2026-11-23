@@ -32,8 +32,9 @@ pub const POLICY_UNITS: u32 = 1000;
 /// Everything the solver reads, kept in memory.
 pub struct Game<'a> {
     pub menus: &'a Menus,
-    /// 1,820 x 1,820 joint deal weights, Pone hand major.
-    pub chance: &'a [u64],
+    /// 1,820 x 1,820 joint deal weights, Pone hand major. Private, like
+    /// `mass`, so the weights cannot change after `new` checks them.
+    chance: &'a [u64],
     /// The weights' total, computed here so no caller can pass another.
     mass: u64,
 }
@@ -635,6 +636,9 @@ pub fn certificate(game: &Game, trees: &dyn Trees, policy: &[u16]) -> Certificat
             for dealer_hand in 0..1820 {
                 let deal_weight = game.weight(pone_hand, dealer_hand);
                 if deal_weight != 0 {
+                    // A missing root would read as a leaf; the best responses
+                    // walk the same weighted deals, so this check covers them.
+                    assert!(tree.roots[dealer_hand] != NIL, "Chance mismatch");
                     pone_total += i128::from(deal_weight)
                         * joint_value(game.menus, &tree, tree.roots[dealer_hand], policy, 0);
                 }

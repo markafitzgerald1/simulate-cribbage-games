@@ -152,15 +152,46 @@ fn each_seat_averages_the_strategy_its_opponent_played_against() {
     );
 }
 
+/// Own reach is conserved down each seat's choices: a menu's average weights
+/// sum to the average weight of the parent action that leads to it, because
+/// every term carries the same iteration weight and the same strategy, with
+/// the menu's own reach equal to its parent's reach times that action.
+#[test]
+fn average_weights_sum_to_their_parent_action() {
+    let small_game = small();
+    let solver = solve(&small_game, 2, 3);
+    let menus = &small_game.menus;
+    let mut children = 0;
+    for i in 0..menus.len() {
+        if menus.parent[i] == u32::MAX {
+            continue;
+        }
+        let off = menus.offset[i] as usize;
+        let total: f64 = solver.average[off..off + usize::from(menus.width[i])]
+            .iter()
+            .sum();
+        let parent = menus.parent[i] as usize;
+        let expected =
+            solver.average[menus.offset[parent] as usize + usize::from(menus.parent_action[i])];
+        assert!(
+            (total - expected).abs() <= 1e-12 * expected.abs().max(1.0),
+            "menu {i}"
+        );
+        children += 1;
+    }
+    assert!(children > 0, "the game must have later decisions");
+}
+
 /// The stopping rule at its exact boundary: exposure 0.001 points converges,
 /// and one more unit of best-response gap does not.
 #[test]
 fn convergence_flips_one_unit_past_exposure_one_thousandth() {
     let denominator = 7 * i128::from(POLICY_UNITS).pow(3);
+    // Both bounds sit off zero, so a rule that ignored either one would show.
     let at = |gap: i128| Certificate {
         joint: 0,
-        upper: gap,
-        lower: 0,
+        upper: gap - 11,
+        lower: -11,
         denominator,
     };
     let boundary = 2 * denominator / 1000;
@@ -343,6 +374,40 @@ fn resume_rejects_a_checkpoint_made_from_different_inputs() {
     );
     let err = run_one(&small_game, &dir, "other").unwrap_err();
     assert!(err.to_string().contains("different inputs"), "{err}");
+}
+
+/// A checkpoint saved by an older solver version is refused, since its
+/// averages were accumulated by different arithmetic.
+#[test]
+fn resume_rejects_a_checkpoint_from_an_older_solver() {
+    let small_game = small();
+    let dir = scratch("older-solver");
+    assert_eq!(
+        run_one(&small_game, &dir, "prior").unwrap(),
+        Outcome::Paused(1)
+    );
+    let manifest = dir.join("checkpoint.json");
+    let json = std::fs::read_to_string(&manifest).unwrap();
+    let current = format!("solver:{}", driver::SOLVER_VERSION);
+    let older = format!("solver:{}", driver::SOLVER_VERSION - 1);
+    assert!(json.contains(&current), "{json}");
+    std::fs::write(&manifest, json.replace(&current, &older)).unwrap();
+    let err = run_one(&small_game, &dir, "prior").unwrap_err();
+    assert!(err.to_string().contains("different inputs"), "{err}");
+}
+
+#[test]
+#[should_panic(expected = "Chance mismatch")]
+fn a_weighted_deal_without_a_tree_is_refused() {
+    let small_game = build_game(&PONES[..1], &DEALERS[..1], |_, _| 1);
+    let mut chance = small_game.chance.clone();
+    // A feasible deal whose Pone hand has no tree in this game.
+    let other = common::index(&small_game.hands, PONES[1]);
+    let dealer = common::index(&small_game.hands, DEALERS[0]);
+    chance[other * 1820 + dealer] = 1;
+    let game = Game::new(&small_game.menus, &chance);
+    let policy = vec![0u16; usize::try_from(small_game.menus.actions).unwrap()];
+    let _ = certificate(&game, &SmallTrees(&small_game.trees), &policy);
 }
 
 #[test]
@@ -712,6 +777,8 @@ fn a_deal_weight_near_the_mass_limit_keeps_exact_values() {
     let (policy, exact) = certified(&small_game, 3);
     assert_eq!(exact.joint, replayed_joint(&small_game, &policy));
     assert!(check_against_recursion(&small_game, &policy, &exact, 3) > 0);
+    let units = i128::from(POLICY_UNITS);
+    assert_eq!(exact.denominator, i128::from(heavy + 1) * units.pow(3));
 }
 
 #[test]
