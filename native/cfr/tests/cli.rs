@@ -299,7 +299,8 @@ fn small_folder(name: &str) -> (Small, PathBuf, String) {
     (small_game, dir, prior)
 }
 
-/// `support` reports a missing tree file as an I/O error, exit status 1.
+/// `support` reports a missing tree file, or a directory in its place, as an
+/// I/O error with exit status 1.
 #[test]
 fn support_reports_a_missing_tree_file() {
     let (small_game, dir, prior) = small_folder("no-tree");
@@ -312,20 +313,23 @@ fn support_reports_a_missing_tree_file() {
         .flat_map(|units| units.to_le_bytes())
         .collect();
     std::fs::write(&policy, bytes).unwrap();
-    std::fs::remove_file(dir.join("trees").join("1819.bin")).unwrap();
-    let (_, stderr) = expect(
-        &[
-            "support",
-            "--output",
-            dir.to_str().unwrap(),
-            "--policy",
-            policy.to_str().unwrap(),
-            "--prior",
-            &prior,
-        ],
-        1,
-    );
+    let args = [
+        "support",
+        "--output",
+        dir.to_str().unwrap(),
+        "--policy",
+        policy.to_str().unwrap(),
+        "--prior",
+        &prior,
+    ];
+    let missing = dir.join("trees").join("1819.bin");
+    std::fs::remove_file(&missing).unwrap();
+    let (_, stderr) = expect(&args, 1);
     assert!(stderr.contains("No such file"), "{stderr}");
+    // A directory where a tree file belongs is refused the same way.
+    std::fs::create_dir(&missing).unwrap();
+    let (_, stderr) = expect(&args, 1);
+    assert!(stderr.contains("is not a file"), "{stderr}");
 }
 
 #[test]
