@@ -318,9 +318,11 @@ class ProgressTest(JobFixture):
         # Catches a countdown stuck at zero while the solve finishes its
         # last iteration and certificate after the deadline.
         self.output.mkdir(parents=True, exist_ok=True)
-        line = self.job(stop_at=time.time() - 125).describe("solve")
-        self.assertRegex(line, "pause deadline passed 2m0[5-9]s ago")
-        self.assertRegex(line, "pausing after the current iteration")
+        job = self.job(stop_at=875.0)
+        with mock.patch.object(run_cfr_inputs.time, "time", return_value=1000.0):
+            line = job.describe("solve")
+        self.assertRegex(line, "pause deadline passed 2m05s ago")
+        self.assertRegex(line, "the solve stops after its current iteration")
 
     def test_progress_reads_partial_files_without_failing(self) -> None:
         # Catches treating a line the solver is still appending, or an empty

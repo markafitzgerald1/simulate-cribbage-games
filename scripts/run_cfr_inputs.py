@@ -232,7 +232,7 @@ class SolveJob:
             else:
                 deadline = (
                     f"pause deadline passed {duration(-left)} ago; "
-                    "pausing after the current iteration"
+                    "the solve stops after its current iteration"
                 )
             text += f"; {deadline}; {solve_progress(output)}"
         return text
