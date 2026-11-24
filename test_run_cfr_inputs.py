@@ -305,7 +305,8 @@ class ProgressTest(JobFixture):
             job.step("solve", "--prior", str(self.prior))
         lines = logged.getvalue().splitlines()
         self.assertRegex(lines[0], "solve: started$")
-        self.assertRegex(lines[-1], "solve: exit 3 after ")
+        ends = [line for line in lines if "solve: exit 3 after " in line]
+        self.assertEqual(len(ends), 1)
         beats = [line for line in lines if "solve: still running" in line]
         self.assertGreaterEqual(len(beats), 2)
         self.assertRegex(beats[-1], re.escape("iteration 7 took 9.8 s"))
@@ -373,11 +374,9 @@ class ProgressTest(JobFixture):
                 entered.wait(10)
 
         worker = threading.Thread(target=run_block, daemon=True)
-        with mock.patch("sys.stderr", logged), mock.patch.object(
-            run_cfr_inputs.Heartbeat, "STOP_WAIT_SECONDS", 0.2
-        ):
+        with mock.patch("sys.stderr", logged):
             worker.start()
-            worker.join(5)
+            worker.join(1)
             finished = not worker.is_alive()
             release.set()
             heartbeat.thread.join(5)

@@ -133,13 +133,12 @@ def solve_progress(output: Path) -> str:
 class Heartbeat:
     """Log a description every `interval` seconds until the block ends.
 
-    Leaving the block waits at most `STOP_WAIT_SECONDS` for the thread: a
-    progress read stuck on a slow disk must not hold up the job's evidence
-    and status. The thread is a daemon, so one left behind dies with the
-    process, and it logs nothing once the block has ended.
+    Leaving the block only signals the thread and never waits for it: a
+    progress read stuck on a slow disk must not delay the job's evidence or
+    status, or eat into the solve's time budget. The thread is a daemon, so
+    one still reading dies with the process, and it logs nothing once its
+    block has ended.
     """
-
-    STOP_WAIT_SECONDS = 5.0
 
     def __init__(self, describe: Callable[[], str], interval: float) -> None:
         self.describe = describe
@@ -156,8 +155,6 @@ class Heartbeat:
 
     def __exit__(self, *_: object) -> None:
         self.stopped.set()
-        if self.thread.is_alive():
-            self.thread.join(self.STOP_WAIT_SECONDS)
 
     def beat(self) -> None:
         """Log until stopped; a progress read that fails never stops a step."""
