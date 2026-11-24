@@ -1,7 +1,7 @@
 """Build the CFR solver's discard population and its 50/50 chance prior.
 
 Issue #203 publishes the inputs to the Rust CFR+ solve in `native/cfr`
-(PR #229, not yet on main). This module makes the two that the Rust code
+(PR #229). This module makes the two that the Rust code
 does not:
 
 1. The discard population: the production generator's seeded
@@ -17,14 +17,17 @@ does not:
    pairs: uniform four-card deals, and twelve-card deals mapped through the
    population's keeps (the production matrix).
 
-Every weight is an exact count of physical deals, so the output depends on
-no floating-point order.
+Every prior weight is an exact integer combination of physical deal counts,
+so the prior stage depends on no floating-point order. (The population stage
+runs the generator's refinement, which does use floats; its output is the
+integer keeps, which equal inputs on the same interpreter reproduce.)
 """
 
 from __future__ import annotations
 
 import argparse
 from array import array
+import contextlib
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from itertools import combinations, combinations_with_replacement, product
@@ -34,7 +37,9 @@ import math
 import os
 from pathlib import Path
 import sys
+import tempfile
 from typing import Any
+import unicodedata
 
 if __package__ in (None, ""):  # pragma: no cover
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -138,19 +143,29 @@ def build_population(configuration: Mapping[str, int] | None = None) -> dict[str
     """
     if configuration is None:
         configuration = DEFAULT_CONFIGURATION
-    context = generator.solve_initial_discard_policy(
-        configuration["analytical_max_iterations"],
-        configuration["full_hand_policy_max_iterations"],
-    )
+    # The generator prints progress to stdout; keep stdout for the summary.
+    with contextlib.redirect_stdout(sys.stderr):
+        context = generator.solve_initial_discard_policy(
+            configuration["analytical_max_iterations"],
+            configuration["full_hand_policy_max_iterations"],
+        )
     args = argparse.Namespace(
         outer_iterations=configuration["outer_iterations"],
         policy_table_samples=configuration["policy_table_samples"],
         seed=configuration["seed"],
     )
     gate: dict[str, Any] = {"passed": False}
-    fallback = generator.heuristic_fallback(
-        gate, context, args, generator.get_canonical_hands()
+    print(
+        "[cfr_prior] no promotion gate runs here: the line below is the "
+        "generator's fallback refinement, reused for the population, and no "
+        "measurement follows",
+        file=sys.stderr,
+        flush=True,
     )
+    with contextlib.redirect_stdout(sys.stderr):
+        fallback = generator.heuristic_fallback(
+            gate, context, args, generator.get_canonical_hands()
+        )
     assert fallback is not None
     _, refined, converged = fallback
     discard = generator.selected_discards_to_policy(refined.selected_discards)
@@ -169,8 +184,20 @@ def encode_population(document: Mapping[str, Any]) -> bytes:
 def validate_rows(rows: Sequence[Sequence[Any]], ranks: int = RANKS) -> list[Row]:
     """Require one valid keep for each role and each six-card hand that can be dealt."""
     parsed: list[Row] = []
+    if not isinstance(rows, (list, tuple)) or not all(
+        isinstance(row, (list, tuple))
+        and len(row) == 3
+        and all(isinstance(part, (list, tuple)) for part in row[1:])
+        for row in rows
+    ):
+        raise ValueError("Keeps must be [role, hand, keep] rows of rank lists")
     for role, hand, keep in rows:
         hand, keep = tuple(hand), tuple(keep)
+        # bool is an int subclass, and 1.0 == 1, so exclude both explicitly.
+        if any(
+            isinstance(rank, bool) or not isinstance(rank, int) for rank in hand + keep
+        ):
+            raise ValueError(f"Ranks in {hand} and {keep} must be integers")
         if role not in ROLES:
             raise ValueError(f"Unknown role {role!r}")
         if len(keep) != KEPT or list(keep) != sorted(keep):
@@ -193,6 +220,8 @@ def read_population(path: Path, ranks: int = RANKS) -> tuple[dict[str, Any], lis
     cannot catch a deliberate edit that recomputes every digest.
     """
     document = json.loads(Path(path).read_bytes())
+    if not isinstance(document, dict):
+        raise ValueError("Population must be a JSON object")
     missing = REQUIRED_POPULATION_KEYS - set(document)
     if missing:
         raise ValueError(f"Population lacks {sorted(missing)}")
@@ -202,6 +231,12 @@ def read_population(path: Path, ranks: int = RANKS) -> tuple[dict[str, Any], lis
     if keeps_digest(document["keeps"]) != document["keeps_sha256"]:
         raise ValueError("Keep population digest mismatch")
     rows = validate_rows(document["keeps"], ranks)
+    # The population writes its keeps sorted, and their digest depends on
+    # the order, so a reordered population is not the one that was written.
+    if [(role, hand) for role, hand, _ in rows] != sorted(
+        (role, hand) for role, hand, _ in rows
+    ):
+        raise ValueError("Population keeps are not in sorted order")
     discard = generator.DiscardPolicy({(role, hand): keep for role, hand, keep in rows})
     if (
         generator.discard_keeps_fingerprint(discard)
@@ -239,8 +274,8 @@ def joint_keep_matrix(pone: Weighted, dealer: Weighted, keep_count: int) -> byte
     `pone` and `dealer` list each role's dealt rank hands with the index of
     the hand it keeps. Cell `[i * keep_count + j]` counts the physical ways
     to deal Pone a hand that keeps key `i` and then Dealer, from the
-    remaining cards, a hand that keeps key `j`. This is the same quantity
-    the quantity a direct count over every pair of dealt hands would sum
+    remaining cards, a hand that keeps key `j`. This is the quantity a
+    direct count over every pair of dealt hands would sum
     one pair at a time:
 
         weight(p) * prod_r C(4 - p_r, d_r)
@@ -382,7 +417,12 @@ def mixture_weights(uniform: Sequence[int], production: Sequence[int]) -> array:
 def build_prior(
     rows: Sequence[Row], ranks: int = RANKS
 ) -> tuple[bytes, bytes, dict[str, Any]]:
-    """Return the production matrix bytes, the prior bytes and a report."""
+    """Return the production matrix bytes, the prior bytes and a report.
+
+    The rows are validated here as well as when read, so no caller can build
+    a prior from keeps that do not come from their own hands.
+    """
+    rows = validate_rows(rows, ranks)
     uniform = uniform_matrix(ranks)
     production = production_matrix(rows, ranks)
     prior = mixture_weights(uniform, production)
@@ -404,28 +444,50 @@ def build_prior(
 
 
 def write_bytes(path: Path, data: bytes) -> None:
-    """Write a file whole, replacing any earlier one only once it is complete."""
+    """Write a file whole, replacing any earlier one only once it is complete.
+
+    Creates the folder if needed. The data goes first to a new temporary file
+    in that folder, created exclusively under a unique name, so an existing
+    file or link there is never written through.
+    """
     path = Path(path)
-    partial = path.with_name(path.name + ".partial")
-    partial.write_bytes(data)
-    os.replace(partial, path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    # A short fixed prefix, so a long output name cannot push the temporary
+    # name past the file system's length limit.
+    handle, partial = tempfile.mkstemp(
+        dir=path.parent, prefix=".cfr-", suffix=".partial"
+    )
+    try:
+        with os.fdopen(handle, "wb") as stream:
+            stream.write(data)
+        # mkstemp makes the file private (0600); give it the usual mode.
+        mask = os.umask(0)
+        os.umask(mask)
+        os.chmod(partial, 0o666 & ~mask)
+        os.replace(partial, path)
+    except BaseException:
+        os.unlink(partial)
+        raise
 
 
 def require_distinct(inputs: Sequence[Path], outputs: Sequence[Path]) -> None:
     """Refuse paths that would let one write replace another file in use.
 
-    Covers each output's temporary `.partial` name, symbolic links and
-    `..` (via the real path), names differing only in case, and hard links
-    between files that already exist.
+    Covers symbolic links and `..` (via the real path), names differing only
+    in case or Unicode composition, and hard links between files that
+    already exist. (Writes go through unique temporary names, so those need
+    no reserving.)
     """
-    paths = [
-        *map(Path, inputs),
-        *map(Path, outputs),
-        *(Path(o).with_name(Path(o).name + ".partial") for o in outputs),
+    paths = [*map(Path, inputs), *map(Path, outputs)]
+    # Compare decomposed, case-folded and again decomposed forms, so names a
+    # volume ignoring case and Unicode composition would treat as one (the
+    # macOS default) clash here too.
+    real = [
+        unicodedata.normalize(
+            "NFD", unicodedata.normalize("NFD", os.path.realpath(path)).casefold()
+        )
+        for path in paths
     ]
-    # Compare case-folded real paths, so names differing only in case clash
-    # even where the volume is case-insensitive (the macOS default).
-    real = [os.path.realpath(path).casefold() for path in paths]
     clash = len(set(real)) != len(real) or any(
         os.path.samefile(a, b)
         for a, b in combinations([p for p in paths if p.exists()], 2)

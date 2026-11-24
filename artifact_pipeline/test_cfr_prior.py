@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import random
 import tempfile
+import unicodedata
 from types import SimpleNamespace
 import unittest
 from contextlib import redirect_stdout
@@ -296,6 +297,40 @@ class TestValidateRows(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, message):
                 cfr_prior.validate_rows(rows, 3)
 
+    def test_ranks_must_be_integers(self):
+        """A float or Boolean rank is refused, though 1.0 == 1 and True == 1.
+
+        Mutation caught (shown failing in a scratch copy): V3, dropping the
+        type check, so a float rank passes validation and fails later.
+        """
+        # Each replaces a rank with a numerically equal value, so the keep
+        # stays sorted and drawn from its hand: only the type is wrong.
+        first = self.rows[0][2][0]
+        for bad in (float(first), bool(first)):
+            self.assertEqual(bad, first)
+            for part in (1, 2):  # the hand, then the keep
+                rows = [[row[0], list(row[1]), list(row[2])] for row in self.rows]
+                rows[0][part] = [bad, *rows[0][part][1:]]
+                with self.assertRaisesRegex(ValueError, "must be integers"):
+                    cfr_prior.validate_rows(rows, 3)
+
+    def test_rows_must_be_rank_lists(self):
+        """Malformed keeps are refused as invalid, not crashed on."""
+        for rows in (None, [[PONE, None, [0, 0, 0, 0]]], [[PONE, [0] * 6]]):
+            with self.assertRaisesRegex(ValueError, "rows of rank lists"):
+                cfr_prior.validate_rows(rows, 3)
+
+    def test_build_prior_validates_its_rows(self):
+        """A direct `build_prior` call refuses keeps its hands cannot hold.
+
+        Mutation caught (shown failing in a scratch copy): V2, dropping the
+        validation in `build_prior`, so a caller passing a foreign keep gets
+        a prior weighting a deal that cannot be dealt.
+        """
+        foreign = [[PONE, [0, 0, 1, 1, 2, 2], [2, 2, 2, 2]]] + self.rows[1:]
+        with self.assertRaisesRegex(ValueError, "not drawn"):
+            cfr_prior.build_prior(foreign, 3)
+
 
 class TestPopulation(unittest.TestCase):
     """The timing-free population writer and its reader."""
@@ -412,7 +447,7 @@ class TestPopulation(unittest.TestCase):
         """Digest, fingerprint and keep-population mismatches are refused."""
         rows = [
             list(map(lambda x: list(x) if isinstance(x, tuple) else x, row))
-            for row in lowest_keeps(3)
+            for row in sorted(lowest_keeps(3))
         ]
         policy = generator.DiscardPolicy({(r, tuple(h)): tuple(k) for r, h, k in rows})
         good = {
@@ -430,6 +465,15 @@ class TestPopulation(unittest.TestCase):
             ),
             (dict(good, keep_populations={PONE: {}, DEALER: {}}), "populations"),
             ({"keeps": rows}, "lacks"),
+            (
+                dict(
+                    good,
+                    keeps=rows[::-1],
+                    keeps_sha256=cfr_prior.keeps_digest(rows[::-1]),
+                ),
+                "sorted order",
+            ),
+            ([1, 2], "JSON object"),
             (dict(good, population_method="other"), "Unknown population method"),
             (
                 dict(good, six_hand_physical_weight_per_role={PONE: 0, DEALER: 0}),
@@ -457,27 +501,49 @@ class TestPopulation(unittest.TestCase):
 class TestCommandLine(unittest.TestCase):
     """Both stages end to end, writing the Rust solve's prior format."""
 
+    @staticmethod
+    def run_population(context, population):
+        """Run the population stage on stubs that print progress, as the
+        generator does; return what reached stdout and stderr."""
+
+        def solve(*_):
+            print("analytical progress")
+            return context
+
+        def refine(analytical, *_, fixed_policies=None):
+            print("refinement progress")
+            return analytical, fixed_policies, [], True
+
+        with (
+            patch.object(generator, "solve_initial_discard_policy", solve),
+            patch.object(generator, "refine_discards", refine),
+            redirect_stdout(io.StringIO()) as printed,
+            patch("sys.stderr", io.StringIO()) as logged,
+        ):
+            cfr_prior.main(["population", "--output", str(population), "--seed", "3"])
+        return printed.getvalue(), logged.getvalue()
+
+    def test_population_keeps_stdout_for_its_summary(self):
+        """The generator's progress goes to stderr, so stdout is one JSON
+        summary. Mutation caught (shown failing in a scratch copy): P1,
+        dropping either redirect."""
+        with tempfile.TemporaryDirectory() as folder:
+            printed, logged = self.run_population(
+                stub_context(), Path(folder) / "population.json"
+            )
+        summary = json.loads(printed)  # fails if anything else reached stdout
+        self.assertTrue("converged" in summary)
+        self.assertRegex(logged, "analytical progress")
+        self.assertRegex(logged, "refinement progress")
+
     def test_population_then_prior(self):
         """The prior is 1820 x 1820 little-endian u64 and mixes 50/50."""
         context = stub_context()
 
-        def refine(analytical, *_, fixed_policies=None):
-            return analytical, fixed_policies, [], True
-
         with tempfile.TemporaryDirectory() as folder:
             folder = Path(folder)
             population = folder / "population.json"
-            with (
-                patch.object(
-                    generator, "solve_initial_discard_policy", return_value=context
-                ),
-                patch.object(generator, "refine_discards", refine),
-                redirect_stdout(io.StringIO()),
-                patch("sys.stderr", io.StringIO()),
-            ):
-                cfr_prior.main(
-                    ["population", "--output", str(population), "--seed", "3"]
-                )
+            self.run_population(context, population)
             self.assertTrue(json.loads(population.read_text())["converged"])
             self.assertEqual(
                 json.loads(population.read_text())["configuration"]["seed"], 3
@@ -553,12 +619,48 @@ class TestCommandLine(unittest.TestCase):
         args = cfr_prior.parse_args(["population", "--output", "p", "--seed", "-1"])
         self.assertEqual(args.seed, -1)
 
-    def test_rejects_aliased_paths(self):
-        """No output may be another output, the input, or a temporary name.
+    def test_write_makes_the_folder_and_never_writes_through_a_link(self):
+        """A write creates its folder, and a link at the old temporary name is
+        left alone, as is the file it points to; a failed write leaves nothing.
 
-        Mutation caught (shown failing in a scratch copy): A1, dropping the
+        Mutations caught (shown failing in a scratch copy): W1, not creating
+        the folder, so the workflow's first write fails on a fresh checkout;
+        W2, writing to the fixed name `NAME.partial`, which writes through a
+        link there into the file it points to.
+        """
+        with tempfile.TemporaryDirectory() as folder:
+            folder = Path(folder)
+            target = folder / "new" / "prior.bin"
+            cfr_prior.write_bytes(target, b"p")
+            self.assertEqual(target.read_bytes(), b"p")
+            mask = os.umask(0)
+            os.umask(mask)
+            self.assertEqual(target.stat().st_mode & 0o777, 0o666 & ~mask)
+            self.assertEqual([p.name for p in target.parent.iterdir()], ["prior.bin"])
+            victim = folder / "victim.bin"
+            victim.write_bytes(b"keep")
+            (folder / "out.bin.partial").symlink_to(victim)
+            cfr_prior.write_bytes(folder / "out.bin", b"new")
+            self.assertEqual(victim.read_bytes(), b"keep")
+            self.assertEqual((folder / "out.bin").read_bytes(), b"new")
+            with (
+                patch.object(cfr_prior.os, "replace", side_effect=OSError("full")),
+                self.assertRaisesRegex(OSError, "full"),
+            ):
+                cfr_prior.write_bytes(folder / "failed.bin", b"x")
+            self.assertEqual(
+                sorted(p.name for p in folder.iterdir()),
+                ["new", "out.bin", "out.bin.partial", "victim.bin"],
+            )
+
+    def test_rejects_aliased_paths(self):
+        """No output may be another output or the input, under any alias.
+
+        Mutations caught (shown failing in a scratch copy): A1, dropping the
         check, so `--production-output` equal to `--output` silently leaves
-        the production matrix where the Rust solve reads its prior.
+        the production matrix where the Rust solve reads its prior; A2 and
+        A3, comparing names without Unicode normalization or without
+        canonical case folding.
         """
         with tempfile.TemporaryDirectory() as folder:
             folder = Path(folder)
@@ -575,7 +677,6 @@ class TestCommandLine(unittest.TestCase):
                 ["--output", str(population)],
                 ["--output", str(linked)],
                 ["--output", str(hard)],
-                ["--output", str(folder / "x"), "--report", str(folder / "x.partial")],
                 # Neither output exists yet, so only the real-path step sees it.
                 [
                     "--output",
@@ -584,6 +685,23 @@ class TestCommandLine(unittest.TestCase):
                     str(folder / ".." / folder.name / "prior.bin"),
                 ],
                 ["--output", prior, "--production-output", str(folder / "PRIOR.bin")],
+                # The same name composed and decomposed ("naive" with a
+                # diaeresis as one code point, then as two).
+                [
+                    "--output",
+                    str(folder / unicodedata.normalize("NFC", "nai\u0308ve.bin")),
+                    "--production-output",
+                    str(folder / "nai\u0308ve.bin"),
+                ],
+                # Two names equal only after decomposing, case folding and
+                # decomposing again (a Greek iota with two accents, as one code
+                # point and as three), which composition alone does not join.
+                [
+                    "--output",
+                    str(folder / "\u0390.bin"),
+                    "--production-output",
+                    str(folder / "\u03aa\u0301.bin"),
+                ],
             ]
             document = {"discard_policy_fingerprint": "f", "keeps_sha256": "k"}
             with (
