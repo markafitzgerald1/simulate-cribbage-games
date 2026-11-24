@@ -258,7 +258,10 @@ fn support(options: &Options) -> std::io::Result<()> {
 /// exact arithmetic can carry, and one that weights a deal no tree covers.
 /// The input identity (digests of the prior, menus and trees) ties every
 /// checkpoint to these inputs, so a resume on different inputs is refused.
+/// `--pause-after-seconds` counts from this command's start, so the time
+/// spent reading and hashing the inputs comes out of the budget.
 fn solve(options: &Options) -> std::io::Result<ExitCode> {
+    let started = Instant::now();
     let [path] = options.priors.as_slice() else {
         return Err(std::io::Error::other("solve needs exactly one --prior"));
     };
@@ -277,7 +280,9 @@ fn solve(options: &Options) -> std::io::Result<ExitCode> {
     let trees_digest = driver::folder_sha256(&options.output.join("trees"), 1820)?;
     let id = driver::identity(&driver::sha256(&bytes), &menus_digest, &trees_digest);
     let trees = TreeFiles(&options.output);
-    let (pause, cap) = (options.pause_after, options.max_iterations);
+    let spent = started.elapsed().as_secs_f64();
+    let pause = options.pause_after.map(|budget| (budget - spent).max(0.0));
+    let cap = options.max_iterations;
     let outcome = driver::run(&options.output, &game, &trees, &id, pause, cap)?;
     println!("{outcome:?}");
     Ok(match outcome {

@@ -164,7 +164,8 @@ so the work can be split across jobs. `trees` needs every menu file.
 `solve` exits with:
 - 0 when the 0.001-point exposure target is met;
 - 3 when it pauses on its time budget (run the same command again to
-  resume);
+  resume); `--pause-after-seconds` counts from the command's start, so reading
+  and hashing the inputs comes out of it;
 - 4 at the iteration cap.
 
 `support` takes one to eight `--policy`/`--prior` pairs and sets one bit per
