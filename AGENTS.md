@@ -776,7 +776,10 @@ stderr and, while a step runs, a heartbeat every `--heartbeat-seconds` (five
 minutes by default) with free disk and, for the solve, time left before it
 pauses, the latest iteration and the newest certificate's exposure. The
 heartbeat reads those files while the solver writes them, so it skips a
-partial line and never lets a failed read stop the step.
+partial line and never lets a failed read stop the step. Logging is best
+effort throughout: a broken stderr, a thread that cannot start, or a stuck
+read (the step waits at most five seconds for the heartbeat to stop) must
+never change the job's result, timing or evidence.
 
 ## Lint Configuration Expectations
 

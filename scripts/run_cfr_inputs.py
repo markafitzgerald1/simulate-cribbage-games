@@ -26,7 +26,6 @@ from collections.abc import Callable, Sequence
 from datetime import datetime, timezone
 import hashlib
 import json
-import math
 from pathlib import Path
 import resource
 import shutil
@@ -46,6 +45,8 @@ CONVERGED, PAUSED = 0, 3
 CONVERGED_OUTPUTS = ("policy.bin", "support.bin", "solve.json", "curve.jsonl")
 STATE_FILES = ("curve.jsonl", "solve.json", "checkpoint.json")
 HEARTBEAT_SECONDS = 300.0
+# Shorter would flood the log; longer than this overflows a thread wait.
+MINIMUM_HEARTBEAT_SECONDS = 1.0
 
 Runner = Callable[[list[str]], "subprocess.CompletedProcess[str]"]
 
@@ -65,9 +66,16 @@ def sha256_file(path: Path) -> str:
 
 
 def log(message: str) -> None:
-    """Write one progress line to stderr, which the Actions log shows live."""
+    """Write one progress line to stderr, which the Actions log shows live.
+
+    Best effort: the line is only for people watching, so a closed or
+    broken stderr must never fail the job.
+    """
     stamp = datetime.now(timezone.utc).strftime("%H:%M:%S")
-    print(f"[cfr-inputs {stamp}Z] {message}", file=sys.stderr, flush=True)
+    try:
+        print(f"[cfr-inputs {stamp}Z] {message}", file=sys.stderr, flush=True)
+    except (OSError, ValueError):
+        pass
 
 
 def duration(seconds: float) -> str:
@@ -123,7 +131,15 @@ def solve_progress(output: Path) -> str:
 
 
 class Heartbeat:
-    """Log a description every `interval` seconds until the block ends."""
+    """Log a description every `interval` seconds until the block ends.
+
+    Leaving the block waits at most `STOP_WAIT_SECONDS` for the thread: a
+    progress read stuck on a slow disk must not hold up the job's evidence
+    and status. The thread is a daemon, so one left behind dies with the
+    process, and it logs nothing once the block has ended.
+    """
+
+    STOP_WAIT_SECONDS = 5.0
 
     def __init__(self, describe: Callable[[], str], interval: float) -> None:
         self.describe = describe
@@ -132,12 +148,16 @@ class Heartbeat:
         self.thread = threading.Thread(target=self.beat, daemon=True)
 
     def __enter__(self) -> "Heartbeat":
-        self.thread.start()
+        try:
+            self.thread.start()
+        except RuntimeError as error:
+            log(f"no progress lines for this step: {error!r}")
         return self
 
     def __exit__(self, *_: object) -> None:
         self.stopped.set()
-        self.thread.join()
+        if self.thread.is_alive():
+            self.thread.join(self.STOP_WAIT_SECONDS)
 
     def beat(self) -> None:
         """Log until stopped; a progress read that fails never stops a step."""
@@ -146,7 +166,8 @@ class Heartbeat:
                 message = self.describe()
             except (OSError, ValueError, KeyError, TypeError) as error:
                 message = f"progress unavailable: {error!r}"
-            log(message)
+            if not self.stopped.is_set():
+                log(message)
 
 
 def peak_child_rss() -> int:
@@ -180,7 +201,8 @@ class SolveJob:
         began = self.clock()
         with Heartbeat(lambda: self.describe(name), self.arguments.heartbeat_seconds):
             result = self.runner(command)
-        seconds = round(self.clock() - began, 3)
+            # Timed here, so a slow heartbeat shutdown is not counted.
+            seconds = round(self.clock() - began, 3)
         peak = peak_child_rss()
         free = shutil.disk_usage(self.arguments.output).free
         self.steps.append(
@@ -204,8 +226,15 @@ class SolveJob:
         free = shutil.disk_usage(output).free / 1000**3
         text = f"{name}: still running; {free:.1f} GB free"
         if name == "solve":
-            left = duration(self.arguments.stop_at - time.time())
-            text += f"; {left} until it pauses; {solve_progress(output)}"
+            left = self.arguments.stop_at - time.time()
+            if left > 0:
+                deadline = f"{duration(left)} until the pause deadline"
+            else:
+                deadline = (
+                    f"pause deadline passed {duration(-left)} ago; "
+                    "pausing after the current iteration"
+                )
+            text += f"; {deadline}; {solve_progress(output)}"
         return text
 
     def require(self, name: str, *options: str) -> str:
@@ -305,10 +334,13 @@ class SolveJob:
 
 
 def positive_seconds(text: str) -> float:
-    """Parse a heartbeat interval; zero would log without pause."""
+    """Parse a heartbeat interval a thread can wait for without flooding."""
     value = float(text)
-    if not math.isfinite(value) or value <= 0:
-        raise argparse.ArgumentTypeError("must be a positive number of seconds")
+    if not MINIMUM_HEARTBEAT_SECONDS <= value <= threading.TIMEOUT_MAX:
+        raise argparse.ArgumentTypeError(
+            f"must be from {MINIMUM_HEARTBEAT_SECONDS:g} seconds"
+            f" to {threading.TIMEOUT_MAX:g}"
+        )
     return value
 
 

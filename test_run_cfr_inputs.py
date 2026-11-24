@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
 from unittest import mock
@@ -257,6 +258,26 @@ class SolveJobTest(JobFixture):
             run_cfr_inputs.parse_args(["--binary", "x", "--output", "y"])
 
 
+def wait_until(condition, seconds: float = 10.0) -> bool:
+    """Poll `condition` until it holds or `seconds` pass; return whether it held."""
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        if condition():
+            return True
+        time.sleep(0.01)
+    return condition()
+
+
+class BrokenStream:
+    """A stderr whose writes fail, as a closed pipe's would."""
+
+    def write(self, _: str) -> int:
+        raise OSError("broken pipe")
+
+    def flush(self) -> None:
+        raise OSError("broken pipe")
+
+
 class ProgressTest(JobFixture):
     """What a running job writes to the Actions log."""
 
@@ -264,6 +285,8 @@ class ProgressTest(JobFixture):
         # Catches a heartbeat that never starts, a solve line that drops the
         # newest certificate, and a missing start or end line: each leaves
         # a silent Actions log for a step that can run for hours.
+        logged = io.StringIO()
+
         def slow_solve(command):
             (self.output / "curve.jsonl").write_text(
                 '{"iteration":6,"seconds":9.5}\n{"iteration":7,"seconds":9.8}\n'
@@ -272,13 +295,12 @@ class ProgressTest(JobFixture):
                 (self.output / f"certificate-{iteration}.json").write_text(
                     json.dumps({"iteration": iteration, "exposure": exposure})
                 )
-            time.sleep(0.5)
+            wait_until(lambda: logged.getvalue().count("iteration 7 took") >= 2)
             return subprocess.CompletedProcess(command, 3, stdout="")
 
-        job = self.job()
+        job = self.job(stop_at=time.time() + 3700)
         job.arguments.heartbeat_seconds = 0.05
         job.runner = slow_solve
-        logged = io.StringIO()
         with mock.patch("sys.stderr", logged):
             job.step("solve", "--prior", str(self.prior))
         lines = logged.getvalue().splitlines()
@@ -290,7 +312,15 @@ class ProgressTest(JobFixture):
         self.assertRegex(
             beats[-1], re.escape("certificate at iteration 1024: exposure 0.0042")
         )
-        self.assertRegex(beats[-1], "until it pauses")
+        self.assertRegex(beats[-1], "1h0[01]m until the pause deadline")
+
+    def test_a_passed_deadline_says_so(self) -> None:
+        # Catches a countdown stuck at zero while the solve finishes its
+        # last iteration and certificate after the deadline.
+        self.output.mkdir(parents=True, exist_ok=True)
+        line = self.job(stop_at=time.time() - 125).describe("solve")
+        self.assertRegex(line, "pause deadline passed 2m0[5-9]s ago")
+        self.assertRegex(line, "pausing after the current iteration")
 
     def test_progress_reads_partial_files_without_failing(self) -> None:
         # Catches treating a line the solver is still appending, or an empty
@@ -316,18 +346,74 @@ class ProgressTest(JobFixture):
         logged = io.StringIO()
         with mock.patch("sys.stderr", logged):
             with run_cfr_inputs.Heartbeat(unreadable, 0.02):
-                time.sleep(0.2)
-        self.assertGreaterEqual(logged.getvalue().count("progress unavailable"), 2)
+                self.assertTrue(
+                    wait_until(
+                        lambda: logged.getvalue().count("progress unavailable") >= 2
+                    )
+                )
+
+    def test_a_stuck_progress_read_cannot_hold_the_job(self) -> None:
+        # Catches waiting for the heartbeat without a bound, which would
+        # hold the job's evidence and status behind a slow disk read, and a
+        # beat logged after its step has ended.
+        entered, release = threading.Event(), threading.Event()
+
+        def stuck() -> str:
+            entered.set()
+            release.wait(10)
+            return "late beat"
+
+        logged = io.StringIO()
+        heartbeat = run_cfr_inputs.Heartbeat(stuck, 0.01)
+
+        def run_block() -> None:
+            with heartbeat:
+                entered.wait(10)
+
+        worker = threading.Thread(target=run_block, daemon=True)
+        with mock.patch("sys.stderr", logged), mock.patch.object(
+            run_cfr_inputs.Heartbeat, "STOP_WAIT_SECONDS", 0.2
+        ):
+            worker.start()
+            worker.join(5)
+            finished = not worker.is_alive()
+            release.set()
+            heartbeat.thread.join(5)
+        self.assertTrue(finished)
+        self.assertNotRegex(logged.getvalue(), "late beat")
+
+    def test_a_broken_stderr_never_fails_a_step(self) -> None:
+        # Catches letting a failed log write end the job, which would turn
+        # a finished solve into a failure over a line nobody can read.
+        job = self.job()
+        job.arguments.heartbeat_seconds = 0.01
+        job.runner = lambda command: subprocess.CompletedProcess(command, 3, stdout="")
+        with mock.patch("sys.stderr", BrokenStream()):
+            result = job.step("solve", "--prior", str(self.prior))
+        self.assertEqual(result.returncode, 3)
+        self.assertEqual(job.steps[-1]["exit_code"], 3)
+
+    def test_a_heartbeat_that_cannot_start_still_runs_the_step(self) -> None:
+        # Catches letting a failed thread start stop the step from running.
+        ran = []
+        logged = io.StringIO()
+        with mock.patch("sys.stderr", logged), mock.patch.object(
+            threading.Thread, "start", side_effect=RuntimeError("no threads")
+        ):
+            with run_cfr_inputs.Heartbeat(lambda: "beat", 0.01):
+                ran.append(True)
+        self.assertEqual(ran, [True])
+        self.assertRegex(logged.getvalue(), "no progress lines for this step")
 
     def test_other_steps_report_disk_but_no_solve_progress(self) -> None:
         job = self.job()
-        self.assertNotRegex(job.describe("trees"), "until it pauses")
+        self.assertNotRegex(job.describe("trees"), "pause deadline")
         self.assertRegex(job.describe("trees"), "^trees: still running; ")
 
-    def test_the_heartbeat_interval_must_be_positive(self) -> None:
-        # Catches accepting zero, which would log in a tight loop, or a
-        # value that never compares as positive or finite.
-        for bad in ("0", "-5", "nan", "inf"):
+    def test_the_heartbeat_interval_is_bounded(self) -> None:
+        # Catches accepting an interval that floods the log (zero, or under
+        # a second), never compares (NaN), or overflows a thread's wait.
+        for bad in ("0", "0.5", "-5", "nan", "inf", "1e100"):
             with self.subTest(value=bad), mock.patch("sys.stderr"):
                 with self.assertRaises(SystemExit):
                     run_cfr_inputs.parse_args(
@@ -335,10 +421,11 @@ class ProgressTest(JobFixture):
                     )
         parsed = run_cfr_inputs.parse_args(self.build_arguments())
         self.assertEqual(parsed.heartbeat_seconds, run_cfr_inputs.HEARTBEAT_SECONDS)
-        parsed = run_cfr_inputs.parse_args(
-            self.build_arguments() + ["--heartbeat-seconds", "30"]
-        )
-        self.assertEqual(parsed.heartbeat_seconds, 30.0)
+        for good, expected in (("1", 1.0), ("30", 30.0)):
+            parsed = run_cfr_inputs.parse_args(
+                self.build_arguments() + ["--heartbeat-seconds", good]
+            )
+            self.assertEqual(parsed.heartbeat_seconds, expected)
 
     def test_durations_read_as_hours_or_minutes(self) -> None:
         self.assertEqual(run_cfr_inputs.duration(3725.0), "1h02m")
