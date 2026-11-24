@@ -5,7 +5,8 @@
 use cfr_inputs::driver::{self, Outcome};
 use cfr_inputs::game::{canonical, feasible};
 use cfr_inputs::menus::{self, FILES};
-use cfr_inputs::solve::{Game, MASS_LIMIT, TreeFiles};
+use cfr_inputs::solve::{Game, MASS_LIMIT, POLICY_UNITS, TreeFiles};
+use cfr_inputs::support::Pair;
 use cfr_inputs::trees::{Menus, Tree, offsets_bytes};
 use rayon::prelude::*;
 use std::path::{Path, PathBuf};
@@ -14,7 +15,8 @@ use std::time::Instant;
 
 const USAGE: &str = "usage: cfr-inputs <menus|trees> --output DIR [--range START..END] [--threads N]
        cfr-inputs <offsets|digests> --output DIR [--threads N]
-       cfr-inputs solve --output DIR --prior FILE [--pause-after-seconds S] [--max-iterations N] [--threads N]";
+       cfr-inputs solve --output DIR --prior FILE [--pause-after-seconds S] [--max-iterations N] [--threads N]
+       cfr-inputs support --output DIR (--policy FILE --prior FILE)... [--threads N]";
 
 /// The parsed command line.
 struct Options {
@@ -22,6 +24,7 @@ struct Options {
     output: PathBuf,
     threads: usize,
     priors: Vec<PathBuf>,
+    policies: Vec<PathBuf>,
     pause_after: Option<f64>,
     max_iterations: u32,
     range: Option<std::ops::Range<usize>>,
@@ -39,7 +42,7 @@ fn parse_range(value: &str) -> Option<std::ops::Range<usize>> {
 fn parse(args: &[String]) -> Result<Options, String> {
     let command = args.first().ok_or(USAGE)?.clone();
     let (mut output, mut threads, mut pause_after, mut max_iterations) = (None, 0, None, 4096);
-    let (mut priors, mut range) = (Vec::new(), None);
+    let (mut priors, mut policies, mut range) = (Vec::new(), Vec::new(), None);
     let mut rest = args[1..].iter();
     while let Some(flag) = rest.next() {
         let value = rest.next().ok_or(format!("{flag} needs a value"))?;
@@ -47,6 +50,7 @@ fn parse(args: &[String]) -> Result<Options, String> {
             "--output" => output = Some(PathBuf::from(value)),
             "--threads" => threads = value.parse().map_err(|_| "--threads must be a number")?,
             "--prior" => priors.push(PathBuf::from(value)),
+            "--policy" => policies.push(PathBuf::from(value)),
             "--range" => range = Some(parse_range(value).ok_or("--range must be START..END")?),
             "--pause-after-seconds" => {
                 pause_after = Some(
@@ -71,6 +75,7 @@ fn parse(args: &[String]) -> Result<Options, String> {
         output: output.ok_or(USAGE)?,
         threads,
         priors,
+        policies,
         pause_after,
         max_iterations,
         range,
@@ -99,6 +104,7 @@ fn digests(dir: &Path) -> std::io::Result<String> {
         ("trees", folder("trees", 1820)?),
         ("offsets", file("offsets.bin")?),
         ("policy", file("policy.bin")?),
+        ("support", file("support.bin")?),
     ];
     let body: Vec<String> = entries
         .iter()
@@ -127,6 +133,126 @@ fn read_prior(bytes: &[u8]) -> std::io::Result<Vec<u64>> {
         .collect())
 }
 
+/// The prior's total weight, after refusing a prior whose total overflows
+/// and one with no weight.
+fn prior_mass(chance: &[u64]) -> std::io::Result<u64> {
+    let mass = chance
+        .iter()
+        .try_fold(0u64, |total, &weight| total.checked_add(weight))
+        .ok_or_else(|| std::io::Error::other("prior mass overflows"))?;
+    if mass == 0 {
+        return Err(std::io::Error::other("prior has no weight"));
+    }
+    Ok(mass)
+}
+
+/// Refuse a prior that weights a deal no pair of hands can make: no tree
+/// covers it, so its missing root would read as a leaf.
+fn check_feasible(chance: &[u64]) -> std::io::Result<()> {
+    let hands = canonical();
+    if let Some(pair) = (0..chance.len())
+        .find(|&pair| chance[pair] != 0 && !feasible(&hands[pair / 1820], &hands[pair % 1820]))
+    {
+        return Err(std::io::Error::other(format!(
+            "prior weights an impossible deal: Pone hand {}, Dealer hand {}",
+            pair / 1820,
+            pair % 1820
+        )));
+    }
+    Ok(())
+}
+
+/// Refuse a policy that is not a rounded policy for `menus`: one value per
+/// action, and exactly `POLICY_UNITS` units in every menu.
+fn check_policy(menus: &Menus, policy: &[u16]) -> std::io::Result<()> {
+    if policy.len() as u64 != menus.actions {
+        return Err(std::io::Error::other(format!(
+            "policy has {} actions, the menus have {}",
+            policy.len(),
+            menus.actions
+        )));
+    }
+    for menu in 0..menus.len() {
+        let off = menus.offset[menu] as usize;
+        let units: u32 = policy[off..off + usize::from(menus.width[menu])]
+            .iter()
+            .map(|&units| u32::from(units))
+            .sum();
+        if units != POLICY_UNITS {
+            return Err(std::io::Error::other(format!(
+                "policy menu {menu} holds {units} units, not {POLICY_UNITS}"
+            )));
+        }
+    }
+    Ok(())
+}
+
+/// Compute the support bits for the `--policy`/`--prior` pairs, matched in
+/// the order given, and write `support.bin`: one byte per menu, with bit `k`
+/// set when the menu is reached with positive weight under prior `k` while
+/// the opponent follows policy `k`.
+fn support(options: &Options) -> std::io::Result<()> {
+    if options.policies.is_empty() || options.policies.len() != options.priors.len() {
+        return Err(std::io::Error::other(
+            "support needs matching --policy and --prior pairs",
+        ));
+    }
+    if options.policies.len() > 8 {
+        return Err(std::io::Error::other(
+            "support takes at most eight --policy and --prior pairs",
+        ));
+    }
+    let policies = options
+        .policies
+        .iter()
+        .map(|path| {
+            let bytes = std::fs::read(path)?;
+            let (words, rest) = bytes.as_chunks::<2>();
+            if !rest.is_empty() {
+                return Err(std::io::Error::other("policy must be little-endian u16"));
+            }
+            Ok(words
+                .iter()
+                .map(|&chunk| u16::from_le_bytes(chunk))
+                .collect())
+        })
+        .collect::<std::io::Result<Vec<Vec<u16>>>>()?;
+    let priors = options
+        .priors
+        .iter()
+        .map(|path| {
+            let prior = read_prior(&std::fs::read(path)?)?;
+            prior_mass(&prior)?;
+            check_feasible(&prior)?;
+            Ok(prior)
+        })
+        .collect::<std::io::Result<Vec<_>>>()?;
+    let menus = Menus::load(&options.output)?;
+    for policy in &policies {
+        check_policy(&menus, policy)?;
+    }
+    let pairs: Vec<Pair> = policies
+        .iter()
+        .zip(&priors)
+        .map(|(policy, prior)| Pair { policy, prior })
+        .collect();
+    // A missing tree file is an I/O error, reported as one, not a panic.
+    for pone_hand in 0..1820 {
+        let path = options
+            .output
+            .join("trees")
+            .join(format!("{pone_hand}.bin"));
+        if !std::fs::metadata(&path)?.is_file() {
+            return Err(std::io::Error::other(format!(
+                "{} is not a file",
+                path.display()
+            )));
+        }
+    }
+    let flags = cfr_inputs::support::support(&menus, &TreeFiles(&options.output), &pairs);
+    driver::write_atomic(&options.output.join("support.bin"), &flags)
+}
+
 /// Run or resume the CFR+ solve on one prior. Before any work it rejects a
 /// prior with no weight, one whose total weight exceeds what the certificate's
 /// exact arithmetic can carry, and one that weights a deal no tree covers.
@@ -138,29 +264,13 @@ fn solve(options: &Options) -> std::io::Result<ExitCode> {
     };
     let bytes = std::fs::read(path)?;
     let chance = read_prior(&bytes)?;
-    let mass = chance
-        .iter()
-        .try_fold(0u64, |total, &weight| total.checked_add(weight))
-        .ok_or_else(|| std::io::Error::other("prior mass overflows"))?;
-    if mass == 0 {
-        return Err(std::io::Error::other("prior has no weight"));
-    }
+    let mass = prior_mass(&chance)?;
     if mass > MASS_LIMIT {
         return Err(std::io::Error::other(format!(
             "prior mass {mass} exceeds the certificate's limit {MASS_LIMIT}"
         )));
     }
-    // A weighted deal with no tree would read its missing root as a leaf.
-    let hands = canonical();
-    if let Some(pair) = (0..chance.len())
-        .find(|&pair| chance[pair] != 0 && !feasible(&hands[pair / 1820], &hands[pair % 1820]))
-    {
-        return Err(std::io::Error::other(format!(
-            "prior weights an impossible deal: Pone hand {}, Dealer hand {}",
-            pair / 1820,
-            pair % 1820
-        )));
-    }
+    check_feasible(&chance)?;
     let menus = Menus::load(&options.output)?;
     let game = Game::new(&menus, &chance);
     let menus_digest = driver::folder_sha256(&options.output.join("menus"), FILES)?;
@@ -215,6 +325,7 @@ fn run(options: &Options) -> std::io::Result<()> {
                 driver::write_atomic(&dir.join(format!("{pone_hand}.bin")), &bytes)
             })
         }
+        "support" => support(options),
         "digests" => {
             println!("{}", digests(&options.output)?);
             Ok(())
