@@ -66,8 +66,9 @@ runs:
           --output cfr-work --prior cfr-prior/prior.bin \
           --evidence cfr-evidence --status-file "$GITHUB_OUTPUT" \
           --job "$JOB_NAME" --stop-at "$CFR_STOP_AT"
-    # The checkpoint and the certified policies, without the inputs the
-    # next job rebuilds (menus, trees, offsets: about 9 GB).
+    # The checkpoint and certificates, without the inputs the next job
+    # rebuilds (menus, trees, offsets: about 9 GB) or the certified policies
+    # (about 183 MB each), which a resume never reads.
     - name: Preserve the paused solve state
       if: steps.solve.outputs.status == 'paused'
       uses: actions/upload-artifact@v7
@@ -78,6 +79,7 @@ runs:
           !cfr-work/menus/**
           !cfr-work/trees/**
           !cfr-work/offsets.bin
+          !cfr-work/policy-*.bin
         if-no-files-found: error
         retention-days: 30
         compression-level: 1

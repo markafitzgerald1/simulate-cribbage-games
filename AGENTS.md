@@ -740,7 +740,8 @@ because the binary checks it only between iterations and a certificate can
 follow the last one; the second job resumes from the uploaded checkpoint, and a
 second pause fails the run rather than chaining further jobs without approval.
 The paused-state upload excludes the roughly 9 GB of menus, trees and offsets,
-which each job rebuilds in minutes rather than storing them as an artifact.
+which each job rebuilds in minutes rather than storing them as an artifact, and
+the per-certificate `policy-N.bin` files, which a resume never reads.
 `scripts/run_cfr_inputs.py` holds the job logic so it can be tested against a
 fake binary. `scripts/run_cfr_inputs.py build-inputs` rebuilds and digest-checks
 only the menus and offsets, for a job that needs them without a solve, such as

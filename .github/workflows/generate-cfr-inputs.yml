@@ -48,7 +48,9 @@ jobs:
       - name: Bootstrap the tally shelf
         run: python -c "import shelve; shelve.open('start_of_hand_position_results_tallies_shelf', flag='c').close()"
       - name: Refine the discard population
-        run: python -u artifact_pipeline/cfr_prior.py population --output cfr-prior/population.json
+        run: |
+          mkdir -p cfr-prior
+          python -u artifact_pipeline/cfr_prior.py population --output cfr-prior/population.json
       - name: Build the mixture prior
         run: |
           python -u artifact_pipeline/cfr_prior.py prior \
@@ -102,6 +104,10 @@ jobs:
         with:
           name: cfr-solve-state-first
           path: cfr-work
+      # Without the checkpoint the solve would start again from iteration
+      # zero, so a missing or empty restore stops the job here.
+      - name: Require the restored checkpoint
+        run: test -s cfr-work/checkpoint.json
       - id: solve-job
         uses: ./.github/actions/cfr-solve-job
         with:

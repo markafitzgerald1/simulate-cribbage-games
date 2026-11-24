@@ -30,7 +30,10 @@ if command in ("menus", "trees"):
 elif command == "offsets":
     (output / "offsets.bin").write_bytes(b"offsets")
 elif command == "digests":
-    built = {name: pinned[name] for name in ("menus", "trees", "offsets")}
+    # Like the binary, report only the outputs present.
+    present = {"menus": output / "menus", "trees": output / "trees",
+               "offsets": output / "offsets.bin"}
+    built = {name: pinned[name] for name, path in present.items() if path.exists()}
     built.update(json.loads(os.environ.get("DIGEST_OVERRIDE", "{}")))
     print(json.dumps(built))
     print(json.dumps({"command": "digests", "seconds": 0.5}))
