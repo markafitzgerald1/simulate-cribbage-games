@@ -55,7 +55,10 @@ updates:
       # prompts a periodic compatibility re-check. Blocked by the latest
       # eslint-plugin-react peer range (^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9.7).
       - dependency-name: "eslint"
-        versions: [">=10.0.0 <=10.13.0"]
+        versions: [">=10.0.0 <=10.15.0"]
+      # @eslint/js 10 requires ESLint 10 as a peer, so it waits with it.
+      - dependency-name: "@eslint/js"
+        versions: [">=10.0.0 <=10.0.1"]
       # Bounded to the current release (not >=18) so the ignore ages out and
       # prompts a periodic compatibility re-check. react-helmet depends on
       # react-side-effect, which excludes React 19; retirement is #103/#129.
