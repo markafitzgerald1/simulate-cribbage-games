@@ -5,6 +5,7 @@ import hashlib
 import io
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -55,7 +56,9 @@ else:
 """
 
 
-class SolveJobTest(unittest.TestCase):
+class JobFixture(unittest.TestCase):
+    """A fake binary, its files, and a job built over them."""
+
     def setUp(self) -> None:
         folder = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
         self.addCleanup(folder.cleanup)
@@ -99,6 +102,17 @@ class SolveJobTest(unittest.TestCase):
         path = self.evidence / "summary-first.json"
         return json.loads(path.read_text(encoding="utf-8"))
 
+    def build_arguments(self) -> list[str]:
+        return [
+            "build-inputs",
+            "--binary",
+            str(self.binary),
+            "--output",
+            str(self.output),
+        ]
+
+
+class SolveJobTest(JobFixture):
     def test_converged_job_writes_support_and_digests_every_output(self) -> None:
         with mock.patch.dict("os.environ", self.environment), mock.patch("sys.stdout"):
             self.assertEqual(run_cfr_inputs.main(self.arguments(time.time() + 900)), 0)
@@ -210,15 +224,6 @@ class SolveJobTest(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, "digest record"):
                     job.digests()
 
-    def build_arguments(self) -> list[str]:
-        return [
-            "build-inputs",
-            "--binary",
-            str(self.binary),
-            "--output",
-            str(self.output),
-        ]
-
     def test_build_inputs_builds_and_checks_menus_and_offsets_only(self) -> None:
         # Catches building the 7.7 GB trees, or skipping the digest check,
         # in the step the measurement bundle uses.
@@ -250,6 +255,95 @@ class SolveJobTest(unittest.TestCase):
     def test_a_command_is_required(self) -> None:
         with mock.patch("sys.stderr"), self.assertRaises(SystemExit):
             run_cfr_inputs.parse_args(["--binary", "x", "--output", "y"])
+
+
+class ProgressTest(JobFixture):
+    """What a running job writes to the Actions log."""
+
+    def test_a_running_step_logs_its_start_progress_and_end(self) -> None:
+        # Catches a heartbeat that never starts, a solve line that drops the
+        # newest certificate, and a missing start or end line: each leaves
+        # a silent Actions log for a step that can run for hours.
+        def slow_solve(command):
+            (self.output / "curve.jsonl").write_text(
+                '{"iteration":6,"seconds":9.5}\n{"iteration":7,"seconds":9.8}\n'
+            )
+            for iteration, exposure in ((128, 0.01), (1024, 0.0042)):
+                (self.output / f"certificate-{iteration}.json").write_text(
+                    json.dumps({"iteration": iteration, "exposure": exposure})
+                )
+            time.sleep(0.5)
+            return subprocess.CompletedProcess(command, 3, stdout="")
+
+        job = self.job()
+        job.arguments.heartbeat_seconds = 0.05
+        job.runner = slow_solve
+        logged = io.StringIO()
+        with mock.patch("sys.stderr", logged):
+            job.step("solve", "--prior", str(self.prior))
+        lines = logged.getvalue().splitlines()
+        self.assertRegex(lines[0], "solve: started$")
+        self.assertRegex(lines[-1], "solve: exit 3 after ")
+        beats = [line for line in lines if "solve: still running" in line]
+        self.assertGreaterEqual(len(beats), 2)
+        self.assertRegex(beats[-1], re.escape("iteration 7 took 9.8 s"))
+        self.assertRegex(
+            beats[-1], re.escape("certificate at iteration 1024: exposure 0.0042")
+        )
+        self.assertRegex(beats[-1], "until it pauses")
+
+    def test_progress_reads_partial_files_without_failing(self) -> None:
+        # Catches treating a line the solver is still appending, or an empty
+        # certificate it is still writing, as an error.
+        self.output.mkdir(parents=True, exist_ok=True)
+        self.assertEqual(
+            run_cfr_inputs.solve_progress(self.output), "no iteration finished yet"
+        )
+        (self.output / "curve.jsonl").write_text(
+            '{"iteration":3,"seconds":1.5}\n[]\n{"seconds'
+        )
+        (self.output / "certificate-1.json").write_text("")
+        self.assertEqual(
+            run_cfr_inputs.solve_progress(self.output), "iteration 3 took 1.5 s"
+        )
+
+    def test_a_failed_progress_read_never_stops_the_step(self) -> None:
+        # Catches letting a heartbeat's error end the thread silently or
+        # propagate: the step must still finish and say why progress is gone.
+        def unreadable() -> str:
+            raise OSError("gone")
+
+        logged = io.StringIO()
+        with mock.patch("sys.stderr", logged):
+            with run_cfr_inputs.Heartbeat(unreadable, 0.02):
+                time.sleep(0.2)
+        self.assertGreaterEqual(logged.getvalue().count("progress unavailable"), 2)
+
+    def test_other_steps_report_disk_but_no_solve_progress(self) -> None:
+        job = self.job()
+        self.assertNotRegex(job.describe("trees"), "until it pauses")
+        self.assertRegex(job.describe("trees"), "^trees: still running; ")
+
+    def test_the_heartbeat_interval_must_be_positive(self) -> None:
+        # Catches accepting zero, which would log in a tight loop, or a
+        # value that never compares as positive or finite.
+        for bad in ("0", "-5", "nan", "inf"):
+            with self.subTest(value=bad), mock.patch("sys.stderr"):
+                with self.assertRaises(SystemExit):
+                    run_cfr_inputs.parse_args(
+                        self.build_arguments() + ["--heartbeat-seconds", bad]
+                    )
+        parsed = run_cfr_inputs.parse_args(self.build_arguments())
+        self.assertEqual(parsed.heartbeat_seconds, run_cfr_inputs.HEARTBEAT_SECONDS)
+        parsed = run_cfr_inputs.parse_args(
+            self.build_arguments() + ["--heartbeat-seconds", "30"]
+        )
+        self.assertEqual(parsed.heartbeat_seconds, 30.0)
+
+    def test_durations_read_as_hours_or_minutes(self) -> None:
+        self.assertEqual(run_cfr_inputs.duration(3725.0), "1h02m")
+        self.assertEqual(run_cfr_inputs.duration(65.0), "1m05s")
+        self.assertEqual(run_cfr_inputs.duration(-3.0), "0m00s")
 
 
 if __name__ == "__main__":
