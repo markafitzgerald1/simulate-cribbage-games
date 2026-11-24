@@ -25,6 +25,7 @@
     "tobytes",
     "pointwise",
     "Bareiss",
+    "CDPATH",
     "Colvert",
     "Hessel",
     "Rasmussen",

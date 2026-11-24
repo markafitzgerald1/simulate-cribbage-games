@@ -48,6 +48,132 @@ class TestWorkflowGates(unittest.TestCase):
         )
 
 
+class TestRustCiRunsEveryTest(unittest.TestCase):
+    """Slow Rust tests are #[ignore]d locally; CI must still run them."""
+
+    def test_rust_test_and_coverage_steps_include_ignored_tests(self) -> None:
+        # Catches dropping --include-ignored from either step, which would
+        # silently skip the slow tests everywhere.
+        with open(WORKFLOW_PATH, encoding="utf-8") as f:
+            steps = yaml.safe_load(f)["jobs"]["rust-cfr-inputs"]["steps"]
+        commands = {step.get("name"): step.get("run", "") for step in steps}
+        # The exact commands, so a narrowing option (such as `--lib`, which
+        # skips the integration tests where every slow test lives) or a flag
+        # hidden in a comment fails too, and neither step may be skipped or
+        # allowed to fail.
+        self.assertEqual(
+            shlex.split(commands["Test"], comments=True),
+            ["cargo", "test", "--locked", "--release", "--", "--include-ignored"],
+        )
+        self.assertEqual(
+            shlex.split(commands["Check 100% line coverage"], comments=True),
+            [
+                "cargo",
+                "llvm-cov",
+                "--locked",
+                "--release",
+                "--fail-under-lines",
+                "100",
+                "--show-missing-lines",
+                "--",
+                "--include-ignored",
+            ],
+        )
+        for step in steps:
+            if step.get("name") in ("Test", "Check 100% line coverage"):
+                self.assertNotIn("if", step)
+                self.assertNotIn("continue-on-error", step)
+                # A custom shell (such as `bash -n {0}`) could parse the
+                # command without running it.
+                self.assertNotIn("shell", step)
+        with open(WORKFLOW_PATH, encoding="utf-8") as f:
+            workflow = yaml.safe_load(f)
+        job = workflow["jobs"]["rust-cfr-inputs"]
+        self.assertNotIn("continue-on-error", job)
+        for scope in (workflow, job):
+            self.assertNotIn("shell", scope.get("defaults", {}).get("run", {}))
+
+
+class TestRustHooks(unittest.TestCase):
+    """The local Rust hooks run at their stated stages, on the right package."""
+
+    def test_hooks_run_at_their_stages(self) -> None:
+        # Catches rust-fmt, or any hook without its own stages, running on
+        # push as well as on commit, and clippy or the fast tests moving to
+        # commit, where they would slow every commit.
+        with open(REPO_ROOT / ".pre-commit-config.yaml", encoding="utf-8") as f:
+            config = yaml.safe_load(f)
+        repos = config["repos"]
+        self.assertEqual(
+            config["default_install_hook_types"], ["pre-commit", "pre-push"]
+        )
+        self.assertEqual(config["default_stages"], ["pre-commit"])
+        # These four upstream hooks name push in their own manifest, so they
+        # must be scoped here or they would run on push too.
+        upstream = {
+            hook["id"]: hook.get("stages")
+            for repo in repos
+            for hook in repo["hooks"]
+            if hook["id"]
+            in (
+                "check-shebang-scripts-are-executable",
+                "destroyed-symlinks",
+                "end-of-file-fixer",
+                "trailing-whitespace",
+            )
+        }
+        self.assertEqual(upstream, dict.fromkeys(upstream, ["pre-commit", "manual"]))
+        self.assertEqual(len(upstream), 4)
+        stages = {
+            hook["id"]: hook.get("stages")
+            for repo in repos
+            for hook in repo["hooks"]
+            if hook["id"].startswith("rust-")
+        }
+        self.assertEqual(
+            stages,
+            {
+                "rust-fmt": ["pre-commit"],
+                "rust-clippy": ["pre-push"],
+                "rust-fast-tests": ["pre-push"],
+            },
+        )
+
+    @unittest.skipIf(os.name == "nt", "the hook wrapper is a POSIX shell script")
+    def test_cargo_hook_ignores_cdpath(self) -> None:
+        # Catches the wrapper's `cd` following an exported CDPATH into a
+        # same-named folder in another checkout. A stand-in `cargo` on PATH
+        # prints the folder it runs in.
+        with tempfile.TemporaryDirectory() as folder:
+            other = Path(folder) / "other"
+            (other / "scripts").mkdir(parents=True)
+            (other / "native" / "cfr").mkdir(parents=True)
+            bin_dir = Path(folder) / "bin"
+            bin_dir.mkdir()
+            fake = bin_dir / "cargo"
+            fake.write_text("#!/bin/sh\npwd -P\n")
+            fake.chmod(0o755)
+            # CARGO_HOME points at the stand-in, so a real Cargo cannot be
+            # picked ahead of it.
+            env = dict(
+                os.environ,
+                CARGO_HOME=folder,
+                CDPATH=str(other),
+                HOME=folder,
+                PATH=os.environ["PATH"],
+            )
+            result = subprocess.run(
+                ["scripts/cargo_hook.sh", "--version"],
+                cwd=REPO_ROOT,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        expected = (REPO_ROOT / "native" / "cfr").resolve()
+        self.assertEqual(result.stdout.strip().splitlines()[-1], str(expected))
+
+
 class TestPlayReleaseWorkflow(unittest.TestCase):
     """Production enforces the gate and the release notes state its outcome."""
 
