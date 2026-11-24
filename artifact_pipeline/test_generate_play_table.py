@@ -64,6 +64,51 @@ def all_first_four_policy():
     return DiscardPolicy(mapping)
 
 
+class TestPinnedSampleStream(unittest.TestCase):
+    """Guard the v3 seed schedule shared by scheduled and fixed-policy runs."""
+
+    def setUp(self):
+        self.discard_policy = all_first_four_policy()
+        self.play_policies = {PONE: FirstPolicy(), DEALER: FirstPolicy()}
+
+    def test_seeded_sample_stream_matches_pinned_values(self):
+        # Values recorded from the pre-refactor sampling loop on main 1641b8f
+        # (n, delta mu, target-seat mu); they pin seeds and both stopping rules.
+        cases = [
+            (
+                {"samples": 8},
+                {
+                    ("5_5_T_K", PONE): (8, 5.551115123125783e-17, 1.875),
+                    ("5_5_T_K", DEALER): (8, 0.37499999999999994, 2.625),
+                    ("A_2_3_4", PONE): (8, -0.125, 3.125),
+                    ("A_2_3_4", DEALER): (8, 2.625, 3.125),
+                },
+            ),
+            (
+                {"samples": 3, "target_standard_error": 0.9, "max_samples": 12},
+                {
+                    ("5_5_T_K", PONE): (10, 0.10000000000000006, 2.1),
+                    ("5_5_T_K", DEALER): (11, 0.09090909090909086, 2.3636363636363638),
+                    ("A_2_3_4", PONE): (12, -5.551115123125783e-17, 3.8333333333333335),
+                    ("A_2_3_4", DEALER): (12, 2.6666666666666665, 3.3333333333333335),
+                },
+            ),
+        ]
+        for options, expected in cases:
+            table = generate_play_table(
+                self.discard_policy,
+                self.play_policies,
+                seed=7,
+                hands=[(0, 1, 2, 3), (4, 4, 9, 12)],
+                **options,
+            )
+            for (key, role), (n, delta, seat) in expected.items():
+                entry = table[key][role]
+                self.assertEqual(entry["n"], n)
+                self.assertAlmostEqual(entry["mu"], delta, places=12)
+                self.assertAlmostEqual(entry["players"][role]["mu"], seat, places=12)
+
+
 class TestGeneratePlayTable(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

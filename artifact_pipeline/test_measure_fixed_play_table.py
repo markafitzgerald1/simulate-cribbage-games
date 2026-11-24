@@ -1,6 +1,8 @@
 """Real v3 measurements, exact tiny models, CLI exports and provenance guards."""
 
+from contextlib import redirect_stderr
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -225,6 +227,16 @@ class TestFixedMeasurement(unittest.TestCase):
         self.assertAlmostEqual(pone["se"], (0.25 / 999) ** 0.5)
         self.assertEqual(table["A_A_2_9"]["Dealer"]["mu"], 3)
 
+    def assert_refuses_alias(self, args):
+        """Re-pin the edited manifest so only the alias check can refuse."""
+        digest = hashlib.sha256(self.path.read_bytes()).hexdigest()
+        stderr = io.StringIO()
+        with patch(
+            "sys.argv", args + ["--policy-manifest-sha256", digest]
+        ), redirect_stderr(stderr), self.assertRaises(SystemExit):
+            main()
+        self.assertRegex(stderr.getvalue(), "must not alias fixed policy inputs")
+
     def test_cli_exports_real_pair_and_refuses_aliases(self):
         paths = [
             self.root / name
@@ -234,6 +246,8 @@ class TestFixedMeasurement(unittest.TestCase):
             "measure",
             "--policy-manifest",
             str(self.path),
+            "--policy-manifest-sha256",
+            hashlib.sha256(self.path.read_bytes()).hexdigest(),
             "--samples",
             "2",
             "--hand-limit",
@@ -266,8 +280,7 @@ class TestFixedMeasurement(unittest.TestCase):
         (self.root / original).rename(self.root / staged)
         document["probabilities"]["file"] = staged
         self.path.write_text(json.dumps(document))
-        with patch("sys.argv", args), self.assertRaises(SystemExit):
-            main()
+        self.assert_refuses_alias(args)
         self.assertTrue((self.root / staged).exists())
         # A symlinked output still stages beside the link, not its target.
         target = self.root / "real"
@@ -278,10 +291,7 @@ class TestFixedMeasurement(unittest.TestCase):
         (self.root / staged).rename(self.root / linked_stage)
         document["probabilities"]["file"] = linked_stage
         self.path.write_text(json.dumps(document))
-        with patch("sys.argv", args + ["--output", str(link)]), self.assertRaises(
-            SystemExit
-        ):
-            main()
+        self.assert_refuses_alias(args + ["--output", str(link)])
         self.assertTrue((self.root / linked_stage).exists())
         staged = linked_stage
         (self.root / staged).rename(self.root / original)
@@ -291,11 +301,13 @@ class TestFixedMeasurement(unittest.TestCase):
             "measure",
             "--policy-manifest",
             str(self.path),
+            "--policy-manifest-sha256",
+            hashlib.sha256(self.path.read_bytes()).hexdigest(),
             "--promotion-gate",
             "off",
         ]
         with patch("sys.argv", args_no_limit), patch(
-            "artifact_pipeline.measure_fixed_play_table.measure_fixed_table",
+            "artifact_pipeline.measure_fixed_play_table.measure_fixed_parallel",
             return_value={},
         ):
             with patch("artifact_pipeline.measure_fixed_play_table._write_json"), patch(
