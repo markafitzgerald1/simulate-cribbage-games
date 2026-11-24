@@ -6,7 +6,9 @@ downloads that run's artifacts rather than solving again, so before bundling
 it checks two things:
 
 `source-run`: the run, as the Actions API describes it, is a successful
-manual run of the CFR input workflow on this repository's main branch.
+manual run of the CFR input workflow on this repository's main branch, on its
+first attempt. A re-run skips every job of that workflow yet can still report
+success, while its artifacts are those of the attempt before it.
 
 `sources`: the downloaded files are the ones that run produced. The converged
 job's evidence summary records the SHA-256 of `policy.bin`, `support.bin` and
@@ -40,6 +42,7 @@ def check_source_run(run: Mapping[str, Any], repository: str) -> None:
         "head_branch": "main",
         "status": "completed",
         "conclusion": "success",
+        "run_attempt": 1,
     }
     for key, value in expected.items():
         if run.get(key) != value:

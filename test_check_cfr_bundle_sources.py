@@ -24,6 +24,7 @@ def good_run() -> dict:
         "head_branch": "main",
         "status": "completed",
         "conclusion": "success",
+        "run_attempt": 1,
         "repository": {"full_name": REPOSITORY},
     }
 
@@ -35,13 +36,15 @@ class SourceRunTest(unittest.TestCase):
     def test_each_other_kind_of_run_is_refused(self) -> None:
         # Catches dropping any one condition: another workflow's run, a
         # scheduled or pushed run, a branch, an unfinished, failed or
-        # cancelled run, or one from a fork, each alone must be refused.
+        # cancelled run, a re-run (whose jobs all skip, yet which can report
+        # success), or one from a fork, each alone must be refused.
         changes = {
             "path": ".github/workflows/generate-play-artifact.yml",
             "event": "push",
             "head_branch": "feature",
             "status": "in_progress",
             "conclusion": "failure",
+            "run_attempt": 2,
             "repository": {"full_name": "someone/simulate-cribbage-games"},
         }
         for key, value in changes.items():

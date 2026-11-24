@@ -7,7 +7,8 @@ name: Bundle CFR inputs
 # It checks that the source run is a successful manual run of that workflow
 # on main, downloads its prior and converged outputs, rebuilds the menus and
 # offsets (which no prior can change) against their pinned digests, matches
-# the downloaded files to the SHA-256 the run recorded, and bundles them. The
+# the downloaded files to the SHA-256 the run recorded, rebuilds the prior from
+# the downloaded population to tie that population to it, and bundles them. The
 # artifact `fixed-play-policy-inputs` and the printed policy_manifest_sha256
 # are what examples/fixed-play-inputs.json pins, together with this run's id.
 
@@ -107,6 +108,14 @@ jobs:
           python -m scripts.check_cfr_bundle_sources sources \
             --work cfr-work --prior-dir cfr-prior --evidence cfr-evidence \
             | tee -a "$GITHUB_STEP_SUMMARY"
+      # The population is not in the solve's evidence, so rebuild the prior
+      # from it: the prior is checked above, and only that population yields
+      # those bytes.
+      - name: Rebuild the prior from the population
+        run: |
+          python -u artifact_pipeline/cfr_prior.py prior \
+            --population cfr-prior/population.json --output rebuilt-prior.bin
+          cmp rebuilt-prior.bin cfr-prior/prior.bin
       - name: Bundle the measurement inputs
         env:
           SOURCE_RUN_ID: ${{ inputs.source_run_id }}

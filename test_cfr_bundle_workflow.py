@@ -109,6 +109,49 @@ class CfrBundleWorkflowTest(unittest.TestCase):
             self.assertNotIn("continue-on-error", step)
         self.assertNotIn("continue-on-error", self.job)
 
+    def test_the_source_run_is_checked_before_any_download(self) -> None:
+        # Catches a source check that only echoes its command, or that runs
+        # after something has been downloaded from an unchecked run.
+        check = self.names.index("Check the source run")
+        for index, step in enumerate(self.steps):
+            if step.get("uses", "").startswith("actions/download-artifact"):
+                self.assertLess(check, index, self.names[index])
+        lines = (
+            self.step("Check the source run")["run"].replace("\\\n", " ").splitlines()
+        )
+        self.assertEqual(
+            [shlex.split(line)[:4] for line in lines],
+            [
+                [
+                    "gh",
+                    "api",
+                    "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID",
+                    ">",
+                ],
+                ["python", "-m", "scripts.check_cfr_bundle_sources", "source-run"],
+            ],
+        )
+
+    def test_the_prior_is_rebuilt_from_the_population(self) -> None:
+        # Catches skipping the rebuild or the comparison: the population is
+        # not in the solve's evidence, and only this ties it to the prior.
+        names = self.names
+        rebuild = names.index("Rebuild the prior from the population")
+        self.assertLess(
+            names.index("Match the downloads to the source run's evidence"), rebuild
+        )
+        self.assertLess(rebuild, names.index("Bundle the measurement inputs"))
+        lines = self.steps[rebuild]["run"].replace("\\\n", " ").splitlines()
+        build, compare = (shlex.split(line) for line in lines)
+        self.assertEqual(
+            build[:4], ["python", "-u", "artifact_pipeline/cfr_prior.py", "prior"]
+        )
+        self.assertEqual(
+            build[build.index("--population") + 1], "cfr-prior/population.json"
+        )
+        self.assertEqual(build[build.index("--output") + 1], "rebuilt-prior.bin")
+        self.assertEqual(compare, ["cmp", "rebuilt-prior.bin", "cfr-prior/prior.bin"])
+
     def test_the_checks_run_the_real_commands(self) -> None:
         # Catches a check that only echoes its command, or checks the wrong
         # folder, so nothing would stop a mismatched bundle.
