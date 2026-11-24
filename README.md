@@ -60,7 +60,8 @@ Mozilla Public License 2.0. See `LICENSE` for details.
   `python -c "import shelve; shelve.open('start_of_hand_position_results_tallies_shelf', flag='c').close()"`.
   This creates an empty shelf so simulations can run; the optional build step
   below later fills it with meaningful data.
-- Run pre-commit hooks: `pre-commit run --all-files`
+- Run pre-commit hooks: `pre-commit run --all-files` (the Rust hooks need the
+  toolchain from `native/cfr/README.md`)
 - Check for type errors: `mypy simulate_cribbage_games.py`
 - Run unit tests, generate machine parseable test coverage info (can be used in the Visual Studio Code Coverage Gutters extension, for example) and ensure that the unit test code coverage percentage has not decreased: `coverage run && coverage xml && coverage report`
 - Run exact analytical artifact-pipeline integration tests when changing

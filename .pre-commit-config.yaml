@@ -2,6 +2,10 @@
 # See https://pre-commit.com/hooks.html for more hooks
 # Plain `pre-commit install` installs both, so the push-stage gates run.
 default_install_hook_types: [pre-commit, pre-push]
+# Installing the pre-push hook would otherwise run every hook without its
+# own `stages` on push as well as on commit. Four upstream hooks set their own
+# (commit, push and manual) in their manifest, so they are scoped below.
+default_stages: [pre-commit]
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -10,12 +14,16 @@ repos:
       - id: check-docstring-first
       - id: check-merge-conflict
       - id: check-shebang-scripts-are-executable
+        stages: [pre-commit, manual]
       - id: check-yaml
       - id: destroyed-symlinks
+        stages: [pre-commit, manual]
       - id: end-of-file-fixer
+        stages: [pre-commit, manual]
       - id: mixed-line-ending
       - id: requirements-txt-fixer
       - id: trailing-whitespace
+        stages: [pre-commit, manual]
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: "v1.13.0"
     hooks:
@@ -88,6 +96,7 @@ repos:
         language: system
         pass_filenames: false
         files: ^native/cfr/
+        stages: [pre-commit]
       - id: rust-clippy
         name: rust-clippy
         entry: scripts/cargo_hook.sh clippy --locked --release --all-targets -- -D warnings

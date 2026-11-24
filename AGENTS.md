@@ -374,12 +374,17 @@ skips them, so CI passes `--include-ignored` to both the test and coverage
 steps, and `test_workflow_gates.py` fails if either flag goes. Local pre-commit
 hooks run only when `native/cfr/` changes: `cargo fmt --check` on commit, and
 clippy plus the fast tests (about 4 seconds of tests) on push, through
-`scripts/cargo_hook.sh`, which adds `~/.cargo/bin` to `PATH` because a hook's
-environment may lack it. A hook's `stages` only chooses when it runs; it does
-not install the Git hook. `default_install_hook_types` in
+`scripts/cargo_hook.sh`, which adds `$CARGO_HOME/bin` (by default
+`~/.cargo/bin`) to `PATH` because a hook's environment may lack it, and
+ignores an exported `CDPATH`. A hook's `stages` only chooses when it runs; it
+does not install the Git hook. `default_install_hook_types` in
 `.pre-commit-config.yaml` makes plain `pre-commit install` install the pre-push
 hook too, without which every push-stage gate silently never ran on a fresh
-clone. The Rust pegging rules are checked against the published Python engine
+clone. Installing the pre-push hook also runs every hook without its own
+`stages` on push, so `default_stages: [pre-commit]` keeps them on commit, and
+upstream hooks whose own manifest names push (four from `pre-commit-hooks`)
+are scoped in the config; `test_workflow_gates.py` checks both. The Rust
+pegging rules are checked against the published Python engine
 through `native/cfr/tests/pegging_golden.txt`: after any change to the Python
 pegging rules, regenerate it with `python artifact_pipeline/pegging_golden.py`
 (its test fails until you do), and the Rust test `tests/rules.rs` must still
