@@ -1,0 +1,128 @@
+name: Bundle CFR inputs
+
+# Issue #203: bundle the outputs of one earlier "Generate CFR inputs" run into
+# the fixed-policy measurement's input artifact, without solving again. Manual
+# only, from main, once per dispatch; nothing here publishes a release.
+#
+# It checks that the source run is a successful manual run of that workflow
+# on main, downloads its prior and converged outputs, rebuilds the menus and
+# offsets (which no prior can change) against their pinned digests, matches
+# the downloaded files to the SHA-256 the run recorded, and bundles them. The
+# artifact `fixed-play-policy-inputs` and the printed policy_manifest_sha256
+# are what examples/fixed-play-inputs.json pins, together with this run's id.
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Id of the successful Generate CFR inputs run to bundle
+        required: true
+        type: string
+      approval:
+        description: Enter bundle to confirm the approved run
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: cfr-bundle
+  cancel-in-progress: false
+
+# A named bash fails a pipeline on any stage, so a failed check piped into
+# tee still fails its step; Actions' bash for an unnamed shell does not.
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  bundle:
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' &&
+      github.run_attempt == 1 && inputs.approval == 'bundle'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      # Expression equality ignores case, so a branch named Main would pass
+      # the job guard; this exact comparison does not.
+      - name: Require main exactly
+        run: '[[ "$GITHUB_REF" == "refs/heads/main" ]]'
+      - name: Require a numeric source run id
+        env:
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+        run: '[[ "$SOURCE_RUN_ID" =~ ^[0-9]+$ ]]'
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+      - name: Install pinned dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Bootstrap the tally shelf
+        run: python -c "import shelve; shelve.open('start_of_hand_position_results_tallies_shelf', flag='c').close()"
+      - name: Check the source run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" > source-run.json
+          python -m scripts.check_cfr_bundle_sources source-run \
+            --run-json source-run.json --repository "$GITHUB_REPOSITORY" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Download the prior
+        uses: actions/download-artifact@v8
+        with:
+          name: cfr-prior
+          path: cfr-prior
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.source_run_id }}
+      - name: Download the converged outputs
+        uses: actions/download-artifact@v8
+        with:
+          name: cfr-inputs
+          path: cfr-work
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.source_run_id }}
+      - name: Download the solve evidence
+        uses: actions/download-artifact@v8
+        with:
+          pattern: cfr-evidence-*
+          merge-multiple: true
+          path: cfr-evidence
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.source_run_id }}
+      - name: Install the pinned Rust toolchain
+        working-directory: native/cfr
+        run: rustup toolchain install
+      - name: Build the release binary
+        working-directory: native/cfr
+        run: cargo build --locked --release
+      - name: Rebuild the menus and offsets against their pins
+        run: |
+          python -u -m scripts.run_cfr_inputs build-inputs \
+            --binary native/cfr/target/release/cfr-inputs --output cfr-work
+      - name: Match the downloads to the source run's evidence
+        run: |
+          python -m scripts.check_cfr_bundle_sources sources \
+            --work cfr-work --prior-dir cfr-prior --evidence cfr-evidence \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Bundle the measurement inputs
+        env:
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          python -u -m artifact_pipeline.bundle_fixed_play_inputs \
+            --work cfr-work --prior-dir cfr-prior --output fixed-play-policy-inputs \
+            | tee bundle.txt
+          {
+            echo "Source run: $SOURCE_RUN_ID"
+            echo "Pin input_run_id: $GITHUB_RUN_ID"
+            grep '^policy_manifest_sha256=' bundle.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve the bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: fixed-play-policy-inputs
+          path: fixed-play-policy-inputs/
+          if-no-files-found: error
+          retention-days: 90
