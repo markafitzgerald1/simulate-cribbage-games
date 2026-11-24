@@ -476,6 +476,10 @@ The population stage runs seeded sampling and takes several minutes. The
 population's bytes repeat on the same interpreter; its refinement report
 carries floating-point shift statistics.
 
+The manual workflow `.github/workflows/generate-cfr-inputs.yml` runs both
+stages and the Rust chain on a hosted runner without publishing anything; see
+`native/cfr/README.md`. Dispatching it needs the maintainer's approval.
+
 ### Expected opponent hand points research
 
 Issue #75's research command compares exact suitless conditional opponent hand
