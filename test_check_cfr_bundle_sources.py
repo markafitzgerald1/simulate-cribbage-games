@@ -192,5 +192,70 @@ class SourcesTest(unittest.TestCase):
         )
 
 
+class PriorLogTest(unittest.TestCase):
+    def setUp(self) -> None:
+        folder = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
+        self.addCleanup(folder.cleanup)
+        self.prior_dir = Path(folder.name)
+        self.digests = {}
+        for name, data in (("population.json", b"population"), ("prior.bin", b"prior")):
+            (self.prior_dir / name).write_bytes(data)
+            self.digests[name] = hashlib.sha256(data).hexdigest()
+
+    def log(self, digests: dict) -> str:
+        # As Actions writes it: the echoed command, then timestamped lines.
+        lines = ['2026-11-24T04:03:59.57Z sha256sum cfr-prior/* | tee -a "$X"']
+        lines += [
+            f"2026-11-24T04:04:11.85Z {digest}  cfr-prior/{name}"
+            for name, digest in digests.items()
+        ]
+        lines.append("2026-11-24T04:04:11.90Z   path: cfr-prior/")
+        return "\n".join(lines) + "\n"
+
+    def test_the_logged_population_and_prior_are_accepted(self) -> None:
+        found = sources.check_prior_log(self.log(self.digests), self.prior_dir)
+        self.assertEqual(found, self.digests)
+
+    def test_a_population_or_prior_unlike_the_log_is_refused(self) -> None:
+        # Catches skipping either comparison: a population that gives the
+        # same prior bytes yet deals other keeps passes every other check.
+        for name in self.digests:
+            with self.subTest(name=name):
+                logged = {**self.digests, name: "0" * 64}
+                with self.assertRaisesRegex(ValueError, name):
+                    sources.check_prior_log(self.log(logged), self.prior_dir)
+
+    def test_a_missing_or_repeated_log_line_is_refused(self) -> None:
+        # Catches trusting a log that does not name the file exactly once.
+        for name in self.digests:
+            with self.subTest(name=name, case="missing"):
+                logged = {
+                    key: value for key, value in self.digests.items() if key != name
+                }
+                with self.assertRaisesRegex(ValueError, f"0 digests for {name}"):
+                    sources.check_prior_log(self.log(logged), self.prior_dir)
+        doubled = self.log(self.digests) + self.log(self.digests)
+        with self.assertRaisesRegex(ValueError, "2 digests"):
+            sources.check_prior_log(doubled, self.prior_dir)
+
+    def test_the_cli_reads_the_log_file(self) -> None:
+        record = self.prior_dir / "prior-job.log"
+        record.write_text(self.log(self.digests))
+        printed = io.StringIO()
+        arguments = [
+            "prior-log",
+            "--log",
+            str(record),
+            "--prior-dir",
+            str(self.prior_dir),
+        ]
+        with mock.patch("sys.stdout", printed):
+            self.assertEqual(sources.main(arguments), 0)
+        self.assertEqual(
+            printed.getvalue().splitlines(),
+            [f"{name} sha256={self.digests[name]}" for name in sorted(self.digests)],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

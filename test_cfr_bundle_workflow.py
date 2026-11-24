@@ -10,6 +10,13 @@ from test_cfr_inputs_workflow import guard_accepts, load, subcommands
 ROOT = Path(__file__).parent
 WORKFLOW = ROOT / ".github/workflows/bundle-cfr-inputs.yml"
 RELEASE_DRAFT = ROOT / "examples/generate-fixed-play-artifact.yml"
+# The lookup must name the source run's one prior job, or fail.
+LOOKUP_PRIOR_JOB = (
+    'job="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/jobs"'
+    ' --jq \'[.jobs[] | select(.name == "prior")] | if length == 1'
+    ' then .[0].id else error("expected one prior job") end\')"'
+)
+
 APPROVED = {
     "github.event_name": "workflow_dispatch",
     "github.ref": "refs/heads/main",
@@ -131,6 +138,30 @@ class CfrBundleWorkflowTest(unittest.TestCase):
                 ["python", "-m", "scripts.check_cfr_bundle_sources", "source-run"],
             ],
         )
+
+    def test_the_population_is_matched_to_the_prior_job_log(self) -> None:
+        # Catches skipping the log check, echoing it, or checking another
+        # job's log: nothing else ties the population to the source run.
+        names = self.names
+        check = names.index("Match the population to the prior job's log")
+        for name in (
+            "Download the prior",
+            "Match the downloads to the source run's evidence",
+        ):
+            self.assertLess(names.index(name), check, name)
+        self.assertLess(check, names.index("Bundle the measurement inputs"))
+        lines = self.steps[check]["run"].replace("\\\n", " ").splitlines()
+        self.assertEqual(lines[0].strip(), LOOKUP_PRIOR_JOB)
+        fetch, verify = (shlex.split(line) for line in lines[1:])
+        self.assertEqual(
+            fetch[:3], ["gh", "api", "repos/$GITHUB_REPOSITORY/actions/jobs/$job/logs"]
+        )
+        self.assertEqual(
+            verify[:4],
+            ["python", "-m", "scripts.check_cfr_bundle_sources", "prior-log"],
+        )
+        self.assertEqual(verify[verify.index("--log") + 1], "prior-job.log")
+        self.assertEqual(verify[verify.index("--prior-dir") + 1], "cfr-prior")
 
     def test_the_prior_is_rebuilt_from_the_population(self) -> None:
         # Catches skipping the rebuild or the comparison: the population is

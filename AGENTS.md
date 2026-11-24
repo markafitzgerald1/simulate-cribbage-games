@@ -783,9 +783,12 @@ pins, and matches the downloaded policy, support and prior to the SHA-256 the
 converged job recorded in its evidence. A re-run attempt of the CFR workflow
 skips every job yet can report success, which is why the attempt is checked.
 The solve's evidence does not record the discard population, so the workflow
-rebuilds the prior from the downloaded population and compares the bytes; the
-prior build is exact integer arithmetic, and a Linux-built prior reproduces
-byte for byte on macOS. Its run id and the printed `policy_manifest_sha256` are what
+matches it to the SHA-256 the run's prior job printed in its log. Rebuilding
+the prior from the population is not enough on its own: two populations that
+swap keeps between hands can give identical prior bytes while changing which
+opponent keeps the measurement deals. The workflow still rebuilds the prior as
+a consistency check; the build is exact integer arithmetic, and a Linux-built
+prior reproduces byte for byte on macOS. Its run id and the printed `policy_manifest_sha256` are what
 `examples/fixed-play-inputs.json` pins. A step that pipes a check into `tee`
 fails with the check only if bash fails a pipeline on any stage, which Actions
 sets up only when a step names its shell, so that workflow names `bash` as

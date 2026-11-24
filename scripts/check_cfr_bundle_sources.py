@@ -16,6 +16,12 @@ job's evidence summary records the SHA-256 of `policy.bin`, `support.bin` and
 first three must match the downloaded files, and the last three must match
 the pins this checkout rebuilds the menus and offsets against.
 
+`prior-log`: the solve's evidence does not record the discard population, but
+the run's prior job logged the SHA-256 of every file it uploaded. The
+downloaded population and prior must match those lines. A prior rebuilt from
+the population is not enough: two populations can yield the same prior bytes
+while changing which opponent keeps the measurement deals.
+
 Nothing here publishes."""
 
 from __future__ import annotations
@@ -24,6 +30,7 @@ import argparse
 from collections.abc import Mapping, Sequence
 import json
 from pathlib import Path
+import re
 import sys
 from typing import Any
 
@@ -32,6 +39,9 @@ from scripts.run_cfr_inputs import PINNED_DIGESTS, sha256_file
 SOURCE_WORKFLOW = ".github/workflows/generate-cfr-inputs.yml"
 SOLVED_FILES = ("policy.bin", "support.bin")
 PRIOR_INDEPENDENT = ("menus", "offsets", "trees")
+PRIOR_FILES = ("population.json", "prior.bin")
+# A `sha256sum cfr-prior/*` line in an Actions log: timestamp, digest, path.
+LOGGED_DIGEST = re.compile(r"^\S+ ([0-9a-f]{64})  cfr-prior/(\S+)$")
 
 
 def check_source_run(run: Mapping[str, Any], repository: str) -> None:
@@ -97,6 +107,29 @@ def check_sources(work: Path, prior_dir: Path, evidence: Path) -> dict[str, str]
     return found
 
 
+def check_prior_log(log: str, prior_dir: Path) -> dict[str, str]:
+    """Match the population and prior to the digests the prior job logged.
+
+    Returns the SHA-256 of each checked file, for the job summary.
+    """
+    logged: dict[str, list[str]] = {}
+    for line in log.splitlines():
+        match = LOGGED_DIGEST.match(line.strip())
+        if match:
+            logged.setdefault(match[2], []).append(match[1])
+    found = {}
+    for name in PRIOR_FILES:
+        digests = logged.get(name, [])
+        if len(digests) != 1:
+            raise ValueError(f"the prior job logged {len(digests)} digests for {name}")
+        found[name] = sha256_file(prior_dir / name)
+        if found[name] != digests[0]:
+            raise ValueError(
+                f"{name} is {found[name]}, but the prior job logged {digests[0]}"
+            )
+    return found
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Parse a source-run check or a downloaded-files check."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -112,6 +145,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     sources.add_argument("--work", type=Path, required=True)
     sources.add_argument("--prior-dir", type=Path, required=True)
     sources.add_argument("--evidence", type=Path, required=True)
+    prior_log = commands.add_parser(
+        "prior-log", help="Check the population and prior against the prior job's log"
+    )
+    prior_log.add_argument("--log", type=Path, required=True)
+    prior_log.add_argument("--prior-dir", type=Path, required=True)
     return parser.parse_args(argv)
 
 
@@ -123,7 +161,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         check_source_run(run, arguments.repository)
         print(f"source run {run.get('id')} at {run.get('head_sha')}: accepted")
     else:
-        found = check_sources(arguments.work, arguments.prior_dir, arguments.evidence)
+        if arguments.command == "prior-log":
+            log = arguments.log.read_text(encoding="utf-8", errors="replace")
+            found = check_prior_log(log, arguments.prior_dir)
+        else:
+            found = check_sources(
+                arguments.work, arguments.prior_dir, arguments.evidence
+            )
         for name, digest in sorted(found.items()):
             print(f"{name} sha256={digest}")
     return 0
