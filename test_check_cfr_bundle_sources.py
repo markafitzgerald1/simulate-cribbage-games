@@ -238,6 +238,14 @@ class PriorLogTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "2 digests"):
             sources.check_prior_log(doubled, self.prior_dir)
 
+    def test_lines_from_elsewhere_in_the_log_are_refused(self) -> None:
+        # Catches accepting a matching line that another step printed, apart
+        # from the one sha256sum listing that names both files together.
+        population = self.log({"population.json": self.digests["population.json"]})
+        prior = self.log({"prior.bin": self.digests["prior.bin"]})
+        with self.assertRaisesRegex(ValueError, "not one sha256sum listing"):
+            sources.check_prior_log(population + prior, self.prior_dir)
+
     def test_the_cli_reads_the_log_file(self) -> None:
         record = self.prior_dir / "prior-job.log"
         record.write_text(self.log(self.digests))

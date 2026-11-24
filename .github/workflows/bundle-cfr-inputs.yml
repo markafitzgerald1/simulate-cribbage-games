@@ -119,7 +119,11 @@ jobs:
           SOURCE_RUN_ID: ${{ inputs.source_run_id }}
         run: |
           job="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/jobs" --jq '[.jobs[] | select(.name == "prior")] | if length == 1 then .[0].id else error("expected one prior job") end')"
-          gh api "repos/$GITHUB_REPOSITORY/actions/jobs/$job/logs" > prior-job.log
+          # curl, not gh: newer gh refuses a log's terminal escape codes.
+          curl --fail --silent --show-error --location \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --output prior-job.log \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/jobs/$job/logs"
           python -m scripts.check_cfr_bundle_sources prior-log \
             --log prior-job.log --prior-dir cfr-prior \
             | tee -a "$GITHUB_STEP_SUMMARY"

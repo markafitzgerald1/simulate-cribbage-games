@@ -18,7 +18,8 @@ the pins this checkout rebuilds the menus and offsets against.
 
 `prior-log`: the solve's evidence does not record the discard population, but
 the run's prior job logged the SHA-256 of every file it uploaded. The
-downloaded population and prior must match those lines. A prior rebuilt from
+downloaded population and prior must match those lines, which must be
+adjacent, as one `sha256sum cfr-prior/*` prints them. A prior rebuilt from
 the population is not enough: two populations can yield the same prior bytes
 while changing which opponent keeps the measurement deals.
 
@@ -112,21 +113,26 @@ def check_prior_log(log: str, prior_dir: Path) -> dict[str, str]:
 
     Returns the SHA-256 of each checked file, for the job summary.
     """
-    logged: dict[str, list[str]] = {}
-    for line in log.splitlines():
+    logged: dict[str, list[tuple[int, str]]] = {}
+    for number, line in enumerate(log.splitlines()):
         match = LOGGED_DIGEST.match(line.strip())
         if match:
-            logged.setdefault(match[2], []).append(match[1])
+            logged.setdefault(match[2], []).append((number, match[1]))
     found = {}
+    numbers = []
     for name in PRIOR_FILES:
-        digests = logged.get(name, [])
-        if len(digests) != 1:
-            raise ValueError(f"the prior job logged {len(digests)} digests for {name}")
+        entries = logged.get(name, [])
+        if len(entries) != 1:
+            raise ValueError(f"the prior job logged {len(entries)} digests for {name}")
+        number, digest = entries[0]
+        numbers.append(number)
         found[name] = sha256_file(prior_dir / name)
-        if found[name] != digests[0]:
+        if found[name] != digest:
             raise ValueError(
-                f"{name} is {found[name]}, but the prior job logged {digests[0]}"
+                f"{name} is {found[name]}, but the prior job logged {digest}"
             )
+    if numbers != list(range(numbers[0], numbers[0] + len(numbers))):
+        raise ValueError("the logged digests are not one sha256sum listing")
     return found
 
 

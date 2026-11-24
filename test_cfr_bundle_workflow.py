@@ -152,9 +152,11 @@ class CfrBundleWorkflowTest(unittest.TestCase):
         self.assertLess(check, names.index("Bundle the measurement inputs"))
         lines = self.steps[check]["run"].replace("\\\n", " ").splitlines()
         self.assertEqual(lines[0].strip(), LOOKUP_PRIOR_JOB)
-        fetch, verify = (shlex.split(line) for line in lines[1:])
+        fetch, verify = (shlex.split(line) for line in lines[2:])
+        self.assertEqual(fetch[:2], ["curl", "--fail"])
+        self.assertEqual(fetch[fetch.index("--output") + 1], "prior-job.log")
         self.assertEqual(
-            fetch[:3], ["gh", "api", "repos/$GITHUB_REPOSITORY/actions/jobs/$job/logs"]
+            fetch[-1], "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/jobs/$job/logs"
         )
         self.assertEqual(
             verify[:4],
