@@ -125,16 +125,21 @@ gh project field-list 1 --owner markafitzgerald1 --format json
 
 Then find the new item's identifier and set the value. The item listing needs an
 explicit `--limit`, because the default hides most of the items on a board this
-size:
+size. A limit below the board's size drops items without any error: the board
+passed 400 items in November 2026, and a new item went missing from a
+`--limit 400` listing. The JSON output reports the board's `totalCount` beside
+its `items`; check that the number of items equals it, and raise the limit if
+not:
 
 ```bash
-gh project item-list 1 --owner markafitzgerald1 --limit 400 --format json
+gh project item-list 1 --owner markafitzgerald1 --limit 1000 --format json
 gh project item-edit --id <item-id> --project-id <project-id> \
   --field-id <status-field-id> --single-select-option-id <option-id>
 ```
 
 `gh issue list` defaults to thirty and needs its own `--limit` for the same
-reason.
+reason. It reports no total, so treat a listing that returns exactly the limit
+as possibly cut off.
 
 These project commands share one secondary rate limit with every other GraphQL
 call, and it is easy to exhaust: a board audit that re-runs the item listing
