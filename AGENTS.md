@@ -788,6 +788,29 @@ makes `sys.stderr` None, which `print` treats as stdout. A test of the
 buffered case must clear an inherited unbuffered-output setting from the
 child's environment, or it passes against the bug.
 
+`.github/workflows/bundle-cfr-inputs.yml` turns one finished run of that
+workflow into the measurement's input artifact, `fixed-play-policy-inputs`,
+without solving again. It takes the source run's id as an input, so a run's
+outputs can be bundled at any time within their 30-day retention, and it has
+the same manual, main-only, first-attempt guards with the approval input
+`bundle`. Before bundling it checks, through `scripts/check_cfr_bundle_sources.py`,
+that the source is a successful manual run of the CFR workflow on main in this
+repository on its first attempt, rebuilds the menus and offsets against their
+pins, and matches the downloaded policy, support and prior to the SHA-256 the
+converged job recorded in its evidence. A re-run attempt of the CFR workflow
+skips every job yet can report success, which is why the attempt is checked.
+The solve's evidence does not record the discard population, so the workflow
+matches it to the SHA-256 the run's prior job printed in its log. Rebuilding
+the prior from the population is not enough on its own: two populations that
+swap keeps between hands can give identical prior bytes while changing which
+opponent keeps the measurement deals. The workflow still rebuilds the prior as
+a consistency check; the build is exact integer arithmetic, and a Linux-built
+prior reproduces byte for byte on macOS. Its run id and the printed `policy_manifest_sha256` are what
+`examples/fixed-play-inputs.json` pins. A step that pipes a check into `tee`
+fails with the check only if bash fails a pipeline on any stage, which Actions
+sets up only when a step names its shell, so that workflow names `bash` as
+its default shell.
+
 ## Lint Configuration Expectations
 
 Do not assume lint rules are enforced unless they are present in local

@@ -479,6 +479,9 @@ carries floating-point shift statistics.
 The manual workflow `.github/workflows/generate-cfr-inputs.yml` runs both
 stages and the Rust chain on a hosted runner without publishing anything; see
 `native/cfr/README.md`. Dispatching it needs the maintainer's approval.
+`.github/workflows/bundle-cfr-inputs.yml` then bundles one finished run's
+outputs for the fixed-policy measurement, given that run's id, again only
+with the maintainer's approval.
 
 ### Expected opponent hand points research
 

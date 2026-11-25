@@ -154,10 +154,11 @@ covers 21 keeps and both roles at 25 samples, including live mixed-policy calls;
 it is not an approved production input bundle or a promotion-gate result.
 
 `examples/fixed-play-inputs.json` is deliberately unpinned. Its two values are
-set together from one `generate-cfr-inputs.yml` run: the run id, and the
-`policy_manifest_sha256` that run's bundle step printed. That workflow does not
-run the bundler yet; a job that does is planned once it and this tool have
-merged. The manifest binds the
+set together from one `bundle-cfr-inputs.yml` run: that run's id, and the
+`policy_manifest_sha256` it printed in its job summary. That workflow bundles
+the outputs of one finished `generate-cfr-inputs.yml` run, named by its id,
+after checking the run and matching the downloads to its recorded digests.
+The manifest binds the
 policy, offsets, menus, support, prior and discard population, so no other
 digest is committed. Every pin must come from such a run, never from local
 files. Pins attest bytes, not scientific correctness. The CLI itself never
