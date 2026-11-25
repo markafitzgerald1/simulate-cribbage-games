@@ -390,7 +390,7 @@ class ProgressTest(JobFixture):
         """Log from a fresh interpreter, as the workflow's command would."""
         code = (
             "from scripts.run_cfr_inputs import log\n"
-            "for _ in range(3):\n    log('a progress line')\n"
+            "for line in range(3):\n    log(f'progress {line}')\n"
             "print('result')"
         )
         return subprocess.run(
@@ -405,6 +405,23 @@ class ProgressTest(JobFixture):
             check=False,
             **streams,
         )
+
+    def test_a_working_stderr_gets_every_line(self) -> None:
+        # Catches losing the write to a real descriptor, which is the one
+        # the workflow uses: the other tests log to a stream without one.
+        stamp = r"\[cfr-inputs \d\d:\d\d:\d\dZ\]"
+        for flags in ([], ["-u"]):
+            with self.subTest(flags=flags):
+                result = self.run_logging(flags, stderr=subprocess.PIPE)
+                self.assertEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, "result\n")
+                lines = "".join(rf"{stamp} progress {line}\n" for line in range(3))
+                self.assertRegex(result.stderr, rf"\A{lines}\Z")
+        # A redirected stderr, whose encoding lacks the character written.
+        with (self.root / "log").open("w", encoding="ascii") as stream:
+            with mock.patch("sys.stderr", stream):
+                run_cfr_inputs.log("\u00e9")
+        self.assertRegex((self.root / "log").read_text(), rf"\A{stamp} \?\n\Z")
 
     def test_a_broken_stderr_pipe_leaves_the_exit_code_alone(self) -> None:
         # Catches a buffered write: the failed bytes stay in the buffer and
