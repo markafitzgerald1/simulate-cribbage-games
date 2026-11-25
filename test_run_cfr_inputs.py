@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -295,7 +296,7 @@ class ProgressTest(JobFixture):
                 (self.output / f"certificate-{iteration}.json").write_text(
                     json.dumps({"iteration": iteration, "exposure": exposure})
                 )
-            wait_until(lambda: logged.getvalue().count("iteration 7 took") >= 2)
+            wait_until(lambda: logged.getvalue().count("exposure 0.0042") >= 2)
             return subprocess.CompletedProcess(command, 3, stdout="")
 
         job = self.job(stop_at=time.time() + 3700)
@@ -382,6 +383,53 @@ class ProgressTest(JobFixture):
             heartbeat.thread.join(5)
         self.assertTrue(finished)
         self.assertNotRegex(logged.getvalue(), "late beat")
+
+    def run_logging(
+        self, flags: list[str], shell_redirect: str = "", **streams
+    ) -> subprocess.CompletedProcess:
+        """Log from a fresh interpreter, as the workflow's command would."""
+        code = (
+            "from scripts.run_cfr_inputs import log\n"
+            "for _ in range(3):\n    log('a progress line')\n"
+            "print('result')"
+        )
+        return subprocess.run(
+            ["bash", "-c", f'"$@" {shell_redirect}', "bash", sys.executable]
+            + flags
+            + ["-c", code],
+            cwd=Path(__file__).parent,
+            # An inherited PYTHONUNBUFFERED would hide the buffered case.
+            env={k: v for k, v in os.environ.items() if k != "PYTHONUNBUFFERED"},
+            stdout=subprocess.PIPE,
+            text=True,
+            check=False,
+            **streams,
+        )
+
+    def test_a_broken_stderr_pipe_leaves_the_exit_code_alone(self) -> None:
+        # Catches a buffered write: the failed bytes stay in the buffer and
+        # Python's flush at exit fails again, turning exit 0 into 120.
+        for flags in ([], ["-u"]):
+            with self.subTest(flags=flags):
+                reader, writer = os.pipe()
+                os.close(reader)
+                try:
+                    result = self.run_logging(flags, stderr=writer)
+                finally:
+                    os.close(writer)
+                self.assertEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, "result\n")
+
+    def test_a_closed_stderr_keeps_logs_out_of_stdout(self) -> None:
+        # Catches printing to a None stderr, which Python sends to stdout,
+        # where the build-inputs digests and the solve status are read.
+        result = self.run_logging(["-u"], shell_redirect="2>&-")
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "result\n")
+        printed = io.StringIO()
+        with mock.patch("sys.stderr", None), mock.patch("sys.stdout", printed):
+            run_cfr_inputs.log("a progress line")
+        self.assertEqual(printed.getvalue(), "")
 
     def test_a_broken_stderr_never_fails_a_step(self) -> None:
         # Catches letting a failed log write end the job, which would turn

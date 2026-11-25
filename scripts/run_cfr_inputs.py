@@ -26,6 +26,7 @@ from collections.abc import Callable, Sequence
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import resource
 import shutil
@@ -69,11 +70,26 @@ def log(message: str) -> None:
     """Write one progress line to stderr, which the Actions log shows live.
 
     Best effort: the line is only for people watching, so a closed or
-    broken stderr must never fail the job.
+    broken stderr must never fail the job. With stderr closed at launch
+    Python sets it to None, and print would then write to stdout, which
+    carries the command's result. A stream with a file descriptor gets the
+    line in one unbuffered write: a failed buffered write leaves bytes that
+    Python flushes again at exit, and that second failure sets exit code 120.
     """
+    stream = sys.stderr
+    if stream is None:
+        return
     stamp = datetime.now(timezone.utc).strftime("%H:%M:%S")
+    line = f"[cfr-inputs {stamp}Z] {message}\n"
     try:
-        print(f"[cfr-inputs {stamp}Z] {message}", file=sys.stderr, flush=True)
+        try:
+            descriptor = stream.fileno()
+        except (AttributeError, OSError, ValueError):
+            stream.write(line)
+            stream.flush()
+        else:
+            encoding = getattr(stream, "encoding", None) or "utf-8"
+            os.write(descriptor, line.encode(encoding, "replace"))
     except (OSError, ValueError):
         pass
 

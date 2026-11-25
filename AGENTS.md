@@ -779,7 +779,13 @@ heartbeat reads those files while the solver writes them, so it skips a
 partial line and never lets a failed read stop the step. Logging is best
 effort throughout: a broken stderr, a thread that cannot start, or a stuck
 read (a step signals its heartbeat to stop and never waits for it) must
-never change the job's result, timing or evidence.
+never change the job's result, timing or evidence. Two traps sit outside the
+workflow's `python -u`. A failed buffered write leaves bytes that Python
+flushes again at exit, and that second failure sets exit code 120, so `log`
+writes each line unbuffered to the descriptor. And a stderr closed at launch
+makes `sys.stderr` None, which `print` treats as stdout. A test of the
+buffered case must clear an inherited unbuffered-output setting from the
+child's environment, or it passes against the bug.
 
 ## Lint Configuration Expectations
 
