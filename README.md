@@ -413,10 +413,12 @@ heuristic's fingerprint), and a `discard_policy_fingerprint` of the measured
 keeps that a resumed run must match. A report or off run that resumes an
 enforced table drops all of these labels.
 
-The weekly production workflow (`generate-play-artifact.yml`) runs with
-`--promotion-gate=enforce`, so the released table is measured with whichever
-pegging player passed: the trained policies, or the legacy heuristic when they
-lose to it. Its release notes state the gate outcome, the measured policy and
+A production run of `generate-play-artifact.yml` uses
+`--promotion-gate=enforce`, so its table is measured with whichever pegging
+player passed: the trained policies, or the legacy heuristic when they lose to
+it. The workflow is manual, with no schedule, and replaces the released table
+only when dispatched from main with `replace_release`; the release otherwise
+keeps the fixed CFR policy's table. Its release notes state the gate outcome, the measured policy and
 the trained-minus-heuristic advantages per seat and for both seats. The bounded
 pull-request run stays in report mode and writes the same summary, so every
 pull request exercises it.
@@ -794,8 +796,8 @@ provenance. Each key/role cell has one worker owner, with canonical parent
 reduction and atomic complete-cell resume. Keep the same timestamp, pinned
 inputs, seed, sample count and cell set on resume. A killed incomplete cell
 restarts at sample zero; completed statistics are reused without reconstruction.
-Inputs are not fetched by the CLI. Published schemas and the scheduled producer
-retain their contracts; production activation needs Mark's approval.
+Inputs are not fetched by the CLI. Published schemas and the v3 producer
+retain their contracts.
 
 Exercise the bounded parallel CLI and all four exports offline:
 
@@ -816,10 +818,9 @@ The play workflow also runs this synthetic fixture on applicable pull requests.
 The manual workflow `.github/workflows/measure-fixed-play.yml` measures the
 table from the committed input pins and publishes nothing; dispatching it needs
 the maintainer's approval.
-[The draft release job](examples/generate-fixed-play-artifact.yml) is outside
-`.github/workflows`, so it cannot execute. It uses the existing rolling-release
-boundary and attaches full, means, sidecar and lines together after explicit
-release authorization and protected-environment approval. See
-[the input pins](examples/fixed-play-inputs.json) and the fixed-policy contract
-for the activation decisions still required.
-It retains the offline Cribbage Pro regression check before companion export.
+The manual workflow `.github/workflows/publish-fixed-play.yml` publishes one
+finished measurement run, named in the workflow, without measuring again. It
+attaches only the bytes pinned in
+[the release digests](examples/fixed-play-release.sha256), after the maintainer
+approves the `play-release` environment. See the fixed-policy
+contract for both workflows.

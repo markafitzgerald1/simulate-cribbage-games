@@ -9,7 +9,7 @@ from test_cfr_inputs_workflow import guard_accepts, load, subcommands
 
 ROOT = Path(__file__).parent
 WORKFLOW = ROOT / ".github/workflows/bundle-cfr-inputs.yml"
-RELEASE_DRAFT = ROOT / "examples/generate-fixed-play-artifact.yml"
+MEASURE = ROOT / ".github/workflows/measure-fixed-play.yml"
 # Every step that calls the API or takes the run id, with its exact script
 # and environment. Parsed matching missed quoting, repeated options,
 # redirects and write flags spelled another way; exact text cannot.
@@ -268,10 +268,10 @@ class CfrBundleWorkflowTest(unittest.TestCase):
         self.assertEqual(upload["with"]["name"], "fixed-play-policy-inputs")
         self.assertEqual(upload["with"]["path"], "fixed-play-policy-inputs/")
         self.assertEqual(upload["with"]["if-no-files-found"], "error")
-        draft = load(RELEASE_DRAFT)["jobs"]["generate-table"]["steps"]
+        measure = load(MEASURE)["jobs"]["measure"]["steps"]
         download = next(
             step
-            for step in draft
+            for step in measure
             if step.get("name") == "Download the pinned fixed inputs"
         )
         self.assertEqual(download["with"]["name"], upload["with"]["name"])

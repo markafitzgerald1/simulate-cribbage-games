@@ -145,7 +145,7 @@ opening-response keys become strings and then sort in the same order as resumed
 JSON. It changes no mean, standard error or raw moment. This distinction matters
 for ten through king responses, where numeric and string order disagree.
 
-## Bounded validation and release draft
+## Bounded validation and release
 
 Run `python -m scripts.run_fixed_play_smoke` locally to exercise the real
 multiprocess CLI, writers and companion decoders with portable synthetic inputs.
@@ -181,34 +181,47 @@ If it fails or runs out of time it tries to upload its complete cells instead,
 as `fixed-play-unfinished`; nothing resumes them automatically. Dispatching it
 needs Mark's approval.
 
-`examples/generate-fixed-play-artifact.yml` is an inert job definition outside
-GitHub's workflow directory. It has no schedule. It measures and publishes in
-one run; a later change will replace it with a release step that publishes a
-finished `measure-fixed-play.yml` run. Before any release, Mark must configure
-required human reviewers on `approved-fixed-play-release`. Its 330-minute generation job measures 13,000
-samples per cell with four workers and an enforced promotion gate. Publication
-also requires the explicit `authorize_release` input and the main branch.
+`publish-fixed-play.yml` publishes one finished `measure-fixed-play.yml` run to
+the rolling `expected-play-points` release. It never measures. It is manual,
+main-only and first-attempt-only, with the approval input `publish`, and it has
+no schedule. The run is the `MEASUREMENT_RUN` named in the workflow.
+`examples/fixed-play-release.sha256` pins the four released files' bytes and
+`examples/fixed-play-release.md` holds the release notes. Change all three
+together, only from one such run, and never pin a table measured locally.
 
-The example repeats the existing same-job export and unchanged-means digest
-check. It retains the offline Cribbage Pro gross-regression gate and records
-that report before exporting the sidecar from the final full bytes. It uploads
-the full/means/sidecar/lines bundle and uses the existing
-`expected-play-points` tag, concurrency group and single `action-gh-release`
-attachment boundary. `python -m scripts.verify_fixed_play_bundle` verifies the
-exact means pairing and recomputes both companions from that full table. With
-`--release-samples 13000` it additionally requires every canonical cell, its
+Its first job has a read-only token. It requires a reviewer on `play-release`
+whom an administrator cannot bypass, because Actions gives a job that names a
+missing environment an unprotected one. It checks that the named run is a
+successful first attempt of the measurement workflow on main, downloads that
+run's artifact, and matches it to the committed digests. `python -m
+scripts.verify_fixed_play_bundle` then recomputes both companions from the full
+table; with `--release-samples 13000` it also requires every canonical cell, its
 approved sample count, a passed enforced gate, truthful model limits, and zero
-missing-menu and off-support decisions.
-The release job repeats that check after download and before attachment.
+missing-menu and off-support decisions. The release notes must quote the
+measured gate result. Last, it keeps the assets and notes the release held
+before as the artifact `expected-play-points-previous`, for 90 days.
 
-Because it reuses that tag, activating the example also requires retiring or
-re-pointing the scheduled v3 play generation in
-`.github/workflows/generate-play-artifact.yml`. Otherwise its next scheduled
-run replaces the fixed-policy bundle with a v3 table: rollout-trained, or
-heuristic after a failed promotion gate.
+Its second job waits for the environment's approval. It downloads the artifact
+again, matches the digests again, attaches the four files in one
+`action-gh-release` call, and checks that the release holds exactly those files
+with those digests. Replacing four files is not atomic: if that call fails part
+way, dispatch the workflow again. To go back instead, download
+`expected-play-points-previous`, upload its four tables with `gh release upload
+expected-play-points --clobber` and restore its notes with `gh release edit
+expected-play-points --notes-file release-notes.md`. The app vendors its table,
+so nothing reads the release until someone updates that copy.
 
-The example's local complete-cell checkpoints are not retained across hosted
-workflow jobs. Resuming across jobs, a larger precision schedule and
-real runner throughput are subsequent work. Activating, dispatching, publishing
-or vendoring the resulting bundle requires separate authorization. Local
-measurement and YAML linting do not authorize those actions.
+The run shares the `expected-play-points-release` concurrency group with the v3
+play generation and the sidecar backfill, from its first check until the end of
+its publication. `generate-play-artifact.yml` has no schedule, so it cannot
+replace the fixed-policy table with a rollout-trained or heuristic one by
+itself; a manual run on main replaces it only with `replace_release`. Every job
+that can write the release waits for the `play-release` environment. A re-run
+keeps its original workflow file and a dispatch uses the one on its branch, so
+never re-run or dispatch a v3 play generation or a backfill from before this
+change.
+
+Resuming a measurement across jobs and a larger precision schedule are
+subsequent work. Merging, dispatching, publishing and vendoring each need
+separate authorization; local measurement and YAML linting authorize none of
+them.

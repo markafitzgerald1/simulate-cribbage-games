@@ -16,9 +16,14 @@ on:
       - .python-version
       - scripts/run_fixed_play_smoke.py
       - .github/workflows/generate-play-artifact.yml
+  # No schedule: the release holds the fixed CFR policy's table, which
+  # publish-fixed-play.yml attaches, and a weekly v3 run would replace it.
   workflow_dispatch:
-  schedule:
-    - cron: "0 6 * * 0"
+    inputs:
+      replace_release:
+        description: Replace the released table with this v3 table
+        type: boolean
+        default: false
 
 concurrency:
   group: expected-play-points-release-${{ github.ref_name }}
@@ -83,7 +88,7 @@ jobs:
       # (and --ibr-samples for policy quality); ~16000 still fits, beyond that the
       # paranoid runtime starts to approach the cap.
       - name: Generate production artifact
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch'
         run: |
           python -u artifact_pipeline/generate_play_table.py \
             --analytical-max-iterations=40 \
@@ -106,7 +111,7 @@ jobs:
       # diverge grossly from the reference, so a regressed table is never
       # released.
       - name: Corroborate against vendored Cribbage Pro sample
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch'
         run: |
           python -u artifact_pipeline/compare_play_table.py \
             expected_play_points.json \
@@ -179,8 +184,10 @@ jobs:
 
   release-artifact:
     needs: generate-table
-    if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && inputs.replace_release && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    # Every job that can write the play release waits for the same reviewer.
+    environment: play-release
     permissions:
       contents: write
 
