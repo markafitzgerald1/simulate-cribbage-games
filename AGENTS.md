@@ -769,7 +769,24 @@ the per-certificate `policy-N.bin` files, which a resume never reads.
 `scripts/run_cfr_inputs.py` holds the job logic so it can be tested against a
 fake binary. `scripts/run_cfr_inputs.py build-inputs` rebuilds and digest-checks
 only the menus and offsets, for a job that needs them without a solve, such as
-the measurement's input bundle.
+the measurement's input bundle. The binary writes a solve's progress only to
+files (`curve.jsonl` after each iteration, `certificate-N.json` on schedule) and
+the wrapper captures its stdout, so without help a solve step is silent in the
+Actions log for hours. The wrapper therefore logs each step's start and end to
+stderr and, while a step runs, a heartbeat every `--heartbeat-seconds` (five
+minutes by default) with free disk and, for the solve, time left before it
+pauses, the latest iteration and the newest certificate's exposure. The
+heartbeat reads those files while the solver writes them, so it skips a
+partial line and never lets a failed read stop the step. Logging is best
+effort throughout: a broken stderr, a thread that cannot start, or a stuck
+read (a step signals its heartbeat to stop and never waits for it) must
+never change the job's result, timing or evidence. Two traps sit outside the
+workflow's `python -u`. A failed buffered write leaves bytes that Python
+flushes again at exit, and that second failure sets exit code 120, so `log`
+writes each line unbuffered to the descriptor. And a stderr closed at launch
+makes `sys.stderr` None, which `print` treats as stdout. A test of the
+buffered case must clear an inherited unbuffered-output setting from the
+child's environment, or it passes against the bug.
 
 ## Lint Configuration Expectations
 
