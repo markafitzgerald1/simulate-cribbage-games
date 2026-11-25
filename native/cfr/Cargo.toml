@@ -8,7 +8,7 @@ publish = false
 
 [dependencies]
 rayon = "1.10"
-sha2 = "0.10"
+sha2 = "0.11"
 
 [profile.release]
 opt-level = 3
