@@ -10,13 +10,55 @@ from test_cfr_inputs_workflow import guard_accepts, load, subcommands
 ROOT = Path(__file__).parent
 WORKFLOW = ROOT / ".github/workflows/bundle-cfr-inputs.yml"
 RELEASE_DRAFT = ROOT / "examples/generate-fixed-play-artifact.yml"
-# The lookup must name the source run's one prior job, or fail.
+# Every step that calls the API or takes the run id, with its exact script
+# and environment. Parsed matching missed quoting, repeated options,
+# redirects and write flags spelled another way; exact text cannot.
+TOKEN = {"GH_TOKEN": "${{ github.token }}"}
+RUN_ID = {"SOURCE_RUN_ID": "${{ inputs.source_run_id }}"}
 LOOKUP_PRIOR_JOB = (
     'job="$(gh api'
     ' "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/attempts/1/jobs"'
     ' --jq \'[.jobs[] | select(.name == "prior")] | if length == 1'
-    ' then .[0].id else error("expected one prior job") end\')"'
+    ' then .[0].id else error("expected one prior job") end\')"\n'
 )
+EXACT_STEPS = {
+    "Require a numeric source run id": (RUN_ID, '[[ "$SOURCE_RUN_ID" =~ ^[0-9]+$ ]]'),
+    "Check the source run": (
+        TOKEN | RUN_ID,
+        r"""gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" > source-run.json
+python -m scripts.check_cfr_bundle_sources source-run \
+  --run-json source-run.json --repository "$GITHUB_REPOSITORY" \
+  | tee -a "$GITHUB_STEP_SUMMARY"
+""",
+    ),
+    # The lookup must name the source run's one prior job, or fail. The log
+    # needs --location: without it curl saves the redirect's empty body.
+    "Match the population to the prior job's log": (
+        TOKEN | RUN_ID,
+        LOOKUP_PRIOR_JOB
+        + r"""# curl, not gh: newer gh refuses a log's terminal escape codes.
+curl --fail --silent --show-error --location \
+  --header "Authorization: Bearer $GH_TOKEN" \
+  --output prior-job.log \
+  "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/jobs/$job/logs"
+python -m scripts.check_cfr_bundle_sources prior-log \
+  --log prior-job.log --prior-dir cfr-prior \
+  | tee -a "$GITHUB_STEP_SUMMARY"
+""",
+    ),
+    "Bundle the measurement inputs": (
+        RUN_ID,
+        r"""python -u -m artifact_pipeline.bundle_fixed_play_inputs \
+  --work cfr-work --prior-dir cfr-prior --output fixed-play-policy-inputs \
+  | tee bundle.txt
+{
+  echo "Source run: $SOURCE_RUN_ID"
+  echo "Pin input_run_id: $GITHUB_RUN_ID"
+  grep '^policy_manifest_sha256=' bundle.txt
+} >> "$GITHUB_STEP_SUMMARY"
+""",
+    ),
+}
 
 APPROVED = {
     "github.event_name": "workflow_dispatch",
@@ -120,36 +162,15 @@ class CfrBundleWorkflowTest(unittest.TestCase):
         self.assertNotIn("continue-on-error", self.job)
 
     def test_the_source_run_is_checked_before_any_download(self) -> None:
-        # Catches a source check that only echoes its command, or that runs
-        # after something has been downloaded from an unchecked run.
+        # Catches something downloaded from an unchecked run.
         check = self.names.index("Check the source run")
         for index, step in enumerate(self.steps):
             if step.get("uses", "").startswith("actions/download-artifact"):
                 self.assertLess(check, index, self.names[index])
-        lines = (
-            self.step("Check the source run")["run"].replace("\\\n", " ").splitlines()
-        )
-        self.assertEqual(
-            [shlex.split(line)[:4] for line in lines],
-            [
-                [
-                    "gh",
-                    "api",
-                    "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID",
-                    ">",
-                ],
-                ["python", "-m", "scripts.check_cfr_bundle_sources", "source-run"],
-            ],
-        )
-        command = shlex.split(lines[1])
-        self.assertEqual(command[command.index("--run-json") + 1], "source-run.json")
-        self.assertEqual(
-            command[command.index("--repository") + 1], "$GITHUB_REPOSITORY"
-        )
 
     def test_the_population_is_matched_to_the_prior_job_log(self) -> None:
-        # Catches skipping the log check, echoing it, or checking another
-        # job's log: nothing else ties the population to the source run.
+        # Catches skipping the log check or running it too late: nothing
+        # else ties the population to the source run.
         names = self.names
         check = names.index("Match the population to the prior job's log")
         for name in (
@@ -158,29 +179,6 @@ class CfrBundleWorkflowTest(unittest.TestCase):
         ):
             self.assertLess(names.index(name), check, name)
         self.assertLess(check, names.index("Bundle the measurement inputs"))
-        lines = self.steps[check]["run"].replace("\\\n", " ").splitlines()
-        self.assertEqual(lines[0].strip(), LOOKUP_PRIOR_JOB)
-        fetch, verify = (shlex.split(line) for line in lines[2:])
-        self.assertEqual(fetch[:2], ["curl", "--fail"])
-        # Without --location curl saves the redirect's empty body, and
-        # without the token the API refuses the log.
-        self.assertTrue("--location" in fetch, fetch)
-        self.assertEqual(
-            fetch[fetch.index("--header") + 1], "Authorization: Bearer $GH_TOKEN"
-        )
-        # Single quotes would send the literal text $GH_TOKEN.
-        header = '--header "Authorization: Bearer $GH_TOKEN"'
-        self.assertTrue(header in lines[2], lines[2])
-        self.assertEqual(fetch[fetch.index("--output") + 1], "prior-job.log")
-        self.assertEqual(
-            fetch[-1], "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/jobs/$job/logs"
-        )
-        self.assertEqual(
-            verify[:4],
-            ["python", "-m", "scripts.check_cfr_bundle_sources", "prior-log"],
-        )
-        self.assertEqual(verify[verify.index("--log") + 1], "prior-job.log")
-        self.assertEqual(verify[verify.index("--prior-dir") + 1], "cfr-prior")
 
     def test_the_prior_is_rebuilt_from_the_population(self) -> None:
         # Catches skipping the rebuild or the comparison: the population is
@@ -205,13 +203,6 @@ class CfrBundleWorkflowTest(unittest.TestCase):
     def test_the_checks_run_the_real_commands(self) -> None:
         # Catches a check that only echoes its command, or checks the wrong
         # folder, so nothing would stop a mismatched bundle.
-        source = shlex.split(
-            self.step("Check the source run")["run"].replace("\\\n", " ")
-        )
-        self.assertEqual(
-            source[source.index("scripts.check_cfr_bundle_sources") + 1], "source-run"
-        )
-        self.assertEqual(source[:2], ["gh", "api"])
         rebuild = shlex.split(
             self.step("Rebuild the menus and offsets against their pins")[
                 "run"
@@ -246,27 +237,29 @@ class CfrBundleWorkflowTest(unittest.TestCase):
 
     def test_downloads_come_from_the_named_source_run(self) -> None:
         # Catches a download from this run (no run id), from a hard-coded
-        # run, or into the wrong folder for the checks and the bundler.
-        expected = {
-            "Download the prior": ("name", "cfr-prior", "cfr-prior"),
-            "Download the converged outputs": ("name", "cfr-inputs", "cfr-work"),
-            "Download the solve evidence": (
-                "pattern",
-                "cfr-evidence-*",
-                "cfr-evidence",
-            ),
+        # run, or into the wrong folder for the checks and the bundler, and
+        # an input that overrides another, as a name does a pattern.
+        source = {
+            "github-token": "${{ github.token }}",
+            "run-id": "${{ inputs.source_run_id }}",
         }
-        for name, (key, artifact, path) in expected.items():
+        expected = {
+            "Download the prior": {"name": "cfr-prior", "path": "cfr-prior"},
+            "Download the converged outputs": {
+                "name": "cfr-inputs",
+                "path": "cfr-work",
+            },
+            "Download the solve evidence": {
+                "pattern": "cfr-evidence-*",
+                "merge-multiple": "true",
+                "path": "cfr-evidence",
+            },
+        }
+        for name, inputs in expected.items():
             with self.subTest(step=name):
                 step = self.step(name)
                 self.assertEqual(step["uses"], "actions/download-artifact@v8")
-                self.assertEqual(step["with"][key], artifact)
-                self.assertEqual(step["with"]["path"], path)
-                self.assertEqual(step["with"]["run-id"], "${{ inputs.source_run_id }}")
-                self.assertEqual(step["with"]["github-token"], "${{ github.token }}")
-        self.assertEqual(
-            self.step("Download the solve evidence")["with"]["merge-multiple"], "true"
-        )
+                self.assertEqual(step["with"], inputs | source)
 
     def test_the_upload_is_what_the_release_draft_downloads(self) -> None:
         # Catches a name or folder the inert release draft would not find.
@@ -282,54 +275,38 @@ class CfrBundleWorkflowTest(unittest.TestCase):
             if step.get("name") == "Download the pinned fixed inputs"
         )
         self.assertEqual(download["with"]["name"], upload["with"]["name"])
-        bundle = shlex.split(
-            self.step("Bundle the measurement inputs")["run"].replace("\\\n", " ")
-        )
-        self.assertEqual(
-            bundle[:4],
-            ["python", "-u", "-m", "artifact_pipeline.bundle_fixed_play_inputs"],
-        )
-        for option, folder in (
-            ("--work", "cfr-work"),
-            ("--prior-dir", "cfr-prior"),
-            ("--output", "fixed-play-policy-inputs"),
-        ):
-            self.assertEqual(bundle[bundle.index(option) + 1], folder)
 
-    def test_inputs_reach_commands_only_through_the_step_environment(self) -> None:
-        # Catches a run id hard-coded where the numeric check reads it, an
-        # input expanded straight into a script, or an API call that lost
-        # its token: each step that names a value must bind it here.
-        bindings = {
-            "$SOURCE_RUN_ID": ("SOURCE_RUN_ID", "${{ inputs.source_run_id }}"),
-            "$GH_TOKEN": ("GH_TOKEN", "${{ github.token }}"),
-        }
-        for name, step in zip(self.names, self.steps):
-            command = step.get("run", "")
+    def test_steps_using_the_api_or_the_run_id_run_exactly_this(self) -> None:
+        # Catches any change to what the run id and token reach: a run id
+        # hard-coded where the numeric check reads it, an input expanded
+        # into a script, a lost token, a repeated or differently quoted
+        # argument, a check that only echoes, or a read turned into a write.
+        # Each name must be unique, or a second step of that name escapes.
+        self.assertEqual(len(set(self.names)), len(self.names))
+        for name, (environment, command) in EXACT_STEPS.items():
             with self.subTest(step=name):
-                self.assertNotIn("${{", command)
-                uses_api = bool(subcommands(command, "gh")) or "curl" in command
-                for variable, (key, value) in bindings.items():
-                    if variable in command or (key == "GH_TOKEN" and uses_api):
-                        self.assertEqual(step["env"][key], value)
+                self.assertEqual(self.step(name)["env"], environment)
+                self.assertEqual(self.step(name)["run"], command)
+        for name, step in zip(self.names, self.steps):
+            if name not in EXACT_STEPS:
+                with self.subTest(step=name):
+                    self.assertNotIn("env", step)
+                    self.assertNotRegex(
+                        step.get("run", ""),
+                        r"\b(gh|curl|GH_TOKEN|SOURCE_RUN_ID)\b|\$\{\{",
+                    )
+        self.assertNotIn("env", self.job)
+        self.assertNotIn("env", self.workflow)
 
     def test_nothing_publishes(self) -> None:
-        # Catches a release, push or write call slipped into any step: a
-        # git write, a release, or an API call that sends data.
+        # Catches a release or a git write slipped into any step. The exact
+        # API steps above rule out a call that sends data.
         for step in self.steps:
             self.assertNotRegex(step.get("uses", ""), "release")
             command = step.get("run", "").replace("\\\n", " ")
             self.assertNotIn("release", subcommands(command, "gh"))
             for verb in ("push", "tag", "commit"):
                 self.assertNotIn(verb, subcommands(command, "git"))
-            self.assertNotRegex(
-                command,
-                r"gh api.*\s(-X|--method|-[fF]|--field|--raw-field|--input)",
-            )
-            self.assertNotRegex(
-                command,
-                r"curl.*\s(-X|--request|-d|--data|--json|-F|--form|-T|--upload)",
-            )
 
 
 if __name__ == "__main__":
