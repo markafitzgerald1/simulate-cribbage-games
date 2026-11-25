@@ -153,7 +153,7 @@ class PublishFixedPlayWorkflowTest(unittest.TestCase):
             self.assertEqual(load(path)["jobs"][job]["environment"], ENVIRONMENT)
 
     def test_publication_shares_the_release_writer_lock(self) -> None:
-        # Catches a group that no longer excludes the v3 play generation, and
+        # Catches a group that no longer excludes generate-play-artifact.yml, and
         # one held by a job, which would leave the wait for approval unlocked.
         self.assertEqual(self.workflow["concurrency"], load(PLAY)["concurrency"])
         self.assertEqual(self.workflow["concurrency"]["cancel-in-progress"], "false")

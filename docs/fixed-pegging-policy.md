@@ -211,15 +211,14 @@ expected-play-points --clobber` and restore its notes with `gh release edit
 expected-play-points --notes-file release-notes.md`. The app vendors its table,
 so nothing reads the release until someone updates that copy.
 
-The run shares the `expected-play-points-release` concurrency group with the v3
-play generation and the sidecar backfill, from its first check until the end of
-its publication. `generate-play-artifact.yml` has no schedule, so it cannot
-replace the fixed-policy table with a rollout-trained or heuristic one by
-itself; a manual run on main replaces it only with `replace_release`. Every job
-that can write the release waits for the `play-release` environment. A re-run
-keeps its original workflow file and a dispatch uses the one on its branch, so
-never re-run or dispatch a v3 play generation or a backfill from before this
-change.
+The run shares the `expected-play-points-release` concurrency group with
+`generate-play-artifact.yml` and the sidecar backfill, from its first check
+until the end of its publication. `generate-play-artifact.yml` has no schedule,
+so it cannot replace the fixed-policy table with a rollout-trained or heuristic
+one by itself; a manual run on main replaces it only with `replace_release`.
+Every job that can write the release waits for the `play-release` environment. A
+re-run keeps its original workflow file and a dispatch uses the one on its
+branch, so never re-run or dispatch either of them from before this change.
 
 Resuming a measurement across jobs and a larger precision schedule are
 subsequent work. Merging, dispatching, publishing and vendoring each need

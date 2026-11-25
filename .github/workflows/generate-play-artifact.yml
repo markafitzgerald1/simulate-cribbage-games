@@ -17,11 +17,11 @@ on:
       - scripts/run_fixed_play_smoke.py
       - .github/workflows/generate-play-artifact.yml
   # No schedule: the release holds the fixed CFR policy's table, which
-  # publish-fixed-play.yml attaches, and a weekly v3 run would replace it.
+  # publish-fixed-play.yml attaches, and a weekly run would replace it.
   workflow_dispatch:
     inputs:
       replace_release:
-        description: Replace the released table with this v3 table
+        description: Replace the released table with this run's
         type: boolean
         default: false
 

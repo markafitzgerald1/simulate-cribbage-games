@@ -20,7 +20,7 @@ Bots played duplicate deals, 500,000 pairs of games per row with the seats swapp
 | This table, heuristic pegging | Previous release, heuristic pegging | 48.912% +/- 0.026 |
 | App's table, CFR pegging | App's table, heuristic pegging | 55.638% +/- 0.029 |
 
-Against one fixed bot that uses neither table and pegs with the heuristic, this table's discards change the win rate by +0.032 +/- 0.025 points when paired with CFR pegging, and by -0.167 +/- 0.025 points when paired with heuristic pegging, compared with the app's table's discards on the same deals.
+The last comparison fixes the opponent: this simulator's own earlier bot, which keeps the measurement's fixed discard population's cards (suits ignored) and pegs with the legacy heuristic. Against it, this table's discards change the win rate by +0.032 +/- 0.025 points when paired with CFR pegging, and by -0.167 +/- 0.025 points when paired with heuristic pegging, compared with the app's table's discards on the same deals.
 
 So a table does better in the pegging style it was measured in. This table's advantage is established for players who peg like the CFR policy, not for the heuristic and not for people: these are matches between bots. The last row of the table is the value of pegging itself, which a discard table does not teach. The matches were run on one laptop with an unpublished match program; the tables and policy they read are the released bytes and the measurement's pinned inputs.
 
@@ -29,7 +29,7 @@ So a table does better in the pegging style it was measured in. This table's adv
 | Table | Client means SHA-256 | Measured with | Status |
 |---|---|---|---|
 | June 2026 | `7420b180` | The trained pegging policy of the time, both seats | In the app until it vendors a newer one |
-| Version 3, 2026-11-22 | `6ed3a051` | The legacy heuristic, both seats | The previous release, replaced by this one |
+| Weekly release, 2026-11-22 | `6ed3a051` | The legacy heuristic, both seats | The previous release, replaced by this one |
 | October 2026 research | `41ddcbd6` | An earlier CFR pegging policy, both seats | Never released |
 | This release | `4ef452e2` | The solved CFR pegging policy (`647b3830`), both seats | Current |
 

@@ -796,8 +796,8 @@ provenance. Each key/role cell has one worker owner, with canonical parent
 reduction and atomic complete-cell resume. Keep the same timestamp, pinned
 inputs, seed, sample count and cell set on resume. A killed incomplete cell
 restarts at sample zero; completed statistics are reused without reconstruction.
-Inputs are not fetched by the CLI. Published schemas and the v3 producer
-retain their contracts.
+Inputs are not fetched by the CLI. Published schemas and
+`generate_play_table.py` retain their contracts.
 
 Exercise the bounded parallel CLI and all four exports offline:
 

@@ -19,7 +19,7 @@ permissions:
   contents: read
   actions: read
 
-# The same group as the v3 play generation and the sidecar backfill, so no
+# The same group as generate-play-artifact.yml and the sidecar backfill, so no
 # other workflow can change the release while this one waits for approval.
 concurrency:
   group: expected-play-points-release-${{ github.ref_name }}

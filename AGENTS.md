@@ -722,7 +722,7 @@ install), so multiply the local figure by ~1.6 for the real run and by ~2.5 for
 a paranoid bound. The CI figures below are the operative ones; the local number
 is only the measurement source behind that multiplier.
 
-The v3 play workflow runs a deliberately time-capped single pass
+`generate-play-artifact.yml` runs a deliberately time-capped single pass
 (`--ibr-samples=30000`, `--samples=13000`, two outer and two IBR iterations, no
 `--target-standard-error`, no `--max-samples`, no `--fail-on-non-convergence`,
 and `--no-resume`). At `--samples=13000` the local run is about 118 minutes,
@@ -834,14 +834,14 @@ Actions job that names an environment nobody has created gets an unprotected
 one, so the job before it checks that `play-release` has a required reviewer
 whom an administrator cannot bypass, and every job that can write the play
 release names that environment. A re-run uses its original workflow file, so
-never re-run a v3 play generation from before this rule. The Python code and the
-packages it installs run only in that first job, whose token can only read; the
-job that can write just matches digests and attaches. A re-run of one failed job
-does not repeat the jobs it needs, so every job repeats the first-attempt guard.
-The weekly v3 schedule is retired, because a scheduled run would replace the CFR
-table. A step's own time limit fails the step and leaves later `failure()` steps
-to run, so a long step gets a limit under the job's and its partial work is
-uploaded last.
+never re-run `generate-play-artifact.yml` from before this rule. The Python code
+and the packages it installs run only in that first job, whose token can only
+read; the job that can write just matches digests and attaches. A re-run of one
+failed job does not repeat the jobs it needs, so every job repeats the
+first-attempt guard. Its weekly schedule is retired, because a scheduled run
+would replace the CFR table. A step's own time limit fails the step and leaves
+later `failure()` steps to run, so a long step gets a limit under the job's and
+its partial work is uploaded last.
 
 ## Lint Configuration Expectations
 
