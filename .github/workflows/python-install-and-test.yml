@@ -237,6 +237,9 @@ jobs:
   # gates mirror the Python and TypeScript ones: formatting, lint (clippy's
   # pedantic group, set in Cargo.toml), tests with 100% line coverage, PMD
   # copy/paste detection, and dependency advisories, licenses and sources.
+  # On a pull request whose Rust inputs are identical to main's, the two slow
+  # steps (Test and coverage) are skipped. The job itself always runs, because
+  # ci-passed treats a skipped job as a failure.
   rust-cfr-inputs:
     runs-on: ubuntu-latest
     defaults:
@@ -244,6 +247,26 @@ jobs:
         working-directory: native/cfr
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      # On a pull request, HEAD is its merge into the base branch: HEAD^1 is
+      # the base and HEAD^2 the pull request. Skipping needs every command to
+      # succeed, so a push to main or a failed comparison leaves the output
+      # unset and the slow steps run. Only pull requests into main skip: a
+      # stacked one could change its base later, which starts no new run. The
+      # paths are what Cargo and Git read to build and test the package; (top)
+      # is needed because this runs in native/cfr.
+      - name: Check whether the Rust inputs are main's
+        id: rust-inputs
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = pull_request ] &&
+            [ "$GITHUB_BASE_REF" = main ] &&
+            git rev-parse --verify --quiet HEAD^2 &&
+            git diff --quiet HEAD^1 HEAD -- ':(top)native' ':(top).cargo' ':(top)Cargo.toml' ':(top).gitattributes' ':(top).github/workflows/python-install-and-test.yml'
+          then
+            echo "unchanged=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Rust inputs are identical to main's: skipping the Rust tests and coverage."
+          fi
       - name: Install the pinned Rust toolchain
         run: rustup toolchain install
       # Pinned so a new tool release cannot turn ci-passed red on its own.
@@ -270,12 +293,14 @@ jobs:
       # Five tests take 13-45 s each and are #[ignore]d so local runs stay
       # fast; CI runs every test.
       - name: Test
+        if: steps.rust-inputs.outputs.unchanged != 'true'
         run: cargo test --locked --release -- --include-ignored
       # Coverage counters are shared by every thread, so a parallel solve
       # spends its time contending for them (12 s against 148 s for one
       # test). One rayon thread keeps the run short; the plain test step
       # above and the explicit pools in tests/solve.rs still cover threads.
       - name: Check 100% line coverage
+        if: steps.rust-inputs.outputs.unchanged != 'true'
         env:
           RAYON_NUM_THREADS: "1"
         run: cargo llvm-cov --locked --release --fail-under-lines 100 --show-missing-lines -- --include-ignored

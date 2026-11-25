@@ -350,7 +350,15 @@ llvm-cov --locked --release --fail-under-lines 100 -- --include-ignored`, `pmd
 cpd --language rust --minimum-tokens 40 --dir src --dir tests` and `cargo deny
 --locked check`. These mirror the Python and TypeScript gates: lint, full line
 coverage, copy/paste detection, and dependency advisories, licenses and sources.
-The `rust-cfr-inputs` CI job runs all of them under `ci-passed`;
+The `rust-cfr-inputs` CI job runs all of them under `ci-passed`, except that a
+pull request into main whose Rust inputs are identical to main's skips the test
+and coverage steps. The job itself must always run, because `ci-passed` fails on
+a skipped job. The package reads nothing outside `native/`; a file it starts to
+read elsewhere, or a local action the job starts to use, must join that step's
+path list. Its paths need `:(top)`, because the job runs in `native/cfr` and a
+relative path there matches nothing, which would skip every time. Stacked pull
+requests never skip, because changing a pull request's base to main starts no
+new run.
 `native/cfr/rust-toolchain.toml` pins the toolchain, and the workflow pins the
 cargo-llvm-cov and cargo-deny versions, which Dependabot does not bump. Coverage
 counters are shared by every thread, so the coverage run uses one rayon thread:
