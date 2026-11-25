@@ -58,6 +58,7 @@
     "multisets",
     "mypy",
     "myclass",
+    "nextest",
     "nobs",
     "parseable",
     "pone",

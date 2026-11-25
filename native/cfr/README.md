@@ -207,16 +207,20 @@ generation workflow (#235).
 cargo fmt --check
 cargo clippy --locked --release --all-targets -- -D warnings
 cargo test --locked --release -- --include-ignored
-RAYON_NUM_THREADS=1 cargo llvm-cov --locked --release --fail-under-lines 100 --show-missing-lines -- --include-ignored
+RAYON_NUM_THREADS=1 cargo llvm-cov nextest --locked --release --fail-under-lines 100 --show-missing-lines --run-ignored all -j 4
 pmd cpd --language rust --minimum-tokens 40 --dir src --dir tests
 cargo deny --locked check
 ```
 
 Plain `cargo test` skips five end-to-end tests that take 13 to 45 seconds
 each; they are marked `#[ignore]` with that reason and are not broken. The
-rest run in about four seconds. CI always passes `--include-ignored`. The
-repository's pre-commit hooks run `cargo fmt --check` on commit and clippy
-plus the fast tests on push, only when files here change.
+rest run in about four seconds. CI always passes `--include-ignored`, or
+nextest's `--run-ignored all` for coverage. Coverage runs through
+cargo-nextest, which gives each test its own process:
+coverage counters are shared by every thread of a process, so tests in one
+process slow each other down. The repository's pre-commit hooks run
+`cargo fmt --check` on commit and clippy plus the fast tests on push, only when
+files here change.
 
 The `rust-cfr-inputs` CI job runs the same gates, mirroring the Python and
 TypeScript ones. A pull request into main whose Rust inputs (`native/`, its

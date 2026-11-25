@@ -53,35 +53,34 @@ class TestRustCiRunsEveryTest(unittest.TestCase):
     """Slow Rust tests are #[ignore]d locally; CI must still run them."""
 
     def test_rust_test_and_coverage_steps_include_ignored_tests(self) -> None:
-        # Catches dropping --include-ignored from either step, which would
+        # Catches dropping --include-ignored or --run-ignored all, which would
         # silently skip the slow tests everywhere.
         with open(WORKFLOW_PATH, encoding="utf-8") as f:
             steps = yaml.safe_load(f)["jobs"]["rust-cfr-inputs"]["steps"]
         commands = {step.get("name"): step.get("run", "") for step in steps}
-        # The exact commands, so a narrowing option (such as `--lib`, which
-        # skips the integration tests where every slow test lives) or a flag
-        # hidden in a comment fails too, and neither step may be allowed to
-        # fail. TestRustSlowStepsSkip covers when they may be skipped.
+        # The exact text, so a narrowing option (such as `--lib`, which skips
+        # the integration tests where every slow test lives), a flag hidden in
+        # a comment or a masked failure (`|| true`) fails too, and neither step
+        # may be allowed to fail. TestRustSlowStepsSkip covers when they may
+        # be skipped.
         self.assertEqual(
-            shlex.split(commands["Test"], comments=True),
-            ["cargo", "test", "--locked", "--release", "--", "--include-ignored"],
+            commands["Test"].strip(),
+            "cargo test --locked --release -- --include-ignored",
         )
         self.assertEqual(
-            shlex.split(commands["Check 100% line coverage"], comments=True),
-            [
-                "cargo",
-                "llvm-cov",
-                "--locked",
-                "--release",
-                "--fail-under-lines",
-                "100",
-                "--show-missing-lines",
-                "--",
-                "--include-ignored",
-            ],
+            commands["Check 100% line coverage"].strip(),
+            "cargo llvm-cov nextest --locked --release --fail-under-lines 100"
+            " --show-missing-lines --run-ignored all -j 4",
         )
         for step in steps:
             if step.get("name") in ("Test", "Check 100% line coverage"):
+                # Without one rayon thread the coverage run is as slow as
+                # before nextest, and other variables could narrow it.
+                expected = {
+                    "Test": {},
+                    "Check 100% line coverage": {"RAYON_NUM_THREADS": "1"},
+                }
+                self.assertEqual(step.get("env", {}), expected[step["name"]])
                 self.assertNotIn("continue-on-error", step)
                 # A custom shell (such as `bash -n {0}`) could parse the
                 # command without running it.
@@ -92,6 +91,13 @@ class TestRustCiRunsEveryTest(unittest.TestCase):
         self.assertNotIn("continue-on-error", job)
         for scope in (workflow, job):
             self.assertNotIn("shell", scope.get("defaults", {}).get("run", {}))
+            self.assertNotIn("NEXTEST", str(scope.get("env", {})))
+        # A nextest configuration file could narrow the run with a default
+        # filter, or hide a failure with retries, and the command would not
+        # change. nextest reads it from the Cargo workspace root.
+        for folder in ("", "native", "native/cfr"):
+            config = REPO_ROOT / folder / ".config" / "nextest.toml"
+            self.assertFalse(config.exists(), config)
 
 
 class RustCheckout:

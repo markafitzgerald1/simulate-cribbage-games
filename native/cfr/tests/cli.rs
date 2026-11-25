@@ -459,7 +459,15 @@ fn menus_and_trees_write_the_files_in_their_range() {
     let out = dir.to_str().unwrap();
     let hands = canonical();
     let pone_hand = 77;
-    expect(&["menus", "--output", out, "--range", "1820..3640"], 0);
+    // Four processes, because threads share one process's coverage counters.
+    std::thread::scope(|scope| {
+        for start in (1820..3640).step_by(455) {
+            scope.spawn(move || {
+                let range = format!("{start}..{}", start + 455);
+                expect(&["menus", "--output", out, "--range", &range], 0);
+            });
+        }
+    });
     let one = format!("{pone_hand}..{}", pone_hand + 1);
     expect(
         &["menus", "--output", out, "--range", &one, "--threads", "2"],
