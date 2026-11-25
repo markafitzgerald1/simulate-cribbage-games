@@ -24,6 +24,9 @@ on:
 jobs:
   export:
     runs-on: ubuntu-latest
+    # Every job that can write the play release waits for the same reviewer,
+    # and the environment admits only main, whose lock the others hold.
+    environment: play-release
     permissions:
       contents: write
 

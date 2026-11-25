@@ -634,11 +634,11 @@ omits is a path whose changes reach `main` without the bounded run ever having
 exercised them. The filter is safe only while neither workflow supplies a
 required status check: a path-filtered workflow reports no check at all rather
 than a skipped one, so making `generate-table` required would leave every
-filtered pull request waiting on a check that never arrives. The scheduled and
-dispatched triggers are unfiltered and unaffected.
+filtered pull request waiting on a check that never arrives. Dispatched runs
+are unfiltered and unaffected.
 
-A manual generation dispatch runs a full generation. The play workflow can
-publish on main, and the crib v4 preparation path consumes the full eight-shard
+A manual generation dispatch runs a full generation. The play workflow
+publishes only from main and only with `replace_release`, and the crib v4 preparation path consumes the full eight-shard
 budget. Use bounded local fixtures and PR checks for validation. The manual
 uncertainty backfill applies only to play and verifies its client digest by
 default.
@@ -722,7 +722,7 @@ install), so multiply the local figure by ~1.6 for the real run and by ~2.5 for
 a paranoid bound. The CI figures below are the operative ones; the local number
 is only the measurement source behind that multiplier.
 
-The scheduled workflow runs a deliberately time-capped single pass
+`generate-play-artifact.yml` runs a deliberately time-capped single pass
 (`--ibr-samples=30000`, `--samples=13000`, two outer and two IBR iterations, no
 `--target-standard-error`, no `--max-samples`, no `--fail-on-non-convergence`,
 and `--no-resume`). At `--samples=13000` the local run is about 118 minutes,
@@ -826,14 +826,22 @@ sets up only when a step names its shell, so that workflow names `bash` as
 its default shell.
 
 `measure-fixed-play.yml` measures the play table from those pins under the same
-manual, main-only, first-attempt guards, with the approval input `measure`. It
-only measures, so a release can later publish a finished run without measuring
-again and without the protected environment existing first. An Actions job that
-names an environment nobody has created gets an unprotected one, so create
-`approved-fixed-play-release` with required reviewers before any workflow names
-it. A step's own time limit fails the step and leaves later `failure()` steps
-to run, so a long step gets a limit under the job's and its partial work is
-uploaded last.
+manual, main-only, first-attempt guards, with the approval input `measure`.
+`publish-fixed-play.yml` then publishes one finished run, with the approval
+input `publish`, without measuring again: merging a change to
+`examples/fixed-play-release.sha256` is what approves the exact bytes. An
+Actions job that names an environment nobody has created gets an unprotected
+one, so the job before it checks that `play-release` has a required reviewer
+whom an administrator cannot bypass, and every job that can write the play
+release names that environment. A re-run uses its original workflow file, so
+never re-run `generate-play-artifact.yml` from before this rule. The Python code
+and the packages it installs run only in that first job, whose token can only
+read; the job that can write just matches digests and attaches. A re-run of one
+failed job does not repeat the jobs it needs, so every job repeats the
+first-attempt guard. Its weekly schedule is retired, because a scheduled run
+would replace the CFR table. A step's own time limit fails the step and leaves
+later `failure()` steps to run, so a long step gets a limit under the job's and
+its partial work is uploaded last.
 
 ## Lint Configuration Expectations
 

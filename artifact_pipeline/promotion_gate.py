@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Iterator, Mapping
 import random
+import sys
+import time
 from typing import Any
 
 from artifact_pipeline.pegging import (
@@ -19,6 +21,7 @@ from artifact_pipeline.pegging import (
 DEFAULT_GATE_DEALS = 200_000
 MINIMUM_GATE_DEALS = 1_000
 Z_THRESHOLD = 3.0
+PROGRESS_LINES = 10
 # Uniformly random four-card hands for each seat, not the discard policy's
 # keeps: the approved #187 design measures play strength on every hand rather
 # than on the hands one discard policy keeps.
@@ -66,7 +69,10 @@ def evaluate_promotion(
         DEALER: {PONE: heuristic, DEALER: trained[DEALER]},
     }
     estimates = {label: RunningStatistics() for label in (PONE, DEALER, BOTH_SEATS)}
-    for pone_hand, dealer_hand, play_seed in gate_deals(deals, seed):
+    started = time.monotonic()
+    for done, (pone_hand, dealer_hand, play_seed) in enumerate(
+        gate_deals(deals, seed), start=1
+    ):
         results = {
             game: simulate_pegging(
                 pone_hand, dealer_hand, policies, random.Random(play_seed)
@@ -80,6 +86,13 @@ def evaluate_promotion(
         estimates[PONE].add(gains[0])
         estimates[DEALER].add(gains[1])
         estimates[BOTH_SEATS].add((gains[0] + gains[1]) / 2)
+        if done % (deals // PROGRESS_LINES) == 0:
+            print(
+                f"[promotion-gate] deal {done}/{deals}, "
+                f"{time.monotonic() - started:.0f}s elapsed",
+                file=sys.stderr,
+                flush=True,
+            )
     both = estimates[BOTH_SEATS]
     return {
         "population": GATE_POPULATION,

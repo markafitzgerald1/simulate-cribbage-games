@@ -1,0 +1,150 @@
+name: Publish fixed play table
+
+# Issue #203: publish the one finished measure-fixed-play.yml run named below to
+# the rolling expected-play-points release. Manual only, from main, once per
+# dispatch. It measures nothing. The exact asset bytes are committed in
+# examples/fixed-play-release.sha256 and the release notes in
+# examples/fixed-play-release.md; change them together with MEASUREMENT_RUN,
+# only from one such run.
+
+on:
+  workflow_dispatch:
+    inputs:
+      approval:
+        description: Enter publish to confirm the approved publication
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+# The same group as generate-play-artifact.yml and the sidecar backfill, so no
+# other workflow can change the release while this one waits for approval.
+concurrency:
+  group: expected-play-points-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  MEASUREMENT_RUN: "45535004794"
+
+jobs:
+  # The Python code and the packages it installs run only here, with a token
+  # that can only read.
+  verify:
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' &&
+      github.run_attempt == 1 && inputs.approval == 'publish'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # Expression equality ignores case, so a branch named Main would pass
+      # the job guard; this exact comparison does not.
+      - name: Require main exactly
+        run: '[[ "$GITHUB_REF" == "refs/heads/main" ]]'
+      # A job that names an environment nobody created gets an unprotected one,
+      # so the publish job must not start until this one has a reviewer whom an
+      # administrator cannot bypass.
+      - name: Require a protected release environment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/environments/play-release" |
+            jq -e '.can_admins_bypass == false
+              and any(.protection_rules[]; .type == "required_reviewers" and (.reviewers | length) > 0)'
+      - name: Check the measurement run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$MEASUREMENT_RUN" |
+            jq -e '.path == ".github/workflows/measure-fixed-play.yml" and .event == "workflow_dispatch"
+              and .head_branch == "main" and .run_attempt == 1 and .conclusion == "success"'
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+      - name: Install pinned dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Download the measured table
+        uses: actions/download-artifact@v8
+        with:
+          name: expected-play-points-fixed
+          path: candidate
+          github-token: ${{ github.token }}
+          run-id: ${{ env.MEASUREMENT_RUN }}
+      - name: Match the download to the committed digests
+        working-directory: candidate
+        run: sha256sum --check --strict ../examples/fixed-play-release.sha256
+      - name: Verify the table and its companions
+        run: |
+          pin="$(jq -er .policy_manifest_sha256 examples/fixed-play-inputs.json)"
+          python -m scripts.verify_fixed_play_bundle \
+            --policy-manifest-sha256 "$pin" --release-samples 13000 \
+            --full candidate/expected_play_points.json \
+            --means candidate/expected_play_points.client.json \
+            --sidecar candidate/expected_play_points.uncertainty.json \
+            --lines candidate/expected_play_points.lines.json
+      - name: Require the notes to quote the measured gate result
+        run: |
+          python -c 'import json, sys; from artifact_pipeline.promotion_gate import release_summary; gate = release_summary(json.load(open("candidate/expected_play_points.json"))["__metadata__"]); sys.exit(0 if gate in open("examples/fixed-play-release.md").read() else "The release notes do not quote the measured gate result")'
+      # What the release held before: enough to put it back by hand.
+      - name: Download the release this would replace
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download expected-play-points --repo "$GITHUB_REPOSITORY" --dir previous
+          gh release view expected-play-points --repo "$GITHUB_REPOSITORY" --json body --jq .body > previous/release-notes.md
+      - name: Preserve the release this would replace
+        uses: actions/upload-artifact@v7
+        with:
+          name: expected-play-points-previous
+          if-no-files-found: error
+          retention-days: 90
+          path: previous/
+
+  publish:
+    needs: verify
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' &&
+      github.run_attempt == 1 && inputs.approval == 'publish'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: play-release
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download the measured table
+        uses: actions/download-artifact@v8
+        with:
+          name: expected-play-points-fixed
+          path: candidate
+          github-token: ${{ github.token }}
+          run-id: ${{ env.MEASUREMENT_RUN }}
+      - name: Match the download to the committed digests
+        working-directory: candidate
+        run: sha256sum --check --strict ../examples/fixed-play-release.sha256
+      - name: Publish the rolling release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: expected-play-points
+          name: Latest Expected Play Points Table
+          body_path: examples/fixed-play-release.md
+          files: |
+            candidate/expected_play_points.json
+            candidate/expected_play_points.client.json
+            candidate/expected_play_points.uncertainty.json
+            candidate/expected_play_points.lines.json
+          fail_on_unmatched_files: true
+          make_latest: false
+      - name: Verify the attached release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/expected-play-points" |
+            bash scripts/check_crib_release_assets.sh examples/fixed-play-release.sha256

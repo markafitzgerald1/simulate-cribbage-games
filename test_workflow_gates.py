@@ -13,9 +13,7 @@ import yaml  # type: ignore[import-untyped]
 REPO_ROOT = Path(__file__).resolve().parent
 WORKFLOW_PATH = REPO_ROOT / ".github/workflows/python-install-and-test.yml"
 PLAY_WORKFLOW_PATH = REPO_ROOT / ".github/workflows/generate-play-artifact.yml"
-PRODUCTION_EVENTS = (
-    "github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'"
-)
+PRODUCTION_EVENTS = "github.event_name == 'workflow_dispatch'"
 
 
 class TestWorkflowGates(unittest.TestCase):
@@ -387,7 +385,8 @@ class TestPlayReleaseWorkflow(unittest.TestCase):
 
     def setUp(self) -> None:
         with open(PLAY_WORKFLOW_PATH, encoding="utf-8") as f:
-            jobs = yaml.safe_load(f)["jobs"]
+            self.workflow = yaml.load(f, Loader=yaml.BaseLoader)
+        jobs = self.workflow["jobs"]
         self.generate = {step["name"]: step for step in jobs["generate-table"]["steps"]}
         self.release = {
             step["name"]: step for step in jobs["release-artifact"]["steps"]
@@ -395,6 +394,22 @@ class TestPlayReleaseWorkflow(unittest.TestCase):
 
     def command(self, name: str) -> list[str]:
         return shlex.split(self.generate[name]["run"].replace("\\\n", ""))
+
+    def test_v3_replaces_the_released_table_only_on_request(self) -> None:
+        # Catches a schedule that would replace the fixed CFR policy's table,
+        # or a manual run that replaces it without asking for that.
+        self.assertEqual(
+            set(self.workflow["on"]), {"pull_request", "workflow_dispatch"}
+        )
+        inputs = self.workflow["on"]["workflow_dispatch"]["inputs"]
+        self.assertEqual(set(inputs), {"replace_release"})
+        self.assertEqual(inputs["replace_release"]["type"], "boolean")
+        self.assertEqual(inputs["replace_release"]["default"], "false")
+        self.assertEqual(
+            self.workflow["jobs"]["release-artifact"]["if"],
+            "github.event_name == 'workflow_dispatch' && inputs.replace_release"
+            " && github.ref == 'refs/heads/main'",
+        )
 
     def test_production_adds_only_the_enforced_gate(self) -> None:
         self.assertEqual(

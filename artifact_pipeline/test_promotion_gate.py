@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 import math
+import re
 from pathlib import Path
 import random
 import tempfile
@@ -175,6 +176,22 @@ class TestEvaluatePromotion(unittest.TestCase):
             with self.subTest(deals=deals):
                 with self.assertRaisesRegex(ValueError, "at least 1,000 deals"):
                     evaluate_promotion(self.trained, deals, 42)
+
+    def test_reports_progress_on_standard_error_ten_times(self):
+        # Catches a silent gate, a line per deal, and progress on standard out.
+        with patch("sys.stderr", io.StringIO()) as stderr, patch(
+            "sys.stdout", io.StringIO()
+        ) as stdout:
+            scripted_gate(self.trained, [(0, 0, 0)] * 1000, 1000)
+        self.assertEqual(
+            re.findall(
+                r"(?m)^\[promotion-gate\] deal (\d+)/1000, \d+s elapsed$",
+                stderr.getvalue(),
+            ),
+            [str(deal) for deal in range(100, 1001, 100)],
+        )
+        self.assertEqual(len(stderr.getvalue().splitlines()), 10)
+        self.assertEqual(stdout.getvalue(), "")
 
     def test_heuristic_against_itself_has_no_advantage(self):
         heuristic = {role: LegacyHeuristicPolicy() for role in (PONE, DEALER)}
