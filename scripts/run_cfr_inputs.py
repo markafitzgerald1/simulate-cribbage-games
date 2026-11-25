@@ -7,6 +7,9 @@ against the digests any build must reproduce, then runs or resumes the CFR+
 solve until it converges or its time budget runs out. On convergence it also
 writes the one-bit counterfactual support. Every call leaves a summary of its
 steps (time, peak memory, free disk) and of each output's size and SHA-256.
+While a step runs, a progress line goes to stderr every five minutes, so the
+Actions log shows a multi-hour solve advancing: its latest iteration, newest
+certificate and time left before it pauses.
 The job's status (`converged` or `paused`) goes to the file named by
 `--status-file`, which the workflow points at `$GITHUB_OUTPUT`, so a paused
 first job can hand its checkpoint to a second.
@@ -20,13 +23,16 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Callable, Sequence
+from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import resource
 import shutil
 import subprocess
 import sys
+import threading
 import time
 
 PINNED_DIGESTS = Path(__file__).resolve().parents[1] / "native/cfr/digests.json"
@@ -39,6 +45,9 @@ BUILD_ORDER = ("menus", "offsets", "trees")
 CONVERGED, PAUSED = 0, 3
 CONVERGED_OUTPUTS = ("policy.bin", "support.bin", "solve.json", "curve.jsonl")
 STATE_FILES = ("curve.jsonl", "solve.json", "checkpoint.json")
+HEARTBEAT_SECONDS = 300.0
+# Shorter would flood the log; longer than this overflows a thread wait.
+MINIMUM_HEARTBEAT_SECONDS = 1.0
 
 Runner = Callable[[list[str]], "subprocess.CompletedProcess[str]"]
 
@@ -55,6 +64,123 @@ def sha256_file(path: Path) -> str:
         for block in iter(lambda: source.read(1 << 20), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def log(message: str) -> None:
+    """Write one progress line to stderr, which the Actions log shows live.
+
+    Best effort: the line is only for people watching, so a closed or
+    broken stderr must never fail the job. With stderr closed at launch
+    Python sets it to None, and print would then write to stdout, which
+    carries the command's result. A stream with a file descriptor gets the
+    line in one unbuffered write: a failed buffered write leaves bytes that
+    Python flushes again at exit, and that second failure sets exit code 120.
+    """
+    stream = sys.stderr
+    if stream is None:
+        return
+    stamp = datetime.now(timezone.utc).strftime("%H:%M:%S")
+    line = f"[cfr-inputs {stamp}Z] {message}\n"
+    try:
+        try:
+            descriptor = stream.fileno()
+        except (AttributeError, OSError, ValueError):
+            stream.write(line)
+            stream.flush()
+        else:
+            encoding = getattr(stream, "encoding", None) or "utf-8"
+            os.write(descriptor, line.encode(encoding, "replace"))
+    except (OSError, ValueError):
+        pass
+
+
+def duration(seconds: float) -> str:
+    """Format a span as hours and minutes, or minutes and seconds."""
+    whole = max(0, int(seconds))
+    hours, rest = divmod(whole, 3600)
+    if hours:
+        return f"{hours}h{rest // 60:02d}m"
+    return f"{rest // 60}m{rest % 60:02d}s"
+
+
+def last_record(path: Path) -> dict[str, object] | None:
+    """Return a JSON-lines file's last complete record, if it has one.
+
+    The solver may be appending a line or replacing the file as it is read,
+    so a partial last line is skipped rather than treated as an error.
+    """
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return None
+    for line in reversed(lines):
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(record, dict):
+            return record
+    return None
+
+
+def certificate_iteration(path: Path) -> int:
+    """Return the iteration a `certificate-N.json` name records."""
+    return int(path.stem.rsplit("-", 1)[1])
+
+
+def solve_progress(output: Path) -> str:
+    """Describe a running solve from the files it writes as it goes."""
+    parts = []
+    curve = last_record(output / "curve.jsonl")
+    if curve is not None:
+        parts.append(
+            f"iteration {curve.get('iteration')} took {curve.get('seconds')} s"
+        )
+    certificates = sorted(output.glob("certificate-*.json"), key=certificate_iteration)
+    newest = last_record(certificates[-1]) if certificates else None
+    if newest is not None:
+        parts.append(
+            f"certificate at iteration {newest.get('iteration')}: "
+            f"exposure {newest.get('exposure')} (target 0.001)"
+        )
+    return "; ".join(parts) or "no iteration finished yet"
+
+
+class Heartbeat:
+    """Log a description every `interval` seconds until the block ends.
+
+    Leaving the block only signals the thread and never waits for it: a
+    progress read stuck on a slow disk must not delay the job's evidence or
+    status, or eat into the solve's time budget. The thread is a daemon, so
+    one still reading dies with the process, and it logs nothing once its
+    block has ended.
+    """
+
+    def __init__(self, describe: Callable[[], str], interval: float) -> None:
+        self.describe = describe
+        self.interval = interval
+        self.stopped = threading.Event()
+        self.thread = threading.Thread(target=self.beat, daemon=True)
+
+    def __enter__(self) -> "Heartbeat":
+        try:
+            self.thread.start()
+        except RuntimeError as error:
+            log(f"no progress lines for this step: {error!r}")
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        self.stopped.set()
+
+    def beat(self) -> None:
+        """Log until stopped; a progress read that fails never stops a step."""
+        while not self.stopped.wait(self.interval):
+            try:
+                message = self.describe()
+            except (OSError, ValueError, KeyError, TypeError) as error:
+                message = f"progress unavailable: {error!r}"
+            if not self.stopped.is_set():
+                log(message)
 
 
 def peak_child_rss() -> int:
@@ -84,18 +210,45 @@ class SolveJob:
         """Run a binary subcommand on the output folder and record it."""
         command = [str(self.arguments.binary), name, "--output"]
         command += [str(self.arguments.output), *options]
+        log(f"{name}: started")
         began = self.clock()
-        result = self.runner(command)
+        with Heartbeat(lambda: self.describe(name), self.arguments.heartbeat_seconds):
+            result = self.runner(command)
+            # Timed here, so a slow heartbeat shutdown is not counted.
+            seconds = round(self.clock() - began, 3)
+        peak = peak_child_rss()
+        free = shutil.disk_usage(self.arguments.output).free
         self.steps.append(
             {
                 "step": name,
                 "exit_code": result.returncode,
-                "seconds": round(self.clock() - began, 3),
-                "peak_child_rss_kib": peak_child_rss(),
-                "free_bytes": shutil.disk_usage(self.arguments.output).free,
+                "seconds": seconds,
+                "peak_child_rss_kib": peak,
+                "free_bytes": free,
             }
         )
+        log(
+            f"{name}: exit {result.returncode} after {seconds} s; "
+            f"peak child memory {peak} KiB; {free / 1000**3:.1f} GB free"
+        )
         return result
+
+    def describe(self, name: str) -> str:
+        """One heartbeat line for a running step: elapsed, disk, progress."""
+        output = self.arguments.output
+        free = shutil.disk_usage(output).free / 1000**3
+        text = f"{name}: still running; {free:.1f} GB free"
+        if name == "solve":
+            left = self.arguments.stop_at - time.time()
+            if left > 0:
+                deadline = f"{duration(left)} until the pause deadline"
+            else:
+                deadline = (
+                    f"pause deadline passed {duration(-left)} ago; "
+                    "the solve stops after its current iteration"
+                )
+            text += f"; {deadline}; {solve_progress(output)}"
+        return text
 
     def require(self, name: str, *options: str) -> str:
         """Run a step that must succeed and return its stdout."""
@@ -193,6 +346,17 @@ class SolveJob:
         return status
 
 
+def positive_seconds(text: str) -> float:
+    """Parse a heartbeat interval a thread can wait for without flooding."""
+    value = float(text)
+    if not MINIMUM_HEARTBEAT_SECONDS <= value <= threading.TIMEOUT_MAX:
+        raise argparse.ArgumentTypeError(
+            f"must be from {MINIMUM_HEARTBEAT_SECONDS:g} seconds"
+            f" to {threading.TIMEOUT_MAX:g}"
+        )
+    return value
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Parse a solve job, or a build of the menus and offsets alone."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -207,6 +371,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     for command in (solve_job, build):
         command.add_argument("--binary", type=Path, required=True)
         command.add_argument("--output", type=Path, required=True)
+        command.add_argument(
+            "--heartbeat-seconds",
+            type=positive_seconds,
+            default=HEARTBEAT_SECONDS,
+            help="Seconds between progress lines while a step runs",
+        )
     solve_job.add_argument("--prior", type=Path, required=True)
     solve_job.add_argument("--evidence", type=Path, required=True)
     solve_job.add_argument("--status-file", type=Path, required=True)
