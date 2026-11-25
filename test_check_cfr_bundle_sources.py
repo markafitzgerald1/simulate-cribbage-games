@@ -26,6 +26,7 @@ def good_run() -> dict:
         "conclusion": "success",
         "run_attempt": 1,
         "repository": {"full_name": REPOSITORY},
+        "head_repository": {"full_name": REPOSITORY},
     }
 
 
@@ -46,13 +47,14 @@ class SourceRunTest(unittest.TestCase):
             "conclusion": "failure",
             "run_attempt": 2,
             "repository": {"full_name": "someone/simulate-cribbage-games"},
+            "head_repository": {"full_name": "someone/simulate-cribbage-games"},
         }
         for key, value in changes.items():
             with self.subTest(key=key):
                 run = {**good_run(), key: value}
                 with self.assertRaisesRegex(ValueError, "source run"):
                     sources.check_source_run(run, REPOSITORY)
-        for missing in ("repository", "conclusion"):
+        for missing in ("repository", "head_repository", "conclusion"):
             with self.subTest(missing=missing):
                 run = good_run()
                 del run[missing]

@@ -12,7 +12,8 @@ WORKFLOW = ROOT / ".github/workflows/bundle-cfr-inputs.yml"
 RELEASE_DRAFT = ROOT / "examples/generate-fixed-play-artifact.yml"
 # The lookup must name the source run's one prior job, or fail.
 LOOKUP_PRIOR_JOB = (
-    'job="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/jobs"'
+    'job="$(gh api'
+    ' "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/attempts/1/jobs"'
     ' --jq \'[.jobs[] | select(.name == "prior")] | if length == 1'
     ' then .[0].id else error("expected one prior job") end\')"'
 )
@@ -92,9 +93,11 @@ class CfrBundleWorkflowTest(unittest.TestCase):
                 self.assertEqual(result.returncode == 0, accepted)
 
     def test_a_failed_check_piped_into_tee_fails_its_step(self) -> None:
-        # Catches removing the named shell: Actions' bash for an unnamed
-        # shell ignores a failure before the last stage of a pipeline.
+        # Catches removing the named shell, or overriding it for the job:
+        # Actions' bash for an unnamed shell, and sh, ignore a failure
+        # before the last stage of a pipeline.
         self.assertEqual(self.workflow["defaults"], {"run": {"shell": "bash"}})
+        self.assertNotIn("defaults", self.job)
         for step in self.steps:
             self.assertNotIn("shell", step)
 
@@ -138,6 +141,11 @@ class CfrBundleWorkflowTest(unittest.TestCase):
                 ["python", "-m", "scripts.check_cfr_bundle_sources", "source-run"],
             ],
         )
+        command = shlex.split(lines[1])
+        self.assertEqual(command[command.index("--run-json") + 1], "source-run.json")
+        self.assertEqual(
+            command[command.index("--repository") + 1], "$GITHUB_REPOSITORY"
+        )
 
     def test_the_population_is_matched_to_the_prior_job_log(self) -> None:
         # Catches skipping the log check, echoing it, or checking another
@@ -154,6 +162,15 @@ class CfrBundleWorkflowTest(unittest.TestCase):
         self.assertEqual(lines[0].strip(), LOOKUP_PRIOR_JOB)
         fetch, verify = (shlex.split(line) for line in lines[2:])
         self.assertEqual(fetch[:2], ["curl", "--fail"])
+        # Without --location curl saves the redirect's empty body, and
+        # without the token the API refuses the log.
+        self.assertTrue("--location" in fetch, fetch)
+        self.assertEqual(
+            fetch[fetch.index("--header") + 1], "Authorization: Bearer $GH_TOKEN"
+        )
+        # Single quotes would send the literal text $GH_TOKEN.
+        header = '--header "Authorization: Bearer $GH_TOKEN"'
+        self.assertTrue(header in lines[2], lines[2])
         self.assertEqual(fetch[fetch.index("--output") + 1], "prior-job.log")
         self.assertEqual(
             fetch[-1], "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/jobs/$job/logs"
@@ -269,18 +286,50 @@ class CfrBundleWorkflowTest(unittest.TestCase):
             self.step("Bundle the measurement inputs")["run"].replace("\\\n", " ")
         )
         self.assertEqual(
-            bundle[bundle.index("--output") + 1], "fixed-play-policy-inputs"
+            bundle[:4],
+            ["python", "-u", "-m", "artifact_pipeline.bundle_fixed_play_inputs"],
         )
+        for option, folder in (
+            ("--work", "cfr-work"),
+            ("--prior-dir", "cfr-prior"),
+            ("--output", "fixed-play-policy-inputs"),
+        ):
+            self.assertEqual(bundle[bundle.index(option) + 1], folder)
+
+    def test_inputs_reach_commands_only_through_the_step_environment(self) -> None:
+        # Catches a run id hard-coded where the numeric check reads it, an
+        # input expanded straight into a script, or an API call that lost
+        # its token: each step that names a value must bind it here.
+        bindings = {
+            "$SOURCE_RUN_ID": ("SOURCE_RUN_ID", "${{ inputs.source_run_id }}"),
+            "$GH_TOKEN": ("GH_TOKEN", "${{ github.token }}"),
+        }
+        for name, step in zip(self.names, self.steps):
+            command = step.get("run", "")
+            with self.subTest(step=name):
+                self.assertNotIn("${{", command)
+                uses_api = bool(subcommands(command, "gh")) or "curl" in command
+                for variable, (key, value) in bindings.items():
+                    if variable in command or (key == "GH_TOKEN" and uses_api):
+                        self.assertEqual(step["env"][key], value)
 
     def test_nothing_publishes(self) -> None:
-        # Catches a release, push or write call slipped into any step.
+        # Catches a release, push or write call slipped into any step: a
+        # git write, a release, or an API call that sends data.
         for step in self.steps:
             self.assertNotRegex(step.get("uses", ""), "release")
-            command = step.get("run", "")
+            command = step.get("run", "").replace("\\\n", " ")
             self.assertNotIn("release", subcommands(command, "gh"))
             for verb in ("push", "tag", "commit"):
                 self.assertNotIn(verb, subcommands(command, "git"))
-            self.assertNotRegex(command, r"gh api .*(-X|--method)")
+            self.assertNotRegex(
+                command,
+                r"gh api.*\s(-X|--method|-[fF]|--field|--raw-field|--input)",
+            )
+            self.assertNotRegex(
+                command,
+                r"curl.*\s(-X|--request|-d|--data|--json|-F|--form|-T|--upload)",
+            )
 
 
 if __name__ == "__main__":

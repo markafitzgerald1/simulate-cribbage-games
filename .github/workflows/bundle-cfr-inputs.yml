@@ -111,6 +111,8 @@ jobs:
             | tee -a "$GITHUB_STEP_SUMMARY"
       # The population is not in the solve's evidence. The prior job logged
       # the SHA-256 of each file it uploaded; match the population to that.
+      # Attempt 1's jobs, because the plain jobs list follows the latest
+      # attempt, and a re-run started meanwhile skips its prior job.
       # (A prior rebuilt from it is not enough: two populations can give the
       # same prior bytes yet deal different opponent keeps.)
       - name: Match the population to the prior job's log
@@ -118,7 +120,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SOURCE_RUN_ID: ${{ inputs.source_run_id }}
         run: |
-          job="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/jobs" --jq '[.jobs[] | select(.name == "prior")] | if length == 1 then .[0].id else error("expected one prior job") end')"
+          job="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/attempts/1/jobs" --jq '[.jobs[] | select(.name == "prior")] | if length == 1 then .[0].id else error("expected one prior job") end')"
           # curl, not gh: newer gh refuses a log's terminal escape codes.
           curl --fail --silent --show-error --location \
             --header "Authorization: Bearer $GH_TOKEN" \

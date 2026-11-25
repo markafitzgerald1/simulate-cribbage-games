@@ -58,10 +58,11 @@ def check_source_run(run: Mapping[str, Any], repository: str) -> None:
     for key, value in expected.items():
         if run.get(key) != value:
             raise ValueError(f"source run {key} is {run.get(key)!r}, not {value!r}")
-    owner = run.get("repository")
-    name = owner.get("full_name") if isinstance(owner, Mapping) else None
-    if name != repository:
-        raise ValueError(f"source run is from {name!r}, not {repository!r}")
+    for key in ("repository", "head_repository"):
+        owner = run.get(key)
+        name = owner.get("full_name") if isinstance(owner, Mapping) else None
+        if name != repository:
+            raise ValueError(f"source run {key} is {name!r}, not {repository!r}")
 
 
 def converged_summary(evidence: Path) -> dict[str, Any]:
