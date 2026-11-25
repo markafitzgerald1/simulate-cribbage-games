@@ -346,10 +346,11 @@ For changes under `native/cfr/`, the Rust CFR input generator, run these from
 that directory: `cargo fmt --check`, `cargo clippy --locked --release
 --all-targets -- -D warnings` (clippy's pedantic group is on in `Cargo.toml`),
 `cargo test --locked --release -- --include-ignored`, `RAYON_NUM_THREADS=1 cargo
-llvm-cov --locked --release --fail-under-lines 100 -- --include-ignored`, `pmd
-cpd --language rust --minimum-tokens 40 --dir src --dir tests` and `cargo deny
---locked check`. These mirror the Python and TypeScript gates: lint, full line
-coverage, copy/paste detection, and dependency advisories, licenses and sources.
+llvm-cov nextest --locked --release --fail-under-lines 100 --run-ignored all -j
+4`, `pmd cpd --language rust --minimum-tokens 40 --dir src --dir tests` and
+`cargo deny --locked check`. These mirror the Python and TypeScript gates: lint,
+full line coverage, copy/paste detection, and dependency advisories, licenses
+and sources.
 The `rust-cfr-inputs` CI job runs all of them under `ci-passed`, except that a
 pull request into main whose Rust inputs are identical to main's skips the test
 and coverage steps. The job itself must always run, because `ci-passed` fails on
@@ -360,11 +361,16 @@ relative path there matches nothing, which would skip every time. Stacked pull
 requests never skip, because changing a pull request's base to main starts no
 new run.
 `native/cfr/rust-toolchain.toml` pins the toolchain, and the workflow pins the
-cargo-llvm-cov and cargo-deny versions, which Dependabot does not bump. Coverage
-counters are shared by every thread, so the coverage run uses one rayon thread:
-a parallel instrumented solve was over ten times slower. Line coverage counts a
-line that holds only a `?` error branch as missed, so keep each `?` on a line
-that also runs when the call succeeds. The generator's outputs are pinned by
+cargo-llvm-cov, cargo-nextest and cargo-deny versions, which Dependabot does not
+bump; pin a nextest version that the pinned install-action lists in its
+manifest, which holds the checksums. Coverage counters are shared by every
+thread of a process, so the coverage run gives each test its own process through
+cargo-nextest, and one rayon thread by default: a parallel instrumented solve
+was over ten times slower. Splitting work over child processes avoids the
+contention too, which is why the menus test runs four. Keep nextest configured
+by its command only, because a `.config/nextest.toml` default filter narrows a
+run whose command looks complete. Line coverage counts a line that holds only a
+`?` error branch as missed, so keep each `?` on a line that also runs when the call succeeds. The generator's outputs are pinned by
 digest, so a change that reorders a floating-point sum, or lets a sum cross
 threads, is a behavior change even when every test passes: it can alter the
 policy's low bits, so it needs the full-size check, and a re-pin and fresh
@@ -383,11 +389,11 @@ root-module path keyword as a misspelling of "create", so module paths use
 `super::` rather than an ignore-list change to the hook. Five end-to-end tests
 take 13 to 45 seconds each and carry `#[ignore]` with a reason saying so, the
 Rust book's idiom for expensive rather than broken tests; plain `cargo test`
-skips them, so CI passes `--include-ignored` to both the test and coverage
-steps, and `test_workflow_gates.py` fails if either flag goes. Local pre-commit
-hooks run only when `native/cfr/` changes: `cargo fmt --check` on commit, and
-clippy plus the fast tests (about 4 seconds of tests) on push, through
-`scripts/cargo_hook.sh`, which adds `$CARGO_HOME/bin` (by default
+skips them, so CI passes `--include-ignored` to the test step and
+`--run-ignored all` to the coverage step, and `test_workflow_gates.py` fails if
+either flag goes. Local pre-commit hooks run only when `native/cfr/` changes:
+`cargo fmt --check` on commit, and clippy plus the fast tests (about 4 seconds
+of tests) on push, through `scripts/cargo_hook.sh`, which adds `$CARGO_HOME/bin` (by default
 `~/.cargo/bin`) to `PATH` because a hook's environment may lack it, and
 ignores an exported `CDPATH`. A hook's `stages` only chooses when it runs; it
 does not install the Git hook. `default_install_hook_types` in

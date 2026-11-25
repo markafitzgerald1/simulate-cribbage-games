@@ -271,10 +271,10 @@ jobs:
         run: rustup toolchain install
       # Pinned so a new tool release cannot turn ci-passed red on its own.
       # Dependabot does not track these; bump them by hand.
-      - name: Install cargo-llvm-cov and cargo-deny
+      - name: Install cargo-llvm-cov, cargo-nextest and cargo-deny
         uses: taiki-e/install-action@v2.87.32
         with:
-          tool: cargo-llvm-cov@0.9.1,cargo-deny@0.20.2
+          tool: cargo-llvm-cov@0.9.1,cargo-nextest@0.9.149,cargo-deny@0.20.2
       - name: Set up Java JDK (required by PMD CPD)
         uses: actions/setup-java@v6
         with:
@@ -295,15 +295,17 @@ jobs:
       - name: Test
         if: steps.rust-inputs.outputs.unchanged != 'true'
         run: cargo test --locked --release -- --include-ignored
-      # Coverage counters are shared by every thread, so a parallel solve
-      # spends its time contending for them (12 s against 148 s for one
-      # test). One rayon thread keeps the run short; the plain test step
-      # above and the explicit pools in tests/solve.rs still cover threads.
+      # Coverage counters are shared by every thread of a process, so a
+      # parallel solve spends its time contending for them (12 s against 148 s
+      # for one test). nextest runs each test in its own process, and one
+      # rayon thread by default keeps a process from contending with itself;
+      # the plain test step above and the explicit pools in tests/solve.rs
+      # still cover threads. nextest skips doc tests; that step would run any.
       - name: Check 100% line coverage
         if: steps.rust-inputs.outputs.unchanged != 'true'
         env:
           RAYON_NUM_THREADS: "1"
-        run: cargo llvm-cov --locked --release --fail-under-lines 100 --show-missing-lines -- --include-ignored
+        run: cargo llvm-cov nextest --locked --release --fail-under-lines 100 --show-missing-lines --run-ignored all -j 4
       - name: Run PMD Copy/Paste Detector
         run: pmd cpd --language rust --minimum-tokens 40 --dir src --dir tests
       - name: Check dependency advisories, licenses and sources
