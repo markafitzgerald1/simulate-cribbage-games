@@ -272,7 +272,7 @@ jobs:
       # Pinned so a new tool release cannot turn ci-passed red on its own.
       # Dependabot does not track these; bump them by hand.
       - name: Install cargo-llvm-cov, cargo-nextest and cargo-deny
-        uses: taiki-e/install-action@v2.87.32
+        uses: taiki-e/install-action@v2.90.8
         with:
           tool: cargo-llvm-cov@0.9.1,cargo-nextest@0.9.149,cargo-deny@0.20.2
       - name: Set up Java JDK (required by PMD CPD)
