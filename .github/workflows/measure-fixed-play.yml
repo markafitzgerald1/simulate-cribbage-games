@@ -1,0 +1,129 @@
+name: Measure fixed play table
+
+# Issue #203: measure the play table with the pinned CFR policy. Manual only,
+# from main, once per dispatch. It publishes nothing: the job can only read,
+# and it uploads the measured table, its companions and the gate summary as one
+# artifact for a separate, later release decision.
+#
+# The inputs are the bundle run and manifest digest committed together in
+# examples/fixed-play-inputs.json. The manifest binds every other input byte.
+
+on:
+  workflow_dispatch:
+    inputs:
+      approval:
+        description: Enter measure to confirm the approved measurement
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: fixed-play-measurement
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  measure:
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' &&
+      github.run_attempt == 1 && inputs.approval == 'measure'
+    runs-on: ubuntu-latest
+    # Under the 360-minute ceiling, and past the measurement step's own limit
+    # so that a step that runs out of time still leaves room to keep its cells.
+    timeout-minutes: 355
+    steps:
+      # Expression equality ignores case, so a branch named Main would pass
+      # the job guard; this exact comparison does not.
+      - name: Require main exactly
+        run: '[[ "$GITHUB_REF" == "refs/heads/main" ]]'
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+      - name: Install pinned dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Read the pinned inputs and fix the timestamp
+        id: pins
+        run: |
+          echo "generated_at=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
+          python - <<'PIN'
+          import json, os
+          pins = json.load(open("examples/fixed-play-inputs.json"))
+          if not pins["input_run_id"] or not pins["policy_manifest_sha256"]:
+              raise SystemExit("examples/fixed-play-inputs.json is not pinned")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"run_id={pins['input_run_id']}\n")
+              output.write(f"manifest_sha256={pins['policy_manifest_sha256']}\n")
+          PIN
+      - name: Download the pinned fixed inputs
+        uses: actions/download-artifact@v8
+        with:
+          name: fixed-play-policy-inputs
+          path: inputs
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.pins.outputs.run_id }}
+      # The enforced gate runs first: a policy that does not beat the heuristic
+      # stops the job before any cell is measured. A cell's line is logged as it
+      # completes. exec, so the runner's signal at the limit reaches Python,
+      # which stops its workers; bash would exit and leave them writing.
+      - name: Measure the fixed policy in four workers
+        timeout-minutes: 325
+        env:
+          MANIFEST_SHA256: ${{ steps.pins.outputs.manifest_sha256 }}
+          GENERATED_AT: ${{ steps.pins.outputs.generated_at }}
+        run: |
+          exec python -u -m artifact_pipeline.measure_fixed_play_table \
+            --policy-manifest inputs/policy.json \
+            --policy-manifest-sha256 "$MANIFEST_SHA256" \
+            --generated-at "$GENERATED_AT" --checkpoint-dir cells \
+            --workers 4 --samples 13000 --seed 42 --promotion-gate enforce
+      - name: Check the offline reference and record regression
+        run: |
+          python -m artifact_pipeline.compare_play_table expected_play_points.json \
+            --fail-on-regression --write-metadata
+      - name: Export and verify companions
+        env:
+          MANIFEST_SHA256: ${{ steps.pins.outputs.manifest_sha256 }}
+        run: |
+          before="$(sha256sum expected_play_points.client.json | cut -d' ' -f1)"
+          python -m artifact_pipeline.export_uncertainty \
+            --table play --full expected_play_points.json \
+            --means expected_play_points.client.json \
+            --output expected_play_points.uncertainty.json
+          after="$(sha256sum expected_play_points.client.json | cut -d' ' -f1)"
+          test "$before" = "$after"
+          python -m scripts.verify_fixed_play_bundle \
+            --policy-manifest-sha256 "$MANIFEST_SHA256" --release-samples 13000
+          python -c 'import json; from artifact_pipeline.promotion_gate import release_summary; print(release_summary(json.load(open("expected_play_points.json"))["__metadata__"]))' > expected_play_points.gate.md
+          cat expected_play_points.gate.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve the measured table and companions
+        uses: actions/upload-artifact@v7
+        with:
+          name: expected-play-points-fixed
+          if-no-files-found: error
+          retention-days: 90
+          path: |
+            expected_play_points.json
+            expected_play_points.client.json
+            expected_play_points.uncertainty.json
+            expected_play_points.lines.json
+            expected_play_points.gate.md
+      # Best effort: a run that fails or runs out of time keeps its complete
+      # cells, the timestamp a resume needs (cells/run.json) and any table it
+      # wrote. Nothing resumes them automatically.
+      - name: Preserve an unfinished run
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fixed-play-unfinished
+          if-no-files-found: ignore
+          retention-days: 90
+          path: |
+            cells/*.json
+            expected_play_points*.json

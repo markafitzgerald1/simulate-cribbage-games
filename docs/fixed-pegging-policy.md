@@ -153,7 +153,7 @@ The bounded play workflow runs the same command on pull requests. The fixture
 covers 21 keeps and both roles at 25 samples, including live mixed-policy calls;
 it is not an approved production input bundle or a promotion-gate result.
 
-`examples/fixed-play-inputs.json` is deliberately unpinned. Its two values are
+`examples/fixed-play-inputs.json` holds the input pins. Its two values are
 set together from one `bundle-cfr-inputs.yml` run: that run's id, and the
 `policy_manifest_sha256` it printed in its job summary. That workflow bundles
 the outputs of one finished `generate-cfr-inputs.yml` run, named by its id,
@@ -173,10 +173,19 @@ so the manifest digest depends only on the component bytes. It refuses a
 population that does not report `converged: false`, then loads the bundle once
 at full size and prints the manifest digest.
 
+The manual workflow `measure-fixed-play.yml` measures the table from those
+pins and publishes nothing. It runs only from main, on the first attempt, with
+the approval input `measure`, and its token can only read. It uploads the
+table, its companions and the gate summary as `expected-play-points-fixed`.
+If it fails or runs out of time it tries to upload its complete cells instead,
+as `fixed-play-unfinished`; nothing resumes them automatically. Dispatching it
+needs Mark's approval.
+
 `examples/generate-fixed-play-artifact.yml` is an inert job definition outside
-GitHub's workflow directory. It has no schedule. Before activation, Mark must
-approve and commit the input pins, and configure required human reviewers on
-`approved-fixed-play-release`. Its 330-minute generation job measures 13,000
+GitHub's workflow directory. It has no schedule. It measures and publishes in
+one run; a later change will replace it with a release step that publishes a
+finished `measure-fixed-play.yml` run. Before any release, Mark must configure
+required human reviewers on `approved-fixed-play-release`. Its 330-minute generation job measures 13,000
 samples per cell with four workers and an enforced promotion gate. Publication
 also requires the explicit `authorize_release` input and the main branch.
 
@@ -199,7 +208,7 @@ run replaces the fixed-policy bundle with a v3 table: rollout-trained, or
 heuristic after a failed promotion gate.
 
 The example's local complete-cell checkpoints are not retained across hosted
-workflow jobs. Cross-job checkpoint transport, a larger precision schedule and
+workflow jobs. Resuming across jobs, a larger precision schedule and
 real runner throughput are subsequent work. Activating, dispatching, publishing
 or vendoring the resulting bundle requires separate authorization. Local
 measurement and YAML linting do not authorize those actions.

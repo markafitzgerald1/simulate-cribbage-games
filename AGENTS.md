@@ -811,6 +811,16 @@ fails with the check only if bash fails a pipeline on any stage, which Actions
 sets up only when a step names its shell, so that workflow names `bash` as
 its default shell.
 
+`measure-fixed-play.yml` measures the play table from those pins under the same
+manual, main-only, first-attempt guards, with the approval input `measure`. It
+only measures, so a release can later publish a finished run without measuring
+again and without the protected environment existing first. An Actions job that
+names an environment nobody has created gets an unprotected one, so create
+`approved-fixed-play-release` with required reviewers before any workflow names
+it. A step's own time limit fails the step and leaves later `failure()` steps
+to run, so a long step gets a limit under the job's and its partial work is
+uploaded last.
+
 ## Lint Configuration Expectations
 
 Do not assume lint rules are enforced unless they are present in local

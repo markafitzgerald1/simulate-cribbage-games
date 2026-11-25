@@ -813,10 +813,13 @@ coverage report --fail-under=100 -m --include='artifact_pipeline/*,scripts/check
 ```
 
 The play workflow also runs this synthetic fixture on applicable pull requests.
+The manual workflow `.github/workflows/measure-fixed-play.yml` measures the
+table from the committed input pins and publishes nothing; dispatching it needs
+the maintainer's approval.
 [The draft release job](examples/generate-fixed-play-artifact.yml) is outside
 `.github/workflows`, so it cannot execute. It uses the existing rolling-release
 boundary and attaches full, means, sidecar and lines together after explicit
 release authorization and protected-environment approval. See
 [the input pins](examples/fixed-play-inputs.json) and the fixed-policy contract
-for the input-distribution and activation decisions still required.
+for the activation decisions still required.
 It retains the offline Cribbage Pro regression check before companion export.

@@ -1,5 +1,5 @@
 {
-  "input_run_id": null,
-  "policy_manifest_sha256": null,
-  "description": "Unpinned. Set both values together from one bundle-cfr-inputs.yml run: that run's id, and the policy_manifest_sha256 its job summary printed. That run bundles one finished generate-cfr-inputs.yml run. Never pin from local files."
+  "input_run_id": 45528665715,
+  "policy_manifest_sha256": "bc096b75f956c2091c3be73cfe2d9eec0157c87bc30ef6e11e0b283e1007171b",
+  "description": "Pinned from bundle-cfr-inputs.yml run 45528665715, which bundled generate-cfr-inputs.yml run 45322543914: that bundle run's id, and the policy_manifest_sha256 its job summary printed. Change both values together, only from one such run. Never pin from local files."
 }
