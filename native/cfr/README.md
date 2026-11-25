@@ -219,7 +219,10 @@ repository's pre-commit hooks run `cargo fmt --check` on commit and clippy
 plus the fast tests on push, only when files here change.
 
 The `rust-cfr-inputs` CI job runs the same gates, mirroring the Python and
-TypeScript ones:
+TypeScript ones. A pull request into main whose Rust inputs (`native/`, its
+Cargo and Git configuration, and the workflow file) are identical to main's
+skips the test and coverage steps. Pushes to main, stacked pull requests, and
+any run where the comparison fails, run everything. The gates:
 - **Lint:** clippy's pedantic group is on in `Cargo.toml`, which explains
   each exemption, and `min_ident_chars` rejects one-letter names outside
   clippy's default short list (i, j, n, w, x, y, z).

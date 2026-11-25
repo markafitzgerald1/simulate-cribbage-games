@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -59,8 +60,8 @@ class TestRustCiRunsEveryTest(unittest.TestCase):
         commands = {step.get("name"): step.get("run", "") for step in steps}
         # The exact commands, so a narrowing option (such as `--lib`, which
         # skips the integration tests where every slow test lives) or a flag
-        # hidden in a comment fails too, and neither step may be skipped or
-        # allowed to fail.
+        # hidden in a comment fails too, and neither step may be allowed to
+        # fail. TestRustSlowStepsSkip covers when they may be skipped.
         self.assertEqual(
             shlex.split(commands["Test"], comments=True),
             ["cargo", "test", "--locked", "--release", "--", "--include-ignored"],
@@ -81,7 +82,6 @@ class TestRustCiRunsEveryTest(unittest.TestCase):
         )
         for step in steps:
             if step.get("name") in ("Test", "Check 100% line coverage"):
-                self.assertNotIn("if", step)
                 self.assertNotIn("continue-on-error", step)
                 # A custom shell (such as `bash -n {0}`) could parse the
                 # command without running it.
@@ -92,6 +92,208 @@ class TestRustCiRunsEveryTest(unittest.TestCase):
         self.assertNotIn("continue-on-error", job)
         for scope in (workflow, job):
             self.assertNotIn("shell", scope.get("defaults", {}).get("run", {}))
+
+
+class RustCheckout:
+    """An origin and a shallow checkout of a PR's merge, as Actions makes one."""
+
+    def __init__(self, folder: str) -> None:
+        self.origin = Path(folder) / "origin"
+        self.checkout = Path(folder) / "checkout"
+        self.output = Path(folder) / "output"
+        self.output.touch()
+        # A git hook exports GIT_DIR and others, which would point these
+        # commands at this repository.
+        self.env = {
+            key: value for key, value in os.environ.items() if not key.startswith("GIT")
+        } | {"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull}
+        self.origin.mkdir()
+        self.git(self.origin, "init", "--quiet", "--initial-branch=main")
+        for path in (
+            ".gitattributes",
+            ".github/workflows/python-install-and-test.yml",
+            "README.md",
+            "native/cfr/Cargo.toml",
+            "native/cfr/src/lib.rs",
+        ):
+            self.write(path, "main\n")
+        self.commit()
+
+    def git(self, folder: Path, *args: str) -> None:
+        """Run one git command with a throwaway identity."""
+        subprocess.run(
+            ["git", "-c", "user.name=T", "-c", "user.email=t@example.com", *args],
+            cwd=folder,
+            env=self.env,
+            capture_output=True,
+            check=True,
+        )
+
+    def write(self, path: str, text: str) -> None:
+        """Write one file in the origin's working tree."""
+        file = self.origin / path
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.write_text(text, encoding="utf-8")
+
+    def commit(self) -> None:
+        """Commit everything in the origin's working tree."""
+        self.git(self.origin, "add", "--all", "--force")
+        self.git(self.origin, "commit", "--quiet", "--message=change")
+
+    def check_out_pull_request(self, path: str, base: str = "main") -> None:
+        """Change one file on a PR branch and check out its merge into base."""
+        self.git(self.origin, "checkout", "--quiet", "-b", "pr", base)
+        self.write(path, "pull request\n")
+        self.commit()
+        self.git(self.origin, "checkout", "--quiet", "--detach", base)
+        self.git(self.origin, "merge", "--quiet", "--no-ff", "--message=m", "pr")
+        self.git(self.origin, "update-ref", "refs/pull/1/merge", "HEAD")
+        self.check_out("refs/pull/1/merge")
+
+    def check_out(self, ref: str) -> None:
+        """Fetch one ref as deep as the job's checkout does, and detach there."""
+        with open(WORKFLOW_PATH, encoding="utf-8") as f:
+            step = yaml.safe_load(f)["jobs"]["rust-cfr-inputs"]["steps"][0]
+        depth = f"--depth={step.get('with', {}).get('fetch-depth', 1)}"
+        self.checkout.mkdir()
+        self.git(self.checkout, "init", "--quiet")
+        url = self.origin.as_uri()
+        self.git(self.checkout, "fetch", "--quiet", depth, url, ref)
+        self.git(self.checkout, "checkout", "--quiet", "--detach", "FETCH_HEAD")
+
+    def run_step(
+        self, event: str = "pull_request", base: str = "main", path: str = ""
+    ) -> str:
+        """Run the workflow's check and return what it wrote as step outputs."""
+        with open(WORKFLOW_PATH, encoding="utf-8") as f:
+            job = yaml.safe_load(f)["jobs"]["rust-cfr-inputs"]
+        step = next(step for step in job["steps"] if step.get("id") == "rust-inputs")
+        folder = job["defaults"]["run"]["working-directory"]
+        env = self.env | {
+            "GITHUB_EVENT_NAME": event,
+            "GITHUB_OUTPUT": str(self.output),
+            "GITHUB_BASE_REF": base,
+        }
+        env["PATH"] = path + env["PATH"]
+        # Actions' default shell. A nonzero exit would fail the job.
+        subprocess.run(
+            ["bash", "-e", "-c", step["run"]],
+            cwd=self.checkout / step.get("working-directory", folder),
+            env=env,
+            capture_output=True,
+            check=True,
+        )
+        return self.output.read_text(encoding="utf-8")
+
+
+@unittest.skipIf(os.name == "nt", "the step runs in bash on Linux")
+class TestRustSlowStepsSkip(unittest.TestCase):
+    """The slow Rust steps are skipped only when the Rust inputs are main's."""
+
+    def setUp(self) -> None:
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.repo = RustCheckout(folder.name)
+
+    def test_only_the_slow_steps_depend_on_the_check(self) -> None:
+        # Catches a condition that skips when the output is unset, a cheap
+        # step or the whole job becoming skippable, and a check that could
+        # come too late to matter.
+        with open(WORKFLOW_PATH, encoding="utf-8") as f:
+            job = yaml.safe_load(f)["jobs"]["rust-cfr-inputs"]
+        self.assertNotIn("if", job)
+        conditions = {step["name"]: step["if"] for step in job["steps"] if "if" in step}
+        expected = "steps.rust-inputs.outputs.unchanged != 'true'"
+        self.assertEqual(
+            conditions, {"Test": expected, "Check 100% line coverage": expected}
+        )
+        self.assertEqual(
+            [step.get("id") for step in job["steps"][:2]], [None, "rust-inputs"]
+        )
+
+    def test_a_pull_request_with_main_s_rust_inputs_skips(self) -> None:
+        # Catches the check never skipping, which would be safe but useless.
+        self.repo.check_out_pull_request("README.md")
+        self.assertEqual(self.repo.run_step(), "unchanged=true\n")
+
+    def test_the_package_names_no_file_outside_native(self) -> None:
+        # Catches a build or test input that the check does not compare, such
+        # as include_str!("../../../x"), a path dependency, a build script
+        # reading the repository, or a symlink.
+        package = REPO_ROOT / "native" / "cfr"
+        files = list(package.glob("*.*"))
+        for name in ("src", "tests"):
+            files += (package / name).rglob("*")
+        self.assertGreater(len(files), 10)
+        for path in files:
+            with self.subTest(path=path):
+                self.assertFalse(path.is_symlink())
+                if path.suffix in (".rs", ".toml"):
+                    self.assertNotIn("../", path.read_text(encoding="utf-8"))
+
+    def test_a_push_to_main_never_skips(self) -> None:
+        # Catches either missing guard. The push is a merge that changes no
+        # Rust, so the comparison itself matches; Actions leaves the base
+        # empty, but the event alone must be enough.
+        self.repo.check_out_pull_request("README.md")
+        for base in ("", "main"):
+            with self.subTest(base=base):
+                self.assertEqual(self.repo.run_step(event="push", base=base), "")
+
+    def test_any_changed_rust_input_runs_the_slow_steps(self) -> None:
+        # Catches each path missing from the list, including the files
+        # outside native/cfr that Cargo or Git would read, and paths
+        # taken relative to native/cfr, which would match nothing.
+        for path in (
+            ".cargo/config.toml",
+            ".gitattributes",
+            ".github/workflows/python-install-and-test.yml",
+            "Cargo.toml",
+            "native/.cargo/config.toml",
+            "native/Cargo.toml",
+            "native/cfr/Cargo.toml",
+            "native/cfr/src/lib.rs",
+            "native/cfr/tests/pegging_golden.txt",
+        ):
+            with self.subTest(path=path), tempfile.TemporaryDirectory() as folder:
+                repo = RustCheckout(folder)
+                repo.check_out_pull_request(path)
+                self.assertEqual(repo.run_step(), "")
+
+    def test_a_stacked_pull_request_runs_the_slow_steps(self) -> None:
+        # Catches skipping when the base is not main: the comparison with that
+        # base says nothing about main, and changing the base later starts no
+        # new run.
+        self.repo.check_out_pull_request("README.md")
+        self.assertEqual(self.repo.run_step(base="stack"), "")
+
+    def test_a_head_that_is_not_a_merge_runs_the_slow_steps(self) -> None:
+        # Catches comparing with HEAD^1 when it is the pull request's own
+        # earlier commit, which may hold the Rust change.
+        self.repo.write("native/cfr/src/lib.rs", "pull request\n")
+        self.repo.commit()
+        self.repo.write("README.md", "pull request\n")
+        self.repo.commit()
+        self.repo.check_out("main")
+        self.assertEqual(self.repo.run_step(), "")
+
+    def test_a_failed_comparison_runs_the_slow_steps(self) -> None:
+        # Catches treating every diff status but 1 (a difference) as a match,
+        # and failing the job instead of running everything. A stand-in git
+        # fails on one command, with Git's fatal status.
+        self.repo.check_out_pull_request("README.md")
+        bin_dir = self.repo.output.with_name("bin")
+        bin_dir.mkdir()
+        fake = bin_dir / "git"
+        for command in ("rev-parse", "diff"):
+            fake.write_text(
+                f'#!/bin/sh\n[ "$1" = {command} ] && exit 128\n'
+                f'exec {shutil.which("git")} "$@"\n'
+            )
+            fake.chmod(0o755)
+            with self.subTest(command=command):
+                path = f"{bin_dir}{os.pathsep}"
+                self.assertEqual(self.repo.run_step(path=path), "")
 
 
 class TestRustHooks(unittest.TestCase):
