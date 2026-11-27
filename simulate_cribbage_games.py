@@ -900,6 +900,7 @@ def simulate_game(
                     game_score,
                     dealt_hands[0],
                     PONE,
+                    hand_pone_is_this_simulation_first_pone,
                     False,
                     (
                         estimate_first_pone_incomplete_game_wins_and_game_points
@@ -959,6 +960,7 @@ def simulate_game(
                         game_score,
                         dealt_hands[0],
                         PONE,
+                        hand_pone_is_this_simulation_first_pone,
                         False,
                         (
                             (
@@ -1081,6 +1083,7 @@ def simulate_game(
                     game_score,
                     dealt_hands[1],
                     DEALER,
+                    hand_pone_is_this_simulation_first_pone,
                     tally_start_of_hand_position_results,
                     (
                         estimate_first_pone_incomplete_game_wins_and_game_points
@@ -1141,6 +1144,7 @@ def simulate_game(
                         game_score,
                         dealt_hands[1],
                         DEALER,
+                        hand_pone_is_this_simulation_first_pone,
                         False,
                         (
                             (
@@ -3470,17 +3474,15 @@ def play_based_on_simulation(
         total_play_simulation_count,
         total_play_simulation_count,
         1,
-        Points(
-            current_game_score.first_pone_initial
-            + current_game_score.first_pone_play
-            + current_game_score.first_pone_hand
-            + current_game_score.first_pone_crib
+        (
+            current_game_score.pone_total
+            if pone_is_parent_game_first_pone
+            else current_game_score.dealer_total
         ),
-        Points(
-            current_game_score.first_dealer_initial
-            + current_game_score.first_dealer_play
-            + current_game_score.first_dealer_hand
-            + current_game_score.first_dealer_crib
+        (
+            current_game_score.dealer_total
+            if pone_is_parent_game_first_pone
+            else current_game_score.pone_total
         ),
         player_to_play_dealt_hand if player_to_play_is_first_pone else [],
         player_to_play_dealt_hand if player_to_play_is_first_dealer else [],
@@ -3593,6 +3595,7 @@ def player_select_kept_cards_based_on_simulation(
     current_game_score: GameScore,
     dealt_hand: List[Card],
     player: Player,
+    pone_is_parent_game_first_pone: bool,
     tally_start_of_hand_position_results: bool,
     estimate_first_pone_incomplete_game_wins_and_game_points: bool,
     estimate_first_dealer_incomplete_game_wins_and_game_points: bool,
@@ -3614,17 +3617,15 @@ def player_select_kept_cards_based_on_simulation(
         total_discard_simulation_count,
         total_discard_simulation_count,
         1,
-        Points(
-            current_game_score.first_pone_initial
-            + current_game_score.first_pone_play
-            + current_game_score.first_pone_hand
-            + current_game_score.first_pone_crib
+        (
+            current_game_score.pone_total
+            if pone_is_parent_game_first_pone
+            else current_game_score.dealer_total
         ),
-        Points(
-            current_game_score.first_dealer_initial
-            + current_game_score.first_dealer_play
-            + current_game_score.first_dealer_hand
-            + current_game_score.first_dealer_crib
+        (
+            current_game_score.dealer_total
+            if pone_is_parent_game_first_pone
+            else current_game_score.pone_total
         ),
         dealt_hand if player == PONE else [],
         dealt_hand if player == DEALER else [],
