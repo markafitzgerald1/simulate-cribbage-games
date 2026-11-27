@@ -21,7 +21,9 @@ README coverage notes (lines 522-555):
 - Two ``--process-count 2`` README commands (lines 533 and 547) are executed
   with ``--process-count 1`` because spawned worker processes on macOS under
   ``runpy.run_path`` hang and cannot deterministically share the parent random
-  seed or worker update ordering.
+  seed or worker update ordering. Their golden files are therefore
+  byte-identical to the default-worker cases 532 and 547a, and they are not
+  evidence about multi-process behavior.
 - README line 553 (multi-hand ``--unlimited-hands-per-game`` with dynamic
   discard, dynamic play, and incomplete-game estimates) is omitted from the
   regression-invariant README set because it takes ~11.5s at minimal counts

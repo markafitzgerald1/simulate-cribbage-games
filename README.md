@@ -659,7 +659,6 @@ above):
 
 ## Current known bugs
 
-- The 2023-02-12 report misread the coach output. It prints first pone minus first dealer and lists the deciding seat's best option last. See [#267](https://github.com/markafitzgerald1/simulate-cribbage-games/issues/267) for the odd-hand seat-order bug.
 - 2021-07-08T00:08-04: Runs with `--process-count` greater than 1 crash with `TypeError: cannot pickle '_gdbm.gdbm' object`:
   - Recreate of database did not fix this.
   - Only reported on Apple Silicon (M1) to present.
@@ -747,6 +746,7 @@ above):
 
 ## Fixed past product bugs
 
+- 2023-02-12T17:37-05: `python simulate_cribbage_games.py --first-dealer-dealt-cards 9♦,T♠,7♦,5♥,J♥,A♥ --first-dealer-kept-cards T♠,5♥,J♥,A♥ --initial-play-actions K♥ --select-each-post-initial-play --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions --game-count 20000 --games-per-update 2000 --initial-pone-score 118 --initial-dealer-score 119` was reported as rating 5♥, an immediate first-dealer win, the worst play at -1.00000 ± 0.00000 game points. That output was correct: the coach prints first pone minus first dealer and lists the deciding seat's best option last, so -1 is first dealer's best result. The report led to a real bug, fixed in [#267](https://github.com/markafitzgerald1/simulate-cribbage-games/issues/267): simulation-based play and discard passed swapped scores to their nested simulations in odd hands.
 - 'Go' `PlayActionComponents`s render with a `false` class where no class should be in the HTML Element.
 - 'Go' `VisibleHandCard`s render lower than non-'Go' `VisibleHandCard`s in Firefox 89.0.2 but not in Safari 14.1.1 or Chrome 91.0.4472.114 (arm).
 - `python simulate_cribbage_games.py --initial-dealer-score 7 --initial-pone-score 12 --first-dealer-dealt-cards 3c,5c,6h,6s,8s,jc --first-dealer-select-each-possible-kept-hand --infinite-game-count --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --games-per-update 1000 --process-count 4 --estimate-first-dealer-incomplete-game-wins-and-game-points` is not using the position result estimate database in its discard calculations, but _is_ using it if `--estimate-first-pone-incomplete-game-wins-and-game-points` was added. I've confirmed this is not an issue for simulation-based players, is not an issue for `--first-pone-select-each-possible-kept-hand`, is not an issue for `--select-each-post-initial-play` (play analysis iteration over possibilities is implemented differently) but is an issue for `--first-dealer-select-each-possible-kept-hand`.
