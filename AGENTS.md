@@ -843,6 +843,22 @@ would replace the CFR table. A step's own time limit fails the step and leaves
 later `failure()` steps to run, so a long step gets a limit under the job's and
 its partial work is uploaded last.
 
+## Strength Ladder Games
+
+Issue #263's strength ladder plays full games to 121 between players, each a
+discard rule plus a pegging policy (`artifact_pipeline/ladder_game.py`).
+Pegging steps through `pegging.py`'s own play and go functions rather than a
+copy of the rules, so a policy sees exactly the views it sees in table
+generation; a test compares the two engines view for view, because equal
+point totals alone would miss a changed public history that the CFR policy
+keys on. Every random stream is keyed by the game seed, the hand number and
+the seat's role, never by the player, so two games on one seed with the seats
+swapped see the same deals. Stop the moment a player reaches the target, in
+counting order (heels, each pegging point, Pone's hand, Dealer's hand, crib),
+and call no policy once the game is over. A test of a counting rule must use
+cards where the rule changes the result: a crib that is not a four-card flush
+cannot tell crib scoring from hand scoring.
+
 ## Lint Configuration Expectations
 
 Do not assume lint rules are enforced unless they are present in local
