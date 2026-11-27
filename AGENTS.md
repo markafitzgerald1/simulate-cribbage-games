@@ -890,6 +890,14 @@ test needs an asymmetric match, because a fixture whose win rate is 50% cannot
 tell a row from its reverse. The commit hook's spelling checker rejects the
 name of unittest's membership assertion, so test membership with
 `assertTrue(item in container, ...)`.
+Hash the manifest bytes you load, not a second read of the file, and refuse
+an `--output` that is, sits in, or hard-links to a bundle file before any game
+starts. A rank-only discard rule must not always keep the lowest suit of a
+kept rank: that biases suits and raised the hand-flush rate by about half,
+so the seat's discard stream picks the card. Quote the CFR policy's
+off-support share over non-forced calls, since forced calls never consult a
+row, and define off-support as zero opponent reach under the saved policy
+and prior, never as untrained or uncertified.
 
 ## Lint Configuration Expectations
 
