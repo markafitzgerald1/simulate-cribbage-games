@@ -3,7 +3,7 @@ is conditioned on the cards the player can see (own six and the starter)?
 
 Usage:
   python conditioning.py build BUNDLE DEALS SEED SCENARIOS.bin
-  python conditioning.py compare ROWS.bin VALUES.bin OUT.json
+  python conditioning.py compare BUNDLE SCENARIOS.bin ROWS.bin VALUES.bin OUT.json
 
 `build` deals DEALS physical hands and, for each seat of each deal, writes
 three opponent distributions over the 1,820 kept hands. The player's own
@@ -25,8 +25,10 @@ and measures how far the conditioned values move from the baseline.
 Standard library only.
 """
 
+import bisect
 import json
 import math
+import os
 import random
 import struct
 import sys
@@ -255,7 +257,7 @@ def compare_variant(by_scenario, offset):
         entry["loss_shift_p90"] = weighted_quantile(loss_shift[stage], 0.9)
         entry["loss_shift_p99"] = weighted_quantile(loss_shift[stage], 0.99)
     band_rows = []
-    edges = [0.0] + BANDS + [math.inf]
+    edges = [0.0] + BANDS + [None]
     for i, (mass, event, exactly_best, moved) in enumerate(bands):
         band_rows.append(
             {
@@ -274,7 +276,73 @@ def compare_variant(by_scenario, offset):
     return {"stages": stages, "bands": band_rows}
 
 
-def compare(rows_path, values_path, out):
+def read_scenarios(path):
+    record = RECORD.size + 1820 * 8
+    with open(path, "rb") as handle:
+        data = handle.read()
+    scenarios = {}
+    for start in range(0, len(data), record):
+        scenario, seat, own = RECORD.unpack_from(data, start)
+        weights = struct.unpack_from("<1820Q", data, start + RECORD.size)
+        scenarios[scenario] = (seat, own, sum(weights))
+    return scenarios
+
+
+def check_coverage(bundle, scenarios, by_scenario, published):
+    """Require every scenario's rows, and baselines equal to the spike's.
+
+    A baseline must hold exactly the menus of its own file that the spike's
+    values reach, with the same values, own reach and (renormalized from the
+    prior row to the whole prior) opponent reach. A conditioned variant must
+    be present whenever its hand has a choice, and may reach only menus its
+    baseline reaches. Returns the number of baseline rows checked and the
+    largest value or own-reach difference.
+    """
+    starts = [0]
+    for k in range(3640):
+        path = os.path.join(bundle, "menus", f"{k}.bin")
+        size = os.path.getsize(path) if os.path.exists(path) else 0
+        starts.append(starts[-1] + size // 19)
+    with open(os.path.join(bundle, "prior.bin"), "rb") as handle:
+        mass = sum(struct.unpack(f"<{1820 * 1820}Q", handle.read()))
+    reached_by_file = {}
+    for menu, row in published.items():
+        if row[3] > 0:
+            file_index = bisect.bisect_right(starts, menu) - 1
+            reached_by_file.setdefault(file_index, set()).add(menu)
+    checked, error = 0, 0.0
+    for scenario, (seat, own, weight_total) in scenarios.items():
+        expected = reached_by_file.get(seat * 1820 + own, set())
+        rows = by_scenario.get(scenario, {})
+        if scenario & ~SCENARIO_MASK == VARIANTS["baseline"]:
+            if set(rows) != expected:
+                raise ValueError(
+                    f"baseline {scenario} does not cover its reached menus"
+                )
+            for menu, (_, width, reach, own_reach, values) in rows.items():
+                reference = published[menu]
+                if (
+                    abs(reach * weight_total / mass - reference[3])
+                    > 1e-12 * reference[3]
+                ):
+                    raise ValueError(f"baseline {scenario} menu {menu}: reach differs")
+                checked += 1
+                error = max(
+                    error,
+                    abs(own_reach - reference[4]),
+                    max(abs(a - b) for a, b in zip(values, reference[5 : 5 + width])),
+                )
+        else:
+            if expected and not rows:
+                raise ValueError(f"scenario {scenario} has no rows")
+            if not set(rows) <= expected:
+                raise ValueError(
+                    f"scenario {scenario} reaches menus its baseline does not"
+                )
+    return checked, error
+
+
+def compare(bundle, scenarios_path, rows_path, values_path, out):
     with open(rows_path, "rb") as handle:
         rows = list(ROW.iter_unpack(handle.read()))
     with open(values_path, "rb") as handle:
@@ -288,21 +356,10 @@ def compare(rows_path, values_path, out):
             own_reach,
             values[:width],
         )
-    # Every baseline must be present and must reproduce the spike's values.
-    keys = {scenario & SCENARIO_MASK for scenario in by_scenario}
-    checked, baseline_error = 0, 0.0
-    for key in keys:
-        baseline = by_scenario.get(key + VARIANTS["baseline"])
-        if not baseline:
-            raise ValueError(f"scenario {key} has no baseline rows")
-        for menu, (_, width, _, own_reach, values) in baseline.items():
-            reference = published[menu]
-            checked += 1
-            baseline_error = max(
-                baseline_error,
-                abs(own_reach - reference[4]),
-                max(abs(a - b) for a, b in zip(values, reference[5 : 5 + width])),
-            )
+    scenarios = read_scenarios(scenarios_path)
+    if set(by_scenario) - set(scenarios):
+        raise ValueError("rows name scenarios the scenario file does not")
+    checked, baseline_error = check_coverage(bundle, scenarios, by_scenario, published)
     result = {
         "baseline_rows_checked": checked,
         "baseline_max_abs_error": baseline_error,
@@ -318,4 +375,4 @@ if __name__ == "__main__":
     if sys.argv[1] == "build":
         build(sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), sys.argv[5])
     else:
-        compare(sys.argv[2], sys.argv[3], sys.argv[4])
+        compare(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])

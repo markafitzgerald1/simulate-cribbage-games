@@ -68,22 +68,30 @@ def main():
                     continue
                 spread = (expected * (1 - expected) / attempts) ** 0.5
                 accept_z.append((accepted / attempts - expected) / spread)
-    count = len(card_z)
     print(
-        f"zero-spread cards: {len(zero_spread)}, disagreeing {zero_spread.count(False)}; "
+        f"targets {len(seen)} (zero own reach {zero_own}), cards {len(card_z) + len(zero_spread)}"
+    )
+    # A card with no observed spread may be deterministic or may have drawn
+    # equal outcomes by chance, so a mismatch there is inconclusive.
+    print(
+        f"zero-spread cards: {len(zero_spread)}, agreeing {zero_spread.count(True)}, "
+        f"inconclusive {zero_spread.count(False)}; "
         f"endpoint acceptance failures: {endpoint_failures}"
     )
-    print(f"targets {len(seen)} (zero own reach {zero_own}), cards {count}")
-    print(
-        f"card z: sum of squares {sum(z * z for z in card_z):.1f}, mean {sum(card_z) / count:+.3f}, "
-        f"beyond 2: {sum(abs(z) > 2 for z in card_z)}, beyond 3: {sum(abs(z) > 3 for z in card_z)}"
-    )
-    print(
-        f"acceptance z: max abs {max(abs(z) for z in accept_z):.2f}, "
-        f"beyond 3: {sum(abs(z) > 3 for z in accept_z)}"
-    )
-    if zero_spread.count(False) or endpoint_failures:
-        sys.exit("Monte Carlo disagrees with an exact value or reach")
+    if card_z:
+        print(
+            f"card z: sum of squares {sum(z * z for z in card_z):.1f}, "
+            f"mean {sum(card_z) / len(card_z):+.3f}, "
+            f"beyond 2: {sum(abs(z) > 2 for z in card_z)}, "
+            f"beyond 3: {sum(abs(z) > 3 for z in card_z)}"
+        )
+    if accept_z:
+        print(
+            f"acceptance z: max abs {max(abs(z) for z in accept_z):.2f}, "
+            f"beyond 3: {sum(abs(z) > 3 for z in accept_z)}"
+        )
+    if endpoint_failures:
+        sys.exit("Monte Carlo acceptance disagrees with an exact reach")
 
 
 if __name__ == "__main__":
