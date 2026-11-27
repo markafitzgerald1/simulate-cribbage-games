@@ -1,0 +1,879 @@
+EXIT_CODE: 0
+--- STDOUT ---
+Simulating 2 games of up to unlimited hands each
+
+Pone   dealt     [J♥,J♦,5♣,4♣,6♠,2♣] (sorted: [J♥,J♦,6♠,5♣,4♣,2♣])
+Dealer dealt     [K♣,5♦,A♦,9♠,Q♠,A♥] (sorted: [K♣,Q♠,9♠,5♦,A♥,A♦])
+Pone   discarded [J♦,2♣] (sorted: [J♦,2♣])
+Dealer discarded [K♣,Q♠] (sorted: [K♣,Q♠])
+Pone   kept      [J♥,5♣,4♣,6♠] (sorted: [J♥,6♠,5♣,4♣])
+Dealer kept      [5♦,A♦,9♠,A♥] (sorted: [9♠,5♦,A♥,A♦])
+Cut/starter card is: 6♥
+Simulating each of the 4 possible pone plays 30 times in order to select the play:
+J♥ first play:   +0.000 ±  0.000 game points;   -1.867 ±  0.807 Δ-peg +   +7.300 ±  1.562 Δ-hand +   -3.800 ±  0.754 crib =   +1.633 ±  1.792 overall
+6♠ first play:   +0.000 ±  0.000 game points;   -3.033 ±  0.822 Δ-peg +   +7.600 ±  1.461 Δ-hand +   -3.867 ±  0.695 crib =   +0.700 ±  1.768 overall
+4♣ first play:   +0.000 ±  0.000 game points;   -3.100 ±  0.842 Δ-peg +   +8.367 ±  1.057 Δ-hand +   -4.533 ±  0.592 crib =   +0.733 ±  1.755 overall
+5♣ first play:   +0.000 ±  0.000 game points;   -3.167 ±  0.892 Δ-peg +   +8.100 ±  1.401 Δ-hand +   -4.267 ±  0.819 crib =   +0.667 ±  2.246 overall
+Pone   plays J♥ for 10 ([J♥])
+Simulating each of the 4 possible dealer plays 30 times in order to select the play:
+5♦ first play:   +0.000 ±  0.000 game points;   -3.133 ±  0.750 Δ-peg +   -0.333 ±  1.121 Δ-hand +   -1.867 ±  0.448 crib =   -5.333 ±  1.601 overall
+9♠ first play:   +0.000 ±  0.000 game points;   -1.161 ±  0.958 Δ-peg +   -0.710 ±  1.132 Δ-hand +   -1.774 ±  0.601 crib =   -3.645 ±  1.704 overall
+A♦ first play:   +0.000 ±  0.000 game points;   -1.100 ±  0.810 Δ-peg +   -1.067 ±  1.021 Δ-hand +   -2.000 ±  0.532 crib =   -4.167 ±  1.272 overall
+A♥ first play:   +0.000 ±  0.000 game points;   -1.034 ±  0.698 Δ-peg +   -0.345 ±  0.914 Δ-hand +   -2.138 ±  0.539 crib =   -3.517 ±  1.141 overall
+Dealer plays 5♦ for 15 ([J♥,5♦])
+!15 for 2 points for Dealer. [0-2]
+Simulating each of the 3 possible pone plays 30 times in order to select the play:
+5♣ first play:   +0.000 ±  0.000 game points;   -2.500 ±  0.670 Δ-peg +   +5.063 ±  1.733 Δ-hand +   -3.562 ±  0.731 crib =   -1.000 ±  1.686 overall
+4♣ first play:   +0.000 ±  0.000 game points;   -4.419 ±  0.737 Δ-peg +   +5.677 ±  1.421 Δ-hand +   -4.032 ±  0.707 crib =   -2.774 ±  1.873 overall
+6♠ first play:   +0.000 ±  0.000 game points;   -4.519 ±  0.567 Δ-peg +   +6.741 ±  1.623 Δ-hand +   -3.667 ±  0.694 crib =   -1.444 ±  1.786 overall
+Pone   plays 5♣ for 20 ([J♥,5♦,5♣])
+!Pair for 2 points for Pone. [2-2]
+Simulating each of the 3 possible dealer plays 30 times in order to select the play:
+9♠ first play:   +0.000 ±  0.000 game points;   -2.143 ±  0.550 Δ-peg +   +1.643 ±  0.958 Δ-hand +   -1.714 ±  0.426 crib =   -2.214 ±  1.147 overall
+A♥ first play:   +0.000 ±  0.000 game points;   -0.182 ±  0.562 Δ-peg +   +2.364 ±  0.873 Δ-hand +   -1.818 ±  0.515 crib =   +0.364 ±  1.044 overall
+A♦ first play:   +0.000 ±  0.000 game points;   +0.310 ±  0.668 Δ-peg +   +0.931 ±  1.029 Δ-hand +   -1.310 ±  0.560 crib =   -0.069 ±  1.268 overall
+Dealer plays 9♠ for 29 ([J♥,5♦,5♣,9♠])
+Pone   says 'Go'
+Simulating each of the 2 possible dealer plays 30 times in order to select the play:
+A♦ first play:   +0.000 ±  0.000 game points;   -2.143 ±  0.649 Δ-peg +   +1.086 ±  0.738 Δ-hand +   -1.600 ±  0.477 crib =   -2.657 ±  1.007 overall
+A♥ first play:   +0.000 ±  0.000 game points;   -1.800 ±  0.679 Δ-peg +   +1.400 ±  0.707 Δ-hand +   -2.360 ±  0.758 crib =   -2.760 ±  1.301 overall
+Dealer plays A♦ for 30 ([J♥,5♦,5♣,9♠,Go,A♦])
+Pone   says 'Go'
+Dealer plays A♥ for 31 ([J♥,5♦,5♣,9♠,Go,A♦,Go,A♥])
+!Pair for 2 points for Dealer. [2-4]
+!31 for 1 point for Dealer. [2-5]
+Pone   says 'Go'
+Dealer says 'Go'
+!Go for 1 point for Dealer. [2-6]
+---resetting play count to 0---
+Simulating each of the 2 possible pone plays 30 times in order to select the play:
+6♠ first play:   +0.000 ±  0.000 game points;   -3.000 ±  0.000 Δ-peg +   +7.000 ±  0.000 Δ-hand +   -2.300 ±  0.516 crib =   +1.700 ±  0.516 overall
+4♣ first play:   +0.000 ±  0.000 game points;   -3.000 ±  0.000 Δ-peg +   +7.000 ±  0.000 Δ-hand +   -3.833 ±  0.814 crib =   +0.167 ±  0.814 overall
+Pone   plays 6♠ for 6 ([J♥,5♦,5♣,9♠,Go,A♦,Go,A♥,Go,Go];[6♠])
+Dealer says 'Go'
+Pone   plays 4♣ for 10 ([J♥,5♦,5♣,9♠,Go,A♦,Go,A♥,Go,Go];[6♠,Go,4♣])
+!Last card for 1 point for Pone [3-6].
+![J♥,6♠,5♣,4♣] hand + starter 6♥ scores 15 points for Pone.   [18-6]
+![9♠,5♦,A♥,A♦] hand + starter 6♥ scores  8 points for Dealer. [18-14]
+![K♣,Q♠,J♦,2♣] crib + starter 6♥ scores  3 points for Dealer. [18-17]
++++ Game score is [18-17] for first pone and first dealer after 1 hands played.
+
+Pone   dealt     [A♠,3♣,4♥,4♦,6♣,3♦] (sorted: [6♣,4♥,4♦,3♦,3♣,A♠])
+Dealer dealt     [J♥,4♠,Q♣,8♠,Q♦,8♦] (sorted: [Q♦,Q♣,J♥,8♠,8♦,4♠])
+Pone   discarded [3♣,3♦] (sorted: [3♦,3♣])
+Dealer discarded [J♥,4♠] (sorted: [J♥,4♠])
+Pone   kept      [A♠,4♥,4♦,6♣] (sorted: [6♣,4♥,4♦,A♠])
+Dealer kept      [Q♣,8♠,Q♦,8♦] (sorted: [Q♦,Q♣,8♠,8♦])
+Cut/starter card is: 8♥
+Simulating each of the 4 possible pone plays 30 times in order to select the play:
+4♥ first play:   +0.000 ±  0.000 game points;   +1.700 ±  1.092 Δ-peg +   -0.567 ±  1.041 Δ-hand +   -5.933 ±  0.990 crib =   -4.800 ±  1.133 overall
+4♦ first play:   +0.000 ±  0.000 game points;   +0.733 ±  1.250 Δ-peg +   -2.000 ±  0.958 Δ-hand +   -5.833 ±  0.907 crib =   -7.100 ±  1.551 overall
+A♠ first play:   +0.000 ±  0.000 game points;   +0.700 ±  1.474 Δ-peg +   -1.933 ±  1.606 Δ-hand +   -6.333 ±  1.101 crib =   -7.567 ±  2.199 overall
+6♣ first play:   +0.000 ±  0.000 game points;   -0.467 ±  1.028 Δ-peg +   -1.200 ±  1.436 Δ-hand +   -6.133 ±  1.015 crib =   -7.800 ±  2.051 overall
+Pone   plays 4♥ for 4 ([4♥])
+Simulating each of the 4 possible dealer plays 30 times in order to select the play:
+Q♣ first play:   +0.000 ±  0.000 game points;   -0.500 ±  0.656 Δ-peg +   -1.533 ±  0.989 Δ-hand +   -3.300 ±  0.471 crib =   -5.333 ±  1.113 overall
+Q♦ first play:   +0.000 ±  0.000 game points;   -0.406 ±  0.725 Δ-peg +   -1.719 ±  1.138 Δ-hand +   -3.469 ±  0.513 crib =   -5.594 ±  1.337 overall
+8♦ first play:   +0.000 ±  0.000 game points;   +0.345 ±  0.553 Δ-peg +   -1.414 ±  0.840 Δ-hand +   -3.414 ±  0.731 crib =   -4.483 ±  1.371 overall
+8♠ first play:   +0.000 ±  0.000 game points;   +0.621 ±  0.930 Δ-peg +   -0.448 ±  0.951 Δ-hand +   -3.552 ±  0.664 crib =   -3.379 ±  1.524 overall
+Dealer plays Q♣ for 14 ([4♥,Q♣])
+Simulating each of the 3 possible pone plays 30 times in order to select the play:
+A♠ first play:   +0.000 ±  0.000 game points;   +1.710 ±  0.849 Δ-peg +   -0.161 ±  1.060 Δ-hand +   -7.903 ±  0.835 crib =   -6.355 ±  1.353 overall
+6♣ first play:   +0.000 ±  0.000 game points;   +1.000 ±  0.540 Δ-peg +   -0.100 ±  0.816 Δ-hand +   -7.167 ±  0.995 crib =   -6.267 ±  1.506 overall
+4♦ first play:   +0.000 ±  0.000 game points;   -0.759 ±  0.539 Δ-peg +   +0.379 ±  1.036 Δ-hand +   -6.448 ±  1.190 crib =   -6.828 ±  1.410 overall
+Pone   plays A♠ for 15 ([4♥,Q♣,A♠])
+!15 for 2 points for Pone. [18-19]
+Simulating each of the 3 possible dealer plays 30 times in order to select the play:
+Q♦ first play:   +0.000 ±  0.000 game points;   +1.548 ±  0.505 Δ-peg +   -2.613 ±  0.433 Δ-hand +   -3.355 ±  0.557 crib =   -4.419 ±  0.791 overall
+8♠ first play:   +0.000 ±  0.000 game points;   +1.800 ±  0.526 Δ-peg +   -2.543 ±  0.325 Δ-hand +   -3.086 ±  0.565 crib =   -3.829 ±  0.952 overall
+8♦ first play:   +0.000 ±  0.000 game points;   +2.083 ±  0.612 Δ-peg +   -2.625 ±  0.525 Δ-hand +   -2.958 ±  0.584 crib =   -3.500 ±  1.100 overall
+Dealer plays Q♦ for 25 ([4♥,Q♣,A♠,Q♦])
+Simulating each of the 2 possible pone plays 30 times in order to select the play:
+6♣ first play:   +0.000 ±  0.000 game points;   +2.903 ±  0.319 Δ-peg +   -0.742 ±  1.087 Δ-hand +   -6.355 ±  1.010 crib =   -4.194 ±  1.365 overall
+4♦ first play:   +0.000 ±  0.000 game points;   +1.310 ±  0.457 Δ-peg +   -0.655 ±  0.909 Δ-hand +   -7.000 ±  0.928 crib =   -6.345 ±  1.123 overall
+Pone   plays 6♣ for 31 ([4♥,Q♣,A♠,Q♦,6♣])
+!31 for 1 point for Pone. [18-20]
+Dealer says 'Go'
+Pone   says 'Go'
+!Go for 1 point for Pone. [18-21]
+---resetting play count to 0---
+Simulating each of the 2 possible dealer plays 30 times in order to select the play:
+8♦ first play:   +0.000 ±  0.000 game points;   +3.000 ±  0.000 Δ-peg +   -2.562 ±  0.412 Δ-hand +   -3.375 ±  0.569 crib =   -2.938 ±  0.590 overall
+8♠ first play:   +0.000 ±  0.000 game points;   +3.000 ±  0.000 Δ-peg +   -2.429 ±  0.467 Δ-hand +   -3.679 ±  0.588 crib =   -3.107 ±  0.582 overall
+Dealer plays 8♦ for 8 ([4♥,Q♣,A♠,Q♦,6♣,Go,Go];[8♦])
+Pone   plays 4♦ for 12 ([4♥,Q♣,A♠,Q♦,6♣,Go,Go];[8♦,4♦])
+Dealer plays 8♠ for 20 ([4♥,Q♣,A♠,Q♦,6♣,Go,Go];[8♦,4♦,8♠])
+!Last card for 1 point for Dealer [19-21].
+![6♣,4♥,4♦,A♠] hand + starter 8♥ scores  6 points for Pone.   [19-27]
+![Q♦,Q♣,8♠,8♦] hand + starter 8♥ scores  8 points for Dealer. [27-27]
+![J♥,4♠,3♦,3♣] crib + starter 8♥ scores  7 points for Dealer. [34-27]
++++ Game score is [34-27] for first pone and first dealer after 2 hands played.
+
+Pone   dealt     [2♥,T♥,6♦,8♣,6♠,7♣] (sorted: [T♥,8♣,7♣,6♠,6♦,2♥])
+Dealer dealt     [T♦,5♦,9♠,7♥,K♦,6♥] (sorted: [K♦,T♦,9♠,7♥,6♥,5♦])
+Pone   discarded [2♥,T♥] (sorted: [T♥,2♥])
+Dealer discarded [T♦,9♠] (sorted: [T♦,9♠])
+Pone   kept      [6♦,8♣,6♠,7♣] (sorted: [8♣,7♣,6♠,6♦])
+Dealer kept      [5♦,7♥,K♦,6♥] (sorted: [K♦,7♥,6♥,5♦])
+Cut/starter card is: 4♦
+Simulating each of the 4 possible pone plays 30 times in order to select the play:
+6♠ first play:   +0.000 ±  0.000 game points;   -0.867 ±  1.228 Δ-peg +   +1.367 ±  1.618 Δ-hand +   -3.867 ±  1.041 crib =   -3.367 ±  1.502 overall
+6♦ first play:   +0.000 ±  0.000 game points;   -1.233 ±  0.890 Δ-peg +   +3.167 ±  1.243 Δ-hand +   -3.233 ±  0.989 crib =   -1.300 ±  1.292 overall
+7♣ first play:   +0.000 ±  0.000 game points;   -1.367 ±  0.874 Δ-peg +   +1.233 ±  1.335 Δ-hand +   -3.733 ±  0.871 crib =   -3.867 ±  1.812 overall
+8♣ first play:   +0.000 ±  0.000 game points;   -2.333 ±  1.044 Δ-peg +   +1.933 ±  1.339 Δ-hand +   -5.167 ±  1.400 crib =   -5.567 ±  2.201 overall
+Pone   plays 6♠ for 6 ([6♠])
+Simulating each of the 4 possible dealer plays 30 times in order to select the play:
+K♦ first play:   +0.000 ±  0.000 game points;   -2.533 ±  1.191 Δ-peg +   +1.200 ±  1.576 Δ-hand +   -2.833 ±  0.685 crib =   -4.167 ±  1.684 overall
+6♥ first play:   +0.000 ±  0.000 game points;   -2.129 ±  1.335 Δ-peg +   +1.161 ±  2.157 Δ-hand +   -3.258 ±  0.738 crib =   -4.226 ±  2.637 overall
+5♦ first play:   +0.000 ±  0.000 game points;   -1.000 ±  0.973 Δ-peg +   -0.207 ±  1.346 Δ-hand +   -3.655 ±  0.774 crib =   -4.862 ±  1.742 overall
+7♥ first play:   +0.000 ±  0.000 game points;   -0.467 ±  1.054 Δ-peg +   +0.100 ±  1.612 Δ-hand +   -4.133 ±  0.714 crib =   -4.500 ±  2.477 overall
+Dealer plays K♦ for 16 ([6♠,K♦])
+Simulating each of the 3 possible pone plays 30 times in order to select the play:
+6♦ first play:   +0.000 ±  0.000 game points;   -0.852 ±  0.464 Δ-peg +   +2.296 ±  1.002 Δ-hand +   -4.444 ±  1.109 crib =   -3.000 ±  1.624 overall
+8♣ first play:   +0.000 ±  0.000 game points;   -1.107 ±  0.555 Δ-peg +   +3.321 ±  0.919 Δ-hand +   -3.607 ±  1.000 crib =   -1.393 ±  1.483 overall
+7♣ first play:   +0.000 ±  0.000 game points;   -1.229 ±  0.580 Δ-peg +   +2.971 ±  1.037 Δ-hand +   -4.571 ±  0.914 crib =   -2.829 ±  1.369 overall
+Pone   plays 6♦ for 22 ([6♠,K♦,6♦])
+Simulating each of the 3 possible dealer plays 30 times in order to select the play:
+6♥ first play:   +0.000 ±  0.000 game points;   -3.000 ±  1.051 Δ-peg +   +1.867 ±  2.213 Δ-hand +   -4.033 ±  0.904 crib =   -5.167 ±  1.813 overall
+7♥ first play:   +0.000 ±  0.000 game points;   -1.656 ±  0.883 Δ-peg +   +2.188 ±  1.590 Δ-hand +   -3.625 ±  0.697 crib =   -3.094 ±  1.933 overall
+5♦ first play:   +0.000 ±  0.000 game points;   -1.250 ±  1.233 Δ-peg +   +1.250 ±  2.322 Δ-hand +   -3.036 ±  0.822 crib =   -3.036 ±  2.416 overall
+Dealer plays 6♥ for 28 ([6♠,K♦,6♦,6♥])
+!Pair for 2 points for Dealer. [34-29]
+Pone   says 'Go'
+Dealer says 'Go'
+!Go for 1 point for Dealer. [34-30]
+---resetting play count to 0---
+Simulating each of the 2 possible pone plays 30 times in order to select the play:
+7♣ first play:   +0.000 ±  0.000 game points;   -3.548 ±  0.709 Δ-peg +   +3.581 ±  1.534 Δ-hand +   -6.258 ±  1.079 crib =   -6.226 ±  2.026 overall
+8♣ first play:   +0.000 ±  0.000 game points;   -3.552 ±  0.620 Δ-peg +   +3.345 ±  1.557 Δ-hand +   -5.828 ±  1.079 crib =   -6.034 ±  1.752 overall
+Pone   plays 7♣ for 7 ([6♠,K♦,6♦,6♥,Go,Go];[7♣])
+Simulating each of the 2 possible dealer plays 30 times in order to select the play:
+7♥ first play:   +0.000 ±  0.000 game points;   -6.194 ±  0.525 Δ-peg +   +0.968 ±  1.297 Δ-hand +   -3.742 ±  0.630 crib =   -8.968 ±  1.122 overall
+5♦ first play:   +0.000 ±  0.000 game points;   -3.310 ±  0.447 Δ-peg +   +0.690 ±  1.560 Δ-hand +   -3.862 ±  0.789 crib =   -6.483 ±  1.995 overall
+Dealer plays 7♥ for 14 ([6♠,K♦,6♦,6♥,Go,Go];[7♣,7♥])
+!Pair for 2 points for Dealer. [34-32]
+Pone   plays 8♣ for 22 ([6♠,K♦,6♦,6♥,Go,Go];[7♣,7♥,8♣])
+Dealer plays 5♦ for 27 ([6♠,K♦,6♦,6♥,Go,Go];[7♣,7♥,8♣,5♦])
+!Last card for 1 point for Dealer [34-33].
+![8♣,7♣,6♠,6♦] hand + starter 4♦ scores 10 points for Pone.   [44-33]
+![K♦,7♥,6♥,5♦] hand + starter 4♦ scores  8 points for Dealer. [44-41]
+![T♥,T♦,9♠,2♥] crib + starter 4♦ scores  4 points for Dealer. [44-45]
++++ Game score is [44-45] for first pone and first dealer after 3 hands played.
+
+Pone   dealt     [7♦,J♠,9♠,T♥,J♣,6♣] (sorted: [J♠,J♣,T♥,9♠,7♦,6♣])
+Dealer dealt     [8♣,J♥,5♣,K♣,A♥,6♦] (sorted: [K♣,J♥,8♣,6♦,5♣,A♥])
+Pone   discarded [7♦,6♣] (sorted: [7♦,6♣])
+Dealer discarded [8♣,A♥] (sorted: [8♣,A♥])
+Pone   kept      [J♠,9♠,T♥,J♣] (sorted: [J♠,J♣,T♥,9♠])
+Dealer kept      [J♥,5♣,K♣,6♦] (sorted: [K♣,J♥,6♦,5♣])
+Cut/starter card is: 8♥
+Simulating each of the 4 possible pone plays 30 times in order to select the play:
+J♠ first play:   +0.000 ±  0.000 game points;   -1.167 ±  1.008 Δ-peg +   +2.100 ±  1.528 Δ-hand +   -9.967 ±  1.821 crib =   -9.033 ±  2.030 overall
+9♠ first play:   +0.000 ±  0.000 game points;   -1.500 ±  0.756 Δ-peg +   +2.867 ±  1.514 Δ-hand +  -10.500 ±  1.909 crib =   -9.133 ±  2.045 overall
+J♣ first play:   +0.000 ±  0.000 game points;   -1.700 ±  1.060 Δ-peg +   +1.567 ±  1.500 Δ-hand +  -11.400 ±  1.698 crib =  -11.533 ±  2.299 overall
+T♥ first play:   +0.000 ±  0.000 game points;   -2.133 ±  0.732 Δ-peg +   +2.433 ±  1.146 Δ-hand +  -11.333 ±  1.736 crib =  -11.033 ±  2.307 overall
+Pone   plays J♠ for 10 ([J♠])
+Simulating each of the 4 possible dealer plays 30 times in order to select the play:
+5♣ first play:   +0.000 ±  0.000 game points;   -3.242 ±  0.579 Δ-peg +   +1.061 ±  0.898 Δ-hand +   -4.909 ±  0.871 crib =   -7.091 ±  1.441 overall
+6♦ first play:   +0.000 ±  0.000 game points;   -1.548 ±  0.732 Δ-peg +   +1.194 ±  0.878 Δ-hand +   -5.548 ±  1.256 crib =   -5.903 ±  1.694 overall
+J♥ first play:   +0.000 ±  0.000 game points;   -0.346 ±  1.371 Δ-peg +   +1.808 ±  0.870 Δ-hand +   -4.846 ±  1.133 crib =   -3.385 ±  2.513 overall
+K♣ first play:   +0.000 ±  0.000 game points;   +1.700 ±  0.820 Δ-peg +   +1.767 ±  1.066 Δ-hand +   -5.067 ±  0.972 crib =   -1.600 ±  1.876 overall
+Dealer plays 5♣ for 15 ([J♠,5♣])
+!15 for 2 points for Dealer. [46-45]
+Simulating each of the 3 possible pone plays 30 times in order to select the play:
+9♠ first play:   +0.000 ±  0.000 game points;   -3.265 ±  0.760 Δ-peg +   +2.029 ±  0.956 Δ-hand +  -11.235 ±  1.680 crib =  -12.471 ±  1.637 overall
+T♥ first play:   +0.000 ±  0.000 game points;   -3.483 ±  0.572 Δ-peg +   +2.414 ±  0.862 Δ-hand +  -13.207 ±  1.932 crib =  -14.276 ±  2.201 overall
+J♣ first play:   +0.000 ±  0.000 game points;   -4.074 ±  0.618 Δ-peg +   +1.926 ±  1.117 Δ-hand +  -11.259 ±  1.858 crib =  -13.407 ±  2.090 overall
+Pone   plays 9♠ for 24 ([J♠,5♣,9♠])
+Dealer plays 6♦ for 30 ([J♠,5♣,9♠,6♦])
+Pone   says 'Go'
+Dealer says 'Go'
+!Go for 1 point for Dealer. [47-45]
+---resetting play count to 0---
+Simulating each of the 2 possible pone plays 30 times in order to select the play:
+T♥ first play:   +0.000 ±  0.000 game points;   -3.636 ±  0.692 Δ-peg +   +0.879 ±  1.061 Δ-hand +   -9.485 ±  1.547 crib =  -12.242 ±  2.061 overall
+J♣ first play:   +0.000 ±  0.000 game points;   -4.037 ±  0.473 Δ-peg +   +0.741 ±  1.075 Δ-hand +   -8.519 ±  1.005 crib =  -11.815 ±  1.559 overall
+Pone   plays T♥ for 10 ([J♠,5♣,9♠,6♦,Go,Go];[T♥])
+Simulating each of the 2 possible dealer plays 30 times in order to select the play:
+K♣ first play:   +0.000 ±  0.000 game points;   -3.000 ±  0.000 Δ-peg +   +3.633 ±  0.755 Δ-hand +   -6.300 ±  1.306 crib =   -5.667 ±  1.340 overall
+J♥ first play:   +0.000 ±  0.000 game points;   -1.967 ±  0.474 Δ-peg +   +3.400 ±  0.682 Δ-hand +   -4.000 ±  0.728 crib =   -2.567 ±  1.045 overall
+Dealer plays K♣ for 20 ([J♠,5♣,9♠,6♦,Go,Go];[T♥,K♣])
+Pone   plays J♣ for 30 ([J♠,5♣,9♠,6♦,Go,Go];[T♥,K♣,J♣])
+Dealer says 'Go'
+Pone   says 'Go'
+!Go for 1 point for Pone. [47-46]
+---resetting play count to 0---
+Dealer plays J♥ for 10 ([J♠,5♣,9♠,6♦,Go,Go];[T♥,K♣,J♣,Go,Go];[J♥])
+!Last card for 1 point for Dealer [48-46].
+![J♠,J♣,T♥,9♠] hand + starter 8♥ scores 10 points for Pone.   [48-56]
+![K♣,J♥,6♦,5♣] hand + starter 8♥ scores  5 points for Dealer. [53-56]
+![8♣,7♦,6♣,A♥] crib + starter 8♥ scores 16 points for Dealer. [69-56]
++++ Game score is [69-56] for first pone and first dealer after 4 hands played.
+
+Pone   dealt     [3♥,T♥,3♠,3♣,9♣,A♣] (sorted: [T♥,9♣,3♠,3♥,3♣,A♣])
+Dealer dealt     [6♦,K♦,7♦,J♠,A♥,4♥] (sorted: [K♦,J♠,7♦,6♦,4♥,A♥])
+Pone   discarded [T♥,A♣] (sorted: [T♥,A♣])
+Dealer discarded [6♦,7♦] (sorted: [7♦,6♦])
+Pone   kept      [3♥,3♠,3♣,9♣] (sorted: [9♣,3♠,3♥,3♣])
+Dealer kept      [K♦,J♠,A♥,4♥] (sorted: [K♦,J♠,4♥,A♥])
+Cut/starter card is: 3♦
+Simulating each of the 4 possible pone plays 30 times in order to select the play:
+3♠ first play:   +0.000 ±  0.000 game points;   -0.600 ±  0.569 Δ-peg +  +16.267 ±  0.851 Δ-hand +   -4.633 ±  1.227 crib =  +11.033 ±  1.560 overall
+3♥ first play:   +0.000 ±  0.000 game points;   -0.933 ±  0.697 Δ-peg +  +16.767 ±  1.267 Δ-hand +   -4.500 ±  1.506 crib =  +11.333 ±  2.098 overall
+3♣ first play:   +0.000 ±  0.000 game points;   -1.067 ±  0.866 Δ-peg +  +16.200 ±  1.081 Δ-hand +   -3.467 ±  1.079 crib =  +11.667 ±  1.913 overall
+9♣ first play:   +0.000 ±  0.000 game points;   -2.033 ±  0.997 Δ-peg +  +16.500 ±  1.213 Δ-hand +   -4.167 ±  1.275 crib =  +10.300 ±  1.931 overall
+Pone   plays 3♠ for 3 ([3♠])
+Simulating each of the 4 possible dealer plays 30 times in order to select the play:
+K♦ first play:   +0.000 ±  0.000 game points;   -0.750 ±  1.083 Δ-peg +   +8.042 ±  1.194 Δ-hand +   -2.625 ±  0.957 crib =   +4.667 ±  1.291 overall
+A♥ first play:   +0.000 ±  0.000 game points;   -0.700 ±  1.112 Δ-peg +   +6.933 ±  1.139 Δ-hand +   -4.700 ±  1.171 crib =   +1.533 ±  2.011 overall
+J♠ first play:   +0.000 ±  0.000 game points;   -0.194 ±  0.752 Δ-peg +   +6.516 ±  1.422 Δ-hand +   -3.226 ±  1.108 crib =   +3.097 ±  1.834 overall
+4♥ first play:   +0.000 ±  0.000 game points;   +0.629 ±  1.007 Δ-peg +   +6.400 ±  1.347 Δ-hand +   -2.657 ±  0.839 crib =   +4.371 ±  1.790 overall
+Dealer plays K♦ for 13 ([3♠,K♦])
+Simulating each of the 3 possible pone plays 30 times in order to select the play:
+3♣ first play:   +0.000 ±  0.000 game points;   -0.226 ±  0.217 Δ-peg +  +17.548 ±  0.760 Δ-hand +   -5.290 ±  1.308 crib =  +12.032 ±  1.365 overall
+3♥ first play:   +0.000 ±  0.000 game points;   -0.429 ±  0.383 Δ-peg +  +16.893 ±  1.181 Δ-hand +   -4.214 ±  1.203 crib =  +12.250 ±  1.446 overall
+9♣ first play:   +0.000 ±  0.000 game points;   -0.452 ±  0.471 Δ-peg +  +17.387 ±  1.138 Δ-hand +   -3.968 ±  1.151 crib =  +12.968 ±  1.660 overall
+Pone   plays 3♣ for 16 ([3♠,K♦,3♣])
+Simulating each of the 3 possible dealer plays 30 times in order to select the play:
+A♥ first play:   +0.000 ±  0.000 game points;   -1.000 ±  0.890 Δ-peg +   +9.929 ±  2.100 Δ-hand +   -3.643 ±  1.334 crib =   +5.286 ±  2.532 overall
+4♥ first play:   +0.000 ±  0.000 game points;   -0.250 ±  0.757 Δ-peg +   +8.688 ±  1.979 Δ-hand +   -3.031 ±  0.891 crib =   +5.406 ±  2.099 overall
+J♠ first play:   +0.000 ±  0.000 game points;   -0.067 ±  0.886 Δ-peg +   +8.567 ±  1.770 Δ-hand +   -2.867 ±  0.642 crib =   +5.633 ±  2.274 overall
+Dealer plays A♥ for 17 ([3♠,K♦,3♣,A♥])
+Simulating each of the 2 possible pone plays 30 times in order to select the play:
+9♣ first play:   +0.000 ±  0.000 game points;   -1.613 ±  0.336 Δ-peg +  +18.290 ±  0.868 Δ-hand +   -3.871 ±  1.138 crib =  +12.806 ±  1.447 overall
+3♥ first play:   +0.000 ±  0.000 game points;   -1.828 ±  0.219 Δ-peg +  +19.000 ±  0.721 Δ-hand +   -3.172 ±  1.048 crib =  +14.000 ±  1.219 overall
+Pone   plays 9♣ for 26 ([3♠,K♦,3♣,A♥,9♣])
+Dealer plays 4♥ for 30 ([3♠,K♦,3♣,A♥,9♣,4♥])
+Pone   says 'Go'
+Dealer says 'Go'
+!Go for 1 point for Dealer. [69-57]
+---resetting play count to 0---
+Pone   plays 3♥ for 3 ([3♠,K♦,3♣,A♥,9♣,4♥,Go,Go];[3♥])
+Dealer plays J♠ for 13 ([3♠,K♦,3♣,A♥,9♣,4♥,Go,Go];[3♥,J♠])
+!Last card for 1 point for Dealer [69-58].
+![9♣,3♠,3♥,3♣] hand + starter 3♦ scores 24 points for Pone.   [93-58]
+![K♦,J♠,4♥,A♥] hand + starter 3♦ scores  4 points for Dealer. [93-62]
+![T♥,7♦,6♦,A♣] crib + starter 3♦ scores  0 points for Dealer. [93-62]
++++ Game score is [93-62] for first pone and first dealer after 5 hands played.
+
+Pone   dealt     [K♥,6♣,Q♠,3♦,K♠,7♣] (sorted: [K♠,K♥,Q♠,7♣,6♣,3♦])
+Dealer dealt     [7♥,5♦,A♣,2♠,A♠,6♦] (sorted: [7♥,6♦,5♦,2♠,A♠,A♣])
+Pone   discarded [6♣,7♣] (sorted: [7♣,6♣])
+Dealer discarded [A♣,A♠] (sorted: [A♠,A♣])
+Pone   kept      [K♥,Q♠,3♦,K♠] (sorted: [K♠,K♥,Q♠,3♦])
+Dealer kept      [7♥,5♦,2♠,6♦] (sorted: [7♥,6♦,5♦,2♠])
+Cut/starter card is: J♠
+His heels/nibs for 2 for Dealer [95-62]
+Simulating each of the 4 possible pone plays 30 times in order to select the play:
+Q♠ first play:   -0.067 ±  0.131 game points;   -3.800 ±  0.996 Δ-peg +   +0.233 ±  0.980 Δ-hand +   -3.567 ±  0.914 crib =   -7.133 ±  1.959 overall
+3♦ first play:   -0.133 ±  0.182 game points;   -2.700 ±  0.872 Δ-peg +   +0.633 ±  1.311 Δ-hand +   -4.067 ±  1.075 crib =   -6.133 ±  1.767 overall
+K♥ first play:   -0.333 ±  0.271 game points;   -4.033 ±  1.160 Δ-peg +   -0.500 ±  1.321 Δ-hand +   -5.000 ±  1.124 crib =   -9.533 ±  1.964 overall
+K♠ first play:   -0.533 ±  0.322 game points;   -4.200 ±  1.317 Δ-peg +   -1.967 ±  1.615 Δ-hand +   -3.767 ±  1.281 crib =   -9.933 ±  2.122 overall
+Pone   plays Q♠ for 10 ([Q♠])
+Simulating each of the 4 possible dealer plays 30 times in order to select the play:
+7♥ first play:   +0.000 ±  0.000 game points;   -4.793 ±  0.833 Δ-peg +   +2.103 ±  1.441 Δ-hand +   -3.897 ±  0.756 crib =   -6.586 ±  1.448 overall
+2♠ first play:   +0.000 ±  0.000 game points;   -4.394 ±  0.677 Δ-peg +   +2.061 ±  1.575 Δ-hand +   -3.697 ±  0.765 crib =   -6.030 ±  1.664 overall
+6♦ first play:   +0.000 ±  0.000 game points;   -4.154 ±  0.840 Δ-peg +   +2.500 ±  1.814 Δ-hand +   -3.692 ±  0.711 crib =   -5.346 ±  1.560 overall
+5♦ first play:   +0.000 ±  0.000 game points;   -3.812 ±  0.842 Δ-peg +   +3.250 ±  1.627 Δ-hand +   -3.625 ±  0.939 crib =   -4.188 ±  2.031 overall
+Dealer plays 7♥ for 17 ([Q♠,7♥])
+Simulating each of the 3 possible pone plays 30 times in order to select the play:
+K♥ first play:   +0.000 ±  0.000 game points;   -3.344 ±  0.471 Δ-peg +   +0.625 ±  1.081 Δ-hand +   -3.719 ±  0.949 crib =   -6.438 ±  1.334 overall
+3♦ first play:   +0.000 ±  0.000 game points;   -3.452 ±  0.691 Δ-peg +   +1.677 ±  1.018 Δ-hand +   -2.645 ±  0.790 crib =   -4.419 ±  1.563 overall
+K♠ first play:   -0.148 ±  0.201 game points;   -2.630 ±  0.535 Δ-peg +   +1.519 ±  1.194 Δ-hand +   -3.037 ±  1.231 crib =   -4.148 ±  2.009 overall
+Pone   plays K♥ for 27 ([Q♠,7♥,K♥])
+Dealer plays 2♠ for 29 ([Q♠,7♥,K♥,2♠])
+Pone   says 'Go'
+Dealer says 'Go'
+!Go for 1 point for Dealer. [96-62]
+---resetting play count to 0---
+Simulating each of the 2 possible pone plays 30 times in order to select the play:
+K♠ first play:   +0.000 ±  0.000 game points;   -4.375 ±  0.370 Δ-peg +   +3.083 ±  0.817 Δ-hand +   -3.792 ±  1.028 crib =   -5.083 ±  1.297 overall
+3♦ first play:   -0.056 ±  0.109 game points;   -4.000 ±  0.156 Δ-peg +   +3.639 ±  0.640 Δ-hand +   -4.611 ±  1.151 crib =   -4.972 ±  1.378 overall
+Pone   plays K♠ for 10 ([Q♠,7♥,K♥,2♠,Go,Go];[K♠])
+Simulating each of the 2 possible dealer plays 30 times in order to select the play:
+5♦ first play:   -0.062 ±  0.122 game points;   -6.156 ±  0.499 Δ-peg +   +8.094 ±  0.813 Δ-hand +   -4.781 ±  0.979 crib =   -2.844 ±  1.194 overall
+6♦ first play:   +0.000 ±  0.000 game points;   -5.179 ±  0.203 Δ-peg +   +8.393 ±  0.777 Δ-hand +   -4.500 ±  0.864 crib =   -1.286 ±  1.032 overall
+Dealer plays 5♦ for 15 ([Q♠,7♥,K♥,2♠,Go,Go];[K♠,5♦])
+!15 for 2 points for Dealer. [98-62]
+Pone   plays 3♦ for 18 ([Q♠,7♥,K♥,2♠,Go,Go];[K♠,5♦,3♦])
+Dealer plays 6♦ for 24 ([Q♠,7♥,K♥,2♠,Go,Go];[K♠,5♦,3♦,6♦])
+!Last card for 1 point for Dealer [99-62].
+![K♠,K♥,Q♠,3♦] hand + starter J♠ scores  8 points for Pone.   [99-70]
+![7♥,6♦,5♦,2♠] hand + starter J♠ scores  7 points for Dealer. [106-70]
+![7♣,6♣,A♠,A♣] crib + starter J♠ scores  4 points for Dealer. [110-70]
++++ Game score is [110-70] for first pone and first dealer after 6 hands played.
+
+Pone   dealt     [6♠,Q♥,3♣,2♦,6♦,J♠] (sorted: [Q♥,J♠,6♠,6♦,3♣,2♦])
+Dealer dealt     [9♣,7♣,7♠,T♣,K♦,T♦] (sorted: [K♦,T♦,T♣,9♣,7♠,7♣])
+Pone   discarded [Q♥,J♠] (sorted: [Q♥,J♠])
+Dealer discarded [7♣,7♠] (sorted: [7♠,7♣])
+Pone   kept      [6♠,3♣,2♦,6♦] (sorted: [6♠,6♦,3♣,2♦])
+Dealer kept      [9♣,T♣,K♦,T♦] (sorted: [K♦,T♦,T♣,9♣])
+Cut/starter card is: K♠
+Simulating each of the 4 possible pone plays 30 times in order to select the play:
+6♠ first play:   +0.400 ±  0.291 game points;   -0.500 ±  1.075 Δ-peg +   -0.433 ±  1.277 Δ-hand +   -6.833 ±  2.053 crib =   -7.767 ±  3.116 overall
+6♦ first play:   +0.333 ±  0.271 game points;   -1.533 ±  1.107 Δ-peg +   -0.500 ±  1.131 Δ-hand +   -7.000 ±  1.886 crib =   -9.033 ±  3.036 overall
+3♣ first play:   +0.133 ±  0.182 game points;   -0.267 ±  0.994 Δ-peg +   -1.733 ±  1.443 Δ-hand +   -6.800 ±  1.478 crib =   -8.800 ±  2.293 overall
+2♦ first play:   +0.133 ±  0.182 game points;   -1.100 ±  1.048 Δ-peg +   -2.767 ±  1.535 Δ-hand +   -7.533 ±  1.649 crib =  -11.400 ±  2.498 overall
+Pone   plays 6♠ for 6 ([6♠])
+Simulating each of the 4 possible dealer plays 30 times in order to select the play:
+9♣ first play:   +0.387 ±  0.283 game points;   -2.129 ±  0.487 Δ-peg +   +2.581 ±  1.307 Δ-hand +   -3.645 ±  1.006 crib =   -3.194 ±  2.033 overall
+T♣ first play:   +0.667 ±  0.362 game points;   -0.815 ±  0.654 Δ-peg +   +4.148 ±  1.422 Δ-hand +   -2.926 ±  1.131 crib =   +0.407 ±  2.589 overall
+T♦ first play:   +0.815 ±  0.378 game points;   -1.630 ±  0.971 Δ-peg +   +4.481 ±  1.473 Δ-hand +   -2.407 ±  0.902 crib =   +0.444 ±  2.459 overall
+K♦ first play:   +0.914 ±  0.335 game points;   -0.914 ±  0.817 Δ-peg +   +4.714 ±  1.236 Δ-hand +   -2.114 ±  0.819 crib =   +1.686 ±  2.333 overall
+Dealer plays 9♣ for 15 ([6♠,9♣])
+!15 for 2 points for Dealer. [110-72]
+Simulating each of the 3 possible pone plays 30 times in order to select the play:
+6♦ first play:   +0.067 ±  0.131 game points;   -3.500 ±  0.762 Δ-peg +   -0.467 ±  1.107 Δ-hand +   -9.900 ±  2.027 crib =  -13.867 ±  2.426 overall
+2♦ first play:   +0.000 ±  0.000 game points;   -2.517 ±  0.685 Δ-peg +   -0.379 ±  0.899 Δ-hand +  -10.103 ±  1.524 crib =  -13.000 ±  1.974 overall
+3♣ first play:   +0.000 ±  0.000 game points;   -2.871 ±  0.781 Δ-peg +   -0.258 ±  1.083 Δ-hand +   -8.548 ±  1.602 crib =  -11.677 ±  2.125 overall
+Pone   plays 6♦ for 21 ([6♠,9♣,6♦])
+Simulating each of the 3 possible dealer plays 30 times in order to select the play:
+K♦ first play:   +0.552 ±  0.331 game points;   -4.621 ±  0.265 Δ-peg +   +3.724 ±  1.684 Δ-hand +   -2.621 ±  0.781 crib =   -3.517 ±  2.305 overall
+T♦ first play:   +0.562 ±  0.317 game points;   -4.344 ±  0.471 Δ-peg +   +3.781 ±  1.410 Δ-hand +   -3.188 ±  0.804 crib =   -3.750 ±  2.275 overall
+T♣ first play:   +0.690 ±  0.352 game points;   -4.586 ±  0.284 Δ-peg +   +5.069 ±  1.595 Δ-hand +   -2.793 ±  0.904 crib =   -2.310 ±  2.383 overall
+Dealer plays K♦ for 31 ([6♠,9♣,6♦,K♦])
+!31 for 1 point for Dealer. [110-73]
+Pone   says 'Go'
+Dealer says 'Go'
+!Go for 1 point for Dealer. [110-74]
+---resetting play count to 0---
+Simulating each of the 2 possible pone plays 30 times in order to select the play:
+3♣ first play:   +0.000 ±  0.000 game points;   -3.969 ±  0.509 Δ-peg +   -0.281 ±  0.672 Δ-hand +   -6.813 ±  1.097 crib =  -11.062 ±  1.688 overall
+2♦ first play:   +0.000 ±  0.000 game points;   -4.179 ±  0.661 Δ-peg +   +0.250 ±  0.804 Δ-hand +   -5.571 ±  1.249 crib =   -9.500 ±  1.661 overall
+Pone   plays 3♣ for 3 ([6♠,9♣,6♦,K♦,Go,Go];[3♣])
+Simulating each of the 2 possible dealer plays 30 times in order to select the play:
+T♣ first play:   +0.452 ±  0.299 game points;   -4.645 ±  0.250 Δ-peg +   +4.677 ±  1.325 Δ-hand +   -3.645 ±  0.985 crib =   -3.613 ±  2.013 overall
+T♦ first play:   +0.552 ±  0.331 game points;   -4.448 ±  0.316 Δ-peg +   +4.897 ±  1.476 Δ-hand +   -4.241 ±  1.154 crib =   -3.793 ±  2.373 overall
+Dealer plays T♣ for 13 ([6♠,9♣,6♦,K♦,Go,Go];[3♣,T♣])
+Pone   plays 2♦ for 15 ([6♠,9♣,6♦,K♦,Go,Go];[3♣,T♣,2♦])
+!15 for 2 points for Pone. [112-74]
+Dealer plays T♦ for 25 ([6♠,9♣,6♦,K♦,Go,Go];[3♣,T♣,2♦,T♦])
+!Last card for 1 point for Dealer [112-75].
+![6♠,6♦,3♣,2♦] hand + starter K♠ scores  6 points for Pone.   [118-75]
+![K♦,T♦,T♣,9♣] hand + starter K♠ scores  4 points for Dealer. [118-79]
+![Q♥,J♠,7♠,7♣] crib + starter K♠ scores  6 points for Dealer. [118-85]
++++ Game score is [118-85] for first pone and first dealer after 7 hands played.
+
+Pone   dealt     [8♠,5♥,4♠,8♥,3♦,A♦] (sorted: [8♠,8♥,5♥,4♠,3♦,A♦])
+Dealer dealt     [8♦,7♣,4♥,2♣,6♦,9♣] (sorted: [9♣,8♦,7♣,6♦,4♥,2♣])
+Pone   discarded [5♥,A♦] (sorted: [5♥,A♦])
+Dealer discarded [4♥,2♣] (sorted: [4♥,2♣])
+Pone   kept      [8♠,4♠,8♥,3♦] (sorted: [8♠,8♥,4♠,3♦])
+Dealer kept      [8♦,7♣,6♦,9♣] (sorted: [9♣,8♦,7♣,6♦])
+Cut/starter card is: J♦
+His heels/nibs for 2 for Dealer [120-85]
+Simulating each of the 4 possible pone plays 30 times in order to select the play:
+4♠ first play:   -2.000 ±  0.000 game points;   -1.000 ±  0.000 Δ-peg +   +0.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   -1.000 ±  0.000 overall
+3♦ first play:   -2.000 ±  0.000 game points;   -1.000 ±  0.000 Δ-peg +   +0.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   -1.000 ±  0.000 overall
+8♥ first play:   -2.000 ±  0.000 game points;   -1.000 ±  0.000 Δ-peg +   +0.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   -1.000 ±  0.000 overall
+8♠ first play:   -2.000 ±  0.000 game points;   -1.000 ±  0.000 Δ-peg +   +0.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   -1.000 ±  0.000 overall
+Pone   plays 4♠ for 4 ([4♠])
+Simulating each of the 4 possible dealer plays 30 times in order to select the play:
+8♦ first play:   -2.000 ±  0.000 game points;   -1.000 ±  0.000 Δ-peg +   +0.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   -1.000 ±  0.000 overall
+6♦ first play:   -2.000 ±  0.000 game points;   -1.000 ±  0.000 Δ-peg +   +0.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   -1.000 ±  0.000 overall
+9♣ first play:   -2.000 ±  0.000 game points;   -1.000 ±  0.000 Δ-peg +   +0.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   -1.000 ±  0.000 overall
+7♣ first play:   -2.000 ±  0.000 game points;   -1.000 ±  0.000 Δ-peg +   +0.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   -1.000 ±  0.000 overall
+Dealer plays 8♦ for 12 ([4♠,8♦])
+Simulating each of the 3 possible pone plays 30 times in order to select the play:
+3♦ first play:   -2.000 ±  0.000 game points;   -1.000 ±  0.000 Δ-peg +   +0.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   -1.000 ±  0.000 overall
+8♥ first play:   -2.000 ±  0.000 game points;   -1.000 ±  0.000 Δ-peg +   +0.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   -1.000 ±  0.000 overall
+8♠ first play:   -2.000 ±  0.000 game points;   -1.000 ±  0.000 Δ-peg +   +0.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   -1.000 ±  0.000 overall
+Pone   plays 3♦ for 15 ([4♠,8♦,3♦])
+!15 for 2 points for Pone. [120-87]
+Simulating each of the 3 possible dealer plays 30 times in order to select the play:
+9♣ first play:   -2.000 ±  0.000 game points;   -1.000 ±  0.000 Δ-peg +   +0.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   -1.000 ±  0.000 overall
+7♣ first play:   -2.000 ±  0.000 game points;   -1.000 ±  0.000 Δ-peg +   +0.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   -1.000 ±  0.000 overall
+6♦ first play:   -2.000 ±  0.000 game points;   -1.000 ±  0.000 Δ-peg +   +0.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   -1.000 ±  0.000 overall
+Dealer plays 9♣ for 24 ([4♠,8♦,3♦,9♣])
+Pone   says 'Go'
+Simulating each of the 2 possible dealer plays 30 times in order to select the play:
+6♦ first play:   -2.000 ±  0.000 game points;   -1.000 ±  0.000 Δ-peg +   +0.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   -1.000 ±  0.000 overall
+7♣ first play:   -2.000 ±  0.000 game points;   -1.000 ±  0.000 Δ-peg +   +0.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   -1.000 ±  0.000 overall
+Dealer plays 6♦ for 30 ([4♠,8♦,3♦,9♣,Go,6♦])
+Pone   says 'Go'
+Dealer says 'Go'
+!Go for 1 point for Dealer. [121-87]
++++ Score at end of game simulation: [121-87] for first pone and first dealer.
+### Game points at end of game simulation: [[2.00000-0.00000]] for pone and dealer.
+
+Pone   dealt     [4♠,9♥,A♣,K♠,J♦,2♥] (sorted: [K♠,J♦,9♥,4♠,2♥,A♣])
+Dealer dealt     [4♣,2♣,3♥,T♠,5♠,8♥] (sorted: [T♠,8♥,5♠,4♣,3♥,2♣])
+Pone   discarded [9♥,2♥] (sorted: [9♥,2♥])
+Dealer discarded [T♠,5♠] (sorted: [T♠,5♠])
+Pone   kept      [4♠,A♣,K♠,J♦] (sorted: [K♠,J♦,4♠,A♣])
+Dealer kept      [4♣,2♣,3♥,8♥] (sorted: [8♥,4♣,3♥,2♣])
+Cut/starter card is: A♦
+Simulating each of the 4 possible pone plays 30 times in order to select the play:
+J♦ first play:   +0.000 ±  0.000 game points;   -0.300 ±  0.825 Δ-peg +   +4.267 ±  1.243 Δ-hand +   -4.567 ±  1.246 crib =   -0.600 ±  2.464 overall
+4♠ first play:   +0.000 ±  0.000 game points;   -0.333 ±  0.647 Δ-peg +   +3.100 ±  1.027 Δ-hand +   -5.400 ±  1.176 crib =   -2.633 ±  1.499 overall
+A♣ first play:   +0.000 ±  0.000 game points;   -0.433 ±  1.095 Δ-peg +   +3.467 ±  0.984 Δ-hand +   -4.233 ±  1.364 crib =   -1.200 ±  1.796 overall
+K♠ first play:   +0.000 ±  0.000 game points;   -1.733 ±  0.703 Δ-peg +   +3.400 ±  1.231 Δ-hand +   -5.867 ±  1.517 crib =   -4.200 ±  1.911 overall
+Pone   plays J♦ for 10 ([J♦])
+Simulating each of the 4 possible dealer plays 30 times in order to select the play:
+8♥ first play:   +0.000 ±  0.000 game points;   -3.273 ±  0.977 Δ-peg +   -0.485 ±  1.099 Δ-hand +   -5.121 ±  0.564 crib =   -8.879 ±  1.764 overall
+3♥ first play:   +0.000 ±  0.000 game points;   -2.389 ±  0.976 Δ-peg +   +0.444 ±  0.868 Δ-hand +   -5.389 ±  0.611 crib =   -7.333 ±  1.544 overall
+4♣ first play:   +0.000 ±  0.000 game points;   -1.360 ±  1.449 Δ-peg +   -0.560 ±  1.038 Δ-hand +   -5.040 ±  0.674 crib =   -6.960 ±  1.840 overall
+2♣ first play:   +0.000 ±  0.000 game points;   -0.462 ±  0.608 Δ-peg +   +0.346 ±  1.205 Δ-hand +   -5.038 ±  0.538 crib =   -5.154 ±  1.457 overall
+Dealer plays 8♥ for 18 ([J♦,8♥])
+Simulating each of the 3 possible pone plays 30 times in order to select the play:
+K♠ first play:   +0.000 ±  0.000 game points;   -0.655 ±  0.676 Δ-peg +   +3.241 ±  1.141 Δ-hand +   -5.448 ±  1.670 crib =   -2.862 ±  1.764 overall
+A♣ first play:   +0.000 ±  0.000 game points;   -0.852 ±  0.560 Δ-peg +   +3.926 ±  1.165 Δ-hand +   -5.259 ±  1.643 crib =   -2.185 ±  1.644 overall
+4♠ first play:   +0.000 ±  0.000 game points;   -2.059 ±  0.785 Δ-peg +   +3.471 ±  1.412 Δ-hand +   -4.971 ±  1.294 crib =   -3.559 ±  1.896 overall
+Pone   plays K♠ for 28 ([J♦,8♥,K♠])
+Simulating each of the 3 possible dealer plays 30 times in order to select the play:
+3♥ first play:   +0.000 ±  0.000 game points;   -3.152 ±  0.149 Δ-peg +   -0.543 ±  0.720 Δ-hand +   -5.391 ±  0.454 crib =   -9.087 ±  0.934 overall
+2♣ first play:   +0.000 ±  0.000 game points;   -3.091 ±  0.431 Δ-peg +   +0.068 ±  0.660 Δ-hand +   -4.682 ±  0.472 crib =   -7.705 ±  0.676 overall
+Dealer plays 3♥ for 31 ([J♦,8♥,K♠,3♥])
+!31 for 1 point for Dealer. [0-1]
+Pone   says 'Go'
+Dealer says 'Go'
+!Go for 1 point for Dealer. [0-2]
+---resetting play count to 0---
+Simulating each of the 2 possible pone plays 30 times in order to select the play:
+4♠ first play:   +0.000 ±  0.000 game points;   -3.560 ±  0.532 Δ-peg +   +4.240 ±  0.802 Δ-hand +   -2.800 ±  0.742 crib =   -2.120 ±  1.302 overall
+A♣ first play:   +0.000 ±  0.000 game points;   -3.571 ±  0.523 Δ-peg +   +4.829 ±  0.675 Δ-hand +   -2.743 ±  0.693 crib =   -1.486 ±  0.962 overall
+Pone   plays 4♠ for 4 ([J♦,8♥,K♠,3♥,Go,Go];[4♠])
+Simulating each of the 2 possible dealer plays 30 times in order to select the play:
+4♣ first play:   +0.000 ±  0.000 game points;   -5.312 ±  0.256 Δ-peg +   +2.031 ±  0.285 Δ-hand +   -4.062 ±  0.373 crib =   -7.344 ±  0.650 overall
+2♣ first play:   +0.000 ±  0.000 game points;   -3.071 ±  0.140 Δ-peg +   +2.143 ±  0.280 Δ-hand +   -4.214 ±  0.420 crib =   -5.143 ±  0.651 overall
+Dealer plays 4♣ for 8 ([J♦,8♥,K♠,3♥,Go,Go];[4♠,4♣])
+!Pair for 2 points for Dealer. [0-4]
+Pone   plays A♣ for 9 ([J♦,8♥,K♠,3♥,Go,Go];[4♠,4♣,A♣])
+Dealer plays 2♣ for 11 ([J♦,8♥,K♠,3♥,Go,Go];[4♠,4♣,A♣,2♣])
+!Last card for 1 point for Dealer [0-5].
+![K♠,J♦,4♠,A♣] hand + starter A♦ scores 11 points for Pone.   [11-5]
+![8♥,4♣,3♥,2♣] hand + starter A♦ scores  8 points for Dealer. [11-13]
+![T♠,9♥,5♠,2♥] crib + starter A♦ scores  4 points for Dealer. [11-17]
++++ Game score is [11-17] for first pone and first dealer after 1 hands played.
+
+Pone   dealt     [5♣,4♥,K♥,J♣,Q♣,8♣] (sorted: [K♥,Q♣,J♣,8♣,5♣,4♥])
+Dealer dealt     [4♣,4♠,6♠,2♠,J♦,Q♠] (sorted: [Q♠,J♦,6♠,4♠,4♣,2♠])
+Pone   discarded [4♥,8♣] (sorted: [8♣,4♥])
+Dealer discarded [J♦,Q♠] (sorted: [Q♠,J♦])
+Pone   kept      [5♣,K♥,J♣,Q♣] (sorted: [K♥,Q♣,J♣,5♣])
+Dealer kept      [4♣,4♠,6♠,2♠] (sorted: [6♠,4♠,4♣,2♠])
+Cut/starter card is: 8♠
+Simulating each of the 4 possible pone plays 30 times in order to select the play:
+J♣ first play:   +0.000 ±  0.000 game points;   -1.500 ±  0.855 Δ-peg +   +0.733 ±  1.492 Δ-hand +   -5.100 ±  1.052 crib =   -5.867 ±  2.024 overall
+K♥ first play:   +0.000 ±  0.000 game points;   -1.733 ±  1.016 Δ-peg +   +1.433 ±  1.142 Δ-hand +   -6.533 ±  1.345 crib =   -6.833 ±  1.880 overall
+Q♣ first play:   +0.000 ±  0.000 game points;   -1.733 ±  0.949 Δ-peg +   +1.933 ±  1.325 Δ-hand +   -5.100 ±  1.009 crib =   -4.900 ±  1.890 overall
+5♣ first play:   +0.000 ±  0.000 game points;   -2.167 ±  0.764 Δ-peg +   +1.367 ±  1.525 Δ-hand +   -5.867 ±  1.123 crib =   -6.667 ±  1.554 overall
+Pone   plays J♣ for 10 ([J♣])
+Simulating each of the 4 possible dealer plays 30 times in order to select the play:
+4♣ first play:   +0.000 ±  0.000 game points;   -3.097 ±  1.069 Δ-peg +   +4.806 ±  0.902 Δ-hand +   -2.355 ±  0.468 crib =   -0.645 ±  1.309 overall
+4♠ first play:   +0.000 ±  0.000 game points;   -2.240 ±  0.962 Δ-peg +   +3.840 ±  1.072 Δ-hand +   -2.240 ±  0.753 crib =   -0.640 ±  1.404 overall
+2♠ first play:   +0.000 ±  0.000 game points;   -1.600 ±  0.924 Δ-peg +   +3.914 ±  0.801 Δ-hand +   -2.714 ±  0.577 crib =   -0.400 ±  1.355 overall
+6♠ first play:   +0.000 ±  0.000 game points;   -1.103 ±  0.697 Δ-peg +   +4.828 ±  1.021 Δ-hand +   -2.897 ±  0.578 crib =   +0.828 ±  1.309 overall
+Dealer plays 4♣ for 14 ([J♣,4♣])
+Simulating each of the 3 possible pone plays 30 times in order to select the play:
+Q♣ first play:   +0.000 ±  0.000 game points;   -1.086 ±  0.581 Δ-peg +   +2.029 ±  0.845 Δ-hand +   -5.714 ±  1.046 crib =   -4.771 ±  1.438 overall
+K♥ first play:   +0.000 ±  0.000 game points;   -1.655 ±  0.792 Δ-peg +   +1.655 ±  1.123 Δ-hand +   -5.345 ±  1.106 crib =   -5.345 ±  1.922 overall
+5♣ first play:   +0.000 ±  0.000 game points;   -3.538 ±  0.858 Δ-peg +   +1.731 ±  1.011 Δ-hand +   -5.500 ±  1.167 crib =   -7.308 ±  1.718 overall
+Pone   plays Q♣ for 24 ([J♣,4♣,Q♣])
+Simulating each of the 3 possible dealer plays 30 times in order to select the play:
+6♠ first play:   +0.000 ±  0.000 game points;   -2.250 ±  0.482 Δ-peg +   +4.406 ±  0.839 Δ-hand +   -2.125 ±  0.602 crib =   +0.031 ±  1.047 overall
+2♠ first play:   +0.000 ±  0.000 game points;   -0.321 ±  0.661 Δ-peg +   +5.000 ±  0.918 Δ-hand +   -1.607 ±  0.573 crib =   +3.071 ±  1.071 overall
+4♠ first play:   +0.000 ±  0.000 game points;   -0.033 ±  0.370 Δ-peg +   +5.133 ±  0.948 Δ-hand +   -2.333 ±  0.667 crib =   +2.767 ±  1.210 overall
+Dealer plays 6♠ for 30 ([J♣,4♣,Q♣,6♠])
+Pone   says 'Go'
+Dealer says 'Go'
+!Go for 1 point for Dealer. [12-17]
+---resetting play count to 0---
+Simulating each of the 2 possible pone plays 30 times in order to select the play:
+K♥ first play:   +0.000 ±  0.000 game points;   -2.107 ±  0.210 Δ-peg +   +1.071 ±  0.878 Δ-hand +   -4.929 ±  1.180 crib =   -5.964 ±  1.621 overall
+5♣ first play:   +0.000 ±  0.000 game points;   -2.688 ±  0.323 Δ-peg +   +1.781 ±  0.999 Δ-hand +   -4.062 ±  0.797 crib =   -4.969 ±  1.548 overall
+Pone   plays K♥ for 10 ([J♣,4♣,Q♣,6♠,Go,Go];[K♥])
+Simulating each of the 2 possible dealer plays 30 times in order to select the play:
+4♠ first play:   +0.000 ±  0.000 game points;   -1.941 ±  0.202 Δ-peg +   +5.088 ±  0.800 Δ-hand +   -2.176 ±  0.664 crib =   +0.971 ±  0.761 overall
+2♠ first play:   +0.000 ±  0.000 game points;   -1.923 ±  0.151 Δ-peg +   +4.846 ±  0.933 Δ-hand +   -2.577 ±  0.689 crib =   +0.346 ±  0.813 overall
+Dealer plays 4♠ for 14 ([J♣,4♣,Q♣,6♠,Go,Go];[K♥,4♠])
+Pone   plays 5♣ for 19 ([J♣,4♣,Q♣,6♠,Go,Go];[K♥,4♠,5♣])
+Dealer plays 2♠ for 21 ([J♣,4♣,Q♣,6♠,Go,Go];[K♥,4♠,5♣,2♠])
+!Last card for 1 point for Dealer [13-17].
+![K♥,Q♣,J♣,5♣] hand + starter 8♠ scores  9 points for Pone.   [13-26]
+![6♠,4♠,4♣,2♠] hand + starter 8♠ scores  2 points for Dealer. [15-26]
+![Q♠,J♦,8♣,4♥] crib + starter 8♠ scores  2 points for Dealer. [17-26]
++++ Game score is [17-26] for first pone and first dealer after 2 hands played.
+
+Pone   dealt     [2♥,7♣,6♦,3♦,A♣,5♥] (sorted: [7♣,6♦,5♥,3♦,2♥,A♣])
+Dealer dealt     [T♠,T♣,A♥,K♠,7♠,J♥] (sorted: [K♠,J♥,T♠,T♣,7♠,A♥])
+Pone   discarded [2♥,A♣] (sorted: [2♥,A♣])
+Dealer discarded [A♥,7♠] (sorted: [7♠,A♥])
+Pone   kept      [7♣,6♦,3♦,5♥] (sorted: [7♣,6♦,5♥,3♦])
+Dealer kept      [T♠,T♣,K♠,J♥] (sorted: [K♠,J♥,T♠,T♣])
+Cut/starter card is: Q♣
+Simulating each of the 4 possible pone plays 30 times in order to select the play:
+7♣ first play:   +0.000 ±  0.000 game points;   -2.100 ±  1.022 Δ-peg +   -0.300 ±  1.416 Δ-hand +   -3.000 ±  0.758 crib =   -5.400 ±  1.979 overall
+3♦ first play:   +0.000 ±  0.000 game points;   -2.800 ±  1.102 Δ-peg +   -1.600 ±  1.436 Δ-hand +   -4.200 ±  1.290 crib =   -8.600 ±  1.964 overall
+6♦ first play:   +0.000 ±  0.000 game points;   -3.767 ±  0.860 Δ-peg +   -0.467 ±  1.184 Δ-hand +   -4.267 ±  1.188 crib =   -8.500 ±  2.111 overall
+5♥ first play:   +0.000 ±  0.000 game points;   -3.767 ±  0.952 Δ-peg +   -0.100 ±  1.436 Δ-hand +   -4.200 ±  0.951 crib =   -8.067 ±  2.452 overall
+Pone   plays 7♣ for 7 ([7♣])
+Simulating each of the 4 possible dealer plays 30 times in order to select the play:
+T♣ first play:   +0.000 ±  0.000 game points;   -0.645 ±  0.633 Δ-peg +   -2.774 ±  1.043 Δ-hand +   -2.806 ±  0.670 crib =   -6.226 ±  1.512 overall
+T♠ first play:   +0.000 ±  0.000 game points;   -0.323 ±  0.484 Δ-peg +   -3.032 ±  1.002 Δ-hand +   -2.613 ±  0.558 crib =   -5.968 ±  1.374 overall
+J♥ first play:   +0.000 ±  0.000 game points;   -0.276 ±  0.714 Δ-peg +   -3.069 ±  0.796 Δ-hand +   -2.414 ±  0.619 crib =   -5.759 ±  1.112 overall
+K♠ first play:   +0.000 ±  0.000 game points;   -0.241 ±  0.643 Δ-peg +   -2.207 ±  1.273 Δ-hand +   -3.172 ±  0.748 crib =   -5.621 ±  1.768 overall
+Dealer plays T♣ for 17 ([7♣,T♣])
+Simulating each of the 3 possible pone plays 30 times in order to select the play:
+5♥ first play:   +0.000 ±  0.000 game points;   -1.667 ±  0.724 Δ-peg +   -2.033 ±  1.451 Δ-hand +   -4.367 ±  1.172 crib =   -8.067 ±  1.839 overall
+6♦ first play:   +0.000 ±  0.000 game points;   -1.839 ±  0.936 Δ-peg +   -2.387 ±  1.517 Δ-hand +   -5.452 ±  1.185 crib =   -9.677 ±  1.609 overall
+3♦ first play:   +0.000 ±  0.000 game points;   -2.690 ±  1.016 Δ-peg +   -2.483 ±  1.537 Δ-hand +   -4.448 ±  0.995 crib =   -9.621 ±  2.161 overall
+Pone   plays 5♥ for 22 ([7♣,T♣,5♥])
+Dealer says 'Go'
+Simulating each of the 2 possible pone plays 30 times in order to select the play:
+6♦ first play:   +0.000 ±  0.000 game points;   -1.821 ±  0.755 Δ-peg +   -1.143 ±  0.883 Δ-hand +   -4.214 ±  1.236 crib =   -7.179 ±  1.516 overall
+3♦ first play:   +0.000 ±  0.000 game points;   -3.031 ±  0.619 Δ-peg +   -0.938 ±  1.254 Δ-hand +   -4.156 ±  1.194 crib =   -8.125 ±  1.541 overall
+Pone   plays 6♦ for 28 ([7♣,T♣,5♥,Go,6♦])
+Dealer says 'Go'
+Pone   plays 3♦ for 31 ([7♣,T♣,5♥,Go,6♦,Go,3♦])
+!31 for 1 point for Pone. [18-26]
+Dealer says 'Go'
+Pone   says 'Go'
+!Go for 1 point for Pone. [19-26]
+---resetting play count to 0---
+Simulating each of the 3 possible dealer plays 30 times in order to select the play:
+K♠ first play:   +0.000 ±  0.000 game points;   +1.000 ±  0.000 Δ-peg +   -3.000 ±  0.000 Δ-hand +   -3.333 ±  0.794 crib =   -5.333 ±  0.794 overall
+J♥ first play:   +0.000 ±  0.000 game points;   +1.000 ±  0.000 Δ-peg +   -3.000 ±  0.000 Δ-hand +   -2.833 ±  0.912 crib =   -4.833 ±  0.912 overall
+T♠ first play:   +0.000 ±  0.000 game points;   +1.000 ±  0.000 Δ-peg +   -3.000 ±  0.000 Δ-hand +   -2.533 ±  0.614 crib =   -4.533 ±  0.614 overall
+Dealer plays K♠ for 10 ([7♣,T♣,5♥,Go,6♦,Go,3♦,Go,Go];[K♠])
+Pone   says 'Go'
+Simulating each of the 2 possible dealer plays 30 times in order to select the play:
+J♥ first play:   +0.000 ±  0.000 game points;   +1.000 ±  0.000 Δ-peg +   -3.000 ±  0.000 Δ-hand +   -3.133 ±  0.785 crib =   -5.133 ±  0.785 overall
+T♠ first play:   +0.000 ±  0.000 game points;   +1.000 ±  0.000 Δ-peg +   -3.000 ±  0.000 Δ-hand +   -3.267 ±  0.775 crib =   -5.267 ±  0.775 overall
+Dealer plays J♥ for 20 ([7♣,T♣,5♥,Go,6♦,Go,3♦,Go,Go];[K♠,Go,J♥])
+Pone   says 'Go'
+Dealer plays T♠ for 30 ([7♣,T♣,5♥,Go,6♦,Go,3♦,Go,Go];[K♠,Go,J♥,Go,T♠])
+!Last card for 1 point for Dealer [19-27].
+![7♣,6♦,5♥,3♦] hand + starter Q♣ scores  7 points for Pone.   [26-27]
+![K♠,J♥,T♠,T♣] hand + starter Q♣ scores 10 points for Dealer. [26-37]
+![7♠,2♥,A♥,A♣] crib + starter Q♣ scores  2 points for Dealer. [26-39]
++++ Game score is [26-39] for first pone and first dealer after 3 hands played.
+
+Pone   dealt     [8♣,J♦,6♦,6♠,J♠,K♦] (sorted: [K♦,J♠,J♦,8♣,6♠,6♦])
+Dealer dealt     [Q♥,J♣,7♦,4♦,T♦,3♦] (sorted: [Q♥,J♣,T♦,7♦,4♦,3♦])
+Pone   discarded [6♦,6♠] (sorted: [6♠,6♦])
+Dealer discarded [7♦,4♦] (sorted: [7♦,4♦])
+Pone   kept      [8♣,J♦,J♠,K♦] (sorted: [K♦,J♠,J♦,8♣])
+Dealer kept      [Q♥,J♣,T♦,3♦] (sorted: [Q♥,J♣,T♦,3♦])
+Cut/starter card is: A♥
+Simulating each of the 4 possible pone plays 30 times in order to select the play:
+J♦ first play:   +0.000 ±  0.000 game points;   -1.300 ±  0.936 Δ-peg +   -5.600 ±  1.373 Δ-hand +   -6.000 ±  1.261 crib =  -12.900 ±  2.108 overall
+J♠ first play:   +0.000 ±  0.000 game points;   -1.400 ±  1.122 Δ-peg +   -6.000 ±  0.999 Δ-hand +   -6.667 ±  1.255 crib =  -14.067 ±  2.267 overall
+8♣ first play:   +0.000 ±  0.000 game points;   -1.433 ±  1.107 Δ-peg +   -6.867 ±  1.091 Δ-hand +   -6.533 ±  1.083 crib =  -14.833 ±  1.756 overall
+K♦ first play:   +0.000 ±  0.000 game points;   -3.133 ±  0.860 Δ-peg +   -4.367 ±  1.238 Δ-hand +   -6.500 ±  1.115 crib =  -14.000 ±  2.005 overall
+Pone   plays J♦ for 10 ([J♦])
+Simulating each of the 4 possible dealer plays 30 times in order to select the play:
+J♣ first play:   +0.000 ±  0.000 game points;   -0.759 ±  1.297 Δ-peg +   +4.448 ±  1.217 Δ-hand +   -4.241 ±  0.605 crib =   -0.552 ±  2.303 overall
+3♦ first play:   +0.000 ±  0.000 game points;   -0.667 ±  0.707 Δ-peg +   +3.083 ±  0.713 Δ-hand +   -4.611 ±  0.508 crib =   -2.194 ±  1.237 overall
+T♦ first play:   +0.000 ±  0.000 game points;   +1.452 ±  0.890 Δ-peg +   +4.065 ±  1.174 Δ-hand +   -4.452 ±  0.602 crib =   +1.065 ±  1.523 overall
+Q♥ first play:   +0.000 ±  0.000 game points;   +2.250 ±  0.960 Δ-peg +   +3.333 ±  1.060 Δ-hand +   -4.250 ±  0.836 crib =   +1.333 ±  1.663 overall
+Dealer plays J♣ for 20 ([J♦,J♣])
+!Pair for 2 points for Dealer. [28-39]
+Simulating each of the 3 possible pone plays 30 times in order to select the play:
+J♠ first play:   +0.000 ±  0.000 game points;   +2.710 ±  0.637 Δ-peg +   -5.065 ±  0.995 Δ-hand +   -8.323 ±  1.349 crib =  -10.677 ±  1.805 overall
+8♣ first play:   +0.000 ±  0.000 game points;   -3.621 ±  0.603 Δ-peg +   -4.517 ±  1.073 Δ-hand +   -7.207 ±  1.394 crib =  -15.345 ±  1.963 overall
+K♦ first play:   +0.000 ±  0.000 game points;   -3.900 ±  0.680 Δ-peg +   -4.867 ±  1.015 Δ-hand +   -7.533 ±  1.103 crib =  -16.300 ±  1.741 overall
+Pone   plays J♠ for 30 ([J♦,J♣,J♠])
+!Pairs royale for 6 points for Pone. [28-45]
+Dealer says 'Go'
+Pone   says 'Go'
+!Go for 1 point for Pone. [28-46]
+---resetting play count to 0---
+Simulating each of the 3 possible dealer plays 30 times in order to select the play:
+3♦ first play:   +0.000 ±  0.000 game points;   +3.621 ±  0.595 Δ-peg +   +4.862 ±  0.874 Δ-hand +   -4.897 ±  0.822 crib =   +3.586 ±  1.236 overall
+Q♥ first play:   +0.000 ±  0.000 game points;   +4.167 ±  1.166 Δ-peg +   +3.767 ±  1.062 Δ-hand +   -4.733 ±  0.763 crib =   +3.200 ±  1.945 overall
+T♦ first play:   +0.000 ±  0.000 game points;   +5.065 ±  0.813 Δ-peg +   +4.323 ±  0.989 Δ-hand +   -5.032 ±  0.701 crib =   +4.355 ±  1.690 overall
+Dealer plays 3♦ for 3 ([J♦,J♣,J♠,Go,Go];[3♦])
+Simulating each of the 2 possible pone plays 30 times in order to select the play:
+8♣ first play:   +0.000 ±  0.000 game points;   +4.400 ±  0.716 Δ-peg +   -4.400 ±  1.208 Δ-hand +   -8.880 ±  1.282 crib =   -8.880 ±  2.186 overall
+K♦ first play:   +0.000 ±  0.000 game points;   +3.371 ±  0.351 Δ-peg +   -5.914 ±  1.036 Δ-hand +   -8.400 ±  1.026 crib =  -10.943 ±  1.415 overall
+Pone   plays 8♣ for 11 ([J♦,J♣,J♠,Go,Go];[3♦,8♣])
+Simulating each of the 2 possible dealer plays 30 times in order to select the play:
+Q♥ first play:   +0.000 ±  0.000 game points;   +5.097 ±  0.106 Δ-peg +   +1.452 ±  0.384 Δ-hand +   -4.516 ±  0.703 crib =   +2.032 ±  0.815 overall
+T♦ first play:   +0.000 ±  0.000 game points;   +5.345 ±  0.296 Δ-peg +   +1.517 ±  0.511 Δ-hand +   -4.448 ±  0.712 crib =   +2.414 ±  0.834 overall
+Dealer plays Q♥ for 21 ([J♦,J♣,J♠,Go,Go];[3♦,8♣,Q♥])
+Pone   plays K♦ for 31 ([J♦,J♣,J♠,Go,Go];[3♦,8♣,Q♥,K♦])
+!31 for 1 point for Pone. [28-47]
+Dealer says 'Go'
+Pone   says 'Go'
+!Go for 1 point for Pone. [28-48]
+---resetting play count to 0---
+Dealer plays T♦ for 10 ([J♦,J♣,J♠,Go,Go];[3♦,8♣,Q♥,K♦,Go,Go];[T♦])
+!Last card for 1 point for Dealer [29-48].
+![K♦,J♠,J♦,8♣] hand + starter A♥ scores  2 points for Pone.   [29-50]
+![Q♥,J♣,T♦,3♦] hand + starter A♥ scores  3 points for Dealer. [32-50]
+![7♦,6♠,6♦,4♦] crib + starter A♥ scores  2 points for Dealer. [34-50]
++++ Game score is [34-50] for first pone and first dealer after 4 hands played.
+
+Pone   dealt     [6♣,3♥,Q♦,8♠,T♣,6♠] (sorted: [Q♦,T♣,8♠,6♠,6♣,3♥])
+Dealer dealt     [7♦,K♦,A♥,T♥,5♥,7♠] (sorted: [K♦,T♥,7♠,7♦,5♥,A♥])
+Pone   discarded [Q♦,T♣] (sorted: [Q♦,T♣])
+Dealer discarded [T♥,5♥] (sorted: [T♥,5♥])
+Pone   kept      [6♣,3♥,8♠,6♠] (sorted: [8♠,6♠,6♣,3♥])
+Dealer kept      [7♦,K♦,A♥,7♠] (sorted: [K♦,7♠,7♦,A♥])
+Cut/starter card is: 5♦
+Simulating each of the 4 possible pone plays 30 times in order to select the play:
+6♣ first play:   +0.000 ±  0.000 game points;   -0.567 ±  1.256 Δ-peg +   -6.500 ±  1.577 Δ-hand +   -7.500 ±  1.294 crib =  -14.567 ±  1.952 overall
+3♥ first play:   +0.000 ±  0.000 game points;   -0.967 ±  1.069 Δ-peg +   -5.967 ±  1.579 Δ-hand +   -8.700 ±  1.573 crib =  -15.633 ±  2.041 overall
+8♠ first play:   +0.000 ±  0.000 game points;   -1.467 ±  0.895 Δ-peg +   -4.767 ±  1.386 Δ-hand +   -8.933 ±  1.506 crib =  -15.167 ±  1.926 overall
+6♠ first play:   +0.000 ±  0.000 game points;   -1.600 ±  1.019 Δ-peg +   -5.533 ±  1.123 Δ-hand +   -7.000 ±  1.025 crib =  -14.133 ±  1.427 overall
+Pone   plays 6♣ for 6 ([6♣])
+Simulating each of the 4 possible dealer plays 30 times in order to select the play:
+K♦ first play:   +0.000 ±  0.000 game points;   -1.103 ±  0.839 Δ-peg +   +3.552 ±  1.725 Δ-hand +  -10.793 ±  0.940 crib =   -8.345 ±  2.246 overall
+7♦ first play:   +0.000 ±  0.000 game points;   -0.324 ±  0.634 Δ-peg +   +5.206 ±  1.580 Δ-hand +  -11.294 ±  1.178 crib =   -6.412 ±  2.185 overall
+A♥ first play:   +0.000 ±  0.000 game points;   -0.133 ±  0.807 Δ-peg +   +2.633 ±  1.205 Δ-hand +  -11.767 ±  1.231 crib =   -9.267 ±  1.630 overall
+7♠ first play:   +0.000 ±  0.000 game points;   +0.444 ±  0.871 Δ-peg +   +4.704 ±  1.712 Δ-hand +  -11.593 ±  1.345 crib =   -6.444 ±  1.373 overall
+Dealer plays K♦ for 16 ([6♣,K♦])
+Simulating each of the 3 possible pone plays 30 times in order to select the play:
+8♠ first play:   +0.000 ±  0.000 game points;   -1.033 ±  0.687 Δ-peg +   -5.933 ±  1.368 Δ-hand +   -6.133 ±  0.980 crib =  -13.100 ±  2.310 overall
+6♠ first play:   +0.000 ±  0.000 game points;   -1.429 ±  0.657 Δ-peg +   -6.750 ±  1.406 Δ-hand +   -5.357 ±  0.920 crib =  -13.536 ±  1.343 overall
+3♥ first play:   +0.000 ±  0.000 game points;   -2.000 ±  0.570 Δ-peg +   -4.781 ±  0.987 Δ-hand +   -6.188 ±  1.076 crib =  -12.969 ±  1.390 overall
+Pone   plays 8♠ for 24 ([6♣,K♦,8♠])
+Simulating each of the 3 possible dealer plays 30 times in order to select the play:
+7♦ first play:   +0.000 ±  0.000 game points;   -3.357 ±  0.707 Δ-peg +   +2.500 ±  1.224 Δ-hand +  -11.571 ±  1.261 crib =  -12.429 ±  1.917 overall
+7♠ first play:   +0.000 ±  0.000 game points;   -2.973 ±  0.638 Δ-peg +   +0.811 ±  1.007 Δ-hand +  -11.865 ±  1.179 crib =  -14.027 ±  1.691 overall
+A♥ first play:   +0.000 ±  0.000 game points;   -0.320 ±  1.426 Δ-peg +   +1.080 ±  1.030 Δ-hand +  -11.440 ±  1.372 crib =  -10.680 ±  2.042 overall
+Dealer plays 7♦ for 31 ([6♣,K♦,8♠,7♦])
+!31 for 1 point for Dealer. [34-51]
+Pone   says 'Go'
+Dealer says 'Go'
+!Go for 1 point for Dealer. [34-52]
+---resetting play count to 0---
+Simulating each of the 2 possible pone plays 30 times in order to select the play:
+3♥ first play:   +0.000 ±  0.000 game points;   -3.361 ±  0.304 Δ-peg +   -3.917 ±  0.902 Δ-hand +   -8.972 ±  1.569 crib =  -16.250 ±  1.661 overall
+6♠ first play:   +0.000 ±  0.000 game points;   -3.583 ±  0.424 Δ-peg +   -3.708 ±  1.110 Δ-hand +   -7.958 ±  1.703 crib =  -15.250 ±  1.610 overall
+Pone   plays 3♥ for 3 ([6♣,K♦,8♠,7♦,Go,Go];[3♥])
+Simulating each of the 2 possible dealer plays 30 times in order to select the play:
+A♥ first play:   +0.000 ±  0.000 game points;   -3.929 ±  0.472 Δ-peg +   -0.500 ±  1.040 Δ-hand +  -13.393 ±  0.783 crib =  -17.821 ±  1.235 overall
+7♠ first play:   +0.000 ±  0.000 game points;   -3.313 ±  0.501 Δ-peg +   -1.312 ±  0.891 Δ-hand +  -14.000 ±  0.736 crib =  -18.625 ±  1.574 overall
+Dealer plays A♥ for 4 ([6♣,K♦,8♠,7♦,Go,Go];[3♥,A♥])
+Pone   plays 6♠ for 10 ([6♣,K♦,8♠,7♦,Go,Go];[3♥,A♥,6♠])
+Dealer plays 7♠ for 17 ([6♣,K♦,8♠,7♦,Go,Go];[3♥,A♥,6♠,7♠])
+!Last card for 1 point for Dealer [34-53].
+![8♠,6♠,6♣,3♥] hand + starter 5♦ scores  4 points for Pone.   [38-53]
+![K♦,7♠,7♦,A♥] hand + starter 5♦ scores  6 points for Dealer. [38-59]
+![Q♦,T♥,T♣,5♥] crib + starter 5♦ scores 16 points for Dealer. [38-75]
++++ Game score is [38-75] for first pone and first dealer after 5 hands played.
+
+Pone   dealt     [5♥,3♦,4♠,J♥,6♣,5♣] (sorted: [J♥,6♣,5♥,5♣,4♠,3♦])
+Dealer dealt     [9♠,3♣,K♥,2♦,9♣,2♠] (sorted: [K♥,9♠,9♣,3♣,2♠,2♦])
+Pone   discarded [3♦,J♥] (sorted: [J♥,3♦])
+Dealer discarded [9♠,9♣] (sorted: [9♠,9♣])
+Pone   kept      [5♥,4♠,6♣,5♣] (sorted: [6♣,5♥,5♣,4♠])
+Dealer kept      [3♣,K♥,2♦,2♠] (sorted: [K♥,3♣,2♠,2♦])
+Cut/starter card is: Q♠
+Simulating each of the 4 possible pone plays 30 times in order to select the play:
+4♠ first play:   +0.000 ±  0.000 game points;   -2.500 ±  1.358 Δ-peg +   +8.933 ±  1.123 Δ-hand +   -4.233 ±  1.070 crib =   +2.200 ±  1.880 overall
+6♣ first play:   +0.000 ±  0.000 game points;   -3.200 ±  1.227 Δ-peg +   +7.667 ±  1.320 Δ-hand +   -3.933 ±  1.135 crib =   +0.533 ±  2.004 overall
+5♥ first play:   +0.000 ±  0.000 game points;   -3.333 ±  1.081 Δ-peg +   +8.400 ±  1.146 Δ-hand +   -4.367 ±  1.126 crib =   +0.700 ±  1.726 overall
+5♣ first play:   +0.000 ±  0.000 game points;   -3.400 ±  0.961 Δ-peg +   +7.733 ±  1.378 Δ-hand +   -2.967 ±  1.078 crib =   +1.367 ±  1.698 overall
+Pone   plays 4♠ for 4 ([4♠])
+Simulating each of the 4 possible dealer plays 30 times in order to select the play:
+2♠ first play:   +0.000 ±  0.000 game points;   -1.759 ±  1.037 Δ-peg +   -2.862 ±  1.275 Δ-hand +   -4.966 ±  0.970 crib =   -9.586 ±  2.094 overall
+K♥ first play:   +0.000 ±  0.000 game points;   -1.344 ±  1.163 Δ-peg +   -2.594 ±  1.238 Δ-hand +   -4.219 ±  0.866 crib =   -8.156 ±  2.047 overall
+2♦ first play:   +0.000 ±  0.000 game points;   -0.406 ±  1.070 Δ-peg +   -1.906 ±  1.291 Δ-hand +   -4.031 ±  0.846 crib =   -6.344 ±  2.050 overall
+3♣ first play:   +0.000 ±  0.000 game points;   -0.222 ±  0.799 Δ-peg +   -3.519 ±  1.436 Δ-hand +   -3.630 ±  0.805 crib =   -7.370 ±  1.863 overall
+Dealer plays 2♠ for 6 ([4♠,2♠])
+Simulating each of the 3 possible pone plays 30 times in order to select the play:
+5♥ first play:   +0.000 ±  0.000 game points;   -0.793 ±  0.872 Δ-peg +   +9.483 ±  0.990 Δ-hand +   -3.655 ±  1.071 crib =   +5.034 ±  1.512 overall
+6♣ first play:   +0.000 ±  0.000 game points;   -1.034 ±  1.197 Δ-peg +   +8.103 ±  1.370 Δ-hand +   -4.034 ±  1.054 crib =   +3.034 ±  1.678 overall
+5♣ first play:   +0.000 ±  0.000 game points;   -1.750 ±  0.960 Δ-peg +  +10.406 ±  1.081 Δ-hand +   -3.219 ±  1.022 crib =   +5.438 ±  1.803 overall
+Pone   plays 5♥ for 11 ([4♠,2♠,5♥])
+Simulating each of the 3 possible dealer plays 30 times in order to select the play:
+3♣ first play:   +0.000 ±  0.000 game points;   -1.903 ±  0.682 Δ-peg +   -0.581 ±  0.986 Δ-hand +   -3.548 ±  0.715 crib =   -6.032 ±  1.640 overall
+2♦ first play:   +0.000 ±  0.000 game points;   -1.600 ±  0.606 Δ-peg +   -0.867 ±  1.191 Δ-hand +   -3.067 ±  0.579 crib =   -5.533 ±  1.424 overall
+K♥ first play:   +0.000 ±  0.000 game points;   -0.931 ±  0.831 Δ-peg +   +0.103 ±  1.136 Δ-hand +   -3.448 ±  0.889 crib =   -4.276 ±  1.074 overall
+Dealer plays 3♣ for 14 ([4♠,2♠,5♥,3♣])
+!Run for 4 points for Dealer. [42-75]
+Simulating each of the 2 possible pone plays 30 times in order to select the play:
+6♣ first play:   +0.000 ±  0.000 game points;   -2.143 ±  0.944 Δ-peg +   +6.143 ±  0.805 Δ-hand +   -3.500 ±  1.060 crib =   +0.500 ±  1.688 overall
+5♣ first play:   +0.000 ±  0.000 game points;   -4.562 ±  0.535 Δ-peg +   +6.750 ±  0.699 Δ-hand +   -2.812 ±  1.020 crib =   -0.625 ±  1.472 overall
+Pone   plays 6♣ for 20 ([4♠,2♠,5♥,3♣,6♣])
+!Run for 5 points for Pone. [42-80]
+Simulating each of the 2 possible dealer plays 30 times in order to select the play:
+K♥ first play:   +0.000 ±  0.000 game points;   -0.793 ±  0.282 Δ-peg +   +2.034 ±  1.157 Δ-hand +   -4.621 ±  0.940 crib =   -3.379 ±  1.027 overall
+2♦ first play:   +0.000 ±  0.000 game points;   +1.581 ±  0.737 Δ-peg +   +2.452 ±  1.163 Δ-hand +   -3.290 ±  0.756 crib =   +0.742 ±  1.457 overall
+Dealer plays K♥ for 30 ([4♠,2♠,5♥,3♣,6♣,K♥])
+Pone   says 'Go'
+Dealer says 'Go'
+!Go for 1 point for Dealer. [43-80]
+---resetting play count to 0---
+Pone   plays 5♣ for 5 ([4♠,2♠,5♥,3♣,6♣,K♥,Go,Go];[5♣])
+Dealer plays 2♦ for 7 ([4♠,2♠,5♥,3♣,6♣,K♥,Go,Go];[5♣,2♦])
+!Last card for 1 point for Dealer [44-80].
+![6♣,5♥,5♣,4♠] hand + starter Q♠ scores 16 points for Pone.   [44-96]
+![K♥,3♣,2♠,2♦] hand + starter Q♠ scores 10 points for Dealer. [54-96]
+![J♥,9♠,9♣,3♦] crib + starter Q♠ scores  2 points for Dealer. [56-96]
++++ Game score is [56-96] for first pone and first dealer after 6 hands played.
+
+Pone   dealt     [Q♠,Q♥,6♦,4♥,J♥,9♥] (sorted: [Q♠,Q♥,J♥,9♥,6♦,4♥])
+Dealer dealt     [4♣,8♦,8♣,J♠,2♣,K♥] (sorted: [K♥,J♠,8♦,8♣,4♣,2♣])
+Pone   discarded [4♥,J♥] (sorted: [J♥,4♥])
+Dealer discarded [J♠,K♥] (sorted: [K♥,J♠])
+Pone   kept      [Q♠,Q♥,6♦,9♥] (sorted: [Q♠,Q♥,9♥,6♦])
+Dealer kept      [4♣,8♦,8♣,2♣] (sorted: [8♦,8♣,4♣,2♣])
+Cut/starter card is: 9♠
+Simulating each of the 4 possible pone plays 30 times in order to select the play:
+9♥ first play:   +0.000 ±  0.000 game points;   -2.133 ±  0.669 Δ-peg +   -0.000 ±  1.218 Δ-hand +   -3.667 ±  0.782 crib =   -5.800 ±  1.496 overall
+Q♠ first play:   -0.067 ±  0.131 game points;   -1.667 ±  0.903 Δ-peg +   +0.467 ±  1.202 Δ-hand +   -3.600 ±  0.838 crib =   -4.800 ±  1.894 overall
+6♦ first play:   -0.133 ±  0.182 game points;   -2.067 ±  0.819 Δ-peg +   -0.467 ±  1.491 Δ-hand +   -3.667 ±  0.873 crib =   -6.200 ±  1.782 overall
+Q♥ first play:   -0.133 ±  0.182 game points;   -2.100 ±  0.853 Δ-peg +   -0.200 ±  1.300 Δ-hand +   -4.333 ±  0.873 crib =   -6.633 ±  1.777 overall
+Pone   plays 9♥ for 9 ([9♥])
+Simulating each of the 4 possible dealer plays 30 times in order to select the play:
+8♣ first play:   +0.000 ±  0.000 game points;   -0.423 ±  0.871 Δ-peg +   +7.077 ±  1.092 Δ-hand +   -4.308 ±  0.790 crib =   +2.346 ±  1.442 overall
+2♣ first play:   +0.000 ±  0.000 game points;   -0.333 ±  0.601 Δ-peg +   +6.667 ±  1.309 Δ-hand +   -3.182 ±  0.674 crib =   +3.152 ±  1.509 overall
+8♦ first play:   +0.000 ±  0.000 game points;   -0.029 ±  0.773 Δ-peg +   +6.171 ±  1.058 Δ-hand +   -3.114 ±  0.538 crib =   +3.029 ±  1.450 overall
+4♣ first play:   +0.000 ±  0.000 game points;   +0.115 ±  0.931 Δ-peg +   +6.538 ±  1.671 Δ-hand +   -3.308 ±  0.483 crib =   +3.346 ±  1.905 overall
+Dealer plays 8♣ for 17 ([9♥,8♣])
+Simulating each of the 3 possible pone plays 30 times in order to select the play:
+Q♠ first play:   -0.121 ±  0.165 game points;   -1.667 ±  0.648 Δ-peg +   -1.091 ±  1.252 Δ-hand +   -4.424 ±  0.615 crib =   -7.182 ±  1.344 overall
+Q♥ first play:   -0.385 ±  0.309 game points;   -2.231 ±  1.022 Δ-peg +   -2.962 ±  2.151 Δ-hand +   -4.846 ±  0.888 crib =  -10.038 ±  1.679 overall
+6♦ first play:   -0.774 ±  0.349 game points;   -3.774 ±  0.775 Δ-peg +   -3.839 ±  1.656 Δ-hand +   -3.710 ±  0.711 crib =  -11.323 ±  1.922 overall
+Pone   plays Q♠ for 27 ([9♥,8♣,Q♠])
+Simulating each of the 3 possible dealer plays 30 times in order to select the play:
+4♣ first play:   +0.000 ±  0.000 game points;   -2.816 ±  0.232 Δ-peg +   +3.421 ±  0.531 Δ-hand +   -3.184 ±  0.613 crib =   -2.579 ±  0.785 overall
+2♣ first play:   +0.000 ±  0.000 game points;   -1.500 ±  0.477 Δ-peg +   +3.519 ±  0.673 Δ-hand +   -2.750 ±  0.430 crib =   -0.731 ±  0.726 overall
+Dealer plays 4♣ for 31 ([9♥,8♣,Q♠,4♣])
+!31 for 1 point for Dealer. [56-97]
+Pone   says 'Go'
+Dealer says 'Go'
+!Go for 1 point for Dealer. [56-98]
+---resetting play count to 0---
+Simulating each of the 2 possible pone plays 30 times in order to select the play:
+6♦ first play:   -0.129 ±  0.176 game points;   -3.548 ±  0.313 Δ-peg +   +0.968 ±  1.006 Δ-hand +   -4.742 ±  0.792 crib =   -7.323 ±  1.190 overall
+Q♥ first play:   -0.138 ±  0.188 game points;   -3.276 ±  0.455 Δ-peg +   +1.034 ±  0.775 Δ-hand +   -4.793 ±  0.845 crib =   -7.034 ±  1.266 overall
+Pone   plays 6♦ for 6 ([9♥,8♣,Q♠,4♣,Go,Go];[6♦])
+Simulating each of the 2 possible dealer plays 30 times in order to select the play:
+8♦ first play:   +0.000 ±  0.000 game points;   -3.000 ±  0.188 Δ-peg +   +4.933 ±  0.769 Δ-hand +   -4.267 ±  0.896 crib =   -2.333 ±  0.927 overall
+2♣ first play:   +0.000 ±  0.000 game points;   -2.867 ±  0.182 Δ-peg +   +4.667 ±  0.847 Δ-hand +   -4.300 ±  0.672 crib =   -2.500 ±  0.980 overall
+Dealer plays 8♦ for 14 ([9♥,8♣,Q♠,4♣,Go,Go];[6♦,8♦])
+Pone   plays Q♥ for 24 ([9♥,8♣,Q♠,4♣,Go,Go];[6♦,8♦,Q♥])
+Dealer plays 2♣ for 26 ([9♥,8♣,Q♠,4♣,Go,Go];[6♦,8♦,Q♥,2♣])
+!Last card for 1 point for Dealer [56-99].
+![Q♠,Q♥,9♥,6♦] hand + starter 9♠ scores  8 points for Pone.   [64-99]
+![8♦,8♣,4♣,2♣] hand + starter 9♠ scores  4 points for Dealer. [64-103]
+![K♥,J♠,J♥,4♥] crib + starter 9♠ scores  3 points for Dealer. [64-106]
++++ Game score is [64-106] for first pone and first dealer after 7 hands played.
+
+Pone   dealt     [3♦,3♥,6♠,T♦,K♥,Q♣] (sorted: [K♥,Q♣,T♦,6♠,3♥,3♦])
+Dealer dealt     [4♦,T♠,2♥,A♥,A♦,7♥] (sorted: [T♠,7♥,4♦,2♥,A♥,A♦])
+Pone   discarded [T♦,Q♣] (sorted: [Q♣,T♦])
+Dealer discarded [2♥,7♥] (sorted: [7♥,2♥])
+Pone   kept      [3♦,3♥,6♠,K♥] (sorted: [K♥,6♠,3♥,3♦])
+Dealer kept      [4♦,T♠,A♥,A♦] (sorted: [T♠,4♦,A♥,A♦])
+Cut/starter card is: 4♣
+Simulating each of the 4 possible pone plays 30 times in order to select the play:
+3♥ first play:   +0.000 ±  0.000 game points;   -0.167 ±  0.907 Δ-peg +   -5.733 ±  1.029 Δ-hand +   -4.033 ±  1.168 crib =   -9.933 ±  1.509 overall
+3♦ first play:   +0.000 ±  0.000 game points;   -1.000 ±  0.769 Δ-peg +   -6.667 ±  1.385 Δ-hand +   -4.067 ±  1.050 crib =  -11.733 ±  1.748 overall
+6♠ first play:   +0.000 ±  0.000 game points;   -1.467 ±  0.890 Δ-peg +   -5.700 ±  1.391 Δ-hand +   -4.033 ±  1.231 crib =  -11.200 ±  2.268 overall
+K♥ first play:   +0.000 ±  0.000 game points;   -1.767 ±  0.750 Δ-peg +   -5.833 ±  1.416 Δ-hand +   -3.800 ±  1.052 crib =  -11.400 ±  2.081 overall
+Pone   plays 3♥ for 3 ([3♥])
+Simulating each of the 4 possible dealer plays 30 times in order to select the play:
+T♠ first play:   +0.519 ±  0.337 game points;   -1.074 ±  0.958 Δ-peg +   -0.556 ±  3.111 Δ-hand +   -1.444 ±  0.656 crib =   -3.074 ±  3.796 overall
+4♦ first play:   +0.686 ±  0.319 game points;   -0.886 ±  0.857 Δ-peg +   -0.229 ±  2.469 Δ-hand +   -1.429 ±  0.619 crib =   -2.543 ±  3.298 overall
+A♦ first play:   +0.786 ±  0.368 game points;   -1.821 ±  0.807 Δ-peg +   +1.679 ±  3.342 Δ-hand +   -1.429 ±  0.797 crib =   -1.571 ±  4.017 overall
+A♥ first play:   +1.000 ±  0.364 game points;   -1.333 ±  0.847 Δ-peg +   +3.600 ±  3.092 Δ-hand +   -1.267 ±  0.690 crib =   +1.000 ±  3.937 overall
+Dealer plays T♠ for 13 ([3♥,T♠])
+Simulating each of the 3 possible pone plays 30 times in order to select the play:
+K♥ first play:   +0.000 ±  0.000 game points;   -1.219 ±  0.669 Δ-peg +   -4.812 ±  0.974 Δ-hand +   -3.313 ±  1.039 crib =   -9.344 ±  1.259 overall
+3♦ first play:   +0.000 ±  0.000 game points;   -1.688 ±  0.573 Δ-peg +   -4.625 ±  0.918 Δ-hand +   -2.219 ±  0.888 crib =   -8.531 ±  1.281 overall
+6♠ first play:   +0.000 ±  0.000 game points;   -1.769 ±  0.830 Δ-peg +   -4.423 ±  1.216 Δ-hand +   -3.654 ±  1.119 crib =   -9.846 ±  1.769 overall
+Pone   plays K♥ for 23 ([3♥,T♠,K♥])
+Simulating each of the 3 possible dealer plays 30 times in order to select the play:
+A♥ first play:   +0.000 ±  0.000 game points;   -2.138 ±  0.443 Δ-peg +   -5.345 ±  1.110 Δ-hand +   -3.069 ±  0.891 crib =  -10.552 ±  1.278 overall
+A♦ first play:   +0.000 ±  0.000 game points;   -1.844 ±  0.385 Δ-peg +   -5.687 ±  1.079 Δ-hand +   -3.781 ±  0.745 crib =  -11.313 ±  1.211 overall
+4♦ first play:   +0.000 ±  0.000 game points;   -1.655 ±  0.786 Δ-peg +   -4.724 ±  1.074 Δ-hand +   -4.000 ±  0.902 crib =  -10.379 ±  1.499 overall
+Dealer plays A♥ for 24 ([3♥,T♠,K♥,A♥])
+Simulating each of the 2 possible pone plays 30 times in order to select the play:
+6♠ first play:   +0.000 ±  0.000 game points;   -1.138 ±  0.818 Δ-peg +   -6.414 ±  0.946 Δ-hand +   -2.379 ±  0.697 crib =   -9.931 ±  1.607 overall
+3♦ first play:   +0.000 ±  0.000 game points;   -2.323 ±  0.735 Δ-peg +   -6.645 ±  0.795 Δ-hand +   -2.355 ±  0.846 crib =  -11.323 ±  1.535 overall
+Pone   plays 6♠ for 30 ([3♥,T♠,K♥,A♥,6♠])
+Dealer plays A♦ for 31 ([3♥,T♠,K♥,A♥,6♠,A♦])
+!31 for 1 point for Dealer. [65-106]
+Pone   says 'Go'
+Dealer says 'Go'
+!Go for 1 point for Dealer. [66-106]
+---resetting play count to 0---
+Pone   plays 3♦ for 3 ([3♥,T♠,K♥,A♥,6♠,A♦,Go,Go];[3♦])
+Dealer plays 4♦ for 7 ([3♥,T♠,K♥,A♥,6♠,A♦,Go,Go];[3♦,4♦])
+!Last card for 1 point for Dealer [67-106].
+![K♥,6♠,3♥,3♦] hand + starter 4♣ scores  2 points for Pone.   [67-108]
+![T♠,4♦,A♥,A♦] hand + starter 4♣ scores 12 points for Dealer. [79-108]
+![Q♣,T♦,7♥,2♥] crib + starter 4♣ scores  0 points for Dealer. [79-108]
++++ Game score is [79-108] for first pone and first dealer after 8 hands played.
+
+Pone   dealt     [4♣,5♦,4♦,9♥,T♦,2♣] (sorted: [T♦,9♥,5♦,4♦,4♣,2♣])
+Dealer dealt     [J♣,8♠,7♥,3♣,5♠,5♣] (sorted: [J♣,8♠,7♥,5♠,5♣,3♣])
+Pone   discarded [9♥,2♣] (sorted: [9♥,2♣])
+Dealer discarded [8♠,7♥] (sorted: [8♠,7♥])
+Pone   kept      [4♣,5♦,4♦,T♦] (sorted: [T♦,5♦,4♦,4♣])
+Dealer kept      [J♣,3♣,5♠,5♣] (sorted: [J♣,5♠,5♣,3♣])
+Cut/starter card is: A♦
+Simulating each of the 4 possible pone plays 30 times in order to select the play:
+4♣ first play:   -0.967 ±  0.332 game points;   -0.267 ±  0.775 Δ-peg +   +1.800 ±  1.149 Δ-hand +   -1.800 ±  0.853 crib =   -0.267 ±  1.319 overall
+T♦ first play:   -1.333 ±  0.330 game points;   -2.233 ±  0.870 Δ-peg +   +1.133 ±  0.989 Δ-hand +   -1.500 ±  0.676 crib =   -2.600 ±  0.938 overall
+4♦ first play:   -1.400 ±  0.291 game points;   -0.700 ±  1.112 Δ-peg +   +0.700 ±  1.136 Δ-hand +   -1.633 ±  0.951 crib =   -1.633 ±  1.164 overall
+5♦ first play:   -1.400 ±  0.320 game points;   -1.900 ±  0.712 Δ-peg +   +1.667 ±  0.760 Δ-hand +   -2.233 ±  0.662 crib =   -2.467 ±  1.062 overall
+Pone   plays 4♣ for 4 ([4♣])
+Simulating each of the 4 possible dealer plays 30 times in order to select the play:
+J♣ first play:   -1.393 ±  0.308 game points;   -1.429 ±  1.335 Δ-peg +   +1.786 ±  1.035 Δ-hand +   -3.250 ±  0.865 crib =   -2.893 ±  1.300 overall
+5♣ first play:   -1.344 ±  0.243 game points;   -1.562 ±  0.999 Δ-peg +   +1.906 ±  0.920 Δ-hand +   -1.438 ±  0.603 crib =   -1.094 ±  1.121 overall
+5♠ first play:   -1.161 ±  0.224 game points;   -0.645 ±  1.006 Δ-peg +   +2.258 ±  1.028 Δ-hand +   -2.065 ±  0.715 crib =   -0.452 ±  1.275 overall
+3♣ first play:   -1.103 ±  0.245 game points;   -0.483 ±  0.971 Δ-peg +   +2.759 ±  0.857 Δ-hand +   -2.966 ±  0.763 crib =   -0.690 ±  0.973 overall
+Dealer plays J♣ for 14 ([4♣,J♣])
+Simulating each of the 3 possible pone plays 30 times in order to select the play:
+4♦ first play:   -1.250 ±  0.341 game points;   -1.062 ±  0.497 Δ-peg +   +2.031 ±  0.982 Δ-hand +   -3.031 ±  0.606 crib =   -2.062 ±  0.964 overall
+5♦ first play:   -1.292 ±  0.382 game points;   -1.208 ±  1.022 Δ-peg +   +1.833 ±  1.105 Δ-hand +   -3.000 ±  0.966 crib =   -2.375 ±  0.841 overall
+T♦ first play:   -1.471 ±  0.301 game points;   -1.500 ±  0.531 Δ-peg +   +1.706 ±  0.889 Δ-hand +   -3.559 ±  0.732 crib =   -3.353 ±  0.798 overall
+Pone   plays 4♦ for 18 ([4♣,J♣,4♦])
+Simulating each of the 3 possible dealer plays 30 times in order to select the play:
+5♠ first play:   -1.233 ±  0.292 game points;   -1.633 ±  0.899 Δ-peg +   +2.133 ±  0.993 Δ-hand +   -3.000 ±  0.556 crib =   -2.500 ±  0.943 overall
+3♣ first play:   -1.194 ±  0.293 game points;   -0.968 ±  0.713 Δ-peg +   +2.581 ±  1.011 Δ-hand +   -2.935 ±  0.749 crib =   -1.323 ±  1.172 overall
+5♣ first play:   -1.103 ±  0.264 game points;   -1.034 ±  1.054 Δ-peg +   +3.931 ±  1.043 Δ-hand +   -3.103 ±  0.562 crib =   -0.207 ±  1.288 overall
+Dealer plays 5♠ for 23 ([4♣,J♣,4♦,5♠])
+Pone   plays 5♦ for 28 ([4♣,J♣,4♦,5♠,5♦])
+!Pair for 2 points for Pone. [81-108]
+Dealer plays 3♣ for 31 ([4♣,J♣,4♦,5♠,5♦,3♣])
+!31 for 1 point for Dealer. [81-109]
+Pone   says 'Go'
+Dealer says 'Go'
+!Go for 1 point for Dealer. [81-110]
+---resetting play count to 0---
+Pone   plays T♦ for 10 ([4♣,J♣,4♦,5♠,5♦,3♣,Go,Go];[T♦])
+Dealer plays 5♣ for 15 ([4♣,J♣,4♦,5♠,5♦,3♣,Go,Go];[T♦,5♣])
+!15 for 2 points for Dealer. [81-112]
+!Last card for 1 point for Dealer [81-113].
+![T♦,5♦,4♦,4♣] hand + starter A♦ scores  8 points for Pone.   [89-113]
+![J♣,5♠,5♣,3♣] hand + starter A♦ scores  6 points for Dealer. [89-119]
+![9♥,8♠,7♥,2♣] crib + starter A♦ scores  5 points for Dealer. [89-121]
++++ Game score is [89-121] for first pone and first dealer after 9 hands played.
+
++++ Score at end of game simulation: [89-121] for first pone and first dealer.
+### Game points at end of game simulation: [[0.00000-2.00000]] for pone and dealer.
+
+Mean play statistics 95% confidence intervals (n = 2):
+First Pone                    Play  points:  +18.50000 ±  0.97998
+First Pone                    Hand  points:  +70.00000 ±  9.79982
+First Pone                    Crib  points:  +16.50000 ± 20.57962
+First Pone                    Total points: +105.00000 ± 31.35942
+First Pone                    Game  points:   +1.00000 ±  1.95996
+First Pone                    Game  wins  :   +0.50000 ±  0.97998
+-----------------------------------------------------
+First Dealer                  Play  points:  +28.50000 ±  4.89991
+First Dealer                  Hand  points:  +55.50000 ± 14.69973
+First Dealer                  Crib  points:  +20.00000 ± 13.71975
+First Dealer                  Total points: +104.00000 ± 33.31939
+First Dealer                  Game  points:   +1.00000 ±  1.95996
+First Dealer                  Game  wins  :   +0.50000 ±  0.97998
+-----------------------------------------------------
+First Pone minus First Dealer Play  points:  -10.00000 ±  5.87989
+First Pone minus First Dealer Hand  points:  +14.50000 ± 24.49955
+First Pone minus First Dealer Crib  points:   -3.50000 ± 34.29937
+First Pone minus First Dealer Total points:   +1.00000 ± 64.67881
+First Pone minus First Dealer Game  points:   +0.00000 ±  3.91993
+Simulated 2 games at <SPEED> games/s (<TIME> ns/game) in <ELAPSED> s
+Simulated 2 games with 1 worker processes at <SPEED> games/s (<TIME> ns/game) in <ELAPSED> s
+--- STDERR ---
+
+--- END ---

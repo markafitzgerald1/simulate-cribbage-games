@@ -1,0 +1,780 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+"""Golden regression suite and generator for ``simulate_cribbage_games.py``.
+
+Each case executes ``simulate_cribbage_games.py`` in a fresh temporary working
+directory with an empty tally shelf, ``PYTHONHASHSEED=0``, and a fixed
+``random.seed(12345)`` wrapper matching ``scratch/verify_upgrade.py``.
+
+These golden files record what the legacy simulator does now, not what it should
+do. They exist to catch unintended changes, and they are not evidence that
+the recorded behavior is correct. Correctness belongs in unit tests that
+assert the rules. A golden that changes because a bug was fixed is
+regenerated, and its diff is reviewed. Known recorded defects: Case B's
+simulation-based play still double-counts heels and earlier pegging points
+(nested play starts from the live score and replays them); fixing that will
+change Case B.
+
+README coverage notes (lines 522-555):
+- Two ``--process-count 2`` README commands (lines 533 and 547) are executed
+  with ``--process-count 1`` because spawned worker processes on macOS under
+  ``runpy.run_path`` hang and cannot deterministically share the parent random
+  seed or worker update ordering.
+- README line 553 (multi-hand ``--unlimited-hands-per-game`` with dynamic
+  discard, dynamic play, and incomplete-game estimates) is omitted from the
+  regression-invariant README set because it takes ~11.5s at minimal counts
+  and exercises odd-hand dynamic play/discard (covered by Cases B and C).
+- README lines 554-555 (interactive human play-against) are omitted because
+  they require multi-hand scripted stdin across changing opponent choices.
+"""
+
+from __future__ import annotations
+
+import argparse
+import difflib
+import os
+from pathlib import Path
+import re
+import shelve
+import subprocess
+import sys
+import tempfile
+import unittest
+from unittest.mock import patch
+
+REPO_ROOT = Path(__file__).resolve().parent
+SIMULATOR_SCRIPT = REPO_ROOT / "simulate_cribbage_games.py"
+GOLDEN_DIR = REPO_ROOT / "tests" / "golden" / "legacy"
+TALLY_SHELF_NAME = "start_of_hand_position_results_tallies_shelf"
+CASE_TIMEOUT_SECONDS = 120
+PERFORMANCE_LINE = re.compile(
+    r"^(Simulated [0-9]+ games(?: with [0-9]+ worker processes)? at )"
+    r"-?[0-9]+\.[0-9]{3} games/s \(-?[0-9]+ ns/game\) in "
+    r"-?[0-9]+(?:\.[0-9]+)?(?:e[+-][0-9]+)? s$",
+    re.MULTILINE,
+)
+
+SEED_PREFIX = (
+    "import random; random.seed(12345); import sys; "
+    "sys.argv = ['simulate_cribbage_games.py'] + {args}; "
+    "import runpy; runpy.run_path({script_path}, run_name='__main__')"
+)
+
+GOLDEN_CASES: dict[str, list[str]] = {
+    "readme_526_basic_hands": ["--game-count", "10"],
+    "readme_527_basic_games": ["--game-count", "10", "--unlimited-hands-per-game"],
+    "readme_528_summary_hands": [
+        "--game-count",
+        "50",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+    ],
+    "readme_529_summary_games": [
+        "--game-count",
+        "20",
+        "--games-per-update",
+        "10",
+        "--unlimited-hands-per-game",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+    ],
+    "readme_530_random_pone": [
+        "--game-count",
+        "20",
+        "--games-per-update",
+        "10",
+        "--unlimited-hands-per-game",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--first-pone-keep-random",
+        "--first-pone-play-random",
+    ],
+    "readme_531_random_dealer": [
+        "--game-count",
+        "20",
+        "--games-per-update",
+        "10",
+        "--unlimited-hands-per-game",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--first-dealer-keep-random",
+        "--first-dealer-play-random",
+    ],
+    "readme_532_fixed_pone": [
+        "--first-pone-dealt-cards",
+        "AC,2D,3H,4S,5C,6D",
+        "--first-pone-kept-cards",
+        "2D,3H,4S,5C",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--game-count",
+        "50",
+    ],
+    "readme_533_fixed_pone_single_process": [
+        "--first-pone-dealt-cards",
+        "AC,2D,3H,4S,5C,6D",
+        "--first-pone-kept-cards",
+        "2D,3H,4S,5C",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--game-count",
+        "50",
+        "--process-count",
+        "1",
+    ],
+    "readme_534_fixed_dealer": [
+        "--first-dealer-dealt-cards",
+        "AC,2D,3H,4S,5C,6D",
+        "--first-dealer-kept-cards",
+        "AC,2D,3H,4S",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--game-count",
+        "50",
+    ],
+    "readme_535_all_pone_keeps": [
+        "--first-pone-dealt-cards",
+        "AC,2D,3H,4S,5C,6D",
+        "--first-pone-select-each-possible-kept-hand",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--games-per-update",
+        "30",
+        "--game-count",
+        "30",
+    ],
+    "readme_536_all_dealer_keeps": [
+        "--first-dealer-dealt-cards",
+        "AC,2D,3H,4S,5C,6D",
+        "--first-dealer-select-each-possible-kept-hand",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--games-per-update",
+        "30",
+        "--game-count",
+        "30",
+    ],
+    "readme_537_dealer_keeps_late_score": [
+        "--first-dealer-dealt-cards",
+        "JH,TS,6S,6C,4C,AD",
+        "--first-dealer-select-each-possible-kept-hand",
+        "--initial-pone-score",
+        "105",
+        "--initial-dealer-score",
+        "117",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--game-count",
+        "30",
+        "--games-per-update",
+        "30",
+    ],
+    "readme_538_pone_leads_known_starter": [
+        "--first-pone-dealt-cards",
+        "JH,TS,6S,6C,4C,AD",
+        "--first-pone-kept-cards",
+        "TS,6S,4C,AD",
+        "--initial-starter",
+        "2S",
+        "--select-each-post-initial-play",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--game-count",
+        "40",
+        "--games-per-update",
+        "20",
+    ],
+    "readme_539_pone_leads_fixed_dealt": [
+        "--first-pone-dealt-cards",
+        "JH,TS,6S,6C,4C,AD",
+        "--first-pone-kept-cards",
+        "TS,6S,4C,AD",
+        "--select-each-post-initial-play",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--game-count",
+        "40",
+        "--games-per-update",
+        "20",
+    ],
+    "readme_540a_pone_leads_kept_only": [
+        "--first-pone-kept-cards",
+        "TS,6S,4C,AD",
+        "--select-each-post-initial-play",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--game-count",
+        "40",
+        "--games-per-update",
+        "20",
+    ],
+    "readme_540b_pone_leads_run_hand": [
+        "--first-pone-kept-cards",
+        "6c,7d,8h,9s",
+        "--select-each-post-initial-play",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--game-count",
+        "40",
+        "--games-per-update",
+        "20",
+    ],
+    "readme_541_pone_leads_partial_kept": [
+        "--first-pone-kept-cards",
+        "4C,AD",
+        "--select-each-post-initial-play",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--game-count",
+        "40",
+        "--games-per-update",
+        "20",
+    ],
+    "readme_542_pone_mid_play_known_discard": [
+        "--first-pone-dealt-cards",
+        "KC,QD,TC,8S,4D,AH",
+        "--first-pone-kept-cards",
+        "QD,TC,4D,AH",
+        "--initial-play-actions",
+        "4D,8H",
+        "--select-each-post-initial-play",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--game-count",
+        "30",
+        "--games-per-update",
+        "15",
+    ],
+    "readme_543_pone_mid_play_unknown_discard": [
+        "--first-pone-kept-cards",
+        "QD,TC,4D,AH",
+        "--initial-play-actions",
+        "4D,8H",
+        "--select-each-post-initial-play",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--game-count",
+        "30",
+        "--games-per-update",
+        "15",
+    ],
+    "readme_544_pone_mid_play_late_game": [
+        "--first-pone-kept-cards",
+        "6s,6h,7c,ks",
+        "--select-each-post-initial-play",
+        "--game-count",
+        "30",
+        "--games-per-update",
+        "15",
+        "--unlimited-hands-per-game",
+        "--initial-pone-score",
+        "106",
+        "--initial-dealer-score",
+        "106",
+        "--initial-play-actions",
+        "6s,ts",
+        "--hide-play-actions",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+    ],
+    "readme_545_dealer_mid_play_known_discard": [
+        "--first-dealer-dealt-cards",
+        "8C,4D,TH,9S,KC,KD",
+        "--first-dealer-kept-cards",
+        "8C,4D,TH,9S",
+        "--initial-play-actions",
+        "4C",
+        "--select-each-post-initial-play",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--game-count",
+        "40",
+        "--games-per-update",
+        "20",
+    ],
+    "readme_546_dealer_mid_play_unknown_discard": [
+        "--first-dealer-kept-cards",
+        "8C,4D,TH,9S",
+        "--initial-play-actions",
+        "4C",
+        "--select-each-post-initial-play",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--game-count",
+        "40",
+        "--games-per-update",
+        "20",
+    ],
+    "readme_547a_pone_non_default_initial_play": [
+        "--first-pone-dealt-cards",
+        "2s,4h,9s,9c,7c,qh",
+        "--first-pone-kept-cards",
+        "2s,4h,9s,9c",
+        "--initial-play-actions",
+        "9c,qs",
+        "--select-each-post-initial-play",
+        "--game-count",
+        "30",
+        "--games-per-update",
+        "15",
+        "--hide-play-actions",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+    ],
+    "readme_547b_pone_non_default_single_process": [
+        "--first-pone-dealt-cards",
+        "2s,4h,9s,9c,7c,qh",
+        "--first-pone-kept-cards",
+        "2s,4h,9s,9c",
+        "--initial-play-actions",
+        "9c,qs",
+        "--select-each-post-initial-play",
+        "--game-count",
+        "30",
+        "--games-per-update",
+        "15",
+        "--hide-play-actions",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--process-count",
+        "1",
+    ],
+    "readme_548_dealer_non_default_discard": [
+        "--first-dealer-dealt-cards",
+        "2d,3h,6h,8d,9d,qc",
+        "--first-dealer-kept-cards",
+        "2d,3h,8d,qc",
+        "--initial-play-actions",
+        "4c,8d,kd",
+        "--select-each-post-initial-play",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--game-count",
+        "30",
+        "--games-per-update",
+        "15",
+    ],
+    "readme_549_dealer_second_sequence_go": [
+        "--first-dealer-kept-cards",
+        "tc,3s,8c,9h",
+        "--initial-play-actions",
+        "th,tc,td,go,ac,go,go",
+        "--select-each-post-initial-play",
+        "--game-count",
+        "40",
+        "--games-per-update",
+        "20",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+    ],
+    "readme_550_dealer_keeps_third_leg_game": [
+        "--first-dealer-dealt-cards",
+        "AC,2S,6C,TD,JD,KC",
+        "--first-dealer-select-each-possible-kept-hand",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--unlimited-hands-per-game",
+        "--game-count",
+        "30",
+        "--initial-pone-score",
+        "87",
+        "--initial-dealer-score",
+        "85",
+        "--games-per-update",
+        "30",
+    ],
+    "readme_551_single_hand_sim_discard": [
+        "--process-count",
+        "1",
+        "--game-count",
+        "1",
+        "--first-pone-discard-based-on-simulations",
+        "20",
+        "--first-dealer-discard-based-on-simulations",
+        "20",
+    ],
+    "readme_552_single_hand_sim_discard_and_play": [
+        "--process-count",
+        "1",
+        "--game-count",
+        "1",
+        "--first-pone-discard-based-on-simulations",
+        "10",
+        "--first-dealer-discard-based-on-simulations",
+        "10",
+        "--first-pone-play-based-on-simulations",
+        "20",
+        "--first-dealer-play-based-on-simulations",
+        "20",
+    ],
+    "case_a_known_issue_2023_02_12": [
+        "--first-dealer-dealt-cards",
+        "9♦,T♠,7♦,5♥,J♥,A♥",
+        "--first-dealer-kept-cards",
+        "T♠,5♥,J♥,A♥",
+        "--initial-play-actions",
+        "K♥",
+        "--select-each-post-initial-play",
+        "--hide-first-pone-hands",
+        "--hide-first-dealer-hands",
+        "--hide-play-actions",
+        "--game-count",
+        "40",
+        "--games-per-update",
+        "20",
+        "--initial-pone-score",
+        "118",
+        "--initial-dealer-score",
+        "119",
+    ],
+    "case_b_multi_hand_sim_play": [
+        "--process-count",
+        "1",
+        "--game-count",
+        "2",
+        "--unlimited-hands-per-game",
+        "--first-pone-play-based-on-simulations",
+        "30",
+        "--first-dealer-play-based-on-simulations",
+        "30",
+    ],
+    "case_c_multi_hand_sim_discard": [
+        "--process-count",
+        "1",
+        "--game-count",
+        "2",
+        "--unlimited-hands-per-game",
+        "--first-pone-discard-based-on-simulations",
+        "10",
+        "--first-dealer-discard-based-on-simulations",
+        "10",
+    ],
+    "case_d_single_hand_sim_play": [
+        "--process-count",
+        "1",
+        "--game-count",
+        "1",
+        "--first-pone-play-based-on-simulations",
+        "30",
+        "--first-dealer-play-based-on-simulations",
+        "30",
+    ],
+    "case_d_single_hand_sim_discard": [
+        "--process-count",
+        "1",
+        "--game-count",
+        "1",
+        "--first-pone-discard-based-on-simulations",
+        "10",
+        "--first-dealer-discard-based-on-simulations",
+        "10",
+    ],
+}
+
+
+def sanitize_output(output: str) -> str:
+    """Normalize timing fields in complete simulator performance lines."""
+    return PERFORMANCE_LINE.sub(
+        r"\g<1><SPEED> games/s (<TIME> ns/game) in <ELAPSED> s", output
+    )
+
+
+def format_golden_record(returncode: int, stdout: str, stderr: str) -> str:
+    """Format exit code, normalized stdout, and normalized stderr for comparison."""
+    return (
+        f"EXIT_CODE: {returncode}\n"
+        "--- STDOUT ---\n"
+        f"{sanitize_output(stdout).removesuffix('\n')}\n"
+        "--- STDERR ---\n"
+        f"{sanitize_output(stderr).removesuffix('\n')}\n"
+        "--- END ---\n"
+    )
+
+
+def run_simulator_case(case_name: str) -> tuple[int, str]:
+    """Run ``simulate_cribbage_games.py`` in an isolated seeded temp directory."""
+    with tempfile.TemporaryDirectory(prefix="legacy_golden_") as temp_dir:
+        shelf_path = os.path.join(temp_dir, TALLY_SHELF_NAME)
+        with shelve.open(shelf_path, flag="c"):
+            pass
+
+        env = os.environ.copy()
+        env["PYTHONHASHSEED"] = "0"
+        env["PYTHONIOENCODING"] = "utf-8"
+        env["PYTHONUTF8"] = "1"
+        code = SEED_PREFIX.format(
+            script_path=repr(str(SIMULATOR_SCRIPT)), args=repr(GOLDEN_CASES[case_name])
+        )
+        try:
+            result = subprocess.run(
+                [sys.executable, "-c", code],
+                cwd=temp_dir,
+                env=env,
+                encoding="utf-8",
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                check=False,
+                timeout=CASE_TIMEOUT_SECONDS,
+            )
+        except subprocess.TimeoutExpired:
+            raise AssertionError(
+                f"Golden case {case_name} timed out after {CASE_TIMEOUT_SECONDS} s"
+            ) from None
+        return (
+            result.returncode,
+            format_golden_record(result.returncode, result.stdout, result.stderr),
+        )
+
+
+def assert_case_matches_golden(test_case: unittest.TestCase, case_name: str) -> None:
+    """Assert that running ``case_name`` matches its committed golden file."""
+    golden_path = GOLDEN_DIR / f"{case_name}.txt"
+    test_case.assertTrue(golden_path.is_file(), f"Missing golden file: {golden_path}")
+    _, actual = run_simulator_case(case_name)
+    expected = golden_path.read_text(encoding="utf-8")
+    if actual != expected:
+        diff = "".join(
+            difflib.unified_diff(
+                expected.splitlines(True),
+                actual.splitlines(True),
+                str(golden_path),
+                f"actual:{case_name}",
+            )
+        )
+        test_case.fail(f"Golden output mismatch for {case_name}:\n{diff}")
+
+
+class TestReadmeSmokeGoldenOutputsPart1(unittest.TestCase):
+    """Golden checks for README smoke tests (lines 526-539)."""
+
+    def test_readme_526_basic_hands(self) -> None:
+        assert_case_matches_golden(self, "readme_526_basic_hands")
+
+    def test_readme_527_basic_games(self) -> None:
+        assert_case_matches_golden(self, "readme_527_basic_games")
+
+    def test_readme_528_summary_hands(self) -> None:
+        assert_case_matches_golden(self, "readme_528_summary_hands")
+
+    def test_readme_529_summary_games(self) -> None:
+        assert_case_matches_golden(self, "readme_529_summary_games")
+
+    def test_readme_530_random_pone(self) -> None:
+        assert_case_matches_golden(self, "readme_530_random_pone")
+
+    def test_readme_531_random_dealer(self) -> None:
+        assert_case_matches_golden(self, "readme_531_random_dealer")
+
+    def test_readme_532_fixed_pone(self) -> None:
+        assert_case_matches_golden(self, "readme_532_fixed_pone")
+
+    def test_readme_533_fixed_pone_single_process(self) -> None:
+        assert_case_matches_golden(self, "readme_533_fixed_pone_single_process")
+
+    def test_readme_534_fixed_dealer(self) -> None:
+        assert_case_matches_golden(self, "readme_534_fixed_dealer")
+
+    def test_readme_535_all_pone_keeps(self) -> None:
+        assert_case_matches_golden(self, "readme_535_all_pone_keeps")
+
+    def test_readme_536_all_dealer_keeps(self) -> None:
+        assert_case_matches_golden(self, "readme_536_all_dealer_keeps")
+
+    def test_readme_537_dealer_keeps_late_score(self) -> None:
+        assert_case_matches_golden(self, "readme_537_dealer_keeps_late_score")
+
+    def test_readme_538_pone_leads_known_starter(self) -> None:
+        assert_case_matches_golden(self, "readme_538_pone_leads_known_starter")
+
+    def test_readme_539_pone_leads_fixed_dealt(self) -> None:
+        assert_case_matches_golden(self, "readme_539_pone_leads_fixed_dealt")
+
+
+class TestReadmeSmokeGoldenOutputsPart2(unittest.TestCase):
+    """Golden checks for README smoke tests (lines 540-552)."""
+
+    def test_readme_540a_pone_leads_kept_only(self) -> None:
+        assert_case_matches_golden(self, "readme_540a_pone_leads_kept_only")
+
+    def test_readme_540b_pone_leads_run_hand(self) -> None:
+        assert_case_matches_golden(self, "readme_540b_pone_leads_run_hand")
+
+    def test_readme_541_pone_leads_partial_kept(self) -> None:
+        assert_case_matches_golden(self, "readme_541_pone_leads_partial_kept")
+
+    def test_readme_542_pone_mid_play_known_discard(self) -> None:
+        assert_case_matches_golden(self, "readme_542_pone_mid_play_known_discard")
+
+    def test_readme_543_pone_mid_play_unknown_discard(self) -> None:
+        assert_case_matches_golden(self, "readme_543_pone_mid_play_unknown_discard")
+
+    def test_readme_544_pone_mid_play_late_game(self) -> None:
+        assert_case_matches_golden(self, "readme_544_pone_mid_play_late_game")
+
+    def test_readme_545_dealer_mid_play_known_discard(self) -> None:
+        assert_case_matches_golden(self, "readme_545_dealer_mid_play_known_discard")
+
+    def test_readme_546_dealer_mid_play_unknown_discard(self) -> None:
+        assert_case_matches_golden(self, "readme_546_dealer_mid_play_unknown_discard")
+
+    def test_readme_547a_pone_non_default_initial_play(self) -> None:
+        assert_case_matches_golden(self, "readme_547a_pone_non_default_initial_play")
+
+    def test_readme_547b_pone_non_default_single_process(self) -> None:
+        assert_case_matches_golden(self, "readme_547b_pone_non_default_single_process")
+
+    def test_readme_548_dealer_non_default_discard(self) -> None:
+        assert_case_matches_golden(self, "readme_548_dealer_non_default_discard")
+
+    def test_readme_549_dealer_second_sequence_go(self) -> None:
+        assert_case_matches_golden(self, "readme_549_dealer_second_sequence_go")
+
+    def test_readme_550_dealer_keeps_third_leg_game(self) -> None:
+        assert_case_matches_golden(self, "readme_550_dealer_keeps_third_leg_game")
+
+    def test_readme_551_single_hand_sim_discard(self) -> None:
+        assert_case_matches_golden(self, "readme_551_single_hand_sim_discard")
+
+    def test_readme_552_single_hand_sim_discard_and_play(self) -> None:
+        assert_case_matches_golden(self, "readme_552_single_hand_sim_discard_and_play")
+
+
+class TestSeatFlipAndKnownIssueGoldenOutputs(unittest.TestCase):
+    """Golden checks for the 2023-02-12 known issue and dynamic seat-flip cases."""
+
+    def test_case_a_known_issue_2023_02_12(self) -> None:
+        assert_case_matches_golden(self, "case_a_known_issue_2023_02_12")
+
+    def test_case_b_multi_hand_sim_play(self) -> None:
+        assert_case_matches_golden(self, "case_b_multi_hand_sim_play")
+
+    def test_case_c_multi_hand_sim_discard(self) -> None:
+        assert_case_matches_golden(self, "case_c_multi_hand_sim_discard")
+
+    def test_case_d_single_hand_sim_play(self) -> None:
+        assert_case_matches_golden(self, "case_d_single_hand_sim_play")
+
+    def test_case_d_single_hand_sim_discard(self) -> None:
+        assert_case_matches_golden(self, "case_d_single_hand_sim_discard")
+
+
+def regenerate_golden_outputs(case_names: list[str]) -> None:
+    """Regenerate the explicitly selected cases after all runs succeed."""
+    if not case_names:
+        raise ValueError("Specify at least one golden case to regenerate")
+    for case_name in case_names:
+        if case_name not in GOLDEN_CASES:
+            raise ValueError(f"Unknown golden case: {case_name}")
+
+    outputs = {}
+    for case_name in case_names:
+        returncode, output_text = run_simulator_case(case_name)
+        if returncode != 0:
+            raise RuntimeError(
+                f"Case {case_name} exited with {returncode}:\n{output_text}"
+            )
+        outputs[case_name] = output_text
+
+    GOLDEN_DIR.mkdir(parents=True, exist_ok=True)
+    for case_name, output_text in outputs.items():
+        golden_path = GOLDEN_DIR / f"{case_name}.txt"
+        golden_path.write_text(output_text, encoding="utf-8")
+        print(f"Wrote {golden_path}", flush=True)
+
+
+class TestGoldenHarness(unittest.TestCase):
+    """Check normalization and failure handling for the golden harness."""
+
+    def test_normalization_preserves_diagnostics(self) -> None:
+        timing = "Simulated 10 games at 1.234 games/s (810000000 ns/game) in 8.1 s"
+        diagnostics = f"Warning: {timing}\n{timing} (estimate only)\n\n"
+        self.assertEqual(
+            sanitize_output(diagnostics + timing + "\n"),
+            diagnostics
+            + "Simulated 10 games at <SPEED> games/s (<TIME> ns/game) in <ELAPSED> s\n",
+        )
+
+    def test_timeout_names_the_case(self) -> None:
+        with patch.object(
+            subprocess, "run", side_effect=subprocess.TimeoutExpired("python", 120)
+        ) as run:
+            with self.assertRaisesRegex(
+                AssertionError, "readme_526_basic_hands timed out after 120 s"
+            ):
+                run_simulator_case("readme_526_basic_hands")
+        options = run.call_args.kwargs
+        self.assertEqual(options["timeout"], 120)
+        self.assertEqual(options["encoding"], "utf-8")
+        self.assertEqual(options["stdin"], subprocess.DEVNULL)
+        self.assertEqual(options["env"]["PYTHONIOENCODING"], "utf-8")
+        self.assertEqual(options["env"]["PYTHONUTF8"], "1")
+
+    def test_regeneration_rejects_unknown_case_before_running(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "fixtures"
+            with (
+                patch(f"{__name__}.GOLDEN_DIR", output_dir),
+                patch(f"{__name__}.run_simulator_case", return_value=(0, "ok")) as run,
+                self.assertRaisesRegex(ValueError, "Unknown golden case"),
+            ):
+                regenerate_golden_outputs(["readme_526_basic_hands", "unknown"])
+            run.assert_not_called()
+            self.assertFalse(output_dir.exists())
+
+    def test_regeneration_waits_for_all_cases_to_succeed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir)
+            fixture = output_dir / "readme_526_basic_hands.txt"
+            fixture.write_text("original", encoding="utf-8")
+            with (
+                patch(f"{__name__}.GOLDEN_DIR", output_dir),
+                patch(
+                    f"{__name__}.run_simulator_case",
+                    side_effect=[(0, "new"), (1, "bad")],
+                ),
+                self.assertRaisesRegex(RuntimeError, "readme_527_basic_games"),
+            ):
+                regenerate_golden_outputs(
+                    ["readme_526_basic_hands", "readme_527_basic_games"]
+                )
+            self.assertEqual(fixture.read_text(encoding="utf-8"), "original")
+            self.assertEqual(list(output_dir.iterdir()), [fixture])
+
+
+def main() -> None:
+    """CLI entrypoint supporting ``--regenerate`` or ``unittest`` execution."""
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--regenerate", action="store_true")
+    known, remaining = parser.parse_known_args()
+    if known.regenerate:
+        regenerate_golden_outputs(remaining)
+        return
+    unittest.main(argv=[sys.argv[0], *remaining])
+
+
+if __name__ == "__main__":
+    main()
