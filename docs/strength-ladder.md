@@ -31,9 +31,9 @@ What the numbers say:
 - **Against random play, better pegging adds little.** CFR+ wins 68.7% against
   random, only 1.2 points more than the heuristic's 67.5%. Its advantage
   shows against a competent opponent.
-- **Elo gaps do not add up along the ladder.** 127.3 + 44.2 = 171.4, but CFR+
-  measures 136.8 above random directly. The 34.7-point difference is 25
-  standard errors (1.4 Elo), so it is real, not noise. An Elo gap here
+- **Elo gaps do not add up along the ladder.** 127.3 + 44.2 = 171.5, but CFR+
+  measures 136.8 above random directly. The 34.7-point difference (from
+  unrounded values) is 25 standard errors (1.4 Elo), so it is real, not noise. An Elo gap here
   describes one pairing, not a rating that holds against every opponent.
 - **Who deals first matters about as much as CFR+'s edge.** In every match a
   player wins 10.6 to 12.0 points more often as first dealer than as first
@@ -82,7 +82,7 @@ The pegging margin is the mean, per game, of the upper player's pegging points
 minus the opponent's (his heels excluded). A game averages 9.1 to 9.2 hands.
 
 Against the heuristic the CFR policy was called 3.60 million times. 1.23
-million calls were forced (one legal card). None of the 2.38 million
+million calls were forced (one legal rank). None of the 2.38 million
 non-forced calls fell back to the heuristic for a missing menu, so every one
 used a stored row. 1.4% of them were off-support: a state with zero opponent
 reach under the saved policy and prior, where the policy still samples its
