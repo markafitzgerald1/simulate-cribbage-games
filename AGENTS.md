@@ -856,9 +856,12 @@ the seat's role, never by the player, so two games on one seed with the seats
 swapped see the same deals. Stop after the first count that reaches the
 target, in counting order (heels, each pegging action, Pone's hand, Dealer's
 hand, crib), and call no policy once the game is over. A play's points count
-together, a pair and 31 or a play and the last card, so a winner can finish
-past 121; splitting one play's points would make the final score depend on
-an arbitrary order within it. A test of a counting rule must use
+together, a pair and 31 or a play and the last card, because splitting one
+play's points would make the result depend on an arbitrary order within it.
+The winner's score is then recorded as 121, as a game is scored, while
+pegging totals keep every pegged point. The cap can hide a scoring bug that
+only overshoots the target, so a scoring test must make the bug decide
+whether the game ends. A test of a counting rule must use
 cards where the rule changes the result: a crib that is not a four-card flush
 cannot tell crib scoring from hand scoring.
 

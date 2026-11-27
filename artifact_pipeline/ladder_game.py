@@ -5,7 +5,7 @@ counting order and stops the moment either player reaches the target: his
 heels at the cut, then each pegging action (a play scores all its points
 together, a pair and 31 or a play and the last card), then Pone's hand,
 Dealer's hand and Dealer's crib, each counted whole. The winner's final score
-can therefore pass the target by the points of the count that reached it. Pegging uses the published rank-only rules in
+is then recorded as the target, as a game of cribbage is scored. Pegging uses the published rank-only rules in
 `pegging.py` step by step, so the policies see exactly the views they see in
 table generation and measurement. Hands and cribs are scored by the legacy
 simulator's `score_hand_and_starter`, which the play and crib pipelines
@@ -161,8 +161,10 @@ def deal_hand(
 class GameOutcome:
     """Final scores of one game, by the seat each player started in.
 
-    Pegging totals are play points only; his heels counts in the score but
-    not in pegging.
+    The winner's score is recorded as the target, however far the winning
+    count passed it. Pegging totals are every play point pegged, including
+    all of the winning play's; his heels counts in the score but not in
+    pegging.
     """
 
     first_pone_score: int
@@ -244,4 +246,11 @@ def play_game(
                 break
             scores[seat_of[role]] += score_cards(cards, starter, is_crib)
         if max(scores) >= target_score:
-            return GameOutcome(scores[0], scores[1], pegging[0], pegging[1], hand_index)
+            # The winner is recorded at the target, as a game is scored.
+            return GameOutcome(
+                min(scores[0], target_score),
+                min(scores[1], target_score),
+                pegging[0],
+                pegging[1],
+                hand_index,
+            )
