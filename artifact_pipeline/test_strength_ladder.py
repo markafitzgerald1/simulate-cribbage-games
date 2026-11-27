@@ -10,13 +10,16 @@ from pathlib import Path
 import random
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from artifact_pipeline.generate_play_table import DiscardPolicy
 from artifact_pipeline.pegging import DEALER, PONE
+from artifact_pipeline.ladder_match import run_ladder
 from artifact_pipeline.strength_ladder import (
     SCHEMA,
     RankDiscardRule,
     _plus_minus,
+    format_summary,
     main,
     parse_args,
 )
@@ -69,6 +72,40 @@ class TestArguments(unittest.TestCase):
         self.assertEqual(_plus_minus(None, None), "n/a")
         self.assertEqual(_plus_minus(0.5, None, 100), "50.00")
         self.assertEqual(_plus_minus(0.5612, 0.0011, 100), "56.12 +/- 0.11")
+
+
+def stat(mu, se):
+    return {"n": 10, "mu": mu, "se": se}
+
+
+def match_summary(player, opponent, win, elo):
+    return {
+        "player": player,
+        "opponent": opponent,
+        "win_rate": stat(win, 0.01),
+        "elo": elo,
+        "elo_se": 3.0,
+        "pair_outcomes": {"both_won": 1, "split": 2, "both_lost": 3},
+        "point_margin": stat(4.0 if win > 0.5 else -4.0, 0.5),
+        "policy_decisions": {},
+    }
+
+
+class TestFormatSummary(unittest.TestCase):
+    def test_each_row_is_the_upper_rung_against_the_one_below(self):
+        report = {
+            "pairs_per_match": 10,
+            "seed": 1,
+            "provenance": {"discards": "random"},
+            "rungs": [{"name": "low"}, {"name": "high"}],
+            "matches": [
+                match_summary("high", "low", 0.75, 190.8),
+                match_summary("low", "high", 0.25, -190.8),
+            ],
+        }
+        row = format_summary(report).splitlines()[-1]
+        self.assertTrue(row.startswith("| high vs low | 75.00 +/- 1.00 | 190.80"), row)
+        self.assertTrue("| 4.00 +/- 0.50 | n/a |" in row, row)
 
 
 class TestMain(unittest.TestCase):
@@ -153,7 +190,11 @@ class TestMain(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(report["provenance"], {"discards": "random"})
         argv = ["--discards", "random", "--rungs", "random,heuristic", "--pairs", "4"]
-        self.assertEqual(run_cli(argv), (0, printed))
+        with patch(
+            "artifact_pipeline.strength_ladder.run_ladder", wraps=run_ladder
+        ) as spy:
+            self.assertEqual(run_cli([*argv, "--workers", "2"]), (0, printed))
+        self.assertEqual(spy.call_args.kwargs["workers"], 2)
         self.assertEqual(len(report["matches"]), 2)
         self.assertTrue("| heuristic vs random |" in printed, printed)
 
