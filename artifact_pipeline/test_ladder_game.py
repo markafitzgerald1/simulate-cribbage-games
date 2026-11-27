@@ -376,6 +376,29 @@ class TestPlayGame(unittest.TestCase):
             (pegged[PONE], pegged[DEALER]),
         )
 
+    def test_the_crib_is_scored_as_a_crib(self):
+        # The crib is a four-card flush that the starter does not match:
+        # worth 4 more as a hand. With the target one point above Dealer's
+        # true total, the game must go on to a second hand.
+        starter = (4, 3)
+        _, pegged = peg([0, 1, 2, 3], [6, 7, 8, 11], ZERO, target=1000)
+        dealer_total = (
+            pegged[DEALER]
+            + score_cards(SIX_HIGH[:4], starter, False)
+            + score_cards(SIX_LOW[4:] + SIX_HIGH[4:], starter, True)
+        )
+        deals = [(SIX_LOW, SIX_HIGH, starter), (SIX_LOW, SIX_HIGH, (JACK_RANK, 0))]
+        outcome = self.play_fixed(deals, dealer_total + 1)
+        self.assertEqual(outcome.hands_played, 2)
+
+    def test_a_count_past_the_target_is_recorded_at_the_target(self):
+        # His heels scores 2; with a target of 1, Dealer is recorded at 1.
+        outcome = self.play_fixed([(SIX_LOW, SIX_HIGH, (JACK_RANK, 3))], 1)
+        self.assertEqual((outcome.first_pone_score, outcome.first_dealer_score), (0, 1))
+        # Heels is worth exactly 2: one short of a target of 3, play goes on.
+        outcome = self.play_fixed([(SIX_LOW, SIX_HIGH, (JACK_RANK, 3))], 3)
+        self.assertGreater(outcome.first_pone_pegging + outcome.first_dealer_pegging, 0)
+
     def test_the_deal_alternates_each_hand(self):
         strong = ((4, 0), (4, 1), (4, 2), (10, 3), (12, 0), (12, 1))
         quiet = ((0, 0), (2, 1), (6, 2), (8, 3), (11, 0), (11, 1))
@@ -488,9 +511,7 @@ class TestPlayGame(unittest.TestCase):
         randomly = LadderPlayer("r", RandomDiscardRule(), RandomPeggingPolicy())
         outcome = play_game(heuristic, randomly, 9)
         self.assertEqual(outcome, play_game(heuristic, randomly, 9))
-        self.assertGreaterEqual(
-            max(outcome.first_pone_score, outcome.first_dealer_score), 121
-        )
+        self.assertEqual(max(outcome.first_pone_score, outcome.first_dealer_score), 121)
         self.assertLess(min(outcome.first_pone_score, outcome.first_dealer_score), 121)
 
 
