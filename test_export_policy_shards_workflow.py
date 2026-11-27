@@ -51,6 +51,32 @@ class ExportPolicyShardsWorkflowTest(unittest.TestCase):
             self.assertEqual(subcommands(step.get("run", ""), "gh"), [])
         self.assertEqual(self.workflow["concurrency"]["cancel-in-progress"], "false")
 
+    def test_every_step_runs_in_order_and_none_can_be_skipped(self) -> None:
+        # Catches a skipped or tolerated step, another checkout ref, or a
+        # shell that would not fail a piped export.
+        self.assertEqual(
+            self.names,
+            [
+                "Require main exactly",
+                "actions/checkout@v7",
+                "actions/setup-python@v7",
+                "Install pinned dependencies",
+                "Bootstrap the tally shelf",
+                "Read the pinned inputs",
+                "Download the pinned fixed inputs",
+                "Export the shards",
+                "Preserve the shards and their index",
+            ],
+        )
+        for step in self.steps:
+            with self.subTest(step=step.get("name", step.get("uses"))):
+                self.assertNotIn("if", step)
+                self.assertNotIn("continue-on-error", step)
+                self.assertNotIn("shell", step)
+        self.assertNotIn("with", self.step("actions/checkout@v7"))
+        self.assertNotIn("continue-on-error", self.job)
+        self.assertEqual(self.workflow["defaults"], {"run": {"shell": "bash"}})
+
     def test_the_job_requires_the_approved_first_attempt_on_main(self) -> None:
         # Catches a guard that drops one condition, or the exact main check.
         self.assertTrue(guard_accepts(self.job["if"], APPROVED))

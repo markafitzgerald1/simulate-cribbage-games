@@ -64,8 +64,11 @@ def export(manifest_path: Path, manifest_sha256: str, output: Path) -> str:
     hands = get_canonical_hands()
     shards: list[dict[str, Any]] = []
     with SixLayerPolicy(manifest_path) as policy:
+        # The loader reads the file again; it must have parsed the bytes hashed.
+        if policy.manifest != json.loads(manifest_bytes):
+            raise ValueError("Policy manifest changed while it was loaded")
         for key in range(len(ROLES) * len(hands)):
-            rows = list(policy.menu_rows(key))
+            rows = policy.menu_rows(key)
             if not rows:
                 continue
             role, hand = ROLES[key // len(hands)], hands[key % len(hands)]
@@ -101,6 +104,8 @@ def export(manifest_path: Path, manifest_sha256: str, output: Path) -> str:
 def summarize(index: dict[str, Any]) -> str:
     """State what a page would download, so a size change is visible."""
     sizes = sorted(shard["bytes"] for shard in index["shards"])
+    if not sizes:
+        return "0 shards"
     return (
         f"{len(sizes)} shards, {sum(sizes)} bytes in all; "
         f"median {sizes[len(sizes) // 2]}, largest {sizes[-1]} bytes"

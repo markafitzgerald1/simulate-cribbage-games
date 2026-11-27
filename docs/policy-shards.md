@@ -3,10 +3,13 @@
 `python -m artifact_pipeline.export_policy_shards` splits the fixed six-layer
 pegging policy described in [its input contract](fixed-pegging-policy.md) into
 one small file per seat and original four-card keep, for a browser that plays
-or reviews one hand at a time and so needs only two of them. It reads the
-bundle through `SixLayerPolicy`, which verifies every component digest first,
-and refuses a manifest whose SHA-256 is not the approved one. The shards carry
-the stored policy only: no values, no fallback and no opponent cards.
+or reviews one hand at a time and so needs only two of them. It refuses a
+manifest whose SHA-256 is not the approved one, or that the loader parsed
+differently from the bytes hashed, and reads the bundle through
+`SixLayerPolicy`, which checks the digests of the policy, offsets, support,
+prior and menus. It does not read the discard population, which the shards do
+not carry. The shards carry the stored policy only: no values, no fallback
+and no opponent cards.
 
 ```sh
 python -m artifact_pipeline.export_policy_shards \
@@ -52,7 +55,7 @@ runs of similar bytes. With `n` rows:
 | 8n | each packed history minus the previous row's (the first minus 0) |
 | 4n | each row's legal ranks, ascending, zero padded |
 | n | each row's width, the number of legal ranks (2 to 4) |
-| n | 1 when the support mask attests positive opponent reach, else 0 |
+| n | 1 when the row's support byte shares a bit with the manifest's mask |
 | 2 per action | each row's counts, unsigned 16-bit, summing to 1000 |
 
 Rows are the menu's rows in ascending packed history, so every delta after
@@ -64,8 +67,13 @@ with probability count / 1000. A history with a choice but no row is not in
 the policy; the measurement played such a decision with the legacy heuristic,
 and a reader must say so rather than invent a play.
 
-Every history either seat can reach is present, because a menu enumerates
-every feasible opponent hand. Measured on the bundle pinned by
+Support means positive opponent counterfactual reach under the saved policy
+and training prior, ignoring the seat's own earlier actions, as
+[the input contract](fixed-pegging-policy.md) defines it; it does not mean
+the row was trained or untrained. Under the solver's event rules, every
+history at which the seat has two or more legal ranks among its first three
+cards has a row, because a menu enumerates every feasible opponent hand. A
+decision with one legal rank, or the fourth card, has no row and needs none. Measured on the bundle pinned by
 `examples/fixed-play-inputs.json` (bundle run 45528665715), exported locally
 in about four minutes: 3,614 shards holding 45,366,803 rows, 32,980,231 bytes
 compressed in all; median 5,550 bytes, 95th percentile 27,588 and largest

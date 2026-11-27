@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import struct
 import unittest
+from unittest import mock
 
 from artifact_pipeline.export_policy_shards import (
     encode_shard,
@@ -18,7 +19,7 @@ from artifact_pipeline.export_policy_shards import (
 )
 from artifact_pipeline.pegging import ROLES, get_canonical_hands
 from artifact_pipeline.six_layer_policy import SixLayerPolicy
-from artifact_pipeline.test_fixed_policy_fixtures import make_bundle
+from artifact_pipeline.test_fixed_policy_fixtures import FIXTURE, bind, make_bundle
 from artifact_pipeline.test_six_layer_policy import temporary_directory
 
 
@@ -106,6 +107,67 @@ class ExportTest(unittest.TestCase):
                     f"{shard['role'].lower()}/{hand_key(shard['own_hand'])}.bin.gz",
                 )
 
+    def test_rows_match_the_checked_in_fixture_under_mask_two(self):
+        # Expected rows come from the fixture's readable JSON, not the reader.
+        # Mask 2 with bytes 2 and 1 tells the mask apart from a hard-coded 1.
+        bundle = self.root / "bundle"
+        fixture = json.loads(FIXTURE.read_text())["rows"]
+        (bundle / "support.bin").write_bytes(
+            bytes(2 if row["support"] else 1 for row in fixture)
+        )
+        manifest = json.loads(self.manifest.read_text())
+        manifest["support"] = {**bind(bundle, "support.bin"), "mask": 2}
+        self.manifest.write_text(json.dumps(manifest))
+        digest = hashlib.sha256(self.manifest.read_bytes()).hexdigest()
+        export(self.manifest, digest, self.root / "out")
+        exported = {}
+        for shard in json.loads((self.root / "out" / "shards.json").read_text())[
+            "shards"
+        ]:
+            payload = gzip.decompress((self.root / "out" / shard["file"]).read_bytes())
+            for row in decode_shard(payload):
+                exported[(shard["role"], tuple(shard["own_hand"]), row[0])] = row[1:]
+        expected = {
+            (
+                row["role"],
+                tuple(row["own_hand"]),
+                sum((rank + 1) << (4 * i) for i, rank in enumerate(row["history"])),
+            ): (tuple(row["actions"]), tuple(row["counts"]), bool(row["support"]))
+            for row in fixture
+        }
+        self.assertEqual(exported, expected)
+
+    def test_index_order_denominator_and_gzip_time_are_fixed(self):
+        export(self.manifest, self.digest, self.root / "out")
+        index = json.loads((self.root / "out" / "shards.json").read_text())
+        self.assertEqual(index["probability_denominator"], 1000)
+        hands = get_canonical_hands()
+        keys = [
+            (ROLES.index(shard["role"]), hands.index(tuple(shard["own_hand"])))
+            for shard in index["shards"]
+        ]
+        self.assertEqual(keys, sorted(keys))
+        self.assertEqual(len(set(keys)), len(keys))
+        for shard in index["shards"]:
+            header = (self.root / "out" / shard["file"]).read_bytes()[:8]
+            self.assertEqual(header[4:8], b"\0\0\0\0")
+
+    def test_rejects_a_manifest_swapped_while_loading(self):
+        swapped = json.loads(self.manifest.read_text())
+        swapped["support"]["mask"] = 2
+        load = SixLayerPolicy
+
+        def swap_then_load(path):
+            Path(path).write_text(json.dumps(swapped))
+            return load(path)
+
+        with mock.patch(
+            "artifact_pipeline.export_policy_shards.SixLayerPolicy",
+            side_effect=swap_then_load,
+        ):
+            with self.assertRaisesRegex(ValueError, "changed while it was loaded"):
+                export(self.manifest, self.digest, self.root / "out")
+
     def test_export_is_byte_reproducible(self):
         first = export(self.manifest, self.digest, self.root / "first")
         second = export(self.manifest, self.digest, self.root / "second")
@@ -140,6 +202,9 @@ class ExportTest(unittest.TestCase):
         self.assertEqual(first, f"shards_index_sha256={digest}")
         self.assertEqual(second, summarize(json.loads(index)))
 
+    def test_summary_of_no_shards_says_so(self):
+        self.assertEqual(summarize({"shards": []}), "0 shards")
+
     def test_summary_names_count_total_median_and_largest(self):
         index = {"shards": [{"bytes": size} for size in (30, 10, 20, 40)]}
         self.assertEqual(
@@ -163,13 +228,26 @@ class MenuRowsTest(unittest.TestCase):
         }
         missing = next(key for key in range(2 * len(hands)) if key not in listed)
         with SixLayerPolicy(self.manifest) as policy:
-            self.assertEqual(list(policy.menu_rows(missing)), [])
+            self.assertEqual(policy.menu_rows(missing), [])
+
+    def test_rows_taken_do_not_block_closing_or_eviction(self):
+        source = json.loads(self.manifest.read_text())
+        hands = get_canonical_hands()
+        keys = [
+            ROLES.index(menu["role"]) * len(hands)
+            + hands.index(tuple(menu["own_hand"]))
+            for menu in source["menus"]
+        ]
+        policy = SixLayerPolicy(self.manifest, cache_limit=1)
+        rows = [policy.menu_rows(key) for key in keys]
+        policy.close()
+        self.assertTrue(all(rows))
 
     def test_a_closed_policy_yields_no_rows(self):
         policy = SixLayerPolicy(self.manifest)
         policy.close()
         with self.assertRaisesRegex(RuntimeError, "closed"):
-            next(policy.menu_rows(0))
+            policy.menu_rows(0)
 
 
 if __name__ == "__main__":
