@@ -6,6 +6,7 @@ import math
 import random
 import statistics
 import unittest
+from unittest.mock import patch
 
 from artifact_pipeline.ladder_game import (
     GameOutcome,
@@ -17,6 +18,7 @@ from artifact_pipeline.ladder_game import (
 from artifact_pipeline.ladder_match import (
     _FORKED_MATCH,
     _play_forked_chunk,
+    _set_forked_match,
     IntegerMoments,
     MatchAccumulator,
     chunk_ranges,
@@ -65,9 +67,10 @@ class TestIntegerMoments(unittest.TestCase):
             moments_of([1, 1], 2).summary(), {"n": 2, "mu": 0.5, "se": 0.0}
         )
         # Values 0, 1, 1: mean 2/3, sample variance 1/3, SE sqrt(1/9).
-        summary = moments_of([0, 2, 2], 2).summary()
-        self.assertAlmostEqual(summary["mu"], 2 / 3)
-        self.assertAlmostEqual(summary["se"], 1 / 3)
+        for scaled, scale in (([0, 2, 2], 2), ([0, 1, 1], 1)):
+            summary = moments_of(scaled, scale).summary()
+            self.assertAlmostEqual(summary["mu"], 2 / 3)
+            self.assertAlmostEqual(summary["se"], 1 / 3)
 
     def test_matches_the_standard_library_on_random_samples(self):
         rng = random.Random(4)
@@ -91,6 +94,9 @@ class TestIntegerMoments(unittest.TestCase):
                 moments_of(left, 2).affine(offset, sign),
                 moments_of([offset + sign * value for value in left], 2),
             )
+        for sign in (0, 2):
+            with self.assertRaisesRegex(ValueError, "reflection or a shift"):
+                moments_of(left, 2).affine(0, sign)
 
 
 class TestElo(unittest.TestCase):
@@ -102,8 +108,10 @@ class TestElo(unittest.TestCase):
         self.assertAlmostEqual(elo, 400 * math.log10(3))
         # d(Elo)/dp = 400 / (ln 10 * p * (1 - p)) = 926.5 at p = 0.75.
         self.assertAlmostEqual(elo_se, 9.2649, places=4)
-        for undefined in ((0.0, 0.1), (1.0, 0.1), (None, None), (0.6, None)):
+        for undefined in ((0.0, 0.1), (1.0, 0.1), (None, None)):
             self.assertEqual(elo_difference(*undefined), (None, None))
+        # One pair: the estimate exists even though its SE does not.
+        self.assertEqual(elo_difference(0.75, None), (400 * math.log10(3), None))
 
 
 def outcome(pone_score, dealer_score, pone_peg=0, dealer_peg=0, hands=9):
@@ -136,16 +144,14 @@ class TestMatchAccumulator(unittest.TestCase):
             summary["pegging_margin"]["mu"], ((10 + 10) + (-2 - 2) + 0) / 6
         )
         self.assertAlmostEqual(summary["hands_per_game"]["mu"], (17 + 20 + 18) / 6)
-        self.assertAlmostEqual(
-            summary["win_rate_se_if_games_were_independent"], math.sqrt(0.25 / 6)
-        )
+        self.assertAlmostEqual(summary["win_rate_se_as_iid_games"], math.sqrt(0.25 / 6))
 
     def test_empty_match_summary(self):
         summary = MatchAccumulator().summary()
         self.assertEqual(summary["pairs"], 0)
         self.assertIsNone(summary["win_rate"]["mu"])
         self.assertEqual((summary["elo"], summary["elo_se"]), (None, None))
-        self.assertIsNone(summary["win_rate_se_if_games_were_independent"])
+        self.assertIsNone(summary["win_rate_se_as_iid_games"])
 
 
 class TestRunMatch(unittest.TestCase):
@@ -187,8 +193,8 @@ class TestRunMatch(unittest.TestCase):
 
     def test_a_forked_chunk_plays_its_own_pairs(self):
         # Coverage does not follow forked workers, so run the worker body here.
-        _FORKED_MATCH.update(
-            player_a=HEURISTIC, player_b=RANDOM, seed=3, target_score=121
+        _set_forked_match(
+            {"player_a": HEURISTIC, "player_b": RANDOM, "seed": 3, "target_score": 121}
         )
         try:
             chunk = _play_forked_chunk(range(2, 5))
@@ -196,6 +202,44 @@ class TestRunMatch(unittest.TestCase):
             _FORKED_MATCH.clear()
         self.assertEqual(chunk, play_pairs(HEURISTIC, RANDOM, range(2, 5), 3))
         self.assertEqual(chunk.summary()["pairs"], 3)
+
+    def test_a_parallel_match_leaves_no_shared_state(self):
+        run_match(HEURISTIC, RANDOM, 4, 3, workers=2)
+        self.assertEqual(_FORKED_MATCH, {})
+
+    def test_each_pair_plays_both_seatings_on_its_own_seed(self):
+        with patch("artifact_pipeline.ladder_match.play_game", wraps=play_game) as spy:
+            play_pairs(HEURISTIC, RANDOM, range(3), 9, 61)
+        calls = [call.args for call in spy.call_args_list]
+        seeds = [pair_seed(9, index) for index in range(3)]
+        self.assertEqual(len(set(seeds)), 3)
+        self.assertEqual(
+            calls,
+            [
+                args
+                for seed in seeds
+                for args in (
+                    (HEURISTIC, RANDOM, seed, 61),
+                    (RANDOM, HEURISTIC, seed, 61),
+                )
+            ],
+        )
+
+    def test_workers_play_to_the_given_target(self):
+        short = run_match(HEURISTIC, RANDOM, 8, 3, target_score=31)
+        self.assertEqual(
+            run_match(HEURISTIC, RANDOM, 8, 3, workers=2, target_score=31), short
+        )
+        self.assertLess(
+            short.summary()["hands_per_game"]["mu"],
+            run_match(HEURISTIC, RANDOM, 8, 3).summary()["hands_per_game"]["mu"],
+        )
+
+    def test_rejects_two_counting_policies_with_one_name(self):
+        same_a = LadderPlayer("same", RandomDiscardRule(), CountingHeuristic())
+        same_b = LadderPlayer("same", RandomDiscardRule(), CountingHeuristic())
+        with self.assertRaisesRegex(ValueError, "share the player name same"):
+            run_match(same_a, same_b, 1, 1)
 
     def test_policy_decisions_are_collected_from_every_worker(self):
         policy = CountingHeuristic()
@@ -218,12 +262,34 @@ class TestRunMatch(unittest.TestCase):
         summary = run_match(HEURISTIC, RANDOM, 300, 1).summary()
         win = summary["win_rate"]
         self.assertGreater(win["mu"] - 3 * win["se"], 0.5)
-        self.assertLess(win["se"], summary["win_rate_se_if_games_were_independent"])
+        self.assertLess(win["se"], summary["win_rate_se_as_iid_games"])
 
     def test_rejects_an_empty_match(self):
         for pairs, workers in ((0, 1), (1, 0)):
             with self.assertRaisesRegex(ValueError, "at least one"):
                 run_match(HEURISTIC, RANDOM, pairs, 1, workers=workers)
+
+    def test_summary_elo_follows_the_paired_win_rate(self):
+        match = MatchAccumulator()
+        # Two pairs won both, one split, one lost both: win rate 5/8.
+        won_both = (outcome(121, 90), outcome(90, 121))
+        match.add_pair(*won_both)
+        match.add_pair(*won_both)
+        match.add_pair(outcome(121, 90), outcome(121, 95))
+        match.add_pair(outcome(90, 121), outcome(121, 90))
+        summary = match.summary()
+        win = summary["win_rate"]
+        self.assertAlmostEqual(win["mu"], 5 / 8)
+        self.assertEqual(
+            (summary["elo"], summary["elo_se"]), elo_difference(win["mu"], win["se"])
+        )
+        self.assertGreater(summary["elo"], 0)
+        self.assertAlmostEqual(
+            summary["win_rate_se_as_iid_games"], math.sqrt(5 / 8 * 3 / 8 / 8)
+        )
+        inverse = match.inverted().summary()
+        self.assertAlmostEqual(inverse["elo"], -summary["elo"])
+        self.assertAlmostEqual(inverse["elo_se"], summary["elo_se"])
 
     def test_chunk_ranges_cover_every_pair_once(self):
         for pairs, chunks in ((10, 4), (3, 8), (16, 4), (1, 1)):
@@ -231,6 +297,9 @@ class TestRunMatch(unittest.TestCase):
             self.assertEqual([i for r in ranges for i in r], list(range(pairs)))
             self.assertEqual(len(ranges), min(pairs, chunks))
             self.assertLessEqual(max(map(len, ranges)) - min(map(len, ranges)), 1)
+        for pairs, chunks in ((0, 4), (4, 0)):
+            with self.assertRaisesRegex(ValueError, "at least one pair"):
+                chunk_ranges(pairs, chunks)
 
 
 class TestRunLadder(unittest.TestCase):
@@ -261,6 +330,19 @@ class TestRunLadder(unittest.TestCase):
         self.assertEqual(
             cross[("random", "heuristic")], run_match(RANDOM, HEURISTIC, 12, 6)
         )
+
+    def test_ladder_counts_each_match_separately(self):
+        policy = CountingHeuristic()
+        counted = LadderPlayer("counted", RandomDiscardRule(), policy)
+        middle = LadderPlayer("middle", RandomDiscardRule(), LegacyHeuristicPolicy())
+        results = run_ladder([RANDOM, middle, counted], 5, 2, cross_table=True)
+        for opponent in (RANDOM, middle):
+            alone = run_match(counted, opponent, 5, 2)
+            self.assertEqual(
+                results[("counted", opponent.name)].policy_decisions,
+                alone.policy_decisions,
+            )
+        self.assertEqual(results[("middle", "random")].policy_decisions, {})
 
     def test_rejects_a_ladder_without_two_named_rungs(self):
         for players in ([RANDOM], [RANDOM, RANDOM]):

@@ -7,7 +7,9 @@ spread of the per-pair results: treating the two games of a pair as
 independent would misstate it, because they share the cards.
 
 Every match in a ladder uses the same pair seeds, so cells of the cross table
-are measured on common deals.
+are measured on common deals. Each cell's standard error is valid for that
+cell alone: the cells are correlated, so their SEs must not be combined, for
+example by adding Elo gaps along the ladder in quadrature.
 """
 
 from __future__ import annotations
@@ -16,7 +18,7 @@ from collections import Counter
 from dataclasses import dataclass, field, replace
 import math
 import multiprocessing
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 from artifact_pipeline.ladder_game import (
     TARGET_SCORE,
@@ -27,7 +29,7 @@ from artifact_pipeline.ladder_game import (
 from artifact_pipeline.pegging import _stable_seed
 
 # Players can hold memory-mapped policy files that cannot be pickled, so
-# workers are forked and read the match from here.
+# workers are forked; each worker's initializer stores its match here.
 _FORKED_MATCH: dict[str, Any] = {}
 
 
@@ -62,6 +64,8 @@ class IntegerMoments:
 
     def affine(self, offset: int, sign: int) -> "IntegerMoments":
         """Return the moments of offset + sign * x for every scaled value x."""
+        if sign not in (-1, 1):
+            raise ValueError("Only a reflection or a shift keeps the moments exact")
         return replace(
             self,
             total=self.n * offset + sign * self.total,
@@ -86,9 +90,11 @@ def elo_difference(
     win_rate: float | None, standard_error: float | None
 ) -> tuple[float | None, float | None]:
     """Convert a win rate and its standard error to Elo, by the delta method."""
-    if win_rate is None or standard_error is None or not 0.0 < win_rate < 1.0:
+    if win_rate is None or not 0.0 < win_rate < 1.0:
         return None, None
     elo = 400.0 * math.log10(win_rate / (1.0 - win_rate))
+    if standard_error is None:
+        return elo, None
     elo_se = 400.0 / math.log(10.0) * standard_error / (win_rate * (1.0 - win_rate))
     return elo, elo_se
 
@@ -181,7 +187,10 @@ class MatchAccumulator:
         pairs = self.both_won + self.split + self.both_lost
         win = self.moments["win_rate"].summary()
         elo, elo_se = elo_difference(win["mu"], win["se"])
-        independent_se = (
+        # The plug-in binomial SE the win rate would have if its 2n games were
+        # independent draws with one win probability in both seats. For
+        # comparison only: the games of a pair share cards, and seats differ.
+        iid_games_se = (
             None
             if win["mu"] is None
             else math.sqrt(win["mu"] * (1.0 - win["mu"]) / (2 * pairs))
@@ -197,7 +206,7 @@ class MatchAccumulator:
             **{key: moments.summary() for key, moments in self.moments.items()},
             "elo": elo,
             "elo_se": elo_se,
-            "win_rate_se_if_games_were_independent": independent_se,
+            "win_rate_se_as_iid_games": iid_games_se,
             "policy_decisions": {
                 label: dict(sorted(counts.items()))
                 for label, counts in sorted(self.policy_decisions.items())
@@ -217,7 +226,13 @@ def _counting_policies(players: Sequence[LadderPlayer]) -> dict[str, Any]:
         policy = player.pegging_policy
         if hasattr(policy, "decision_counts"):
             users.setdefault(id(policy), (policy, []))[1].append(player.name)
-    return {"+".join(sorted(set(names))): policy for policy, names in users.values()}
+    labelled: dict[str, Any] = {}
+    for policy, names in users.values():
+        label = "+".join(sorted(set(names)))
+        if label in labelled:
+            raise ValueError(f"Two counting policies share the player name {label}")
+        labelled[label] = policy
+    return labelled
 
 
 def play_pairs(
@@ -248,12 +263,19 @@ def play_pairs(
     return accumulator
 
 
+def _set_forked_match(match: Mapping[str, Any]) -> None:
+    _FORKED_MATCH.clear()
+    _FORKED_MATCH.update(match)
+
+
 def _play_forked_chunk(pair_range: range) -> MatchAccumulator:
     return play_pairs(pair_range=pair_range, **_FORKED_MATCH)
 
 
 def chunk_ranges(pairs: int, chunks: int) -> list[range]:
     """Split range(pairs) into at most `chunks` contiguous, near-equal ranges."""
+    if pairs < 1 or chunks < 1:
+        raise ValueError("Chunking needs at least one pair and one chunk")
     count = min(pairs, chunks)
     base, extra = divmod(pairs, count)
     ranges, start = [], 0
@@ -282,15 +304,18 @@ def run_match(  # pylint: disable=too-many-arguments
         raise ValueError("A match needs at least one deal pair and one worker")
     if workers == 1:
         return play_pairs(player_a, player_b, range(pairs), seed, target_score)
-    _FORKED_MATCH.update(
-        player_a=player_a, player_b=player_b, seed=seed, target_score=target_score
-    )
-    try:
-        context = multiprocessing.get_context("fork")
-        with context.Pool(processes=workers) as pool:
-            partials = pool.map(_play_forked_chunk, chunk_ranges(pairs, workers * 4))
-    finally:
-        _FORKED_MATCH.clear()
+    match = {
+        "player_a": player_a,
+        "player_b": player_b,
+        "seed": seed,
+        "target_score": target_score,
+    }
+    # Forked workers inherit the initializer's arguments without pickling,
+    # and only the workers hold the match, so concurrent matches in one
+    # process cannot see each other's.
+    context = multiprocessing.get_context("fork")
+    with context.Pool(min(workers, pairs), _set_forked_match, (match,)) as pool:
+        partials = pool.map(_play_forked_chunk, chunk_ranges(pairs, workers * 4))
     total = MatchAccumulator()
     for partial in partials:
         total.merge(partial)
@@ -309,7 +334,8 @@ def run_ladder(  # pylint: disable=too-many-arguments
     """Play each rung against the one below it, or every pair of rungs.
 
     Players are ordered from the bottom rung up. The result holds both
-    orientations of every match played, keyed (player, opponent).
+    orientations of every match played, keyed (player, opponent). All
+    matches share pair seeds, so their results are correlated.
     """
     names = [player.name for player in players]
     if len(players) < 2 or len(set(names)) != len(names):

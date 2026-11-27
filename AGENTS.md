@@ -869,10 +869,17 @@ so counting them as independent games misstates it, and the summary reports
 that naive figure only for comparison. Keep the statistics as exact integer
 sums so worker partials merge exactly and the reversed match is an exact
 transform, which a test checks against actually playing B against A. Every
-match in a ladder uses the same pair seeds, so cross-table cells share deals.
+match in a ladder uses the same pair seeds, so cross-table cells share deals
+and are correlated: each cell's SE holds for that cell alone, and adding Elo
+gaps along the ladder in quadrature misstates the combined uncertainty.
 Workers are forked because a CFR policy holds memory maps that cannot be
-pickled; coverage does not follow forked workers, so a test runs the worker
-body in-process.
+pickled. The match reaches them through the pool initializer, never a
+parent-process global, so two matches in one process cannot pick up each
+other's players. Coverage does not follow forked workers, so a test runs the
+worker body in-process. Policies that count their own decisions are reset
+and read in each worker, because a forked child's counters never reach the
+parent; the CFR policy's off-support calls still sample its stored row, so
+report them apart from heuristic fallbacks.
 
 ## Lint Configuration Expectations
 
