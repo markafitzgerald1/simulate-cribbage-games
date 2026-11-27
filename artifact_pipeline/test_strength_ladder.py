@@ -127,6 +127,16 @@ class TestArguments(unittest.TestCase):
                 self.assertTrue("bundle" in message, message)
             self.assertEqual(manifest.read_bytes(), before)
             parse_args([*base, "--output", str(root / "fresh.json")])
+            # Through a symbolic link, the guard and the loader use the target.
+            elsewhere = root / "elsewhere"
+            elsewhere.mkdir()
+            (elsewhere / "policy.json").symlink_to(manifest)
+            linked = ["--policy-manifest", str(elsewhere / "policy.json")]
+            args = parse_args([*linked, "--output", str(elsewhere / "discards.json")])
+            self.assertEqual(args.policy_manifest, manifest.resolve())
+            rejected(
+                self, [*linked, "--output", str(root / "bundle" / "discards.json")]
+            )
 
     def test_plus_minus_shows_what_is_known(self):
         self.assertEqual(_plus_minus(None, None), "n/a")

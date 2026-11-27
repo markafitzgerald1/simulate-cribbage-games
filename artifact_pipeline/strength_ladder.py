@@ -97,7 +97,7 @@ def _validate(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None
 
 def _aliases_bundle(output: Path, manifest: Path) -> bool:
     """Return whether writing output could touch a file of the bundle."""
-    bundle = manifest.resolve().parent
+    bundle = manifest.parent
     if output.resolve().is_relative_to(bundle):
         return True
     if not output.exists():
@@ -127,6 +127,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
     args.rungs = [name.strip() for name in args.rungs.split(",")]
+    if args.policy_manifest:
+        # Load components, discards and the output guard from one directory,
+        # even when the manifest path is a symbolic link.
+        args.policy_manifest = args.policy_manifest.resolve()
     _validate(parser, args)
     return args
 
