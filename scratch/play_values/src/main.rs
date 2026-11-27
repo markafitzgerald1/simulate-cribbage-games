@@ -297,37 +297,189 @@ fn exact(bundle: &Path, out: &Path) {
     let denominator = inputs.mass as f64 * (UNITS as f64).powi(6);
     let mut file = std::io::BufWriter::new(std::fs::File::create(out).expect("create"));
     for (file_index, accumulator) in accumulators.iter().enumerate() {
-        let seat_sign = if file_index < 1820 { 1.0 } else { -1.0 };
-        for (local, &reach) in accumulator.reach.iter().enumerate() {
-            let compact_menu = accumulator.menu_base + local;
-            let menu = compact.global[compact_menu] as usize;
-            let width = usize::from(menus.width[menu]);
-            let mut own_reach = 1.0f64;
-            let (mut parent, mut parent_action) = (menus.parent[menu], menus.parent_action[menu]);
-            while parent != NIL {
-                let parent_index = parent as usize;
-                own_reach *= f64::from(
-                    inputs.policy[menus.offset[parent_index] as usize + usize::from(parent_action)],
-                ) / 1000.0;
-                parent_action = menus.parent_action[parent_index];
-                parent = menus.parent[parent_index];
-            }
-            let mut values = [f64::NAN; 4];
-            if reach != 0 {
-                for (action, value) in values.iter_mut().enumerate().take(width) {
-                    let slot = compact.slot[compact_menu] as usize + action - accumulator.slot_base;
-                    let numerator = accumulator.value[slot] * UNITS;
-                    *value = seat_sign * numerator as f64 / reach as f64;
-                }
-            }
-            file.write_all(&u32::try_from(menu).unwrap().to_le_bytes()).unwrap();
-            file.write_all(&[menus.stage[menu], menus.width[menu], 0, 0]).unwrap();
-            file.write_all(&(reach as f64 / denominator).to_le_bytes()).unwrap();
-            file.write_all(&own_reach.to_le_bytes()).unwrap();
-            for value in values {
-                file.write_all(&value.to_le_bytes()).unwrap();
+        write_rows(&inputs, &compact, file_index, accumulator, denominator, None, &mut file);
+    }
+    file.flush().unwrap();
+    eprintln!("wrote {}", out.display());
+}
+
+/// The product of the policy probabilities of the seat's own earlier
+/// choices that lead to `menu`.
+fn own_reach(inputs: &Inputs, menu: usize) -> f64 {
+    let menus = &inputs.menus;
+    let mut reach = 1.0f64;
+    let (mut parent, mut parent_action) = (menus.parent[menu], menus.parent_action[menu]);
+    while parent != NIL {
+        let parent_index = parent as usize;
+        reach *= f64::from(
+            inputs.policy[menus.offset[parent_index] as usize + usize::from(parent_action)],
+        ) / 1000.0;
+        parent_action = menus.parent_action[parent_index];
+        parent = menus.parent[parent_index];
+    }
+    reach
+}
+
+/// One record per tracked menu of `file_index`: menu, stage, width, reach
+/// as a share of `denominator`, own reach, and the value of each card from
+/// the acting seat's side (`NaN` when the opponent never reaches it). With
+/// `scenario`, the record starts with the scenario id and skips unreached
+/// menus.
+fn write_rows(
+    inputs: &Inputs,
+    compact: &Compact,
+    file_index: usize,
+    accumulator: &Accumulator,
+    denominator: f64,
+    scenario: Option<u32>,
+    file: &mut impl Write,
+) {
+    let menus = &inputs.menus;
+    let seat_sign = if file_index < 1820 { 1.0 } else { -1.0 };
+    for (local, &reach) in accumulator.reach.iter().enumerate() {
+        if scenario.is_some() && reach == 0 {
+            continue;
+        }
+        let compact_menu = accumulator.menu_base + local;
+        let menu = compact.global[compact_menu] as usize;
+        let width = usize::from(menus.width[menu]);
+        let mut values = [f64::NAN; 4];
+        if reach != 0 {
+            for (action, value) in values.iter_mut().enumerate().take(width) {
+                let slot = compact.slot[compact_menu] as usize + action - accumulator.slot_base;
+                let numerator = accumulator.value[slot] * UNITS;
+                *value = seat_sign * numerator as f64 / reach as f64;
             }
         }
+        if let Some(id) = scenario {
+            file.write_all(&id.to_le_bytes()).unwrap();
+        }
+        file.write_all(&u32::try_from(menu).unwrap().to_le_bytes()).unwrap();
+        file.write_all(&[menus.stage[menu], menus.width[menu], 0, 0]).unwrap();
+        file.write_all(&(reach as f64 / denominator).to_le_bytes()).unwrap();
+        file.write_all(&own_reach(inputs, menu).to_le_bytes()).unwrap();
+        for value in values {
+            file.write_all(&value.to_le_bytes()).unwrap();
+        }
+    }
+}
+
+/// One valuation scenario: a seat, its kept hand, and integer weights over
+/// the opponent's 1,820 kept hands.
+struct Scenario {
+    id: u32,
+    seat: usize,
+    own: usize,
+    weights: Vec<u64>,
+}
+
+fn read_scenarios(path: &Path) -> Vec<Scenario> {
+    let bytes = std::fs::read(path).expect("scenarios");
+    let record = 8 + 1820 * 8;
+    assert_eq!(bytes.len() % record, 0, "scenario file size");
+    bytes
+        .chunks(record)
+        .map(|chunk| {
+            let weights: Vec<u64> = chunk[8..]
+                .as_chunks::<8>()
+                .0
+                .iter()
+                .map(|&word| u64::from_le_bytes(word))
+                .collect();
+            let total: u128 = weights.iter().map(|&weight| u128::from(weight)).sum();
+            assert!(total > 0 && total < 1 << 60, "scenario mass");
+            Scenario {
+                id: u32::from_le_bytes(chunk[0..4].try_into().unwrap()),
+                seat: usize::from(chunk[4]),
+                own: usize::from(u16::from_le_bytes(chunk[6..8].try_into().unwrap())),
+                weights,
+            }
+        })
+        .collect()
+}
+
+/// `rows BUNDLE SCENARIOS OUT`: values of every first- and second-play
+/// decision of each scenario's own hand, with the opponent's hand weighted
+/// by the scenario's weights instead of the prior row.
+fn rows(bundle: &Path, scenarios_path: &Path, out: &Path) {
+    let inputs = load(bundle);
+    let menus = &inputs.menus;
+    let compact = Compact::new(menus);
+    let scenarios = read_scenarios(scenarios_path);
+    let own_file = |scenario: &Scenario| scenario.seat * 1820 + scenario.own;
+    let results: Vec<Mutex<Accumulator>> = scenarios
+        .iter()
+        .map(|scenario| Mutex::new(Accumulator::new(&compact, own_file(scenario))))
+        .collect();
+    let started = std::time::Instant::now();
+    (0..1820).into_par_iter().for_each(|pone_hand| {
+        let wanted: Vec<usize> = (0..scenarios.len())
+            .filter(|&i| {
+                let scenario = &scenarios[i];
+                if scenario.seat == 0 {
+                    scenario.own == pone_hand
+                } else {
+                    scenario.weights[pone_hand] != 0
+                }
+            })
+            .collect();
+        if wanted.is_empty() {
+            return;
+        }
+        let tree = Tree::build(menus, &inputs.hands, pone_hand);
+        for i in wanted {
+            let scenario = &scenarios[i];
+            let dealers: Vec<usize> = if scenario.seat == 0 {
+                (0..1820).filter(|&d| scenario.weights[d] != 0).collect()
+            } else {
+                vec![scenario.own]
+            };
+            let mut own_accumulator = Accumulator::new(&compact, own_file(scenario));
+            for dealer_hand in dealers {
+                let weight = if scenario.seat == 0 {
+                    scenario.weights[dealer_hand]
+                } else {
+                    scenario.weights[pone_hand]
+                };
+                let root = tree.roots[dealer_hand];
+                assert!(root != NIL, "scenario weights an impossible deal");
+                let mut pone_accumulator;
+                let mut dealer_accumulator;
+                let accumulators = if scenario.seat == 0 {
+                    dealer_accumulator = Accumulator::new(&compact, 1820 + dealer_hand);
+                    [&mut own_accumulator, &mut dealer_accumulator]
+                } else {
+                    pone_accumulator = Accumulator::new(&compact, pone_hand);
+                    [&mut pone_accumulator, &mut own_accumulator]
+                };
+                let mut walker = Walker {
+                    menus,
+                    policy: &inputs.policy,
+                    compact: &compact,
+                    tree: &tree,
+                    accumulators,
+                };
+                let weight = i128::from(weight);
+                walker.walk(root, [weight, weight], 0);
+            }
+            results[i].lock().unwrap().add(&own_accumulator);
+        }
+    });
+    eprintln!("walks took {:.0} s", started.elapsed().as_secs_f64());
+    let mut file = std::io::BufWriter::new(std::fs::File::create(out).expect("create"));
+    for (scenario, cell) in scenarios.iter().zip(results) {
+        let accumulator = cell.into_inner().unwrap();
+        let mass: u64 = scenario.weights.iter().sum();
+        let denominator = mass as f64 * (UNITS as f64).powi(6);
+        write_rows(
+            &inputs,
+            &compact,
+            own_file(scenario),
+            &accumulator,
+            denominator,
+            Some(scenario.id),
+            &mut file,
+        );
     }
     file.flush().unwrap();
     eprintln!("wrote {}", out.display());
@@ -468,6 +620,7 @@ fn reach_target(
 }
 
 fn monte_carlo(bundle: &Path, targets_path: &Path, samples: usize, seed: u64, out: &Path) {
+    assert!(samples >= 2, "a standard error needs at least two samples");
     let inputs = load(bundle);
     let targets: Vec<usize> = std::fs::read_to_string(targets_path)
         .expect("targets")
@@ -522,6 +675,10 @@ fn monte_carlo(bundle: &Path, targets_path: &Path, samples: usize, seed: u64, ou
                     squares[action] += margin * margin;
                 }
             }
+            assert!(
+                accepted == samples,
+                "target {target} reached {accepted} of {samples} deals in {attempts} attempts"
+            );
             let count = accepted as f64;
             (0..width)
                 .map(|action| {
@@ -545,6 +702,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     match args.get(1).map(String::as_str) {
         Some("exact") => exact(Path::new(&args[2]), Path::new(&args[3])),
+        Some("rows") => rows(Path::new(&args[2]), Path::new(&args[3]), Path::new(&args[4])),
         Some("mc") => monte_carlo(
             Path::new(&args[2]),
             Path::new(&args[3]),
