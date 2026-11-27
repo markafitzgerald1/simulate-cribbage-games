@@ -442,7 +442,7 @@ class TestDiscardBasedOnSimulationSeatFlip(unittest.TestCase):
 def _simulate_game_frame():
     """Return the innermost ``simulate_game`` frame on the current stack."""
     for frame_info in inspect.stack():
-        if frame_info.function == "simulate_game":
+        if frame_info.frame.f_code is simulate_cribbage_games.simulate_game.__code__:
             return frame_info.frame
     raise AssertionError("play_based_on_simulation called outside simulate_game")
 
@@ -464,7 +464,9 @@ class TestPlayCallSitesSeatFlip(unittest.TestCase):
         def recorder(*args, **kwargs):
             del kwargs
             frame = _simulate_game_frame()
-            recorded.add((frame.f_locals["hand"], args[8], args[3], args[9]))
+            acting_seat = frame.f_locals["player_to_play"]
+            self.assertEqual(args[8], acting_seat)
+            recorded.add((frame.f_locals["hand"], acting_seat, args[3], args[9]))
             return frame.f_locals["legal_play_actions"][0]
 
         saved_state = random.getstate()
