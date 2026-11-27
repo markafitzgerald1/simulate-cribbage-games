@@ -11,7 +11,7 @@ import mmap
 from pathlib import Path
 import random
 import struct
-from typing import Any, Mapping, TypeGuard, cast
+from typing import Any, Iterator, Mapping, TypeGuard, cast
 
 from artifact_pipeline.pegging import (
     DEALER,
@@ -422,6 +422,30 @@ class SixLayerPolicy:
                 return rank
             draw -= weight
         raise ValueError("CDF draw outside its declared range")
+
+    def menu_rows(
+        self, key: int
+    ) -> Iterator[tuple[int, tuple[int, ...], tuple[int, ...], bool]]:
+        """Yield one own-hand menu's stored rows in history order.
+
+        Each row is the packed history, the legal ranks, their integer counts
+        and whether the support mask attests positive opponent reach. A hand
+        whose every decision is forced has no menu and yields nothing.
+        """
+        if self._resources is None:
+            raise RuntimeError("Six-layer policy is closed")
+        if key not in self._index.menus:
+            return
+        data = self._menu(key)
+        mask = self._index.manifest["support"]["mask"]
+        for index, record in enumerate(MENU.iter_unpack(data)):
+            row = self._index.starts[key] + index
+            offset = struct.unpack_from("<I", self._buffers["offsets"], row * 4)[0]
+            weights = struct.unpack_from(
+                f"<{record[7]}H", self._buffers["probabilities"], offset * 2
+            )
+            supported = bool(self._buffers["support"][row] & mask)
+            yield record[0], record[2 : 2 + record[7]], weights, supported
 
     def _lookup(
         self, view: PolicyView
