@@ -2,8 +2,10 @@
 
 A player is a discard rule plus a pegging policy. The game follows cribbage
 counting order and stops the moment either player reaches the target: his
-heels at the cut, then each pegging point as it is scored, then Pone's hand,
-Dealer's hand and Dealer's crib. Pegging uses the published rank-only rules in
+heels at the cut, then each pegging action (a play scores all its points
+together, a pair and 31 or a play and the last card), then Pone's hand,
+Dealer's hand and Dealer's crib, each counted whole. The winner's final score
+can therefore pass the target by the points of the count that reached it. Pegging uses the published rank-only rules in
 `pegging.py` step by step, so the policies see exactly the views they see in
 table generation and measurement. Hands and cribs are scored by the legacy
 simulator's `score_hand_and_starter`, which the play and crib pipelines
@@ -121,11 +123,10 @@ def play_pegging_to_target(
     scores_before: Mapping[str, int],
     target_score: int,
 ) -> tuple[str | None, dict[str, int]]:
-    """Peg one hand, stopping as soon as a player reaches the target.
+    """Peg one hand, stopping after the first action that reaches the target.
 
-    Returns the winning role (or None) and the points each role pegged. When
-    the last card's own play reaches the target, its last-card point is not
-    counted, because the game was already over when the card was played.
+    Returns the winning role (or None) and the points each role pegged; a
+    play's points, including a last-card point, count together.
     """
     state = PeggingState(hands={role: sorted(kept_ranks[role]) for role in ROLES})
     points = {role: _empty_points() for role in ROLES}
@@ -133,25 +134,19 @@ def play_pegging_to_target(
     def pegged(role: str) -> int:
         return int(sum(points[role].values()))
 
+    def winner() -> str | None:
+        reached = [r for r in ROLES if scores_before[r] + pegged(r) >= target_score]
+        return reached[0] if reached else None
+
     finished = False
-    while not finished:
+    while not finished and winner() is None:
         view = state.view()
-        role = view.role
         if not view.legal_ranks:
             _say_go(state, points)
         else:
-            last_card_before = points[role]["last_card"]
-            selected = policies[role].select_rank(view, rng_by_role[role])
+            selected = policies[view.role].select_rank(view, rng_by_role[view.role])
             finished = _play_rank(state, selected, points)
-            if (
-                points[role]["last_card"] != last_card_before
-                and scores_before[role] + pegged(role) - 1 >= target_score
-            ):
-                points[role]["last_card"] = last_card_before
-        for scorer in ROLES:
-            if scores_before[scorer] + pegged(scorer) >= target_score:
-                return scorer, {each: pegged(each) for each in ROLES}
-    return None, {role: pegged(role) for role in ROLES}
+    return winner(), {role: pegged(role) for role in ROLES}
 
 
 def deal_hand(
@@ -226,26 +221,25 @@ def play_game(
         hand_index += 1
         if starter[0] == JACK_RANK:
             scores[seat_of[DEALER]] += HEELS_POINTS
-        if max(scores) < target_score:
-            _, pegged = play_pegging_to_target(
-                {role: [card[0] for card in splits[role][0]] for role in ROLES},
-                {role: seats[seat_of[role]].pegging_policy for role in ROLES},
-                _pegging_streams(game_seed, hand_index - 1),
-                {role: scores[seat_of[role]] for role in ROLES},
-                target_score,
-            )
-            for role in ROLES:
-                scores[seat_of[role]] += pegged[role]
-                pegging[seat_of[role]] += pegged[role]
-            # Pone's hand, then Dealer's hand, then the crib, stopping at the
-            # first count that reaches the target.
-            for role, cards, is_crib in (
-                (PONE, splits[PONE][0], False),
-                (DEALER, splits[DEALER][0], False),
-                (DEALER, splits[PONE][1] + splits[DEALER][1], True),
-            ):
-                if max(scores) >= target_score:
-                    break
-                scores[seat_of[role]] += score_cards(cards, starter, is_crib)
+        _, pegged = play_pegging_to_target(
+            {role: [card[0] for card in splits[role][0]] for role in ROLES},
+            {role: seats[seat_of[role]].pegging_policy for role in ROLES},
+            _pegging_streams(game_seed, hand_index - 1),
+            {role: scores[seat_of[role]] for role in ROLES},
+            target_score,
+        )
+        for role in ROLES:
+            scores[seat_of[role]] += pegged[role]
+            pegging[seat_of[role]] += pegged[role]
+        # Pone's hand, then Dealer's hand, then the crib, stopping at the
+        # first count that reaches the target.
+        for role, cards, is_crib in (
+            (PONE, splits[PONE][0], False),
+            (DEALER, splits[DEALER][0], False),
+            (DEALER, splits[PONE][1] + splits[DEALER][1], True),
+        ):
+            if max(scores) >= target_score:
+                break
+            scores[seat_of[role]] += score_cards(cards, starter, is_crib)
         if max(scores) >= target_score:
             return GameOutcome(scores[0], scores[1], pegging[0], pegging[1], hand_index)

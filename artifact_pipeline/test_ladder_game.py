@@ -17,6 +17,7 @@ from artifact_pipeline.ladder_game import (
     RandomPeggingPolicy,
     _pegging_streams,
     checked_split,
+    deal_hand,
     play_game,
     play_pegging_to_target,
     score_cards,
@@ -36,9 +37,31 @@ ZERO = {PONE: 0, DEALER: 0}
 class LowestRank:  # pylint: disable=too-few-public-methods
     """Play the lowest legal rank, so a test can trace every play by hand."""
 
+    def __init__(self) -> None:
+        self.calls = 0
+
     def select_rank(self, view: PolicyView, rng: random.Random) -> int:
         del rng
+        self.calls += 1
         return view.legal_ranks[0]
+
+
+class Scripted:  # pylint: disable=too-few-public-methods
+    """Play a fixed sequence of ranks."""
+
+    def __init__(self, ranks) -> None:
+        self.ranks = list(ranks)
+
+    def select_rank(self, view: PolicyView, rng: random.Random) -> int:
+        del view, rng
+        return self.ranks.pop(0)
+
+
+class NoPegging:  # pylint: disable=too-few-public-methods
+    """Fail if asked to play: the game should already be over."""
+
+    def select_rank(self, view: PolicyView, rng: random.Random) -> int:
+        raise AssertionError(f"pegging after the game ended: {view}")
 
 
 class ViewHashPolicy:  # pylint: disable=too-few-public-methods
@@ -80,11 +103,49 @@ class RecordingRandomDiscard(
         return split
 
 
-def lowest_pegging(pone, dealer, scores_before, target=121):
-    """Peg with both seats playing their lowest legal rank."""
+class Recorder:
+    """A player that logs the role and first random draw of each call."""
+
+    def __init__(self) -> None:
+        self.log: list[tuple[str, str, float]] = []
+
+    def select_discard(self, role, dealt, rng):
+        self.log.append(("discard", role, rng.random()))
+        return tuple(dealt[:4]), tuple(dealt[4:])
+
+    def select_rank(self, view, rng):
+        self.log.append(("peg", view.role, rng.random()))
+        return view.legal_ranks[0]
+
+    def by_hand(self):
+        """Return [role, discard draw, [(pegging role, draw), ...]] per hand."""
+        hands: list[list] = []
+        for kind, role, draw in self.log:
+            if kind == "discard":
+                hands.append([role, draw, []])
+            else:
+                hands[-1][2].append((role, draw))
+        return hands
+
+
+class DrawsExtra(Recorder):
+    """Plays like Recorder but consumes extra draws from its own streams."""
+
+    def select_rank(self, view, rng):
+        rng.random()
+        rng.random()
+        return super().select_rank(view, rng)
+
+
+def recorded(name: str, recorder: Recorder) -> LadderPlayer:
+    return LadderPlayer(name, recorder, recorder)
+
+
+def peg(pone, dealer, scores_before, policies=None, target=121):
+    """Peg with both seats playing their lowest legal rank by default."""
     return play_pegging_to_target(
         {PONE: pone, DEALER: dealer},
-        {PONE: LowestRank(), DEALER: LowestRank()},
+        policies or {PONE: LowestRank(), DEALER: LowestRank()},
         {PONE: random.Random(0), DEALER: random.Random(0)},
         scores_before,
         target,
@@ -140,36 +201,51 @@ class TestPeggingToTarget(unittest.TestCase):
         # 1), Pone T (10), Dealer T (20, pair 2), Pone T (30, pair royal 6),
         # Dealer go and Pone out (Pone 1), Dealer T (10, last card 1).
         hand = (4, 9, 9, 9)
-        self.assertEqual(lowest_pegging(hand, hand, ZERO), (None, {PONE: 7, DEALER: 8}))
+        self.assertEqual(peg(hand, hand, ZERO), (None, {PONE: 7, DEALER: 8}))
+        policies = {PONE: LowestRank(), DEALER: LowestRank()}
         self.assertEqual(
-            lowest_pegging(hand, hand, {PONE: 0, DEALER: 119}),
+            peg(hand, hand, {PONE: 0, DEALER: 119}, policies),
             (DEALER, {PONE: 0, DEALER: 2}),
         )
+        # Pone's lead and Dealer's pair; nobody is asked to play after it.
+        self.assertEqual((policies[PONE].calls, policies[DEALER].calls), (1, 1))
         self.assertEqual(  # the go point reaches 121
-            lowest_pegging(hand, hand, {PONE: 0, DEALER: 116}),
+            peg(hand, hand, {PONE: 0, DEALER: 116}),
             (DEALER, {PONE: 0, DEALER: 5}),
         )
         self.assertEqual(  # Pone's pair royal reaches 121 one play before Dealer
-            lowest_pegging(hand, hand, {PONE: 115, DEALER: 113}),
+            peg(hand, hand, {PONE: 115, DEALER: 113}),
             (PONE, {PONE: 6, DEALER: 7}),
         )
         self.assertEqual(  # the last-card point reaches 121
-            lowest_pegging(hand, hand, {PONE: 0, DEALER: 113}),
+            peg(hand, hand, {PONE: 0, DEALER: 113}),
             (DEALER, {PONE: 7, DEALER: 8}),
         )
 
-    def test_last_card_point_only_counts_while_the_game_is_live(self):
+    def test_a_play_scores_all_its_points_together(self):
         # A-2-3-4 each: Dealer pairs every Pone card, and the fourth pair is
-        # also the last card.
+        # also the last card, so that play scores 3.
         hand = (0, 1, 2, 3)
-        self.assertEqual(lowest_pegging(hand, hand, ZERO), (None, {PONE: 0, DEALER: 9}))
-        self.assertEqual(  # the final pair reaches 121, so no last-card point
-            lowest_pegging(hand, hand, {PONE: 0, DEALER: 113}),
-            (DEALER, {PONE: 0, DEALER: 8}),
-        )
-        self.assertEqual(  # the last-card point itself wins
-            lowest_pegging(hand, hand, {PONE: 0, DEALER: 112}),
-            (DEALER, {PONE: 0, DEALER: 9}),
+        self.assertEqual(peg(hand, hand, ZERO), (None, {PONE: 0, DEALER: 9}))
+        for before in (112, 113):
+            self.assertEqual(
+                peg(hand, hand, {PONE: 0, DEALER: before}),
+                (DEALER, {PONE: 0, DEALER: 9}),
+            )
+        # Pone K-7-2-A, Dealer K-2-A-A: K (10), K (20, pair 2), 7 (27),
+        # 2 (29), then Pone's 2 makes 31 and a pair for 4 at once.
+        for before in (117, 119):
+            scripted = {PONE: Scripted([12, 6, 1]), DEALER: Scripted([12, 1])}
+            self.assertEqual(
+                peg((12, 6, 1, 0), (12, 1, 0, 0), {PONE: before, DEALER: 0}, scripted),
+                (PONE, {PONE: 4, DEALER: 2}),
+            )
+
+    def test_calls_no_policy_when_the_game_is_already_over(self):
+        policies = {PONE: NoPegging(), DEALER: NoPegging()}
+        self.assertEqual(
+            peg((0, 1, 2, 3), (0, 1, 2, 3), {PONE: 0, DEALER: 121}, policies),
+            (DEALER, ZERO),
         )
 
     def test_rejects_an_illegal_play(self):
@@ -241,10 +317,6 @@ class TestPlayGame(unittest.TestCase):
             return play_game(fixed_player("a"), fixed_player("b"), 1, target)
 
     def test_heels_is_scored_before_pegging(self):
-        class NoPegging:  # pylint: disable=too-few-public-methods
-            def select_rank(self, view, rng):
-                raise AssertionError("the game was over before pegging")
-
         with patch(
             "artifact_pipeline.ladder_game.deal_hand",
             return_value=(SIX_LOW, SIX_HIGH, (JACK_RANK, 3)),
@@ -266,8 +338,8 @@ class TestPlayGame(unittest.TestCase):
         starter = (4, 3)
         pone_kept, dealer_kept = SIX_LOW[:4], SIX_HIGH[:4]
         crib = SIX_LOW[4:] + SIX_HIGH[4:]
-        _, pegged = lowest_pegging(
-            [c[0] for c in pone_kept], [c[0] for c in dealer_kept], ZERO, 1000
+        _, pegged = peg(
+            [c[0] for c in pone_kept], [c[0] for c in dealer_kept], ZERO, target=1000
         )
         pone_hand = score_cards(pone_kept, starter, False)
         dealer_hand = score_cards(dealer_kept, starter, False)
@@ -300,7 +372,7 @@ class TestPlayGame(unittest.TestCase):
         strong = ((4, 0), (4, 1), (4, 2), (10, 3), (12, 0), (12, 1))
         quiet = ((0, 0), (2, 1), (6, 2), (8, 3), (11, 0), (11, 1))
         starter = (4, 3)
-        _, pegged = lowest_pegging([4, 4, 4, 10], [0, 2, 6, 8], ZERO, 1000)
+        _, pegged = peg([4, 4, 4, 10], [0, 2, 6, 8], ZERO, target=1000)
         first_pone = pegged[PONE] + score_cards(strong[:4], starter, False)
         first_dealer = (
             pegged[DEALER]
@@ -345,6 +417,37 @@ class TestPlayGame(unittest.TestCase):
         hands = [dealt for _role, dealt, _split in forward_calls]
         self.assertEqual(len(set(hands)), len(hands))
         self.assertNotEqual(play_game(players[0], players[1], 6), forward)
+
+    def test_each_player_gets_its_own_role_and_that_seat_streams(self):
+        first, second = Recorder(), Recorder()
+        outcome = play_game(recorded("a", first), recorded("b", second), 5)
+        hands = list(zip(first.by_hand(), second.by_hand()))
+        self.assertEqual(len(hands), outcome.hands_played)
+        self.assertGreater(outcome.hands_played, 3)
+        for index, (mine, theirs) in enumerate(hands):
+            self.assertEqual(mine[0], (PONE, DEALER)[index % 2])
+            self.assertEqual(theirs[0], (DEALER, PONE)[index % 2])
+            self.assertNotEqual(mine[1], theirs[1])
+            self.assertTrue(mine[2] and theirs[2])
+            self.assertEqual({role for role, _ in mine[2]}, {mine[0]})
+            self.assertEqual({role for role, _ in theirs[2]}, {theirs[0]})
+            self.assertNotEqual(mine[2][0][1], theirs[2][0][1])
+        # With the seats swapped, whoever holds a seat gets that seat's streams.
+        swapped_first, swapped_second = Recorder(), Recorder()
+        play_game(recorded("b", swapped_second), recorded("a", swapped_first), 5)
+        self.assertEqual(swapped_second.by_hand(), first.by_hand())
+        self.assertEqual(swapped_first.by_hand(), second.by_hand())
+        # An opponent that draws more from its streams does not shift mine.
+        alone = Recorder()
+        play_game(recorded("a", alone), recorded("b", DrawsExtra()), 5)
+        self.assertEqual(alone.by_hand(), first.by_hand())
+
+    def test_each_deal_uses_thirteen_distinct_cards(self):
+        for seed in range(300):
+            pone, dealer, starter = deal_hand(random.Random(seed))
+            self.assertEqual(len(pone), 6)
+            self.assertEqual(len(dealer), 6)
+            self.assertEqual(len({*pone, *dealer, starter}), 13)
 
     def test_each_seat_draws_its_own_pegging_stream(self):
         streams = _pegging_streams(3, 0)

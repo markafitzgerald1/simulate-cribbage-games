@@ -853,9 +853,12 @@ generation; a test compares the two engines view for view, because equal
 point totals alone would miss a changed public history that the CFR policy
 keys on. Every random stream is keyed by the game seed, the hand number and
 the seat's role, never by the player, so two games on one seed with the seats
-swapped see the same deals. Stop the moment a player reaches the target, in
-counting order (heels, each pegging point, Pone's hand, Dealer's hand, crib),
-and call no policy once the game is over. A test of a counting rule must use
+swapped see the same deals. Stop after the first count that reaches the
+target, in counting order (heels, each pegging action, Pone's hand, Dealer's
+hand, crib), and call no policy once the game is over. A play's points count
+together, a pair and 31 or a play and the last card, so a winner can finish
+past 121; splitting one play's points would make the final score depend on
+an arbitrary order within it. A test of a counting rule must use
 cards where the rule changes the result: a crib that is not a four-card flush
 cannot tell crib scoring from hand scoring.
 
