@@ -1,0 +1,18 @@
+[package]
+name = "play-values"
+version = "0.1.0"
+edition = "2024"
+license = "MPL-2.0"
+description = "Spike for #260: exact per-play values of the first two pegging plays under the pinned CFR policy."
+publish = false
+
+[dependencies]
+cfr-inputs = { path = "../../native/cfr" }
+rayon = "1.10"
+sha2 = "0.10"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+debug = false
