@@ -1,0 +1,116 @@
+EXIT_CODE: 0
+--- STDOUT ---
+Simulating 1 games of up to unlimited hands each
+
+Pone   dealt     [J♥,J♦,5♣,4♣,6♠,2♣] (sorted: [J♥,J♦,6♠,5♣,4♣,2♣])
+Dealer dealt     [K♣,5♦,A♦,9♠,Q♠,A♥] (sorted: [K♣,Q♠,9♠,5♦,A♥,A♦])
+Pone   discarded [J♦,2♣] (sorted: [J♦,2♣])
+Dealer discarded [K♣,Q♠] (sorted: [K♣,Q♠])
+Pone   kept      [J♥,5♣,4♣,6♠] (sorted: [J♥,6♠,5♣,4♣])
+Dealer kept      [5♦,A♦,9♠,A♥] (sorted: [9♠,5♦,A♥,A♦])
+Cut/starter card is: 6♥
+Enter the card to play (legal plays = [J♥,5♣,4♣,6♠]): Enter the card to play (legal plays = [J♥,5♣,4♣,6♠]): Enter the card to play (legal plays = [J♥,5♣,4♣,6♠]): Enter the card to play (legal plays = [J♥,5♣,4♣,6♠]): Enter the card to play (legal plays = [J♥,5♣,4♣,6♠]): Enter the card to play (legal plays = [J♥,5♣,4♣,6♠]): Enter the card to play (legal plays = [J♥,5♣,4♣,6♠]): Enter the card to play (legal plays = [J♥,5♣,4♣,6♠]): Enter the card to play (legal plays = [J♥,5♣,4♣,6♠]): Enter the card to play (legal plays = [J♥,5♣,4♣,6♠]): Enter the card to play (legal plays = [J♥,5♣,4♣,6♠]): Enter the card to play (legal plays = [J♥,5♣,4♣,6♠]): Enter the card to play (legal plays = [J♥,5♣,4♣,6♠]): (Static play coach would have played the same card as user did.)
+Simulating each of the 4 possible pone plays 10 times in order to select the play:
+J♥ first play:   +0.100 ±  0.196 game points;   -1.400 ±  1.496 Δ-peg +   +8.000 ±  2.613 Δ-hand +   -3.900 ±  1.321 crib =   +2.700 ±  4.028 overall
+6♠ first play:   +0.000 ±  0.000 game points;   -2.200 ±  0.392 Δ-peg +   +8.500 ±  1.783 Δ-hand +   -4.200 ±  1.198 crib =   +2.100 ±  2.215 overall
+4♣ first play:   +0.000 ±  0.000 game points;   -3.900 ±  1.384 Δ-peg +   +9.200 ±  1.395 Δ-hand +   -4.700 ±  1.014 crib =   +0.600 ±  2.229 overall
+5♣ first play:   -0.100 ±  0.196 game points;   -2.000 ±  1.490 Δ-peg +   +9.000 ±  2.167 Δ-hand +   -4.100 ±  1.503 crib =   +2.900 ±  2.943 overall
+(Dynamic play coach disagrees with static play coach and would have instead played: J♥.)
+Pone   plays 4♣ for 4 ([4♣])
+Dealer plays 9♠ for 13 ([4♣,9♠])
+Enter the card to play (legal plays = [J♥,5♣,6♠]): Enter the card to play (legal plays = [J♥,5♣,6♠]): Enter the card to play (legal plays = [J♥,5♣,6♠]): Enter the card to play (legal plays = [J♥,5♣,6♠]): (Static play coach would have played the same card as user did.)
+Simulating each of the 3 possible pone plays 10 times in order to select the play:
+6♠ first play:   +0.000 ±  0.000 game points;   -2.200 ±  0.867 Δ-peg +   +6.700 ±  1.983 Δ-hand +   -4.000 ±  0.773 crib =   +0.500 ±  1.607 overall
+5♣ first play:   -0.111 ±  0.218 game points;   -2.222 ±  0.911 Δ-peg +   +5.222 ±  2.669 Δ-hand +   -3.444 ±  1.270 crib =   -0.444 ±  2.850 overall
+J♥ first play:   -0.273 ±  0.276 game points;   -2.818 ±  1.467 Δ-peg +   +4.273 ±  2.116 Δ-hand +   -1.909 ±  0.855 crib =   -0.455 ±  2.567 overall
+(Dynamic play coach disagrees with static play coach and would have instead played: 6♠.)
+Pone   plays 5♣ for 18 ([4♣,9♠,5♣])
+Dealer plays 5♦ for 23 ([4♣,9♠,5♣,5♦])
+!Pair for 2 points for Dealer. [100-102]
+Enter the card to play (legal plays = [6♠]): Enter the card to play (legal plays = [6♠]): Enter the card to play (legal plays = [6♠]): Enter the card to play (legal plays = [6♠]): Enter the card to play (legal plays = [6♠]): Enter the card to play (legal plays = [6♠]): Enter the card to play (legal plays = [6♠]): Pone   plays 6♠ for 29 ([4♣,9♠,5♣,5♦,6♠])
+Dealer plays A♦ for 30 ([4♣,9♠,5♣,5♦,6♠,A♦])
+Press enter to say Go: Pone   says 'Go'
+Dealer plays A♥ for 31 ([4♣,9♠,5♣,5♦,6♠,A♦,Go,A♥])
+!Pair for 2 points for Dealer. [100-104]
+!31 for 1 point for Dealer. [100-105]
+Press enter to say Go: Pone   says 'Go'
+Dealer says 'Go'
+!Go for 1 point for Dealer. [100-106]
+---resetting play count to 0---
+Enter the card to play (legal plays = [J♥]): Enter the card to play (legal plays = [J♥]): Enter the card to play (legal plays = [J♥]): Enter the card to play (legal plays = [J♥]): Enter the card to play (legal plays = [J♥]): Enter the card to play (legal plays = [J♥]): Enter the card to play (legal plays = [J♥]): Enter the card to play (legal plays = [J♥]): Enter the card to play (legal plays = [J♥]): Enter the card to play (legal plays = [J♥]): Enter the card to play (legal plays = [J♥]): Enter the card to play (legal plays = [J♥]): Enter the card to play (legal plays = [J♥]): Enter the card to play (legal plays = [J♥]): Enter the card to play (legal plays = [J♥]): Enter the card to play (legal plays = [J♥]): Enter the card to play (legal plays = [J♥]): Pone   plays J♥ for 10 ([4♣,9♠,5♣,5♦,6♠,A♦,Go,A♥,Go,Go];[J♥])
+!Last card for 1 point for Pone [101-106].
+![J♥,6♠,5♣,4♣] hand + starter 6♥ scores 15 points for Pone.   [116-106]
+![9♠,5♦,A♥,A♦] hand + starter 6♥ scores  8 points for Dealer. [116-114]
+![K♣,Q♠,J♦,2♣] crib + starter 6♥ scores  3 points for Dealer. [116-117]
++++ Game score is [116-117] for first pone and first dealer after 1 hands played.
+
+Pone   dealt     [Q♦,A♠,5♣,2♥,6♠,2♠] (sorted: [Q♦,6♠,5♣,2♠,2♥,A♠])
+Dealer dealt     [J♥,3♦,J♦,T♠,8♣,4♠] (sorted: [J♥,J♦,T♠,8♣,4♠,3♦])
+Pone   discarded [5♣,6♠] (sorted: [6♠,5♣])
+Dealer discarded [3♦,8♣] (sorted: [8♣,3♦])
+Pone   kept      [Q♦,A♠,2♥,2♠] (sorted: [Q♦,2♠,2♥,A♠])
+Dealer kept      [J♥,J♦,T♠,4♠] (sorted: [J♥,J♦,T♠,4♠])
+Cut/starter card is: Q♣
+Pone   plays 2♥ for 2 ([2♥])
+Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): Enter the card to play (legal plays = [J♥,J♦,T♠,4♠]): (Static play coach would have instead played: J♥.)
+Simulating each of the 4 possible dealer plays 10 times in order to select the play:
+J♥ first play:   +0.600 ±  0.523 game points;   -0.300 ±  2.148 Δ-peg +   +1.600 ±  1.101 Δ-hand +   +0.000 ±  0.000 crib =   +1.300 ±  2.046 overall
+J♦ first play:   +0.778 ±  0.436 game points;   +0.444 ±  2.120 Δ-peg +   +1.000 ±  1.178 Δ-hand +   +0.000 ±  0.000 crib =   +1.444 ±  1.536 overall
+T♠ first play:   +0.800 ±  0.392 game points;   +1.100 ±  1.384 Δ-peg +   +1.200 ±  1.124 Δ-hand +   +0.000 ±  0.000 crib =   +2.300 ±  1.133 overall
+4♠ first play:   +0.818 ±  0.356 game points;   +0.818 ±  1.647 Δ-peg +   +1.455 ±  0.891 Δ-hand +   +0.000 ±  0.000 crib =   +2.273 ±  1.124 overall
+(Dynamic play coach agrees with static play coach and also would have instead played: J♥.)
+Dealer plays 4♠ for 6 ([2♥,4♠])
+Pone   plays Q♦ for 16 ([2♥,4♠,Q♦])
+Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): Enter the card to play (legal plays = [J♥,J♦,T♠]): (Static play coach would have instead played: J♥.)
+Simulating each of the 3 possible dealer plays 10 times in order to select the play:
+J♥ first play:   +0.778 ±  0.436 game points;   +1.000 ±  1.265 Δ-peg +   +1.222 ±  1.021 Δ-hand +   +0.000 ±  0.000 crib =   +2.222 ±  1.256 overall
+T♠ first play:   +0.800 ±  0.392 game points;   -0.600 ±  0.666 Δ-peg +   +2.100 ±  0.944 Δ-hand +   +0.000 ±  0.000 crib =   +1.500 ±  0.935 overall
+J♦ first play:   +1.000 ±  0.000 game points;   -0.727 ±  1.155 Δ-peg +   +2.545 ±  0.406 Δ-hand +   +0.000 ±  0.000 crib =   +1.818 ±  0.869 overall
+(Dynamic play coach agrees with static play coach and also would have instead played: J♥.)
+Dealer plays T♠ for 26 ([2♥,4♠,Q♦,T♠])
+Pone   plays 2♠ for 28 ([2♥,4♠,Q♦,T♠,2♠])
+Press enter to say Go: Dealer says 'Go'
+Pone   plays A♠ for 29 ([2♥,4♠,Q♦,T♠,2♠,Go,A♠])
+Press enter to say Go: Dealer says 'Go'
+Pone   says 'Go'
+!Go for 1 point for Pone. [116-118]
+---resetting play count to 0---
+Enter the card to play (legal plays = [J♥,J♦]): (Static play coach would have played the same card as user did.)
+Simulating each of the 2 possible dealer plays 10 times in order to select the play:
+J♦ first play:   +1.000 ±  0.000 game points;   -2.000 ±  0.000 Δ-peg +   +2.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   +0.000 ±  0.000 overall
+J♥ first play:   +1.000 ±  0.000 game points;   -2.000 ±  0.000 Δ-peg +   +2.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   +0.000 ±  0.000 overall
+(Dynamic play coach disagrees with static play coach and would have instead played: J♦.)
+Dealer plays J♥ for 10 ([2♥,4♠,Q♦,T♠,2♠,Go,A♠,Go,Go];[J♥])
+Pone   says 'Go'
+Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Enter the card to play (legal plays = [J♦]): Dealer plays J♦ for 20 ([2♥,4♠,Q♦,T♠,2♠,Go,A♠,Go,Go];[J♥,Go,J♦])
+!Pair for 2 points for Dealer. [118-118]
+!Last card for 1 point for Dealer [119-118].
+![Q♦,2♠,2♥,A♠] hand + starter Q♣ scores  8 points for Pone.   [119-121]
++++ Score at end of game simulation: [119-121] for first pone and first dealer.
+### Game points at end of game simulation: [[0.00000-1.00000]] for pone and dealer.
+
+Mean play statistics:
+First Pone                    Play  points:   +4.00000
+First Pone                    Hand  points:  +15.00000
+First Pone                    Crib  points:   +0.00000
+First Pone                    Total points:  +19.00000
+First Pone                    Game  points:   +0.00000
+First Pone                    Game  wins  :   +0.00000
+-----------------------------------------------------
+First Dealer                  Play  points:   +7.00000
+First Dealer                  Hand  points:  +11.00000
+First Dealer                  Crib  points:   +3.00000
+First Dealer                  Total points:  +21.00000
+First Dealer                  Game  points:   +1.00000
+First Dealer                  Game  wins  :   +1.00000
+-----------------------------------------------------
+First Pone minus First Dealer Play  points:   -3.00000
+First Pone minus First Dealer Hand  points:   +4.00000
+First Pone minus First Dealer Crib  points:   -3.00000
+First Pone minus First Dealer Total points:   -2.00000
+First Pone minus First Dealer Game  points:   -1.00000
+Simulated 1 games at <SPEED> games/s (<TIME> ns/game) in <ELAPSED> s
+Simulated 1 games with 1 worker processes at <SPEED> games/s (<TIME> ns/game) in <ELAPSED> s
+--- STDERR ---
+
+--- END ---

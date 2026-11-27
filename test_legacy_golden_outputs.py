@@ -30,6 +30,8 @@ README coverage notes (lines 522-555):
   and exercises odd-hand dynamic play/discard (covered by Cases B and C).
 - README lines 554-555 (interactive human play-against) are omitted because
   they require multi-hand scripted stdin across changing opponent choices.
+  Case E covers the interactive play coach instead: first pone's plays come
+  from a scripted card cycle, and the game reaches an odd hand near 121.
 """
 
 from __future__ import annotations
@@ -495,6 +497,33 @@ GOLDEN_CASES: dict[str, list[str]] = {
         "--first-dealer-discard-based-on-simulations",
         "10",
     ],
+    "case_e_multi_hand_coach_play": [
+        "--process-count",
+        "1",
+        "--game-count",
+        "1",
+        "--unlimited-hands-per-game",
+        "--first-pone-play-user-entered",
+        "--coach-play-simulated-hand-count",
+        "10",
+        "--initial-pone-score",
+        "100",
+        "--initial-dealer-score",
+        "100",
+    ],
+}
+
+# Scripted stdin for interactive cases. The simulator re-prompts until it reads
+# a playable card, so cycling through every card plays the first legal card in
+# this order and keeps the run deterministic.
+CARD_CYCLE_INPUT = (
+    "\n".join(
+        [rank + suit for rank in "A23456789TJQK" for suit in ("C", "D", "H", "S")] * 400
+    )
+    + "\n"
+)
+GOLDEN_STDIN: dict[str, str] = {
+    "case_e_multi_hand_coach_play": CARD_CYCLE_INPUT,
 }
 
 
@@ -531,13 +560,15 @@ def run_simulator_case(case_name: str) -> tuple[int, str]:
         code = SEED_PREFIX.format(
             script_path=repr(str(SIMULATOR_SCRIPT)), args=repr(GOLDEN_CASES[case_name])
         )
+        scripted_input = GOLDEN_STDIN.get(case_name)
         try:
             result = subprocess.run(
                 [sys.executable, "-c", code],
                 cwd=temp_dir,
                 env=env,
                 encoding="utf-8",
-                stdin=subprocess.DEVNULL,
+                input=scripted_input,
+                stdin=subprocess.DEVNULL if scripted_input is None else None,
                 capture_output=True,
                 check=False,
                 timeout=CASE_TIMEOUT_SECONDS,
@@ -683,6 +714,9 @@ class TestSeatFlipAndKnownIssueGoldenOutputs(unittest.TestCase):
     def test_case_d_single_hand_sim_discard(self) -> None:
         assert_case_matches_golden(self, "case_d_single_hand_sim_discard")
 
+    def test_case_e_multi_hand_coach_play(self) -> None:
+        assert_case_matches_golden(self, "case_e_multi_hand_coach_play")
+
 
 def regenerate_golden_outputs(case_names: list[str]) -> None:
     """Regenerate the explicitly selected cases after all runs succeed."""
@@ -734,6 +768,17 @@ class TestGoldenHarness(unittest.TestCase):
         self.assertEqual(options["stdin"], subprocess.DEVNULL)
         self.assertEqual(options["env"]["PYTHONIOENCODING"], "utf-8")
         self.assertEqual(options["env"]["PYTHONUTF8"], "1")
+
+    def test_interactive_case_receives_scripted_stdin(self) -> None:
+        with patch.object(
+            subprocess, "run", side_effect=subprocess.TimeoutExpired("python", 120)
+        ) as run:
+            with self.assertRaises(AssertionError):
+                run_simulator_case("case_e_multi_hand_coach_play")
+        options = run.call_args.kwargs
+        self.assertIsNone(options["stdin"])
+        self.assertTrue(options["input"].startswith("AC\nAD\nAH\nAS\n2C\n"))
+        self.assertEqual(options["input"].count("\n"), 52 * 400)
 
     def test_regeneration_rejects_unknown_case_before_running(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

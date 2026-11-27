@@ -3,6 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import contextlib
+import inspect
 import io
 import itertools
 import os
@@ -436,6 +437,115 @@ class TestDiscardBasedOnSimulationSeatFlip(unittest.TestCase):
     ) -> None:
         calls = self._run_two_hand_sim_discard_calls(use_coach=True)
         self.assertEqual(calls[3], (41, 63))
+
+
+def _simulate_game_frame():
+    """Return the innermost ``simulate_game`` frame on the current stack."""
+    for frame_info in inspect.stack():
+        if frame_info.function == "simulate_game":
+            return frame_info.frame
+    raise AssertionError("play_based_on_simulation called outside simulate_game")
+
+
+class TestPlayCallSitesSeatFlip(unittest.TestCase):
+    """Check what ``simulate_game``'s two play call sites pass in each hand.
+
+    ``play_based_on_simulation`` is replaced by a recorder that answers with the
+    first legal play, so the game runs normally while every call's hand, acting
+    seat, ``root_simulation_first_pone_is_next_to_play`` and
+    ``pone_is_parent_game_first_pone`` arguments are captured.
+    """
+
+    def _run_two_hand_play_calls(
+        self, use_coach: bool
+    ) -> set[tuple[int, int, bool, bool]]:
+        recorded: set[tuple[int, int, bool, bool]] = set()
+
+        def recorder(*args, **kwargs):
+            del kwargs
+            frame = _simulate_game_frame()
+            recorded.add((frame.f_locals["hand"], args[8], args[3], args[9]))
+            return frame.f_locals["legal_play_actions"][0]
+
+        saved_state = random.getstate()
+        random.seed(12345)
+        try:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                with _dummy_shelf(temp_dir) as shelf:
+                    with (
+                        patch.object(
+                            simulate_cribbage_games,
+                            "play_based_on_simulation",
+                            side_effect=recorder,
+                        ),
+                        patch.object(
+                            simulate_cribbage_games,
+                            "play_user_selected",
+                            side_effect=lambda playable, count, current: 0,
+                        ),
+                        patch("builtins.input", return_value=""),
+                        contextlib.redirect_stdout(io.StringIO()),
+                    ):
+                        if use_coach:
+                            select_play = simulate_cribbage_games.play_user_selected
+                            play_sims = None
+                        else:
+                            select_play = simulate_cribbage_games.play_first
+                            play_sims = 1
+                        simulate_cribbage_games.simulate_game(
+                            [],
+                            [],
+                            simulate_cribbage_games.DECK_LIST,
+                            [],
+                            [],
+                            None,
+                            2,
+                            simulate_cribbage_games.DEFAULT_SELECT_PONE_KEPT_CARDS,
+                            None,
+                            False,
+                            simulate_cribbage_games.DEFAULT_SELECT_DEALER_KEPT_CARDS,
+                            None,
+                            False,
+                            select_play,
+                            play_sims,
+                            select_play,
+                            play_sims,
+                            None,
+                            1 if use_coach else None,
+                            False,
+                            False,
+                            False,
+                            shelf,
+                            True,
+                            True,
+                            itertools.cycle(()),
+                            itertools.cycle(()),
+                            set(),
+                            simulate_cribbage_games.Points(50),
+                            simulate_cribbage_games.Points(30),
+                            None,
+                            [],
+                            True,
+                        )
+        finally:
+            random.setstate(saved_state)
+        return recorded
+
+    # Each tuple is (hand, acting seat, first pone to play, hand pone is first
+    # pone). Hand 0: first pone is the hand's pone (seat 0). Hand 1: first pone
+    # deals, so the hand's pone (seat 0) is first dealer.
+    EXPECTED = {
+        (0, simulate_cribbage_games.PONE, True, True),
+        (0, simulate_cribbage_games.DEALER, False, True),
+        (1, simulate_cribbage_games.PONE, False, False),
+        (1, simulate_cribbage_games.DEALER, True, False),
+    }
+
+    def test_simulation_play_call_site_passes_hand_seating(self) -> None:
+        self.assertEqual(self._run_two_hand_play_calls(use_coach=False), self.EXPECTED)
+
+    def test_coach_play_call_site_passes_hand_seating(self) -> None:
+        self.assertEqual(self._run_two_hand_play_calls(use_coach=True), self.EXPECTED)
 
 
 if __name__ == "__main__":
