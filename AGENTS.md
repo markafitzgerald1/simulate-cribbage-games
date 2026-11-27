@@ -865,6 +865,28 @@ whether the game ends. A test of a counting rule must use
 cards where the rule changes the result: a crib that is not a four-card flush
 cannot tell crib scoring from hand scoring.
 
+A match (`artifact_pipeline/ladder_match.py`) plays deal pairs: two games on
+one pair seed with the seats swapped. Its standard error is the spread of the
+per-pair results over independent pairs; the two games of a pair share cards,
+so counting them as independent games misstates it, and the summary reports
+that naive figure only for comparison. Keep the statistics as exact integer
+sums so worker partials merge exactly and the reversed match is an exact
+transform, which a test checks against actually playing B against A. Each
+match in a ladder is seeded from the ladder seed and its two players' names
+in either order (Mark's choice, 2026-11-27), so cross-table cells are
+independent: SEs combine by adding variances, and adding or removing a rung
+leaves every other cell unchanged. Common deals across cells would sharpen
+comparisons between cells but make every combined figure need a joint
+bootstrap over deals.
+Workers are forked because a CFR policy holds memory maps that cannot be
+pickled. The match reaches them through the pool initializer, never a
+parent-process global, so two matches in one process cannot pick up each
+other's players. Coverage does not follow forked workers, so a test runs the
+worker body in-process. Policies that count their own decisions are reset
+and read in each worker, because a forked child's counters never reach the
+parent; the CFR policy's off-support calls still sample its stored row, so
+report them apart from heuristic fallbacks.
+
 ## Lint Configuration Expectations
 
 Do not assume lint rules are enforced unless they are present in local
