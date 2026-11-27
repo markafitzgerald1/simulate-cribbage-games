@@ -881,6 +881,16 @@ and read in each worker, because a forked child's counters never reach the
 parent; the CFR policy's off-support calls still sample its stored row, so
 report them apart from heuristic fallbacks.
 
+`python -m artifact_pipeline.strength_ladder` runs the ladder; its rungs share
+one discard rule so that a rung's edge over the one below is pegging alone.
+[The strength-ladder page](docs/strength-ladder.md) records a reproducible
+run with its input digests and commit. Tests need no real policy bundle:
+`test_fixed_policy_fixtures.make_bundle` builds a complete small one. A summary
+test needs an asymmetric match, because a fixture whose win rate is 50% cannot
+tell a row from its reverse. The commit hook's spelling checker rejects the
+name of unittest's membership assertion, so test membership with
+`assertTrue(item in container, ...)`.
+
 ## Lint Configuration Expectations
 
 Do not assume lint rules are enforced unless they are present in local
