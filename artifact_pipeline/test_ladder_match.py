@@ -23,6 +23,7 @@ from artifact_pipeline.ladder_match import (
     MatchAccumulator,
     chunk_ranges,
     elo_difference,
+    match_seed,
     pair_seed,
     play_pairs,
     run_ladder,
@@ -303,7 +304,7 @@ class TestRunMatch(unittest.TestCase):
 
 
 class TestRunLadder(unittest.TestCase):
-    def test_adjacent_rungs_and_cross_table_on_common_deals(self):
+    def test_adjacent_rungs_and_cross_table_on_independent_deals(self):
         middle = LadderPlayer("middle", RandomDiscardRule(), LegacyHeuristicPolicy())
         players = [RANDOM, middle, HEURISTIC]
         adjacent = run_ladder(players, 12, 6)
@@ -320,16 +321,30 @@ class TestRunLadder(unittest.TestCase):
         self.assertEqual(len(cross), 6)
         for key, match in adjacent.items():
             self.assertEqual(cross[key], match)
-        # Every match is played on the same pair seeds.
+        # Each match is played on its own seed, whatever else the ladder holds.
+        for above, below in (
+            (HEURISTIC, RANDOM),
+            (HEURISTIC, middle),
+            (middle, RANDOM),
+        ):
+            seed = match_seed(6, above.name, below.name)
+            self.assertEqual(
+                cross[(above.name, below.name)], run_match(above, below, 12, seed)
+            )
         self.assertEqual(
-            cross[("heuristic", "random")], run_match(HEURISTIC, RANDOM, 12, 6)
+            run_ladder([RANDOM, middle], 12, 6),
+            {key: match for key, match in adjacent.items() if "heuristic" not in key},
         )
-        self.assertEqual(
-            cross[("heuristic", "middle")], run_match(HEURISTIC, middle, 12, 6)
-        )
-        self.assertEqual(
-            cross[("random", "heuristic")], run_match(RANDOM, HEURISTIC, 12, 6)
-        )
+
+    def test_match_seeds_differ_by_pair_but_not_by_order(self):
+        self.assertEqual(match_seed(6, "a", "b"), match_seed(6, "b", "a"))
+        seeds = {
+            match_seed(6, "a", "b"),
+            match_seed(6, "a", "c"),
+            match_seed(6, "b", "c"),
+            match_seed(7, "a", "b"),
+        }
+        self.assertEqual(len(seeds), 4)
 
     def test_ladder_counts_each_match_separately(self):
         policy = CountingHeuristic()
@@ -337,7 +352,9 @@ class TestRunLadder(unittest.TestCase):
         middle = LadderPlayer("middle", RandomDiscardRule(), LegacyHeuristicPolicy())
         results = run_ladder([RANDOM, middle, counted], 5, 2, cross_table=True)
         for opponent in (RANDOM, middle):
-            alone = run_match(counted, opponent, 5, 2)
+            alone = run_match(
+                counted, opponent, 5, match_seed(2, "counted", opponent.name)
+            )
             self.assertEqual(
                 results[("counted", opponent.name)].policy_decisions,
                 alone.policy_decisions,

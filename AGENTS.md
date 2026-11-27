@@ -871,10 +871,13 @@ per-pair results over independent pairs; the two games of a pair share cards,
 so counting them as independent games misstates it, and the summary reports
 that naive figure only for comparison. Keep the statistics as exact integer
 sums so worker partials merge exactly and the reversed match is an exact
-transform, which a test checks against actually playing B against A. Every
-match in a ladder uses the same pair seeds, so cross-table cells share deals
-and are correlated: each cell's SE holds for that cell alone, and adding Elo
-gaps along the ladder in quadrature misstates the combined uncertainty.
+transform, which a test checks against actually playing B against A. Each
+match in a ladder is seeded from the ladder seed and its two players' names
+in either order (Mark's choice, 2026-11-27), so cross-table cells are
+independent: SEs combine by adding variances, and adding or removing a rung
+leaves every other cell unchanged. Common deals across cells would sharpen
+comparisons between cells but make every combined figure need a joint
+bootstrap over deals.
 Workers are forked because a CFR policy holds memory maps that cannot be
 pickled. The match reaches them through the pool initializer, never a
 parent-process global, so two matches in one process cannot pick up each

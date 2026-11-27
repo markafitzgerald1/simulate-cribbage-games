@@ -6,10 +6,9 @@ both games reach. Pairs are independent, so the standard error comes from the
 spread of the per-pair results: treating the two games of a pair as
 independent would misstate it, because they share the cards.
 
-Every match in a ladder uses the same pair seeds, so cells of the cross table
-are measured on common deals. Each cell's standard error is valid for that
-cell alone: the cells are correlated, so their SEs must not be combined, for
-example by adding Elo gaps along the ladder in quadrature.
+Each match in a ladder draws its own pair seeds from the two players' names,
+so cells of the cross table are independent samples: their standard errors
+combine by adding variances, for example along the ladder.
 """
 
 from __future__ import annotations
@@ -214,6 +213,11 @@ class MatchAccumulator:
         }
 
 
+def match_seed(seed: int, name: str, other_name: str) -> int:
+    """Return one match's seed, the same whichever player is named first."""
+    return _stable_seed(seed, "ladder-match", *sorted((name, other_name)))
+
+
 def pair_seed(seed: int, pair_index: int) -> int:
     """Return the game seed both games of one deal pair are played on."""
     return _stable_seed(seed, "ladder-pair", pair_index)
@@ -334,8 +338,10 @@ def run_ladder(  # pylint: disable=too-many-arguments
     """Play each rung against the one below it, or every pair of rungs.
 
     Players are ordered from the bottom rung up. The result holds both
-    orientations of every match played, keyed (player, opponent). All
-    matches share pair seeds, so their results are correlated.
+    orientations of every match played, keyed (player, opponent). Each
+    match is seeded from the ladder seed and its two players' names, in
+    either order, so matches are independent of each other and of which
+    other rungs the ladder holds.
     """
     names = [player.name for player in players]
     if len(players) < 2 or len(set(names)) != len(names):
@@ -344,7 +350,12 @@ def run_ladder(  # pylint: disable=too-many-arguments
     for low, below in enumerate(players):
         for above in players[low + 1 :] if cross_table else players[low + 1 : low + 2]:
             match = run_match(
-                above, below, pairs, seed, workers=workers, target_score=target_score
+                above,
+                below,
+                pairs,
+                match_seed(seed, above.name, below.name),
+                workers=workers,
+                target_score=target_score,
             )
             results[(above.name, below.name)] = match
             results[(below.name, above.name)] = match.inverted()
