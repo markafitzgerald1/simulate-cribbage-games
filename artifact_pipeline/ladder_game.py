@@ -93,14 +93,14 @@ class RandomPeggingPolicy:  # pylint: disable=too-few-public-methods
 
 def checked_split(role: str, dealt: Sequence[PhysicalCard], split: Split) -> Split:
     """Reject a discard that is not four kept and two discarded dealt cards."""
-    kept, discarded = split
+    kept, discarded = tuple(split[0]), tuple(split[1])
     if (
         len(kept) != 4
         or len(discarded) != 2
         or sorted((*kept, *discarded)) != sorted(dealt)
     ):
         raise ValueError(f"Invalid {role} discard {split} from {tuple(dealt)}")
-    return split
+    return kept, discarded
 
 
 def score_cards(
@@ -211,6 +211,8 @@ def play_game(
     target_score: int = TARGET_SCORE,
 ) -> GameOutcome:
     """Play one game to target_score; the deal alternates every hand."""
+    if target_score < 1:
+        raise ValueError("The target score must be positive")
     seats = (first_pone, first_dealer)
     scores = [0, 0]
     pegging = [0, 0]

@@ -213,6 +213,12 @@ class TestPeggingToTarget(unittest.TestCase):
             peg(hand, hand, {PONE: 0, DEALER: 116}),
             (DEALER, {PONE: 0, DEALER: 5}),
         )
+        policies = {PONE: LowestRank(), DEALER: LowestRank()}
+        self.assertEqual(  # Pone's go point wins before Dealer's last card
+            peg(hand, hand, {PONE: 114, DEALER: 113}, policies),
+            (PONE, {PONE: 7, DEALER: 7}),
+        )
+        self.assertEqual((policies[PONE].calls, policies[DEALER].calls), (4, 3))
         self.assertEqual(  # Pone's pair royal reaches 121 one play before Dealer
             peg(hand, hand, {PONE: 115, DEALER: 113}),
             (PONE, {PONE: 6, DEALER: 7}),
@@ -293,6 +299,8 @@ class TestRandomRules(unittest.TestCase):
         dealt = PHYSICAL_DECK[:6]
         good = (dealt[:4], dealt[4:])
         self.assertEqual(checked_split(PONE, dealt, good), good)
+        as_lists = (list(dealt[:4]), list(dealt[4:]))
+        self.assertEqual(checked_split(PONE, dealt, as_lists), good)
         for bad in (
             (dealt[:3], dealt[3:]),
             (dealt[:4], (dealt[4], PHYSICAL_DECK[40])),
@@ -432,6 +440,18 @@ class TestPlayGame(unittest.TestCase):
             self.assertEqual({role for role, _ in mine[2]}, {mine[0]})
             self.assertEqual({role for role, _ in theirs[2]}, {theirs[0]})
             self.assertNotEqual(mine[2][0][1], theirs[2][0][1])
+        # Each hand draws fresh streams, and so does another game seed.
+        for player in (first, second):
+            discard_draws = [hand[1] for hand in player.by_hand()]
+            pegging_draws = [hand[2][0][1] for hand in player.by_hand()]
+            self.assertEqual(len(set(discard_draws)), len(hands))
+            self.assertEqual(len(set(pegging_draws)), len(hands))
+        other_seed = Recorder()
+        play_game(recorded("a", other_seed), recorded("b", Recorder()), 6)
+        self.assertNotEqual(other_seed.by_hand()[0][1], first.by_hand()[0][1])
+        self.assertNotEqual(
+            other_seed.by_hand()[0][2][0][1], first.by_hand()[0][2][0][1]
+        )
         # With the seats swapped, whoever holds a seat gets that seat's streams.
         swapped_first, swapped_second = Recorder(), Recorder()
         play_game(recorded("b", swapped_second), recorded("a", swapped_first), 5)
@@ -458,6 +478,10 @@ class TestPlayGame(unittest.TestCase):
         self.assertNotEqual(
             _pegging_streams(3, 0)[PONE].random(), _pegging_streams(3, 1)[PONE].random()
         )
+
+    def test_rejects_a_target_below_one(self):
+        with self.assertRaisesRegex(ValueError, "must be positive"):
+            play_game(fixed_player("a"), fixed_player("b"), 1, 0)
 
     def test_full_game_is_reproducible_and_reaches_121(self):
         heuristic = LadderPlayer("h", RandomDiscardRule(), LegacyHeuristicPolicy())
