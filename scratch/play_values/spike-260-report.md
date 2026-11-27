@@ -17,7 +17,7 @@ time in all. Reviewed by Codex (GPT-6.2 Sol, extra-high effort); see
   valuation, and a separate Monte Carlo check agrees on 72 decisions,
   including 12 that only an off-policy earlier card reaches.
 - **Size:** one byte per card (loss against the best card, in hundredths of a
-  point) for the 1.45 million decisions the bot can lead a player into
+  point) for those 1.45 million decisions
   compresses to about 2.3 MB as a column on its own. In cribbage-trainer#910's per-hand
   shards the rows are already indexed; the integrated size still has to be
   measured.
@@ -47,7 +47,7 @@ time in all. Reviewed by Codex (GPT-6.2 Sol, extra-high effort); see
   `scratch/play_values/`. A session hook refused writes outside this
   session's worktree, so the report lives here rather than at
   `.claude/worktrees/spike-260-report.md`. The issue comment at the end is
-  the draft for #260, posted as written once review came back clean.
+  the draft for #260.
 
 ## Question
 
@@ -366,8 +366,8 @@ into win rate, which needs a game-score model.
 | Codex GPT-6.2 Sol, extra-high | 3c49171 | no valuation defect; 2 must-fix and 3 should-fix in the report's definitions, tie rule, Monte Carlo coverage, examples and size wording, 2 nits; all addressed in the next commit |
 | Codex GPT-6.2 Sol, extra-high | 2598d88 | `exact` and `rows` outputs byte-identical on rebuild; 3 must-fix (call the conditioning a fixed-mixture sensitivity test, define and correct the band statistic, scope the headline counts and worst case), 3 should-fix (provisional bands, degenerate Monte Carlo checks, baseline coverage), 2 nits; all addressed in the next commit, which adds the population-only model |
 | Codex GPT-6.2 Sol, extra-high | 0e3dc21 | numbers reproduced byte for byte; 2 must-fix (report link not yet pushed, scope of the headline claims), 4 should-fix (stricter `compare` validation, degenerate Monte Carlo checks, four rounded cells, population-only wording), 2 nits; all addressed in the next commit, with the new checks mutation-tested |
-| Codex GPT-6.2 Sol, extra-high | d535c9b | no valuation defect; 1 must-fix (state the conditioning denominators), 3 should-fix (whose reach defines 1.45 million, scenario triplets, NaN reach), 1 nit; all addressed in the next commit, the new guards checked against the same mutations |
-| Codex GPT-6.2 Sol, medium | the next commit | fix check; see the comment on #260 |
+| Codex GPT-6.2 Sol, extra-high | d535c9b | no valuation defect; 1 must-fix (state the conditioning denominators), 4 should-fix (whose reach defines 1.45 million, scenario triplets, NaN reach, an empty Monte Carlo sample), 1 nit; all addressed in the next commit, the new guards checked against the same mutations |
+| Codex GPT-6.2 Sol, medium | 0b74d3a | fix check: no must-fix; comment ready to post; 2 should-fix (duplicate scenario ids, one stale 1.45 million phrase) and 2 nits, fixed in the next commit |
 
 ## Code
 

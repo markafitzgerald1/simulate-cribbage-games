@@ -284,6 +284,8 @@ def read_scenarios(path):
     for start in range(0, len(data), record):
         scenario, seat, own = RECORD.unpack_from(data, start)
         weights = struct.unpack_from("<1820Q", data, start + RECORD.size)
+        if scenario in scenarios:
+            raise ValueError(f"scenario {scenario} appears twice")
         scenarios[scenario] = (seat, own, sum(weights))
     return scenarios
 
