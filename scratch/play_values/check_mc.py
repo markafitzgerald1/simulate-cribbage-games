@@ -68,6 +68,8 @@ def main():
                     continue
                 spread = (expected * (1 - expected) / attempts) ** 0.5
                 accept_z.append((accepted / attempts - expected) / spread)
+    if not seen:
+        sys.exit("no Monte Carlo targets to check")
     print(
         f"targets {len(seen)} (zero own reach {zero_own}), cards {len(card_z) + len(zero_spread)}"
     )

@@ -9,15 +9,16 @@ time in all. Reviewed by Codex (GPT-6.2 Sol, extra-high effort); see
 - **Yes, and it is cheap.** One exact pass over every deal's game tree gives,
   for every legal card at each seat's first and second play, the expected
   final pegging margin when both seats follow the policy afterwards: values
-  for all 1.45 million decisions the bot's policy can reach (the other 0.46
-  million tracked decisions it never reaches are marked unavailable), in 3
-  minutes on this laptop (2.5 GB peak). It is exact
+  for all 1.45 million decisions the opponent's pinned policy can reach,
+  counting those you reach only by playing off the policy earlier (the other
+  0.46 million tracked decisions it never reaches are marked unavailable),
+  in 3 minutes on this laptop (2.5 GB peak). It is exact
   integer arithmetic within the solved model. Codex found no defect in the
   valuation, and a separate Monte Carlo check agrees on 72 decisions,
   including 12 that only an off-policy earlier card reaches.
 - **Size:** one byte per card (loss against the best card, in hundredths of a
   point) for the 1.45 million decisions the bot can lead a player into
-  compresses to about 2.3 MB as a column on its own. In #910's per-hand
+  compresses to about 2.3 MB as a column on its own. In cribbage-trainer#910's per-hand
   shards the rows are already indexed; the integrated size still has to be
   measured.
 - **New, and it changes how values should read:** the values, like the
@@ -25,17 +26,19 @@ time in all. Reviewed by Codex (GPT-6.2 Sol, extra-high effort); see
   dealt hands per seat, I conditioned the opponent's hand on those cards in
   two ways (holding the prior's mixture fixed, or the opponent discarding by
   the pinned population alone, which also changes the opponent model). Over
-  decisions reached when both seats follow the policy, each hand counting
-  once per stage: the table's best card trails the hand-specific best by
+  decisions with a choice that are reached when both seats follow the
+  policy, each hand with a choice in a stage counting equally: the table's
+  best card trails the hand-specific best by
   0.005 points or more at 37% to 41% of Pone leads and 9% to 21% of the
   other first and second plays, and that shortfall averages 0.006 to 0.043
-  points per decision, up to 7.3 points at a single rare decision. Taking
-  each legal card in turn, a card the table says costs 0.25 or more is
+  points per decision, up to 7.3 points at a single rare decision. Splitting
+  each decision's weight equally among its legal cards, a card the table
+  says costs 0.25 or more is
   within 0.005 of the hand-specific best only 0.06% to 1.0% of the time;
   under 0.1 point the table's ranking is unreliable, and even the size of a
   large loss often moves by 0.1 point or more.
-- **Recommendation: build the data set, as a column of #910's shard export,
-  for #910's review slice, and show losses in provisional bands rather than
+- **Recommendation: build the data set, as a column of cribbage-trainer#910's
+  shard export, for that issue's review slice, and show losses in provisional bands rather than
   exact hundredths:** under 0.1 point "close call", 0.1 to 0.25 "probably
   worse", 0.25 and over "costs roughly N points in this model". It does not
   block slice 1. Hand-specific values are a separate design question for you
@@ -44,7 +47,7 @@ time in all. Reviewed by Codex (GPT-6.2 Sol, extra-high effort); see
   `scratch/play_values/`. A session hook refused writes outside this
   session's worktree, so the report lives here rather than at
   `.claude/worktrees/spike-260-report.md`. The issue comment at the end is
-  the text posted on #260.
+  the draft for #260, posted as written once review came back clean.
 
 ## Question
 
@@ -363,7 +366,8 @@ into win rate, which needs a game-score model.
 | Codex GPT-6.2 Sol, extra-high | 3c49171 | no valuation defect; 2 must-fix and 3 should-fix in the report's definitions, tie rule, Monte Carlo coverage, examples and size wording, 2 nits; all addressed in the next commit |
 | Codex GPT-6.2 Sol, extra-high | 2598d88 | `exact` and `rows` outputs byte-identical on rebuild; 3 must-fix (call the conditioning a fixed-mixture sensitivity test, define and correct the band statistic, scope the headline counts and worst case), 3 should-fix (provisional bands, degenerate Monte Carlo checks, baseline coverage), 2 nits; all addressed in the next commit, which adds the population-only model |
 | Codex GPT-6.2 Sol, extra-high | 0e3dc21 | numbers reproduced byte for byte; 2 must-fix (report link not yet pushed, scope of the headline claims), 4 should-fix (stricter `compare` validation, degenerate Monte Carlo checks, four rounded cells, population-only wording), 2 nits; all addressed in the next commit, with the new checks mutation-tested |
-| Codex GPT-6.2 Sol, extra-high | the next commit | see the comment on #260 |
+| Codex GPT-6.2 Sol, extra-high | d535c9b | no valuation defect; 1 must-fix (state the conditioning denominators), 3 should-fix (whose reach defines 1.45 million, scenario triplets, NaN reach), 1 nit; all addressed in the next commit, the new guards checked against the same mutations |
+| Codex GPT-6.2 Sol, medium | the next commit | fix check; see the comment on #260 |
 
 ## Code
 
@@ -400,10 +404,10 @@ python3 conditioning.py compare BUNDLE scenarios.bin rows.bin values.bin conditi
 
 Claude Code (Opus 5.5, medium effort), on Mark's behalf: spike result. Full report and code: [`scratch/play_values/spike-260-report.md` on branch `claude/spike-260`](https://github.com/markafitzgerald1/simulate-cribbage-games/blob/claude/spike-260/scratch/play_values/spike-260-report.md) (no PR; spike code, not for merge).
 
-**Per-card values are cheap and exact within the solved model.** One integer pass over every deal's tree, reusing `native/cfr`'s menus, trees and rules with every input digest-checked against its pin, gives the expected final pegging margin of every legal card at each seat's first and second play in about 3 minutes on a laptop. All 1.45 million decisions the bot's policy can reach get values; the other 0.46 million tracked decisions it never reaches are marked unavailable. Codex (GPT-6.2 Sol, extra-high) found no defect in the valuation over three rounds, and an independent Monte Carlo check agreed on 72 decisions, off-policy ones included, for both values and reach.
+**Per-card values are cheap and exact within the solved model.** One integer pass over every deal's tree, reusing `native/cfr`'s menus, trees and rules with every input digest-checked against its pin, gives the expected final pegging margin of every legal card at each seat's first and second play in about 3 minutes on a laptop. All 1.45 million decisions the opponent's pinned policy can reach get values, including those the player reaches only by playing off the policy earlier; the other 0.46 million tracked decisions it never reaches are marked unavailable. Codex (GPT-6.2 Sol, extra-high) found no defect in the valuation over four rounds, and an independent Monte Carlo check agreed on 72 decisions, off-policy ones included, for both values and reach.
 
 **Size:** one byte per card (loss against the best, 0.01 point) is about 2.3 MB gzip as a column on its own. In cribbage-trainer#910's per-hand shards the rows are already indexed; the integrated size still needs measuring.
 
-**Main finding:** like the policy's frequencies, the values ignore the player's own discards and the starter. On 300 dealt hands per seat I conditioned the opponent's hand on those cards under two opponent models: the prior's mixture held fixed, and discards by the pinned population alone (which also changes the opponent model). Over decisions reached when both seats follow the policy, each hand counting once per stage, the table's best card trails the hand-specific best by 0.005 points or more at 37% to 41% of Pone leads and 9% to 21% of other first and second plays; that shortfall averages 0.006 to 0.043 points per decision, up to 7.3 at a single rare decision. Taking each legal card in turn, a card the table says costs 0.25 or more is within 0.005 of the hand-specific best only 0.06% to 1.0% of the time, but below 0.1 point the ranking is unreliable.
+**Main finding:** like the policy's frequencies, the values ignore the player's own discards and the starter. On 300 dealt hands per seat I conditioned the opponent's hand on those cards under two opponent models: the prior's mixture held fixed, and discards by the pinned population alone (which also changes the opponent model). Over decisions with a choice that are reached when both seats follow the policy, each hand with a choice in a stage counting equally, the table's best card trails the hand-specific best by 0.005 points or more at 37% to 41% of Pone leads and 9% to 21% of other first and second plays; that shortfall averages 0.006 to 0.043 points per decision, up to 7.3 at a single rare decision. Splitting each decision's weight equally among its legal cards, a card the table says costs 0.25 or more is within 0.005 of the hand-specific best only 0.06% to 1.0% of the time, but below 0.1 point the ranking is unreliable.
 
 **Recommendation:** build the data set as a column of cribbage-trainer#910's shard export, for its review slice after slice 1, and display losses in provisional bands ("close call" under 0.1, "probably worse" 0.1 to 0.25, "costs roughly N points in this model" from 0.25, "2.5 points or more" when saturated) rather than exact hundredths. Whether to pursue hand-specific values, and with which opponent model, is a separate decision for Mark.

@@ -310,6 +310,17 @@ def check_coverage(bundle, scenarios, by_scenario, published):
         if row[3] > 0:
             file_index = bisect.bisect_right(starts, menu) - 1
             reached_by_file.setdefault(file_index, set()).add(menu)
+    # Each dealt hand must carry exactly one record of each variant, all
+    # for the same seat and kept hand, even when its hand has no choice.
+    hands = {}
+    for scenario, (seat, own, _) in scenarios.items():
+        hands.setdefault(scenario & SCENARIO_MASK, {})[scenario & ~SCENARIO_MASK] = (
+            seat,
+            own,
+        )
+    for key, variants in hands.items():
+        if set(variants) != set(VARIANTS.values()) or len(set(variants.values())) != 1:
+            raise ValueError(f"hand {key} lacks a full, consistent set of variants")
     checked, error = 0, 0.0
     for scenario, (seat, own, weight_total) in scenarios.items():
         expected = reached_by_file.get(seat * 1820 + own, set())
@@ -321,9 +332,8 @@ def check_coverage(bundle, scenarios, by_scenario, published):
                 )
             for menu, (_, width, reach, own_reach, values) in rows.items():
                 reference = published[menu]
-                if (
-                    abs(reach * weight_total / mass - reference[3])
-                    > 1e-12 * reference[3]
+                if not math.isclose(
+                    reach * weight_total / mass, reference[3], rel_tol=1e-12, abs_tol=0
                 ):
                     raise ValueError(f"baseline {scenario} menu {menu}: reach differs")
                 checked += 1
