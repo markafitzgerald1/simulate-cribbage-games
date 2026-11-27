@@ -3,6 +3,10 @@
 Simulate and analyze the play of hands and games of cribbage between two
 opponents.
 
+How strong is each engine? The [strength ladder](docs/strength-ladder.md)
+plays them against each other in full games to 121 and reports who wins, with
+standard errors.
+
 ## Agent Governance
 
 Repository-wide agent and developer instructions live in `AGENTS.md`, with
