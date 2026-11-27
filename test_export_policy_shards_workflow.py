@@ -74,7 +74,8 @@ class ExportPolicyShardsWorkflowTest(unittest.TestCase):
                 self.assertNotIn("continue-on-error", step)
                 self.assertNotIn("shell", step)
         self.assertNotIn("with", self.step("actions/checkout@v7"))
-        self.assertNotIn("continue-on-error", self.job)
+        for key in ("continue-on-error", "defaults"):
+            self.assertNotIn(key, self.job)
         self.assertEqual(self.workflow["defaults"], {"run": {"shell": "bash"}})
 
     def test_the_job_requires_the_approved_first_attempt_on_main(self) -> None:

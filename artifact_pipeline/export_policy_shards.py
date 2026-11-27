@@ -65,7 +65,7 @@ def export(manifest_path: Path, manifest_sha256: str, output: Path) -> str:
     shards: list[dict[str, Any]] = []
     with SixLayerPolicy(manifest_path) as policy:
         # The loader reads the file again; it must have parsed the bytes hashed.
-        if policy.manifest != json.loads(manifest_bytes):
+        if policy.manifest_sha256 != manifest_sha256:
             raise ValueError("Policy manifest changed while it was loaded")
         for key in range(len(ROLES) * len(hands)):
             rows = policy.menu_rows(key)

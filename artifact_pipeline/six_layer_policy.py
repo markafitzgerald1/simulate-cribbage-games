@@ -63,7 +63,12 @@ def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 def read_manifest(path: Path) -> dict[str, Any]:
     """Read an unambiguous JSON input manifest, never measured statistics."""
-    document = json.loads(path.read_bytes(), object_pairs_hook=_unique_object)
+    return parse_manifest(path.read_bytes())
+
+
+def parse_manifest(data: bytes) -> dict[str, Any]:
+    """Parse manifest bytes already read, so a caller can hash the same bytes."""
+    document = json.loads(data, object_pairs_hook=_unique_object)
     if not isinstance(document, dict) or document.get("schema") != SCHEMA:
         raise ValueError("Unsupported six-layer policy schema")
     for name in (
@@ -269,7 +274,9 @@ class SixLayerPolicy:
         if not _integer(cache_limit) or cache_limit < 1:
             raise ValueError("Menu cache limit must be a positive integer")
         path = Path(manifest_path)
-        manifest = read_manifest(path)
+        manifest_bytes = path.read_bytes()
+        manifest = parse_manifest(manifest_bytes)
+        self._manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
         if (
             not _integer(manifest.get("probability_denominator"))
             or manifest.get("probability_denominator") != DENOMINATOR
@@ -367,6 +374,11 @@ class SixLayerPolicy:
     def manifest(self) -> Mapping[str, Any]:
         """Return the input manifest used to bind measurement provenance."""
         return json.loads(json.dumps(self._index.manifest))
+
+    @property
+    def manifest_sha256(self) -> str:
+        """Return the SHA-256 of the exact manifest bytes this policy parsed."""
+        return self._manifest_sha256
 
     def reset_counts(self) -> None:
         """Exclude any preceding safety gate from measurement diagnostics."""

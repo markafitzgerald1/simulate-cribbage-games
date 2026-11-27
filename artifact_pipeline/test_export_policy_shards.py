@@ -54,7 +54,8 @@ class ExportTest(unittest.TestCase):
         self.root = Path(self.enterContext(temporary_directory()))
         (self.root / "bundle").mkdir()
         self.manifest = make_bundle(self.root / "bundle")
-        self.digest = hashlib.sha256(self.manifest.read_bytes()).hexdigest()
+        self.original = self.manifest.read_bytes()
+        self.digest = hashlib.sha256(self.original).hexdigest()
 
     def test_layout_is_pinned_byte_for_byte(self):
         rows = [(0, (2, 5), (1000, 0), True), (0x31, (0, 3, 9), (250, 0, 750), False)]
@@ -153,20 +154,25 @@ class ExportTest(unittest.TestCase):
             self.assertEqual(header[4:8], b"\0\0\0\0")
 
     def test_rejects_a_manifest_swapped_while_loading(self):
-        swapped = json.loads(self.manifest.read_text())
-        swapped["support"]["mask"] = 2
+        # A changed field, and the same fields in other bytes: only the exact
+        # approved bytes may be loaded, since equal-looking JSON can differ.
+        changed = json.loads(self.manifest.read_text())
+        changed["support"]["mask"] = 2
+        same = json.loads(self.manifest.read_text())
         load = SixLayerPolicy
+        for swapped in (json.dumps(changed), json.dumps(same, indent=1)):
 
-        def swap_then_load(path):
-            Path(path).write_text(json.dumps(swapped))
-            return load(path)
+            def swap_then_load(path, text=swapped):
+                Path(path).write_text(text, encoding="utf-8")
+                return load(path)
 
-        with mock.patch(
-            "artifact_pipeline.export_policy_shards.SixLayerPolicy",
-            side_effect=swap_then_load,
-        ):
-            with self.assertRaisesRegex(ValueError, "changed while it was loaded"):
-                export(self.manifest, self.digest, self.root / "out")
+            with self.subTest(swapped=swapped[:40]), mock.patch(
+                "artifact_pipeline.export_policy_shards.SixLayerPolicy",
+                side_effect=swap_then_load,
+            ):
+                self.manifest.write_bytes(self.original)
+                with self.assertRaisesRegex(ValueError, "changed while it was loaded"):
+                    export(self.manifest, self.digest, self.root / "out")
 
     def test_export_is_byte_reproducible(self):
         first = export(self.manifest, self.digest, self.root / "first")
