@@ -3,16 +3,25 @@ is conditioned on the cards the player can see (own six and the starter)?
 
 Usage:
   python conditioning.py build BUNDLE DEALS SEED SCENARIOS.bin
-  python conditioning.py compare SCENARIOS.bin ROWS.bin VALUES.bin OUT.json
+  python conditioning.py compare ROWS.bin VALUES.bin OUT.json
 
-`build` deals DEALS physical hands, and for each deal makes four scenarios:
-the Pone and the Dealer seat, each once with the prior row of its kept hand
-(the baseline the spike's values use) and once conditioned. Kept hands come
-from the pinned discard population. The conditioned weights mirror
-`artifact_pipeline/cfr_prior.py`: the same two components (uniform four-card
-hands, and six-card hands mapped through the population's keeps) with the
-same component weights as the prior row, but the opponent's cards are drawn
-from the 45 cards the player cannot see. Only card removal changes.
+`build` deals DEALS physical hands and, for each seat of each deal, writes
+three opponent distributions over the 1,820 kept hands. The player's own
+kept hand comes from the pinned discard population.
+
+- baseline: the prior row of the kept hand, exactly what the spike's values
+  use;
+- mixture: `artifact_pipeline/cfr_prior.py`'s two components (uniform
+  four-card hands, and six-card hands mapped through the population's keeps)
+  with the opponent's cards drawn from the 45 unseen cards, each component
+  keeping the share it has in the prior row. This is a card-removal
+  sensitivity test with the mixture shares held fixed, not a posterior: once
+  the six and the starter are seen, those shares are a modelling choice;
+- population: the production component alone, conditioned the same way,
+  i.e. the opponent discards by the pinned population.
+
+`compare` values each scenario's decisions with `play-values rows` output
+and measures how far the conditioned values move from the baseline.
 Standard library only.
 """
 
@@ -26,10 +35,13 @@ from itertools import combinations_with_replacement
 PONE, DEALER = 0, 1
 ROLES = {"Pone": PONE, "Dealer": DEALER}
 SCALE = 1 << 50
-BASE_OFFSET = 1 << 20
+VARIANTS = {"mixture": 0, "population": 1 << 20, "baseline": 2 << 20}
+SCENARIO_MASK = (1 << 20) - 1
 RECORD = struct.Struct("<IBxH")
 ROW = struct.Struct("<IIBBxxdd4d")
 VALUE_ROW = struct.Struct("<IBBxxdd4d")
+TIE = 0.005
+BANDS = [0.005, 0.05, 0.1, 0.25]
 
 
 def rank_hands(size):
@@ -55,6 +67,13 @@ def ways(hand_counts, available):
                 return 0
             product *= math.comb(available[rank], count)
     return product
+
+
+def integer_weights(shares):
+    # Rounded to integers with a total near 2^50; `rows` divides by the
+    # actual total, so the rounding changes no normalization.
+    norm = sum(shares)
+    return [round(SCALE * share / norm) for share in shares]
 
 
 def build(bundle, deals, seed, out):
@@ -89,37 +108,170 @@ def build(bundle, deals, seed, out):
             own_six = tuple(hands[seat])
             kept = keep[(seat, own_six)]
             own = four_index[kept]
-            opponent_role = 1 - seat
             available = [4 - c for c in counts(own_six)]
             available[starter] -= 1
+            # The starter is cut after the deal, so given it the opponent's
+            # six are uniform over the 45 cards the player cannot see.
             uniform = [ways(counts(hand), available) for hand in fours]
             production = [0] * len(fours)
             for hand, hand_counts in sixes:
                 count = ways(hand_counts, available)
                 if count:
-                    production[four_index[keep[(opponent_role, hand)]]] += count
+                    production[four_index[keep[(1 - seat, hand)]]] += count
             uniform_share = ways(counts(kept), full) / math.comb(52, 4)
             production_share = kept_mass[seat][own] / math.comb(52, 6)
             total_uniform, total_production = sum(uniform), sum(production)
-            mixed = [
+            mixture = [
                 uniform_share * u / total_uniform
                 + production_share * p / total_production
                 for u, p in zip(uniform, production)
             ]
-            norm = sum(mixed)
-            conditioned = [round(SCALE * w / norm) for w in mixed]
             if seat == PONE:
                 baseline = list(prior[own * 1820 : (own + 1) * 1820])
             else:
                 baseline = [prior[p * 1820 + own] for p in range(1820)]
             scenario = 2 * deal + seat
-            records.append((scenario, seat, own, conditioned))
-            records.append((scenario + BASE_OFFSET, seat, own, baseline))
+            records.append(
+                (scenario + VARIANTS["mixture"], seat, own, integer_weights(mixture))
+            )
+            records.append(
+                (
+                    scenario + VARIANTS["population"],
+                    seat,
+                    own,
+                    integer_weights(production),
+                )
+            )
+            records.append((scenario + VARIANTS["baseline"], seat, own, baseline))
     with open(out, "wb") as handle:
         for scenario, seat, own, weights in records:
             handle.write(RECORD.pack(scenario, seat, own))
             handle.write(struct.pack("<1820Q", *weights))
     print(f"wrote {len(records)} scenarios")
+
+
+def weighted_quantile(pairs, fraction):
+    pairs = sorted(pairs)
+    total = sum(weight for _, weight in pairs)
+    running = 0.0
+    for value, weight in pairs:
+        running += weight
+        if running >= fraction * total:
+            return value
+    return pairs[-1][0]
+
+
+def band_of(loss):
+    return next((i for i, edge in enumerate(BANDS) if loss < edge), len(BANDS))
+
+
+def compare_variant(by_scenario, offset):
+    """Statistics of one conditioned variant against the baseline.
+
+    A decision counts with weight conditioned reach times the player's own
+    policy reach, normalized per hand and stage, so each hand counts once
+    per stage; decisions that need an earlier off-policy own card get no
+    weight. Per-card statistics give each legal card of a decision an equal
+    share of the decision's weight.
+    """
+    stages = {
+        stage: {
+            "hands": 0,
+            "changed": 0.0,
+            "cost": 0.0,
+            "costs": [],
+            "decision_cost_max": 0.0,
+            "tie_broken": 0.0,
+        }
+        for stage in range(4)
+    }
+    loss_shift = {stage: [] for stage in range(4)}
+    bands = [[0.0, 0.0, 0.0, 0.0] for _ in range(len(BANDS) + 1)]
+    for scenario, conditioned in by_scenario.items():
+        if scenario & ~SCENARIO_MASK != offset:
+            continue
+        baseline = by_scenario[(scenario & SCENARIO_MASK) + VARIANTS["baseline"]]
+        totals = {stage: [0.0, 0.0, 0.0, 0.0] for stage in range(4)}
+        cards = []
+        for menu, (stage, width, reach, own_reach, values) in conditioned.items():
+            weight = reach * own_reach
+            if weight <= 0:
+                continue
+            if menu not in baseline:
+                raise ValueError(
+                    f"scenario {scenario}: menu {menu} has no baseline row"
+                )
+            base_values = baseline[menu][4]
+            base_best = max(range(width), key=lambda a: base_values[a])
+            best = max(values)
+            cost = best - values[base_best]
+            base_losses = [max(base_values) - v for v in base_values]
+            losses = [best - v for v in values]
+            stage_totals = totals[stage]
+            stage_totals[0] += weight
+            stage_totals[1] += weight * (cost >= TIE)
+            stage_totals[2] += weight * cost
+            stage_totals[3] += weight * any(
+                b < TIE and c >= 0.05 for b, c in zip(base_losses, losses)
+            )
+            stages[stage]["decision_cost_max"] = max(
+                stages[stage]["decision_cost_max"], cost
+            )
+            cards.extend(
+                (stage, weight / width, b, c) for b, c in zip(base_losses, losses)
+            )
+        for stage, (mass, changed, cost, tie_broken) in totals.items():
+            if mass <= 0:
+                continue
+            entry = stages[stage]
+            entry["hands"] += 1
+            entry["changed"] += changed / mass
+            entry["cost"] += cost / mass
+            entry["tie_broken"] += tie_broken / mass
+            entry["costs"].append(cost / mass)
+        for stage, share, base_loss, loss in cards:
+            share /= totals[stage][0]
+            loss_shift[stage].append((abs(base_loss - loss), share))
+            band = bands[band_of(base_loss)]
+            band[0] += share
+            if base_loss < TIE:
+                band[1] += share * (loss >= 0.05)
+            else:
+                band[1] += share * (loss < TIE)
+                band[2] += share * (loss == 0)
+            band[3] += share * (abs(base_loss - loss) >= 0.1)
+    for stage, entry in stages.items():
+        hands = entry["hands"]
+        costs = sorted(entry.pop("costs"))
+        for key in ("changed", "cost", "tie_broken"):
+            entry[key] /= hands
+        mean = entry["cost"]
+        entry["cost_se"] = (
+            sum((c - mean) ** 2 for c in costs) / (hands - 1) / hands
+        ) ** 0.5
+        entry["hand_cost_p95"] = costs[int(0.95 * (hands - 1))]
+        entry["hand_cost_max"] = costs[-1]
+        entry["loss_shift_p50"] = weighted_quantile(loss_shift[stage], 0.5)
+        entry["loss_shift_p90"] = weighted_quantile(loss_shift[stage], 0.9)
+        entry["loss_shift_p99"] = weighted_quantile(loss_shift[stage], 0.99)
+    band_rows = []
+    edges = [0.0] + BANDS + [math.inf]
+    for i, (mass, event, exactly_best, moved) in enumerate(bands):
+        band_rows.append(
+            {
+                "baseline_loss_from": edges[i],
+                "baseline_loss_to": edges[i + 1],
+                "event": (
+                    "loss >= 0.05 after conditioning"
+                    if i == 0
+                    else "within 0.005 of best after conditioning"
+                ),
+                "event_share": event / mass,
+                "exactly_best_share": None if i == 0 else exactly_best / mass,
+                "moved_0_1_share": moved / mass,
+            }
+        )
+    return {"stages": stages, "bands": band_rows}
 
 
 def compare(rows_path, values_path, out):
@@ -136,94 +288,30 @@ def compare(rows_path, values_path, out):
             own_reach,
             values[:width],
         )
-    # The baseline run must reproduce the spike's own values.
-    baseline_error = 0.0
-    for scenario, decisions in by_scenario.items():
-        if scenario >= BASE_OFFSET:
-            for menu, (_, width, _, _, values) in decisions.items():
-                reference = published[menu][5 : 5 + width]
-                baseline_error = max(
-                    baseline_error, max(abs(a - b) for a, b in zip(values, reference))
-                )
-    stats = {
-        stage: {
-            "scenarios": 0,
-            "changed": 0.0,
-            "cost": 0.0,
-            "loss_shift": 0.0,
-            "value_shift": 0.0,
-            "costs": [],
-            "tie_broken": 0.0,
-            "missing": 0.0,
-        }
-        for stage in range(4)
+    # Every baseline must be present and must reproduce the spike's values.
+    keys = {scenario & SCENARIO_MASK for scenario in by_scenario}
+    checked, baseline_error = 0, 0.0
+    for key in keys:
+        baseline = by_scenario.get(key + VARIANTS["baseline"])
+        if not baseline:
+            raise ValueError(f"scenario {key} has no baseline rows")
+        for menu, (_, width, _, own_reach, values) in baseline.items():
+            reference = published[menu]
+            checked += 1
+            baseline_error = max(
+                baseline_error,
+                abs(own_reach - reference[4]),
+                max(abs(a - b) for a, b in zip(values, reference[5 : 5 + width])),
+            )
+    result = {
+        "baseline_rows_checked": checked,
+        "baseline_max_abs_error": baseline_error,
+        "mixture": compare_variant(by_scenario, VARIANTS["mixture"]),
+        "population": compare_variant(by_scenario, VARIANTS["population"]),
     }
-    for scenario, conditioned in by_scenario.items():
-        if scenario >= BASE_OFFSET:
-            continue
-        baseline = by_scenario.get(scenario + BASE_OFFSET, {})
-        per_stage = {stage: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] for stage in range(4)}
-        for menu, (stage, width, reach, own_reach, values) in conditioned.items():
-            weight = reach * own_reach
-            if weight <= 0:
-                continue
-            totals = per_stage[stage]
-            totals[0] += weight
-            if menu not in baseline:
-                totals[6] += weight
-                continue
-            base_values = baseline[menu][4]
-            base_best = max(range(width), key=lambda a: base_values[a])
-            best = max(values)
-            cost = best - values[base_best]
-            base_losses = [max(base_values) - v for v in base_values]
-            losses = [best - v for v in values]
-            totals[1] += weight * (cost >= 0.005)
-            totals[2] += weight * cost
-            totals[3] += (
-                weight * sum(abs(a - b) for a, b in zip(losses, base_losses)) / width
-            )
-            totals[4] += (
-                weight * sum(abs(a - b) for a, b in zip(values, base_values)) / width
-            )
-            # A card the baseline shows as tied with the best (encoded loss
-            # 0) that conditioning makes at least 0.05 points worse.
-            totals[5] += weight * any(
-                b < 0.005 and c >= 0.05 for b, c in zip(base_losses, losses)
-            )
-        for stage, totals in per_stage.items():
-            mass = totals[0]
-            if mass <= 0:
-                continue
-            entry = stats[stage]
-            entry["scenarios"] += 1
-            entry["changed"] += totals[1] / mass
-            entry["cost"] += totals[2] / mass
-            entry["loss_shift"] += totals[3] / mass
-            entry["value_shift"] += totals[4] / mass
-            entry["tie_broken"] += totals[5] / mass
-            entry["missing"] += totals[6] / mass
-            entry["costs"].append(totals[2] / mass)
-    for entry in stats.values():
-        n = entry["scenarios"]
-        costs = sorted(entry.pop("costs"))
-        for key in (
-            "changed",
-            "cost",
-            "loss_shift",
-            "value_shift",
-            "tie_broken",
-            "missing",
-        ):
-            entry[key] /= n
-        mean = entry["cost"]
-        entry["cost_se"] = (sum((c - mean) ** 2 for c in costs) / (n - 1) / n) ** 0.5
-        entry["cost_p95"] = costs[int(0.95 * (n - 1))]
-        entry["cost_max"] = costs[-1]
-    stats["baseline_max_abs_error"] = baseline_error
     with open(out, "w") as handle:
-        json.dump(stats, handle, indent=1)
-    print(json.dumps(stats, indent=1))
+        json.dump(result, handle, indent=1)
+    print(json.dumps(result, indent=1))
 
 
 if __name__ == "__main__":

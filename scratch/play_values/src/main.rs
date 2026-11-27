@@ -711,7 +711,7 @@ fn main() {
             Path::new(&args[6]),
         ),
         _ => {
-            eprintln!("usage: play-values exact BUNDLE OUT | mc BUNDLE TARGETS SAMPLES SEED OUT");
+            eprintln!("usage: play-values exact BUNDLE OUT | rows BUNDLE SCENARIOS OUT | mc BUNDLE TARGETS SAMPLES SEED OUT");
             std::process::exit(2);
         }
     }

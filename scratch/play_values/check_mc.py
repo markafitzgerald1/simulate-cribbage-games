@@ -34,7 +34,7 @@ def main():
     dealer_mass = [sum(prior[d::1820]) for d in range(1820)]
     with open(values_path, "rb") as handle:
         exact = {row[0]: row for row in ROW.iter_unpack(handle.read())}
-    card_z, accept_z, zero_own = [], [], 0
+    card_z, accept_z, zero_spread, zero_own, endpoint_failures = [], [], [], 0, 0
     seen = set()
     for path in csv_paths:
         with open(path) as handle:
@@ -44,9 +44,10 @@ def main():
                 value = values[int(row["action"])]
                 error = float(row["mean"]) - value
                 standard_error = float(row["standard_error"])
-                # A card whose every later play is forced has no spread.
+                # No observed spread (for example every later play forced):
+                # a z-score is undefined, so record agreement separately.
                 if standard_error == 0:
-                    card_z.append(0.0 if abs(error) < 1e-9 else float("inf"))
+                    zero_spread.append(abs(error) < 1e-9)
                 else:
                     card_z.append(error / standard_error)
                 if menu in seen:
@@ -58,10 +59,20 @@ def main():
                 row_mass = pone_mass[own] if file_index < 1820 else dealer_mass[own]
                 expected = reach * mass / row_mass
                 attempts = int(row["attempts"])
-                observed = int(row["accepted"]) / attempts
+                accepted = int(row["accepted"])
+                # At an endpoint every attempt must agree; otherwise the
+                # residual is approximate, since sampling stops at a fixed
+                # number of accepted deals.
+                if expected >= 1 - 1e-12 or expected <= 1e-12:
+                    endpoint_failures += accepted != round(expected) * attempts
+                    continue
                 spread = (expected * (1 - expected) / attempts) ** 0.5
-                accept_z.append((observed - expected) / spread if spread else 0.0)
+                accept_z.append((accepted / attempts - expected) / spread)
     count = len(card_z)
+    print(
+        f"zero-spread cards: {len(zero_spread)}, disagreeing {zero_spread.count(False)}; "
+        f"endpoint acceptance failures: {endpoint_failures}"
+    )
     print(f"targets {len(seen)} (zero own reach {zero_own}), cards {count}")
     print(
         f"card z: sum of squares {sum(z * z for z in card_z):.1f}, mean {sum(card_z) / count:+.3f}, "
@@ -71,6 +82,8 @@ def main():
         f"acceptance z: max abs {max(abs(z) for z in accept_z):.2f}, "
         f"beyond 3: {sum(abs(z) > 3 for z in accept_z)}"
     )
+    if zero_spread.count(False) or endpoint_failures:
+        sys.exit("Monte Carlo disagrees with an exact value or reach")
 
 
 if __name__ == "__main__":
