@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from contextlib import redirect_stderr, redirect_stdout
+from collections import Counter
+from contextlib import ExitStack, redirect_stderr, redirect_stdout
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 import random
 import tempfile
@@ -13,17 +15,26 @@ import unittest
 from unittest.mock import patch
 
 from artifact_pipeline.generate_play_table import DiscardPolicy
-from artifact_pipeline.pegging import DEALER, PONE
 from artifact_pipeline.ladder_match import run_ladder
+from artifact_pipeline.pegging import DEALER, PONE
+from artifact_pipeline.six_layer_policy import SixLayerPolicy
 from artifact_pipeline.strength_ladder import (
     SCHEMA,
     RankDiscardRule,
     _plus_minus,
+    build_players,
     format_summary,
     main,
     parse_args,
 )
 from artifact_pipeline.test_fixed_policy_fixtures import make_bundle
+
+RANDOM_ARGS = ["--discards", "random", "--rungs", "random,heuristic"]
+
+
+def bundle_in(directory: Path) -> Path:
+    directory.mkdir()
+    return make_bundle(directory)
 
 
 def run_cli(argv):
@@ -33,8 +44,14 @@ def run_cli(argv):
     return code, out.getvalue()
 
 
+def rejected(test, argv):
+    with redirect_stderr(io.StringIO()) as err, test.assertRaises(SystemExit):
+        parse_args(argv)
+    return err.getvalue()
+
+
 class TestRankDiscardRule(unittest.TestCase):
-    def test_keeps_the_named_ranks_with_the_lowest_suits(self):
+    def test_keeps_the_named_ranks(self):
         keeps = {
             (PONE, (0, 0, 5, 7, 9, 12)): (0, 0, 5, 7),
             (DEALER, (0, 1, 2, 3, 3, 4)): (1, 2, 3, 4),
@@ -46,27 +63,70 @@ class TestRankDiscardRule(unittest.TestCase):
             (((0, 1), (0, 3), (5, 2), (7, 0)), ((9, 1), (12, 0))),
         )
         dealt = [(3, 2), (0, 0), (4, 1), (3, 0), (2, 3), (1, 1)]
+        kept, discarded = rule.select_discard(DEALER, dealt, random.Random(0))
+        self.assertEqual([card[0] for card in kept], [1, 2, 3, 4])
+        self.assertEqual(sorted(kept + discarded), sorted(dealt))
+
+    def test_the_stream_picks_which_card_of_a_kept_rank(self):
+        rule = RankDiscardRule(
+            DiscardPolicy({(DEALER, (0, 1, 2, 3, 3, 4)): (1, 2, 3, 4)})
+        )
+        dealt = [(3, 2), (0, 0), (4, 1), (3, 0), (2, 3), (1, 1)]
+        kept_three = Counter(
+            next(
+                card
+                for card in rule.select_discard(DEALER, dealt, random.Random(seed))[0]
+                if card[0] == 3
+            )
+            for seed in range(400)
+        )
+        # Either Four is kept about half the time (200 expected, sd 10).
+        self.assertEqual(set(kept_three), {(3, 0), (3, 2)})
+        self.assertTrue(
+            all(150 < count < 250 for count in kept_three.values()), kept_three
+        )
         self.assertEqual(
-            rule.select_discard(DEALER, dealt, random.Random(0)),
-            (((1, 1), (2, 3), (3, 0), (4, 1)), ((0, 0), (3, 2))),
+            rule.select_discard(DEALER, dealt, random.Random(9)),
+            rule.select_discard(DEALER, dealt, random.Random(9)),
         )
 
 
 class TestArguments(unittest.TestCase):
-    def test_rejects_bad_rungs_counts_and_a_missing_manifest(self):
+    def test_rejects_bad_rungs_counts_and_manifest_use(self):
         for argv in (
             ["--discards", "random", "--rungs", "random"],
             ["--discards", "random", "--rungs", "random,random"],
             ["--discards", "random", "--rungs", "random,expert"],
             ["--rungs", "random,heuristic"],
             ["--discards", "random", "--rungs", "random,cfr"],
-            ["--discards", "random", "--rungs", "random,heuristic", "--pairs", "0"],
-            ["--discards", "random", "--rungs", "random,heuristic", "--workers", "0"],
+            [*RANDOM_ARGS, "--policy-manifest", "policy.json"],
+            [*RANDOM_ARGS, "--pairs", "0"],
+            [*RANDOM_ARGS, "--workers", "0"],
+            [*RANDOM_ARGS, "--cache-limit", "0"],
+            [*RANDOM_ARGS, "--output", "no/such/directory/ladder.json"],
         ):
-            with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
-                parse_args(argv)
+            rejected(self, argv)
         args = parse_args(["--discards", "random", "--rungs", " heuristic , random"])
         self.assertEqual(args.rungs, ["heuristic", "random"])
+
+    def test_workers_need_the_fork_start_method(self):
+        with patch("multiprocessing.get_all_start_methods", return_value=["spawn"]):
+            self.assertTrue("fork" in rejected(self, [*RANDOM_ARGS, "--workers", "2"]))
+            self.assertEqual(parse_args([*RANDOM_ARGS, "--workers", "1"]).workers, 1)
+
+    def test_output_must_not_touch_the_bundle(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = bundle_in(root / "bundle")
+            before = manifest.read_bytes()
+            outside = root / "report.json"
+            os.link(manifest, outside)
+            base = ["--policy-manifest", str(manifest), "--rungs", "random,heuristic"]
+            for output in (manifest, root / "bundle" / "new.json", outside):
+                message = rejected(self, [*base, "--output", str(output)])
+                self.assertTrue("bundle" in message, message)
+            self.assertEqual(manifest.read_bytes(), before)
+            parse_args([*base, "--output", str(root / "fresh.json")])
 
     def test_plus_minus_shows_what_is_known(self):
         self.assertEqual(_plus_minus(None, None), "n/a")
@@ -78,34 +138,49 @@ def stat(mu, se):
     return {"n": 10, "mu": mu, "se": se}
 
 
-def match_summary(player, opponent, win, elo):
+def match_summary(player, opponent, win, outcomes, decisions):
     return {
         "player": player,
         "opponent": opponent,
         "win_rate": stat(win, 0.01),
-        "elo": elo,
+        "elo": 190.8 if win > 0.5 else -190.8,
         "elo_se": 3.0,
-        "pair_outcomes": {"both_won": 1, "split": 2, "both_lost": 3},
+        "pair_outcomes": dict(zip(("both_won", "split", "both_lost"), outcomes)),
         "point_margin": stat(4.0 if win > 0.5 else -4.0, 0.5),
-        "policy_decisions": {},
+        "policy_decisions": decisions,
     }
 
 
 class TestFormatSummary(unittest.TestCase):
-    def test_each_row_is_the_upper_rung_against_the_one_below(self):
+    def test_rows_are_higher_rungs_against_lower_ones(self):
+        counts = {
+            "forced": 4000,
+            "heuristic_equivalent": 300,
+            "missing_menu_fallback": 2,
+            "off_support": 17,
+            "trained": 5000,
+        }
         report = {
             "pairs_per_match": 10,
             "seed": 1,
             "provenance": {"discards": "random"},
-            "rungs": [{"name": "low"}, {"name": "high"}],
+            "rungs": [{"name": "low"}, {"name": "mid"}, {"name": "high"}],
             "matches": [
-                match_summary("high", "low", 0.75, 190.8),
-                match_summary("low", "high", 0.25, -190.8),
+                match_summary("mid", "low", 0.75, (6, 3, 1), {}),
+                match_summary("low", "mid", 0.25, (1, 3, 6), {}),
+                match_summary("high", "low", 0.75, (6, 3, 1), {"high": counts}),
             ],
         }
-        row = format_summary(report).splitlines()[-1]
-        self.assertTrue(row.startswith("| high vs low | 75.00 +/- 1.00 | 190.80"), row)
-        self.assertTrue("| 4.00 +/- 0.50 | n/a |" in row, row)
+        lines = format_summary(report).splitlines()
+        self.assertEqual(
+            lines[4:],
+            [
+                "| mid vs low | 75.00 +/- 1.00 | 190.80 +/- 3.00 | 6 / 3 / 1 "
+                "| 4.00 +/- 0.50 | n/a |",
+                "| high vs low | 75.00 +/- 1.00 | 190.80 +/- 3.00 | 6 / 3 / 1 "
+                "| 4.00 +/- 0.50 | 2 / 17 / 9,319 |",
+            ],
+        )
 
 
 class TestMain(unittest.TestCase):
@@ -114,27 +189,40 @@ class TestMain(unittest.TestCase):
         """Run the CLI twice on a fixture bundle, with and without workers."""
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            manifest = make_bundle(root)
-            argv = ["--policy-manifest", str(manifest), "--pairs", "6", "--cross-table"]
+            manifest = bundle_in(root / "bundle")
+            manifest_bytes = manifest.read_bytes()
+            argv = [
+                "--policy-manifest",
+                str(manifest),
+                "--policy-manifest-sha256",
+                hashlib.sha256(manifest_bytes).hexdigest(),
+                "--pairs",
+                "6",
+                "--cross-table",
+            ]
             reports = []
             for extra in (["--workers", "2"], []):
                 output = root / "ladder.json"
                 code, printed = run_cli([*argv, *extra, "--output", str(output)])
                 assert code == 0
                 reports.append(json.loads(output.read_text(encoding="utf-8")))
-            return reports, printed, manifest.read_bytes()
+            with SixLayerPolicy(manifest) as policy:
+                fingerprint = policy.behavioral_fingerprint
+            return reports, printed, manifest_bytes, fingerprint
 
     def test_bundle_ladder_cross_table_report(self):
-        (report, again), printed, manifest_bytes = self.bundle_ladder()
+        (report, again), printed, manifest_bytes, fingerprint = self.bundle_ladder()
         self.assertEqual(again, report)
         population = json.loads(manifest_bytes)["discard_population"]
         self.assertEqual(report["schema"], SCHEMA)
         self.assertEqual(
-            report["provenance"]["policy_manifest_sha256"],
-            hashlib.sha256(manifest_bytes).hexdigest(),
-        )
-        self.assertEqual(
-            report["provenance"]["discard_population_sha256"], population["sha256"]
+            report["provenance"],
+            {
+                "discards": "bundle",
+                "policy_manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
+                "policy_fingerprint": fingerprint,
+                "discard_population_sha256": population["sha256"],
+            },
         )
         self.assertEqual(
             [r["name"] for r in report["rungs"]], ["random", "heuristic", "cfr"]
@@ -143,60 +231,78 @@ class TestMain(unittest.TestCase):
         self.assertEqual(len(pairs), 6)
         for match in report["matches"]:
             self.assertEqual(match["pairs"], 6)
+            uses_cfr = "cfr" in (match["player"], match["opponent"])
             self.assertEqual(
-                bool(match["policy_decisions"]),
-                "cfr" in (match["player"], match["opponent"]),
+                list(match["policy_decisions"]), ["cfr"] if uses_cfr else []
             )
-        cfr_match = next(
-            m
-            for m in report["matches"]
-            if (m["player"], m["opponent"]) == ("cfr", "heuristic")
-        )
-        counts = cfr_match["policy_decisions"]["cfr"]
-        decisions = (
-            f"{counts['missing_menu_fallback']:,} / {counts['off_support']:,} "
-            f"/ {sum(counts.values()):,}"
-        )
+            if uses_cfr:
+                self.assertGreater(sum(match["policy_decisions"]["cfr"].values()), 0)
         lines = printed.splitlines()
         self.assertTrue(
             "6 deal pairs per match, seed 42, bundle discards" in lines[0], lines[0]
         )
-        rows = [line for line in lines if line.startswith("| heuristic vs random")]
-        self.assertEqual(len(rows), 1)
-        self.assertTrue(rows[0].endswith("| n/a |"))
-        cfr_row = next(line for line in lines if line.startswith("| cfr vs heuristic"))
-        self.assertTrue(cfr_row.endswith(f"| {decisions} |"), cfr_row)
-        win = cfr_match["win_rate"]
-        self.assertTrue(
-            f"| {100 * win['mu']:.2f} +/- {100 * win['se']:.2f} |" in cfr_row, cfr_row
+        rows = [line.split(" | ")[0] for line in lines[4:]]
+        self.assertEqual(
+            rows, ["| heuristic vs random", "| cfr vs random", "| cfr vs heuristic"]
         )
+
+    def test_every_rung_shares_the_bundle_discard_rule(self):
+        with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+            manifest = make_bundle(Path(directory))
+            args = parse_args(["--policy-manifest", str(manifest)])
+            players, _ = build_players(args, stack)
+            rules = {id(player.discard_rule) for player in players}
+            self.assertEqual(len(rules), 1)
+            self.assertIsInstance(players[0].discard_rule, RankDiscardRule)
+            self.assertIsInstance(players[2].pegging_policy, SixLayerPolicy)
+
+    def test_bundle_discards_without_the_cfr_rung_skip_the_policy(self):
+        with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+            manifest = make_bundle(Path(directory))
+            args = parse_args(
+                ["--policy-manifest", str(manifest), "--rungs", "random,heuristic"]
+            )
+            with patch(
+                "artifact_pipeline.strength_ladder.SixLayerPolicy"
+            ) as policy_class:
+                players, provenance = build_players(args, stack)
+            policy_class.assert_not_called()
+            self.assertIsInstance(players[0].discard_rule, RankDiscardRule)
+            self.assertNotIn("policy_fingerprint", provenance)
+
+    def test_refuses_unverified_or_changed_inputs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manifest = make_bundle(Path(directory))
+            base = ["--policy-manifest", str(manifest), "--pairs", "1"]
+            with self.assertRaisesRegex(ValueError, "SHA-256"):
+                main([*base, "--policy-manifest-sha256", "0" * 64])
+            replaced = json.loads(manifest.read_bytes())
+            replaced["discard_population"]["description"] = "replaced while loading"
+            with patch.object(
+                SixLayerPolicy, "manifest", replaced
+            ), self.assertRaisesRegex(ValueError, "changed while"):
+                main(base)
+            (Path(directory) / "discards.json").write_text("{}", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                main([*base, "--rungs", "random,heuristic"])
 
     def test_random_discards_need_no_bundle(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "ladder.json"
             code, printed = run_cli(
-                [
-                    "--discards",
-                    "random",
-                    "--rungs",
-                    "random,heuristic",
-                    "--pairs",
-                    "4",
-                    "--output",
-                    str(output),
-                ]
+                [*RANDOM_ARGS, "--pairs", "4", "--output", str(output)]
             )
             report = json.loads(output.read_text(encoding="utf-8"))
         self.assertEqual(code, 0)
         self.assertEqual(report["provenance"], {"discards": "random"})
-        argv = ["--discards", "random", "--rungs", "random,heuristic", "--pairs", "4"]
+        self.assertEqual(len(report["matches"]), 2)
         with patch(
             "artifact_pipeline.strength_ladder.run_ladder", wraps=run_ladder
         ) as spy:
-            self.assertEqual(run_cli([*argv, "--workers", "2"]), (0, printed))
+            self.assertEqual(
+                run_cli([*RANDOM_ARGS, "--pairs", "4", "--workers", "2"]), (0, printed)
+            )
         self.assertEqual(spy.call_args.kwargs["workers"], 2)
-        self.assertEqual(len(report["matches"]), 2)
-        self.assertTrue("| heuristic vs random |" in printed, printed)
 
 
 if __name__ == "__main__":  # pragma: no cover
