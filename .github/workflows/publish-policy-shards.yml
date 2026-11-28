@@ -113,13 +113,21 @@ jobs:
           digest="$(jq -er .artifact_sha256 "$PINS")"
           printf '%s  %s\n' "$digest" "$ARCHIVE" > release.sha256
           sha256sum --check --strict release.sha256
+          run_id="$(jq -er .run_id "$PINS")"
+          index_digest="$(jq -er .index_sha256 "$PINS")"
+          {
+            printf '%s\n\n' 'Contains shards.json and the per-hand gzip shards. Extract for vendoring.'
+            printf 'Source export run: [%s](https://github.com/%s/actions/runs/%s)\n\n' \
+              "$run_id" "$GITHUB_REPOSITORY" "$run_id"
+            printf -- "- Artifact ZIP SHA-256: \`%s\`\n- shards.json SHA-256: \`%s\`\n" "$digest" "$index_digest"
+          } > release-notes.md
       - name: Publish the rolling release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: pegging-policy-shards
           target_commitish: ${{ github.sha }}
           name: Pegging Policy Shards
-          body: Contains shards.json and the per-hand gzip shards. Extract for vendoring.
+          body_path: release-notes.md
           files: ${{ env.ARCHIVE }}
           fail_on_unmatched_files: true
           make_latest: false
