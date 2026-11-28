@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import random
+import shutil
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -319,7 +320,8 @@ class TestMain(unittest.TestCase):
 
 class TestTablePlayers(unittest.TestCase):
     def setUp(self):
-        self.root = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        self.root = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.root)
         self.crib = self.root / "crib.json"
         self.play = self.root / "play.json"
         self.crib.write_text(json.dumps(crib_json()), encoding="utf-8")
