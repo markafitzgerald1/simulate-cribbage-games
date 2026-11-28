@@ -63,7 +63,12 @@ def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 def read_manifest(path: Path) -> dict[str, Any]:
     """Read an unambiguous JSON input manifest, never measured statistics."""
-    document = json.loads(path.read_bytes(), object_pairs_hook=_unique_object)
+    return parse_manifest(path.read_bytes())
+
+
+def parse_manifest(data: bytes) -> dict[str, Any]:
+    """Parse manifest bytes already read, so a caller can hash the same bytes."""
+    document = json.loads(data, object_pairs_hook=_unique_object)
     if not isinstance(document, dict) or document.get("schema") != SCHEMA:
         raise ValueError("Unsupported six-layer policy schema")
     for name in (
@@ -269,7 +274,9 @@ class SixLayerPolicy:
         if not _integer(cache_limit) or cache_limit < 1:
             raise ValueError("Menu cache limit must be a positive integer")
         path = Path(manifest_path)
-        manifest = read_manifest(path)
+        manifest_bytes = path.read_bytes()
+        manifest = parse_manifest(manifest_bytes)
+        self._manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
         if (
             not _integer(manifest.get("probability_denominator"))
             or manifest.get("probability_denominator") != DENOMINATOR
@@ -368,6 +375,11 @@ class SixLayerPolicy:
         """Return the input manifest used to bind measurement provenance."""
         return json.loads(json.dumps(self._index.manifest))
 
+    @property
+    def manifest_sha256(self) -> str:
+        """Return the SHA-256 of the exact manifest bytes this policy parsed."""
+        return self._manifest_sha256
+
     def reset_counts(self) -> None:
         """Exclude any preceding safety gate from measurement diagnostics."""
         self._counts.clear()
@@ -423,6 +435,31 @@ class SixLayerPolicy:
             draw -= weight
         raise ValueError("CDF draw outside its declared range")
 
+    def menu_rows(
+        self, key: int
+    ) -> list[tuple[int, tuple[int, ...], tuple[int, ...], bool]]:
+        """Return one own-hand menu's stored rows in history order.
+
+        Each row is the packed history, the legal ranks, their integer counts
+        and whether the support mask attests positive opponent reach. A hand
+        whose every decision is forced has no menu and no rows. The rows are
+        copied out at once: a suspended iterator over a mapped menu would
+        keep it exported and block close() and cache eviction.
+        """
+        if self._resources is None:
+            raise RuntimeError("Six-layer policy is closed")
+        if key not in self._index.menus:
+            return []
+        records = list(MENU.iter_unpack(self._menu(key)))
+        return [
+            (
+                record[0],
+                record[2 : 2 + record[7]],
+                *self._stored_row(key, index, record[7]),
+            )
+            for index, record in enumerate(records)
+        ]
+
     def _lookup(
         self, view: PolicyView
     ) -> tuple[tuple[int, ...], tuple[int, ...], bool] | None:
@@ -446,15 +483,20 @@ class SixLayerPolicy:
         ranks = record[2 : 2 + record[7]]
         if ranks != view.legal_ranks:
             raise ValueError("Stored menu differs from the real legal ranks")
-        row = self._index.starts[key] + low
+        weights, supported = self._stored_row(key, low, record[7])
+        return ranks, weights, supported
+
+    def _stored_row(
+        self, key: int, index: int, width: int
+    ) -> tuple[tuple[int, ...], bool]:
+        """Read one menu record's counts and support flag by its global row."""
+        row = self._index.starts[key] + index
         offset = struct.unpack_from("<I", self._buffers["offsets"], row * 4)[0]
         weights = struct.unpack_from(
-            f"<{record[7]}H", self._buffers["probabilities"], offset * 2
+            f"<{width}H", self._buffers["probabilities"], offset * 2
         )
-        supported = (
-            self._buffers["support"][row] & self._index.manifest["support"]["mask"]
-        )
-        return ranks, weights, bool(supported)
+        mask = self._index.manifest["support"]["mask"]
+        return weights, bool(self._buffers["support"][row] & mask)
 
     def close(self) -> None:
         """Release all mappings, including the bounded own-hand menu cache."""

@@ -1,0 +1,85 @@
+name: Export pegging policy shards
+
+# Trainer #910: split the pinned CFR pegging policy into one small file per
+# seat and own hand, which the app can download for the hand being played.
+# Manual only, from main, once per dispatch. It publishes nothing: the job can
+# only read, and it uploads the shards and their index as one artifact for a
+# separate, later release decision. docs/policy-shards.md is the format.
+#
+# The input is the bundle run and manifest digest committed together in
+# examples/fixed-play-inputs.json, the same pins the measured table used.
+
+on:
+  workflow_dispatch:
+    inputs:
+      approval:
+        description: Enter shards to confirm the approved export
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: pegging-policy-shards
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  export:
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' &&
+      github.run_attempt == 1 && inputs.approval == 'shards'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      # Expression equality ignores case, so a branch named Main would pass
+      # the job guard; this exact comparison does not.
+      - name: Require main exactly
+        run: '[[ "$GITHUB_REF" == "refs/heads/main" ]]'
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+      - name: Install pinned dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Bootstrap the tally shelf
+        run: python -c "import shelve; shelve.open('start_of_hand_position_results_tallies_shelf', flag='c').close()"
+      - name: Read the pinned inputs
+        id: pins
+        run: |
+          python - <<'PIN'
+          import json, os
+          pins = json.load(open("examples/fixed-play-inputs.json"))
+          if not pins["input_run_id"] or not pins["policy_manifest_sha256"]:
+              raise SystemExit("examples/fixed-play-inputs.json is not pinned")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"run_id={pins['input_run_id']}\n")
+              output.write(f"manifest_sha256={pins['policy_manifest_sha256']}\n")
+          PIN
+      - name: Download the pinned fixed inputs
+        uses: actions/download-artifact@v8
+        with:
+          name: fixed-play-policy-inputs
+          path: inputs
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.pins.outputs.run_id }}
+      - name: Export the shards
+        env:
+          MANIFEST_SHA256: ${{ steps.pins.outputs.manifest_sha256 }}
+        run: |
+          python -m artifact_pipeline.export_policy_shards \
+            --policy-manifest inputs/policy.json \
+            --policy-manifest-sha256 "$MANIFEST_SHA256" \
+            --output shards | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Preserve the shards and their index
+        uses: actions/upload-artifact@v7
+        with:
+          name: pegging-policy-shards
+          if-no-files-found: error
+          retention-days: 90
+          path: shards/
