@@ -443,6 +443,16 @@ documentation, or new modules around the legacy file. If a direct edit is
 explicitly requested, keep it minimal, explain why no safer boundary exists, and
 run the full Python validation set.
 
+`test_legacy_golden_outputs.py` compares normalized output exactly for any
+legacy edit. Its golden files record current behavior, known bugs included, so a
+golden is never evidence of correctness: assert correct cribbage behavior in
+unit tests, and never write a unit test that expects a known bug. Its seeded,
+single-process cases run in a temporary working directory with an empty tally
+shelf. Regenerate only with `--regenerate <case>` for cases the edit is
+expected to change, after showing that every other case still matches. The two
+README commands with `--process-count 2` run with one process in this suite,
+which leaves multi-process paths uncovered.
+
 Near the end of this section, observe these boundaries: agents must never
 attempt to format, lint, refactor, reorganize, modernize, or mechanically clean
 up `simulate_cribbage_games.py`. Do not run auto-formatters or bulk lint fixes

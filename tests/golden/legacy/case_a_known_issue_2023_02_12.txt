@@ -1,0 +1,172 @@
+EXIT_CODE: 0
+--- STDOUT ---
+Simulating 40 games of up to 1 hands each
+
+Mean play statistics 95% confidence intervals (n = 20):
+post-initial play J♥ (n=4):   +0.00000 ±  1.13159 game points;  +0.50000 Δ-peg +  +0.00000 Δ-hand +  +0.00000 crib =   +0.50000 ±  2.82896 overall
+First Pone                    Play  points:   +1.50000 ±  1.69738
+First Pone                    Hand  points:   +0.00000 ±  0.00000
+First Pone                    Crib  points:   +0.00000 ±  0.00000
+First Pone                    Total points:   +1.50000 ±  1.69738
+First Pone                    Game  points:   +0.50000 ±  0.56579
+First Pone                    Game  wins  :   +0.50000 ±  0.56579
+-----------------------------------------------------
+First Dealer                  Play  points:   +1.00000 ±  1.13159
+First Dealer                  Hand  points:   +0.00000 ±  0.00000
+First Dealer                  Crib  points:   +0.00000 ±  0.00000
+First Dealer                  Total points:   +1.00000 ±  1.13159
+First Dealer                  Game  points:   +0.50000 ±  0.56579
+First Dealer                  Game  wins  :   +0.50000 ±  0.56579
+-----------------------------------------------------
+First Pone minus First Dealer Play  points:   +0.50000 ±  2.82896
+First Pone minus First Dealer Hand  points:   +0.00000 ±  0.00000
+First Pone minus First Dealer Crib  points:   +0.00000 ±  0.00000
+First Pone minus First Dealer Total points:   +0.50000 ±  2.82896
+First Pone minus First Dealer Game  points:   +0.00000 ±  1.13159
+post-initial play A♥ (n=3):   -0.33333 ±  1.30664 game points;  -0.33333 Δ-peg +  +0.00000 Δ-hand +  +0.00000 crib =   -0.33333 ±  3.26661 overall
+First Pone                    Play  points:   +1.00000 ±  1.95996
+First Pone                    Hand  points:   +0.00000 ±  0.00000
+First Pone                    Crib  points:   +0.00000 ±  0.00000
+First Pone                    Total points:   +1.00000 ±  1.95996
+First Pone                    Game  points:   +0.33333 ±  0.65332
+First Pone                    Game  wins  :   +0.33333 ±  0.65332
+-----------------------------------------------------
+First Dealer                  Play  points:   +1.33333 ±  1.30664
+First Dealer                  Hand  points:   +0.00000 ±  0.00000
+First Dealer                  Crib  points:   +0.00000 ±  0.00000
+First Dealer                  Total points:   +1.33333 ±  1.30664
+First Dealer                  Game  points:   +0.66667 ±  0.65332
+First Dealer                  Game  wins  :   +0.66667 ±  0.65332
+-----------------------------------------------------
+First Pone minus First Dealer Play  points:   -0.33333 ±  3.26661
+First Pone minus First Dealer Hand  points:   +0.00000 ±  0.00000
+First Pone minus First Dealer Crib  points:   +0.00000 ±  0.00000
+First Pone minus First Dealer Total points:   -0.33333 ±  3.26661
+First Pone minus First Dealer Game  points:   -0.33333 ±  1.30664
+post-initial play 5♥ (n=8):   -1.00000 ±  0.00000 game points;  -2.00000 Δ-peg +  +0.00000 Δ-hand +  +0.00000 crib =   -2.00000 ±  0.00000 overall
+First Pone                    Play  points:   +0.00000 ±  0.00000
+First Pone                    Hand  points:   +0.00000 ±  0.00000
+First Pone                    Crib  points:   +0.00000 ±  0.00000
+First Pone                    Total points:   +0.00000 ±  0.00000
+First Pone                    Game  points:   +0.00000 ±  0.00000
+First Pone                    Game  wins  :   +0.00000 ±  0.00000
+-----------------------------------------------------
+First Dealer                  Play  points:   +2.00000 ±  0.00000
+First Dealer                  Hand  points:   +0.00000 ±  0.00000
+First Dealer                  Crib  points:   +0.00000 ±  0.00000
+First Dealer                  Total points:   +2.00000 ±  0.00000
+First Dealer                  Game  points:   +1.00000 ±  0.00000
+First Dealer                  Game  wins  :   +1.00000 ±  0.00000
+-----------------------------------------------------
+First Pone minus First Dealer Play  points:   -2.00000 ±  0.00000
+First Pone minus First Dealer Hand  points:   +0.00000 ±  0.00000
+First Pone minus First Dealer Crib  points:   +0.00000 ±  0.00000
+First Pone minus First Dealer Total points:   -2.00000 ±  0.00000
+First Pone minus First Dealer Game  points:   -1.00000 ±  0.00000
+post-initial play T♠ (n=5):   -1.00000 ±  0.00000 game points;  -2.00000 Δ-peg +  +0.00000 Δ-hand +  +0.00000 crib =   -2.00000 ±  0.00000 overall
+First Pone                    Play  points:   +0.00000 ±  0.00000
+First Pone                    Hand  points:   +0.00000 ±  0.00000
+First Pone                    Crib  points:   +0.00000 ±  0.00000
+First Pone                    Total points:   +0.00000 ±  0.00000
+First Pone                    Game  points:   +0.00000 ±  0.00000
+First Pone                    Game  wins  :   +0.00000 ±  0.00000
+-----------------------------------------------------
+First Dealer                  Play  points:   +2.00000 ±  0.00000
+First Dealer                  Hand  points:   +0.00000 ±  0.00000
+First Dealer                  Crib  points:   +0.00000 ±  0.00000
+First Dealer                  Total points:   +2.00000 ±  0.00000
+First Dealer                  Game  points:   +1.00000 ±  0.00000
+First Dealer                  Game  wins  :   +1.00000 ±  0.00000
+-----------------------------------------------------
+First Pone minus First Dealer Play  points:   -2.00000 ±  0.00000
+First Pone minus First Dealer Hand  points:   +0.00000 ±  0.00000
+First Pone minus First Dealer Crib  points:   +0.00000 ±  0.00000
+First Pone minus First Dealer Total points:   -2.00000 ±  0.00000
+First Pone minus First Dealer Game  points:   -1.00000 ±  0.00000
+Simulated 20 games at <SPEED> games/s (<TIME> ns/game) in <ELAPSED> s
+Mean play statistics 95% confidence intervals (n = 40):
+post-initial play J♥ (n=8):   -0.25000 ±  0.71727 game points;  -0.12500 Δ-peg +  +0.00000 Δ-hand +  +0.00000 crib =   -0.12500 ±  1.79318 overall
+First Pone                    Play  points:   +1.12500 ±  1.07591
+First Pone                    Hand  points:   +0.00000 ±  0.00000
+First Pone                    Crib  points:   +0.00000 ±  0.00000
+First Pone                    Total points:   +1.12500 ±  1.07591
+First Pone                    Game  points:   +0.37500 ±  0.35864
+First Pone                    Game  wins  :   +0.37500 ±  0.35864
+-----------------------------------------------------
+First Dealer                  Play  points:   +1.25000 ±  0.71727
+First Dealer                  Hand  points:   +0.00000 ±  0.00000
+First Dealer                  Crib  points:   +0.00000 ±  0.00000
+First Dealer                  Total points:   +1.25000 ±  0.71727
+First Dealer                  Game  points:   +0.62500 ±  0.35864
+First Dealer                  Game  wins  :   +0.62500 ±  0.35864
+-----------------------------------------------------
+First Pone minus First Dealer Play  points:   -0.12500 ±  1.79318
+First Pone minus First Dealer Hand  points:   +0.00000 ±  0.00000
+First Pone minus First Dealer Crib  points:   +0.00000 ±  0.00000
+First Pone minus First Dealer Total points:   -0.12500 ±  1.79318
+First Pone minus First Dealer Game  points:   -0.25000 ±  0.71727
+post-initial play A♥ (n=7):   -0.42857 ±  0.72294 game points;  -0.57143 Δ-peg +  +0.00000 Δ-hand +  +0.00000 crib =   -0.57143 ±  1.80736 overall
+First Pone                    Play  points:   +0.85714 ±  1.08442
+First Pone                    Hand  points:   +0.00000 ±  0.00000
+First Pone                    Crib  points:   +0.00000 ±  0.00000
+First Pone                    Total points:   +0.85714 ±  1.08442
+First Pone                    Game  points:   +0.28571 ±  0.36147
+First Pone                    Game  wins  :   +0.28571 ±  0.36147
+-----------------------------------------------------
+First Dealer                  Play  points:   +1.42857 ±  0.72294
+First Dealer                  Hand  points:   +0.00000 ±  0.00000
+First Dealer                  Crib  points:   +0.00000 ±  0.00000
+First Dealer                  Total points:   +1.42857 ±  0.72294
+First Dealer                  Game  points:   +0.71429 ±  0.36147
+First Dealer                  Game  wins  :   +0.71429 ±  0.36147
+-----------------------------------------------------
+First Pone minus First Dealer Play  points:   -0.57143 ±  1.80736
+First Pone minus First Dealer Hand  points:   +0.00000 ±  0.00000
+First Pone minus First Dealer Crib  points:   +0.00000 ±  0.00000
+First Pone minus First Dealer Total points:   -0.57143 ±  1.80736
+First Pone minus First Dealer Game  points:   -0.42857 ±  0.72294
+post-initial play T♠ (n=10):   -1.00000 ±  0.00000 game points;  -1.80000 Δ-peg +  +0.00000 Δ-hand +  +0.00000 crib =   -1.80000 ±  0.39199 overall
+First Pone                    Play  points:   +0.20000 ±  0.39199
+First Pone                    Hand  points:   +0.00000 ±  0.00000
+First Pone                    Crib  points:   +0.00000 ±  0.00000
+First Pone                    Total points:   +0.20000 ±  0.39199
+First Pone                    Game  points:   +0.00000 ±  0.00000
+First Pone                    Game  wins  :   +0.00000 ±  0.00000
+-----------------------------------------------------
+First Dealer                  Play  points:   +2.00000 ±  0.00000
+First Dealer                  Hand  points:   +0.00000 ±  0.00000
+First Dealer                  Crib  points:   +0.00000 ±  0.00000
+First Dealer                  Total points:   +2.00000 ±  0.00000
+First Dealer                  Game  points:   +1.00000 ±  0.00000
+First Dealer                  Game  wins  :   +1.00000 ±  0.00000
+-----------------------------------------------------
+First Pone minus First Dealer Play  points:   -1.80000 ±  0.39199
+First Pone minus First Dealer Hand  points:   +0.00000 ±  0.00000
+First Pone minus First Dealer Crib  points:   +0.00000 ±  0.00000
+First Pone minus First Dealer Total points:   -1.80000 ±  0.39199
+First Pone minus First Dealer Game  points:   -1.00000 ±  0.00000
+post-initial play 5♥ (n=15):   -1.00000 ±  0.00000 game points;  -2.00000 Δ-peg +  +0.00000 Δ-hand +  +0.00000 crib =   -2.00000 ±  0.00000 overall
+First Pone                    Play  points:   +0.00000 ±  0.00000
+First Pone                    Hand  points:   +0.00000 ±  0.00000
+First Pone                    Crib  points:   +0.00000 ±  0.00000
+First Pone                    Total points:   +0.00000 ±  0.00000
+First Pone                    Game  points:   +0.00000 ±  0.00000
+First Pone                    Game  wins  :   +0.00000 ±  0.00000
+-----------------------------------------------------
+First Dealer                  Play  points:   +2.00000 ±  0.00000
+First Dealer                  Hand  points:   +0.00000 ±  0.00000
+First Dealer                  Crib  points:   +0.00000 ±  0.00000
+First Dealer                  Total points:   +2.00000 ±  0.00000
+First Dealer                  Game  points:   +1.00000 ±  0.00000
+First Dealer                  Game  wins  :   +1.00000 ±  0.00000
+-----------------------------------------------------
+First Pone minus First Dealer Play  points:   -2.00000 ±  0.00000
+First Pone minus First Dealer Hand  points:   +0.00000 ±  0.00000
+First Pone minus First Dealer Crib  points:   +0.00000 ±  0.00000
+First Pone minus First Dealer Total points:   -2.00000 ±  0.00000
+First Pone minus First Dealer Game  points:   -1.00000 ±  0.00000
+Simulated 40 games at <SPEED> games/s (<TIME> ns/game) in <ELAPSED> s
+Simulated 40 games with 1 worker processes at <SPEED> games/s (<TIME> ns/game) in <ELAPSED> s
+--- STDERR ---
+
+--- END ---
