@@ -834,3 +834,10 @@ attaches only the bytes pinned in
 [the release digests](examples/fixed-play-release.sha256), after the maintainer
 approves the `play-release` environment. See the fixed-policy
 contract for both workflows.
+
+The manual [opening-lines re-export workflow](.github/workflows/reexport-play-lines.yml)
+rebuilds v2 from the pinned v1 release with Python's standard library.
+It reports the verified [replacement digest](examples/reexport-play-lines.sha256)
+before approval in `play-release`. The write job checks that pin and the
+complete release asset set before replacing the lines file, then verifies the
+resulting asset set. See the [opening-lines contract](docs/pegging-lines.md).

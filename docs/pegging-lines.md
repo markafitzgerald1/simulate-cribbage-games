@@ -51,7 +51,9 @@ mean and its sample standard error, respectively. An example entry:
 ]
 ```
 
-V2 excludes later exchanges, traces, hidden hands, suits, board positions, per-response means/distributions, action comparisons, optimality claims, confidence thresholds, browser simulation and trainer loading/display.
+V2 excludes later exchanges, traces, hidden hands, suits, board positions,
+per-response point means and distributions, action comparisons, optimality
+claims, confidence thresholds, browser simulation and trainer loading/display.
 
 Re-exporting the pinned fixed-play release produced 885,219 minified bytes and
 270,797 gzip level-9 bytes. Its v1 file was 721,119 minified bytes and 239,250
@@ -150,10 +152,12 @@ gzip level-9 bytes (`mtime=0`). Publish the companion, means and uncertainty
 sidecar in a single rolling-release publication call.
 
 [Re-export play opening lines](../.github/workflows/reexport-play-lines.yml)
-rebuilds v2 from the pinned rolling release using `python -m
-artifact_pipeline.play_lines`. The play uncertainty sidecar binds the exact
-full table and means bytes. The manual workflow preserves the v1 asset in its
-Actions artifacts and replaces only the lines asset after approval in
-`play-release`. The existing fixed-play publication workflow's pinned v1
-bundle fails the current reference reader and requires a v2 bundle to publish
-again.
+rebuilds v2 from the pinned rolling release using `python -S -m
+artifact_pipeline.play_lines`. The exporter verifies the play sidecar by
+rebuilding it from the exact full table and means bytes. The read-only job
+checks the [v2 pin](../examples/reexport-play-lines.sha256), prints the digest
+in its log and run summary, and preserves the v1 asset in Actions artifacts.
+After approval in `play-release`, the writer checks the downloaded file
+against the checked-in pin, verifies the v1 release, replaces the lines
+asset, and checks the resulting four assets. The existing fixed-play
+publication workflow requires a v2 bundle to pass the current reference reader.

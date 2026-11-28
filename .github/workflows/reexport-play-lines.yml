@@ -26,8 +26,6 @@ jobs:
       github.run_attempt == 1 && inputs.approval == 'publish-lines'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    outputs:
-      sha256: ${{ steps.export.outputs.sha256 }}
     steps:
       - name: Require main exactly
         run: '[[ "$GITHUB_REF" == "refs/heads/main" ]]'
@@ -50,15 +48,16 @@ jobs:
         working-directory: previous
         run: sha256sum --check --strict ../examples/fixed-play-release.sha256
       - name: Export version 2 without measuring
-        id: export
         run: |
           mkdir candidate
-          python -m artifact_pipeline.play_lines \
+          python -S -m artifact_pipeline.play_lines \
             --full previous/expected_play_points.json \
             --means previous/expected_play_points.client.json \
             --sidecar previous/expected_play_points.uncertainty.json \
             --output candidate/expected_play_points.lines.json
-          sha256sum candidate/expected_play_points.lines.json | awk '{print "sha256=" $1}' >> "$GITHUB_OUTPUT"
+          (cd candidate && sha256sum --check --strict ../examples/reexport-play-lines.sha256)
+          digest="$(sha256sum candidate/expected_play_points.lines.json)"
+          printf 'Opening lines v2 SHA-256 %s\n' "${digest%% *}" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Preserve the version 1 asset
         uses: actions/upload-artifact@v7
         with:
@@ -90,17 +89,17 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: replacement-play-lines
+          path: candidate
       - name: Verify and replace only the lines asset
         env:
           GH_TOKEN: ${{ github.token }}
-          LINES_SHA256: ${{ needs.export.outputs.sha256 }}
         run: |
           manifest=examples/fixed-play-release.sha256
+          replacement=examples/reexport-play-lines.sha256
           release_api="repos/$GITHUB_REPOSITORY/releases/tags/expected-play-points"
-          candidate_sha256="$(sha256sum expected_play_points.lines.json)"
-          test "${candidate_sha256%% *}" = "$LINES_SHA256"
+          (cd candidate && sha256sum --check --strict "../$replacement")
           gh api "$release_api" | bash scripts/check_crib_release_assets.sh "$manifest"
-          gh release upload expected-play-points expected_play_points.lines.json --repo "$GITHUB_REPOSITORY" --clobber
-          awk -v digest="$LINES_SHA256" '$2 == "expected_play_points.lines.json" {$1 = digest " "} 1' \
-            "$manifest" > published.sha256
+          awk '$2 != "expected_play_points.lines.json"' "$manifest" > published.sha256
+          cat "$replacement" >> published.sha256
+          gh release upload expected-play-points candidate/expected_play_points.lines.json --repo "$GITHUB_REPOSITORY" --clobber
           gh api "$release_api" | bash scripts/check_crib_release_assets.sh published.sha256

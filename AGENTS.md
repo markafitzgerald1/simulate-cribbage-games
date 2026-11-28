@@ -855,6 +855,14 @@ would replace the CFR table. A step's own time limit fails the step and leaves
 later `failure()` steps to run, so a long step gets a limit under the job's and
 its partial work is uploaded last.
 
+`reexport-play-lines.yml` rebuilds the v2 companion from the pinned v1
+release using only the Python standard library. It rebuilds the play
+uncertainty sidecar in memory to verify the full table and means. Both jobs
+check `examples/reexport-play-lines.sha256`, and the export job prints the
+verified digest in its log and summary before approval. The writer downloads
+into a dedicated directory separate from the checked-in manifests. It checks
+the complete release before and after replacing the lines asset.
+
 ## Lint Configuration Expectations
 
 Do not assume lint rules are enforced unless they are present in local

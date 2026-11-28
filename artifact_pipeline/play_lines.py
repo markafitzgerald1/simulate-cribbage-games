@@ -12,11 +12,12 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from artifact_pipeline.export_uncertainty import (
+    build_sidecar,
     decode_sidecar,
     read_json,
     validate_measured_policy,
 )
-from artifact_pipeline.pegging import DEALER, ROLES, RunningStatistics
+from artifact_pipeline.pegging_types import DEALER, ROLES, RunningStatistics
 
 SCHEMA = "expected-play-lines.v2"
 RANKS = "A23456789TJQK"
@@ -282,11 +283,8 @@ def main() -> None:
     full_bytes = args.full.read_bytes()
     means_bytes = args.means.read_bytes()
     sidecar = decode_sidecar(args.sidecar.read_bytes(), means_bytes)
-    if (
-        sidecar["table"] != "play"
-        or sidecar["source_full_sha256"] != hashlib.sha256(full_bytes).hexdigest()
-    ):
-        raise ValueError("Play sidecar does not bind the supplied full table")
+    if sidecar != build_sidecar("play", full_bytes, means_bytes):
+        raise ValueError("Play sidecar does not bind the supplied full table and means")
 
     lines = build_lines(read_json(full_bytes), means_bytes)
     encoded = (json.dumps(lines, separators=(",", ":"), sort_keys=True) + "\n").encode()

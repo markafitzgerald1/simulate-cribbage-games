@@ -201,6 +201,12 @@ actual policy selections without additional randomness, keep unrounded
 checkpoint moments, and validate exact client-byte digest pairing before use.
 Publish this companion in the same release call as its means.
 
+For a standalone opening-lines re-export, exercise the workflow's export
+command with `python -S` on the pinned inputs. Rebuild the sidecar to verify the
+full table and means, and compare fresh exports before recording the SHA-256.
+Check that the write job verifies the checked-in pin from outside the artifact
+download directory and fails if a sibling asset changes after upload.
+
 Publication rounding must normalize signed zero without altering checkpoint
 moments. Test modes where count and rank disagree, leads observed out of order,
 and fractional checkpoint moments; integer fixtures hide these mutation gaps.
