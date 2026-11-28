@@ -15,7 +15,8 @@ assert the rules. A golden that changes because a bug was fixed is
 regenerated, and its diff is reviewed. Comparison is exact after normalizing
 timing figures in the simulator's performance lines and trailing newlines.
 
-Fixed defects: #267 (in the second, fourth and later hands, nested
+Fixed defects: #267 (in the second, fourth, sixth and every other
+even-numbered hand, where the players have swapped roles, nested
 simulation-based play, simulation-based discard and the play coach received
 scores in the game's original seat order) changed cases B, C and E when it
 was fixed; their earlier files recorded the bug.
