@@ -266,6 +266,7 @@ Python validation set before marking work ready for review:
 coverage run
 coverage xml
 coverage report
+coverage report --rcfile=.coveragerc-legacy
 coverage run -m unittest discover artifact_pipeline
 coverage run --append scripts/run_slow_analytical_tests.py
 coverage run --append -m unittest test_fixed_play_release test_check_legacy_pylint_ratchet
@@ -463,6 +464,17 @@ Inserting lines into the legacy file shifts the pylint ratchet's line-keyed
 baseline. Confirm that the message multiset (symbol, object, column) is
 unchanged, report any increase in an `(actual/limit)` count, and get the
 maintainer's approval before running `--refresh`.
+
+The default suite has two coverage floors, both ratchets: the total in
+`.coveragerc` and the legacy file's own in `.coveragerc-legacy`, which pre-push
+and the `legacy-tests` CI job report with `--rcfile`. Coverage.py holds one
+`fail_under` per configuration file, hence the second file. A pull request that
+adds legacy tests raises both floors to the measured value, rounded down.
+Coverage.py compares each floor with the run's combined line and branch
+percentage rounded to a whole number. Much legacy coverage is incidental: tests
+that play whole hands execute code they never assert. Read the floor as code
+executed, not code tested, and use per-test coverage contexts or mutation
+testing to tell them apart.
 
 Near the end of this section, observe these boundaries: agents must never
 attempt to format, lint, refactor, reorganize, modernize, or mechanically clean

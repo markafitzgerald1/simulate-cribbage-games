@@ -30,6 +30,8 @@
     "pointwise",
     "Bareiss",
     "CDPATH",
+    "coveragerc",
+    "rcfile",
     "Colvert",
     "Hessel",
     "Rasmussen",

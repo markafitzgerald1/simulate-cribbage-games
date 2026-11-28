@@ -55,6 +55,14 @@ repos:
         always_run: true
         stages: [pre-push]
 
+      - id: legacy-coverage-check
+        name: legacy-coverage-check
+        entry: coverage report --rcfile=.coveragerc-legacy
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+
       - id: pylint-artifact-pipeline
         name: pylint-artifact-pipeline
         entry: pylint --persistent=n artifact_pipeline

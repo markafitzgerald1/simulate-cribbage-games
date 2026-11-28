@@ -63,7 +63,7 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 - Run pre-commit hooks: `pre-commit run --all-files` (the Rust hooks need the
   toolchain from `native/cfr/README.md`)
 - Check for type errors: `mypy simulate_cribbage_games.py`
-- Run unit tests, generate machine parseable test coverage info (can be used in the Visual Studio Code Coverage Gutters extension, for example) and ensure that the unit test code coverage percentage has not decreased: `coverage run && coverage xml && coverage report`
+- Run unit tests, generate machine parseable test coverage info (can be used in the Visual Studio Code Coverage Gutters extension, for example) and ensure that the unit test code coverage percentage has not dropped below its floor: `coverage run && coverage xml && coverage report`. Pre-push and CI also hold `simulate_cribbage_games.py` alone to its own floor, set in `.coveragerc-legacy`: `coverage report --rcfile=.coveragerc-legacy`
 - Run exact analytical artifact-pipeline integration tests when changing
   analytical discard-policy math: `coverage run -m unittest discover
   artifact_pipeline && coverage run --append

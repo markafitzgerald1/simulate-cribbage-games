@@ -130,7 +130,10 @@ simulate_cribbage_games.py` as a pre-push similarities gate and
 `python scripts/check_legacy_pylint_ratchet.py` as a pre-push and CI ratchet
 gate that fails on any pylint message beyond the committed baseline in
 `.pylint-legacy-baseline.json` (plain `pylint` on the legacy file remains
-advisory until #37). Artifact pipeline Python code must pass both
+advisory until #37). Coverage of the legacy file has its own floor in
+pre-push and CI; a pull request that adds legacy tests raises it (see the
+Immutable External Dependency section of `AGENTS.md`). Artifact pipeline Python
+code must pass both
 `pylint --persistent=n artifact_pipeline` and `flake8 artifact_pipeline`
 locally and in CI.
 
