@@ -739,13 +739,13 @@ Dealer plays 5♠ for 15 ([T♦,5♠])
 Simulating each of the 3 possible pone plays 30 times in order to select the play:
 5♦ first play:   +0.000 ±  0.000 game points;   -2.567 ±  0.720 Δ-peg +   -1.667 ±  1.065 Δ-hand +   -2.933 ±  0.944 crib =   -7.167 ±  1.844 overall
 6♣ first play:   +0.000 ±  0.000 game points;   -4.308 ±  0.563 Δ-peg +   -1.308 ±  1.190 Δ-hand +   -2.231 ±  1.039 crib =   -7.846 ±  1.755 overall
-4♦ first play:   -0.029 ±  0.058 game points;   -4.294 ±  0.920 Δ-peg +   -2.500 ±  1.225 Δ-hand +   -1.735 ±  0.746 crib =   -8.529 ±  1.923 overall
+4♦ first play:   -0.029 ±  0.058 game points;   -4.294 ±  0.920 Δ-peg +   -2.500 ±  1.225 Δ-hand +   -1.794 ±  0.757 crib =   -8.588 ±  1.978 overall
 Pone   plays 5♦ for 20 ([T♦,5♠,5♦])
 !Pair for 2 points for Pone. [97-87]
 Simulating each of the 3 possible dealer plays 30 times in order to select the play:
 T♠ first play:   +0.000 ±  0.000 game points;   -1.241 ±  0.453 Δ-peg +   +0.828 ±  1.002 Δ-hand +   -4.828 ±  0.963 crib =   -5.241 ±  1.315 overall
 K♣ first play:   +0.000 ±  0.000 game points;   -0.533 ±  0.779 Δ-peg +   +1.833 ±  1.072 Δ-hand +   -5.933 ±  1.335 crib =   -4.633 ±  1.986 overall
-9♠ first play:   +0.032 ±  0.063 game points;   -0.258 ±  0.766 Δ-peg +   +3.000 ±  1.618 Δ-hand +   -4.484 ±  0.913 crib =   -1.742 ±  2.012 overall
+9♠ first play:   +0.000 ±  0.000 game points;   -0.258 ±  0.766 Δ-peg +   +2.742 ±  1.372 Δ-hand +   -4.806 ±  0.929 crib =   -2.323 ±  1.453 overall
 Dealer plays T♠ for 30 ([T♦,5♠,5♦,T♠])
 Pone   says 'Go'
 Dealer says 'Go'
@@ -794,7 +794,7 @@ T♠ first play:   -0.417 ±  0.201 game points;   -3.458 ±  0.809 Δ-peg +   -
 Pone   plays T♠ for 22 ([6♣,6♠,T♠])
 Simulating each of the 3 possible dealer plays 30 times in order to select the play:
 5♥ first play:   -0.220 ±  0.128 game points;   -2.659 ±  0.431 Δ-peg +   -3.683 ±  0.523 Δ-hand +   -2.780 ±  0.505 crib =   -9.122 ±  0.890 overall
-4♦ first play:   -0.082 ±  0.126 game points;   -2.061 ±  0.452 Δ-peg +   -3.510 ±  0.913 Δ-hand +   -2.592 ±  0.471 crib =   -8.163 ±  1.326 overall
+4♦ first play:   -0.184 ±  0.110 game points;   -2.061 ±  0.452 Δ-peg +   -4.061 ±  0.437 Δ-hand +   -2.796 ±  0.439 crib =   -8.918 ±  0.713 overall
 Dealer plays 5♥ for 27 ([6♣,6♠,T♠,5♥])
 Pone   says 'Go'
 Dealer plays 4♦ for 31 ([6♣,6♠,T♠,5♥,Go,4♦])

@@ -1300,7 +1300,7 @@ def simulate_game(
                         if first_pone_to_play
                         else hide_first_dealer_hands
                     ),
-                    game_score,
+                    start_of_hand_scores[-1][:2],
                     first_pone_to_play,
                     dealt_hands[player_to_play],
                     kept_hands[player_to_play],
@@ -1414,7 +1414,7 @@ def simulate_game(
                                 if first_pone_to_play
                                 else hide_first_dealer_hands
                             ),
-                            game_score,
+                            (game_score.pone_total, game_score.dealer_total),
                             first_pone_to_play,
                             dealt_hands[player_to_play],
                             kept_hands[player_to_play],
@@ -3420,7 +3420,7 @@ DEFAULT_SELECT_PLAY = play_low_lead_else_pairs_royale_else_run_else_15_else_pair
 def play_based_on_simulation(
     simulated_hand_count: int,
     hide_hand: bool,
-    current_game_score: GameScore,
+    replay_start_scores: Tuple[Points, Points],
     root_simulation_first_pone_is_next_to_play: bool,
     player_to_play_dealt_hand: List[Card],
     player_to_play_kept_hand: Sequence[Card],
@@ -3434,6 +3434,15 @@ def play_based_on_simulation(
     hide_missing_incomplete_game_wins_and_game_points_estimates: bool,
     start_of_hand_position_results_tallies: shelve.Shelf,
 ):
+    """Rank candidate plays using simulated continuations of the current hand.
+
+    The replay starts with the supplied totals, cuts the supplied starter,
+    and plays the supplied prefix before trying the candidate card.
+    Automated play supplies the pre-cut totals so these actions score once.
+
+    Game-point differential is the primary ranking criterion. Pegging-point
+    differential breaks ties in game points.
+    """
     played_cards: List[Card] = [
         initial_play_action
         for initial_play_action in initial_play_actions[player::2]
@@ -3468,18 +3477,9 @@ def play_based_on_simulation(
         total_play_simulation_count,
         total_play_simulation_count,
         1,
-        Points(
-            current_game_score.first_pone_initial
-            + current_game_score.first_pone_play
-            + current_game_score.first_pone_hand
-            + current_game_score.first_pone_crib
-        ),
-        Points(
-            current_game_score.first_dealer_initial
-            + current_game_score.first_dealer_play
-            + current_game_score.first_dealer_hand
-            + current_game_score.first_dealer_crib
-        ),
+        # These totals are in the parent game's original seat order.
+        replay_start_scores[0],
+        replay_start_scores[1],
         player_to_play_dealt_hand if player_to_play_is_first_pone else [],
         player_to_play_dealt_hand if player_to_play_is_first_dealer else [],
         player_to_play_kept_hand if player_to_play_is_first_pone else [],

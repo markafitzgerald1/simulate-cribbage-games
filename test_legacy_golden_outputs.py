@@ -22,10 +22,8 @@ Known recorded defects:
   play coach pass the nested simulation the scores in the game's original
   seat order instead of the current hand's pone-dealer order. Cases B, C and
   E reach an odd hand and record this.
-- #268: nested simulation-based play starts from the live score and then
-  replays the starter and earlier pegging, so heels and earlier pegging
-  points count twice. Case B shows the heels case; the pegging replay also
-  appears in case D's play run, case E and readme_552.
+- #268: the dynamic play coach starts from the live score and then replays
+  the starter and earlier pegging. Case E records the double-counting.
 
 README smoke-test coverage. Case names carry the README line number each
 command had when the suite was written (2026-11-26):
@@ -557,6 +555,12 @@ def format_golden_record(returncode: int, stdout: str, stderr: str) -> str:
 
 def run_simulator_case(case_name: str) -> tuple[int, str]:
     """Run ``simulate_cribbage_games.py`` in an isolated seeded temp directory."""
+    return run_seeded_simulator(GOLDEN_CASES[case_name], GOLDEN_STDIN.get(case_name))
+
+
+def run_seeded_simulator(
+    args: list[str], scripted_input: str | None = None
+) -> tuple[int, str]:
     with tempfile.TemporaryDirectory(prefix="legacy_golden_") as temp_dir:
         shelf_path = os.path.join(temp_dir, TALLY_SHELF_NAME)
         with shelve.open(shelf_path, flag="c"):
@@ -567,9 +571,8 @@ def run_simulator_case(case_name: str) -> tuple[int, str]:
         env["PYTHONIOENCODING"] = "utf-8"
         env["PYTHONUTF8"] = "1"
         code = SEED_PREFIX.format(
-            script_path=repr(str(SIMULATOR_SCRIPT)), args=repr(GOLDEN_CASES[case_name])
+            script_path=repr(str(SIMULATOR_SCRIPT)), args=repr(args)
         )
-        scripted_input = GOLDEN_STDIN.get(case_name)
         try:
             result = subprocess.run(
                 [sys.executable, "-c", code],
@@ -584,12 +587,74 @@ def run_simulator_case(case_name: str) -> tuple[int, str]:
             )
         except subprocess.TimeoutExpired:
             raise AssertionError(
-                f"Golden case {case_name} timed out after {CASE_TIMEOUT_SECONDS} s"
+                f"Simulator run timed out after {CASE_TIMEOUT_SECONDS} s: {args}"
             ) from None
         return (
             result.returncode,
             format_golden_record(result.returncode, result.stdout, result.stderr),
         )
+
+
+class TestPlayRolloutScores(unittest.TestCase):
+    def test_dealer_takes_immediate_win_after_heels(self) -> None:
+        returncode, output = run_seeded_simulator(
+            [
+                "--game-count",
+                "1",
+                "--initial-pone-score",
+                "119",
+                "--initial-dealer-score",
+                "117",
+                "--initial-starter",
+                "JC",
+                "--first-dealer-kept-cards",
+                "TS,5H,9H,AH",
+                "--initial-play-actions",
+                "KH",
+                "--first-dealer-play-based-on-simulations",
+                "10",
+            ]
+        )
+        self.assertEqual(returncode, 0, output)
+        self.assertRegex(output, r"His heels/nibs for 2 for Dealer \[119-119\]")
+        self.assertRegex(output, r"5♥ first play:.*-4\.000 ±\s+0\.000 Δ-peg")
+        self.assertRegex(output, r"Dealer plays 5♥ for 15\b")
+        self.assertRegex(output, r"!15 for 2 points for Dealer\. \[119-121\]")
+
+    def test_dealer_reaches_candidate_after_scoring_prefix(self) -> None:
+        returncode, output = run_seeded_simulator(
+            [
+                "--game-count",
+                "1",
+                "--initial-pone-score",
+                "113",
+                "--initial-dealer-score",
+                "117",
+                "--initial-starter",
+                "QC",
+                "--first-pone-kept-cards",
+                "7C,8C,2S,3H",
+                "--first-dealer-kept-cards",
+                "8D,8H,AH,5H",
+                "--initial-play-actions",
+                "7C",
+                "--first-dealer-play-based-on-simulations",
+                "10",
+            ]
+        )
+        self.assertEqual(returncode, 0, output)
+        self.assertRegex(output, r"!15 for 2 points for Dealer\. \[113-119\]")
+        self.assertRegex(output, r"!Pair for 2 points for Pone\. \[115-119\]")
+        # Replaying the fifteen from 119 ends every nested game before the
+        # candidate, so even the ace would report a guaranteed dealer win.
+        self.assertRegex(
+            output,
+            r"!Pair for 2 points for Pone\. \[115-119\]\n"
+            r"Simulating each of the 3 possible dealer plays[^\n]*\n"
+            r"8♦ first play:[^\n]*\nA♥ first play:\s+\+",
+        )
+        self.assertRegex(output, r"Dealer plays 8♦ for 31\b")
+        self.assertRegex(output, r"for 6 points for Dealer\. \[115-121\]")
 
 
 def assert_case_matches_golden(test_case: unittest.TestCase, case_name: str) -> None:
@@ -823,7 +888,7 @@ class TestGoldenHarness(unittest.TestCase):
             subprocess, "run", side_effect=subprocess.TimeoutExpired("python", 120)
         ) as run:
             with self.assertRaisesRegex(
-                AssertionError, "readme_526_basic_hands timed out after 120 s"
+                AssertionError, r"Simulator run timed out after 120 s: .*--game-count"
             ):
                 run_simulator_case("readme_526_basic_hands")
         options = run.call_args.kwargs
