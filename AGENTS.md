@@ -448,7 +448,13 @@ legacy edit. Its golden files record current behavior, known bugs included, so a
 golden is never evidence of correctness: assert correct cribbage behavior in
 unit tests, and never write a unit test that expects a known bug. Its seeded,
 single-process cases run in a temporary working directory with an empty tally
-shelf. Regenerate only with `--regenerate <case>` for cases the edit is
+shelf, which a case may first fill with seeded setup commands: incomplete-game
+estimate lookups all miss on an empty shelf, so a test of that path without a
+tally step exercises only the miss branch. The harness runs each command in its
+own process group and kills the group on timeout, because killing only the
+direct child leaves its workers holding the output pipes. A new session also
+stops the child receiving Ctrl-C, so any other exception must kill the group
+too. Regenerate only with `--regenerate <case>` for cases the edit is
 expected to change, after showing that every other case still matches. The two
 README commands with `--process-count 2` run with one process in this suite,
 which leaves multi-process paths uncovered.
