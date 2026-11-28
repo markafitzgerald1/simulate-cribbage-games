@@ -23,6 +23,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 import itertools
+import math
 import random
 
 from artifact_pipeline.adapter import (
@@ -41,7 +42,10 @@ from artifact_pipeline.pegging import (
 RANK_LABELS = "A23456789TJQK"
 JACK = 10
 TIE_TOLERANCE = 1e-9
-PLAY_TOLERANCE = 0.001
+# Published means carry four decimals, so a margin and its two rounded totals
+# disagree by at most 1.5e-4. The app allows 0.001; the tighter bound lets a
+# margin of the wrong sign through only when it is under 1e-4 points.
+PLAY_TOLERANCE = 2e-4
 MATCHING_DISCARD = "matching_discard_suit"
 NON_MATCHING = "non_matching_discard_suit"
 MATCHING_RANK_1 = "matching_rank_1_suit"
@@ -74,9 +78,19 @@ def starter_relation(
 
 
 def _mean(entry: object, where: str) -> float:
-    if not isinstance(entry, Mapping) or not isinstance(entry.get("mu"), (int, float)):
-        raise ValueError(f"table has no numeric mean at {where}")
-    return float(entry["mu"])
+    value = entry.get("mu") if isinstance(entry, Mapping) else None
+    if (
+        not isinstance(value, (int, float))
+        or isinstance(value, bool)
+        or not math.isfinite(value)
+    ):
+        raise ValueError(f"table has no finite mean at {where}")
+    return float(value)
+
+
+def _client_keeps_relations(pair: str) -> bool:
+    low, high, group = pair.split("_")
+    return group == "Suited" or "J" in (low, high)
 
 
 def load_crib_table(
@@ -97,6 +111,10 @@ def load_crib_table(
                     if isinstance(cell, Mapping)
                     else {}
                 )
+                if relations and not _client_keeps_relations(pair):
+                    # The full artifact splits every cell by suit; the app
+                    # reads the client file, which keeps only these splits.
+                    raise ValueError(f"not a client crib table: {where} splits")
                 row.append(
                     (
                         _mean(cell, where),

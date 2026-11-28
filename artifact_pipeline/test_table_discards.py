@@ -6,6 +6,7 @@ from collections import Counter, namedtuple
 import itertools
 import random
 import unittest
+from unittest.mock import patch
 
 from artifact_pipeline.adapter import get_canonical_pairs
 from artifact_pipeline.generate_play_table import PHYSICAL_DECK
@@ -202,6 +203,32 @@ class TestSelectDiscard(unittest.TestCase):
         self.assertTrue(all(150 < count < 250 for count in tens.values()), tens)
 
 
+class TestNearTies(unittest.TestCase):
+    def test_values_within_the_tolerance_tie_and_beyond_it_do_not(self):
+        dealt = [(0, 2), (0, 3), (3, 2), (6, 1), (9, 0), (9, 1)]
+
+        def favoured(kept):
+            return (9, 1) in kept and (9, 0) not in kept
+
+        for gap, only_favoured in ((5e-10, False), (2e-9, True)):
+
+            def value(_self, _role, kept, _dealt, gap=gap):
+                return gap if favoured(kept) else 0.0
+
+            with patch.object(TableDiscardRule, "keep_value", value):
+                chosen = [
+                    favoured(
+                        TableDiscardRule().select_discard(
+                            PONE, dealt, random.Random(seed)
+                        )[0]
+                    )
+                    for seed in range(60)
+                ]
+            # Four of the 15 keeps are favoured, so a 15-way tie picks one of
+            # the other eleven in all but about 0.27**60 of seed sets.
+            self.assertEqual(all(chosen), only_favoured, gap)
+
+
 class TestLoading(unittest.TestCase):
     def test_rejects_missing_or_non_numeric_means(self):
         table = crib_json()
@@ -221,11 +248,32 @@ class TestLoading(unittest.TestCase):
 
     def test_rejects_a_play_margin_that_disagrees_with_its_totals(self):
         table = play_json()
-        table["5_5_T_J"][PONE]["mu"] += 0.002
+        table["5_5_T_J"][PONE]["mu"] += 0.0003
         with self.assertRaisesRegex(ValueError, "5_5_T_J Pone"):
             load_play_table(table)
-        table["5_5_T_J"][PONE]["mu"] -= 0.0015
+        table["5_5_T_J"][PONE]["mu"] -= 0.00015
         self.assertEqual(len(load_play_table(table)), 2 * 1820)
+        # A margin of the wrong sign is refused once it exceeds 1e-4 points.
+        players = table["2_3_4_Q"][DEALER]["players"]
+        players[DEALER]["mu"], players[PONE]["mu"] = 3.0003, 3.0
+        table["2_3_4_Q"][DEALER]["mu"] = -0.0003
+        with self.assertRaisesRegex(ValueError, "2_3_4_Q Dealer"):
+            load_play_table(table)
+
+    def test_rejects_non_finite_or_boolean_means(self):
+        for bad in (float("nan"), float("inf"), True):
+            table = play_json()
+            table["A_2_3_4"][PONE]["mu"] = bad
+            with self.assertRaisesRegex(ValueError, "finite mean at A_2_3_4 Pone"):
+                load_play_table(table)
+
+    def test_rejects_the_full_crib_artifact(self):
+        table = crib_json()
+        table["A_2_Unsuited"][DEALER]["K"]["starter_suit_relation"] = {
+            name: {"mu": 5.0} for name in RELATIONS["Unsuited"]
+        }
+        with self.assertRaisesRegex(ValueError, "A_2_Unsuited Dealer K splits"):
+            load_crib_table(table)
 
     def test_refuses_a_crib_cell_without_the_starters_relation(self):
         table = crib_json()

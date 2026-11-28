@@ -353,6 +353,12 @@ class TestTablePlayers(unittest.TestCase):
                 "--policy-manifest",
             ),
             ([*app, *random_app, "--output", str(self.crib)], "a table file"),
+            (
+                [*app, *self.table_args("unused", "random", self.root / "no.json")]
+                + random_app,
+                "files not found: " + str(self.root / "no.json"),
+            ),
+            ([*app, "--rungs", "", "--discards", "random"], "--rungs needs"),
         ):
             self.assertTrue(reason in rejected(self, argv), (argv, reason))
         args = parse_args(
@@ -371,6 +377,15 @@ class TestTablePlayers(unittest.TestCase):
                     str(self.crib),
                 ]
             )
+
+    def test_refuses_a_table_file_that_is_not_an_object(self):
+        self.play.write_text("null", encoding="utf-8")
+        argv = [
+            *self.table_args("app", "heuristic", "none", self.play),
+            *["--rungs", "app,heuristic", "--discards", "random", "--pairs", "1"],
+        ]
+        with self.assertRaisesRegex(ValueError, "play table is not a JSON object"):
+            main(argv)
 
     def test_default_rungs_put_table_players_last(self):
         manifest = bundle_in(self.root / "bundle")

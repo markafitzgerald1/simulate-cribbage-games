@@ -89,6 +89,14 @@ def _validate(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None
         parser.error(f"--table-player names must be distinct and not in {RUNGS}")
     if any(player[1] not in RUNGS for player in args.table_player):
         parser.error(f"--table-player pegging must be one of {RUNGS}")
+    missing = [
+        path
+        for player in args.table_player
+        for path in player[2:]
+        if path != "none" and not Path(path).is_file()
+    ]
+    if missing:
+        parser.error(f"--table-player files not found: {', '.join(missing)}")
     names = args.rungs
     if len(names) < 2 or len(set(names)) != len(names) or set(names) - known:
         parser.error(f"--rungs needs two or more distinct names from {sorted(known)}")
@@ -160,7 +168,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     args = parser.parse_args(argv)
     args.rungs = (
         [name.strip() for name in args.rungs.split(",")]
-        if args.rungs
+        if args.rungs is not None
         else [*RUNGS, *(player[0] for player in args.table_player)]
     )
     if args.policy_manifest:
@@ -205,7 +213,10 @@ def _load_table(path: str, provenance: dict[str, str], label: str) -> Any:
         return None
     data = Path(path).read_bytes()
     provenance[f"{label}_sha256"] = hashlib.sha256(data).hexdigest()
-    return json.loads(data)
+    table = json.loads(data)
+    if not isinstance(table, dict):
+        raise ValueError(f"{label} table is not a JSON object: {path}")
+    return table
 
 
 def _table_rule(player: Sequence[str], provenance: dict[str, Any]) -> DiscardRule:
