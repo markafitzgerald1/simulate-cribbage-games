@@ -1,0 +1,74 @@
+[
+  {
+    "mutation": "full-deck",
+    "file": "pegging_opening_book.py",
+    "before": "deal_rng.sample(pool, 4)",
+    "after": "deal_rng.sample(range(52), 4)",
+    "test": "test_pegging_opening_book.TestOpeningBook.test_sampler_removes_known_cards_and_draws_again_each_time",
+    "caught": true
+  },
+  {
+    "mutation": "sample-once",
+    "file": "pegging_opening_book.py",
+    "before": "for index in range(samples):\n        opponent = tuple(card // 4 for card in deal_rng.sample(pool, 4))",
+    "after": "opponent = tuple(card // 4 for card in deal_rng.sample(pool, 4))\n    for index in range(samples):",
+    "test": "test_pegging_opening_book.TestOpeningBook.test_sampler_removes_known_cards_and_draws_again_each_time",
+    "caught": true
+  },
+  {
+    "mutation": "float-ties",
+    "file": "pegging_opening_book.py",
+    "before": "Fraction(totals[rank], values[rank].n)",
+    "after": "values[rank].mean",
+    "test": "test_pegging_opening_book.TestOpeningBook.test_real_sample_integer_tie_prefers_lower_rank",
+    "caught": true
+  },
+  {
+    "mutation": "book-never-fires",
+    "file": "pegging_opening_book.py",
+    "before": "opening_view(tuple(row[\"hand\"])).key(): row[\"override\"]",
+    "after": "opening_view(tuple(row[\"hand\"])).key() + \"dead\": row[\"override\"]",
+    "test": "test_exact_pegging_book.TestExactBook.test_nonempty_book_fires_inside_real_promotion_gate",
+    "caught": true
+  },
+  {
+    "mutation": "wrong-exact-population",
+    "file": "exact_pegging_book.py",
+    "before": "tuple(4 - own.count(rank) for rank in range(ranks))",
+    "after": "tuple(4 for rank in range(ranks))",
+    "test": "test_exact_pegging_book.TestExactBook.test_physical_oracle_includes_all_draws_and_excludes_removed_cards",
+    "caught": true
+  },
+  {
+    "mutation": "ignore-physical-weights",
+    "file": "exact_pegging_book.py",
+    "before": "totals[rank] += weight * integer_delta(",
+    "after": "totals[rank] += integer_delta(",
+    "test": "test_exact_pegging_book.TestExactBook.test_exact_leads_match_independent_physical_deal_oracle",
+    "caught": true
+  },
+  {
+    "mutation": "float-exact-sums",
+    "file": "exact_pegging_book.py",
+    "before": "(value[\"gain_sum\"], -value[\"rank\"])",
+    "after": "(float(value[\"gain_sum\"]), -value[\"rank\"])",
+    "test": "test_exact_pegging_book.TestExactBook.test_integer_selection_handles_true_ties_and_epsilon_grid",
+    "caught": true
+  },
+  {
+    "mutation": "ignore-frozen-lead",
+    "file": "exact_dealer_book.py",
+    "before": "lead = choices[pone]",
+    "after": "lead = min(pone)",
+    "test": "test_exact_pegging_book.TestExactBook.test_dealer_conditioning_matches_whole_game_physical_oracle",
+    "caught": true
+  },
+  {
+    "mutation": "wrong-dealer-history",
+    "file": "exact_dealer_book.py",
+    "before": "public_history=[lead]",
+    "after": "public_history=[]",
+    "test": "test_exact_pegging_book.TestExactBook.test_dealer_conditioning_matches_whole_game_physical_oracle",
+    "caught": true
+  }
+]

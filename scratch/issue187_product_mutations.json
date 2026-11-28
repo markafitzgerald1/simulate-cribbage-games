@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "wrong-posterior-normalization",
+    "module": "book_product_checks",
+    "before": "1 - i / max(b, h)",
+    "after": "1 - i / min(b, h)",
+    "test": "test_posterior_overlap_known_finite_populations",
+    "caught": true
+  },
+  {
+    "mutation": "wrong-hidden-opponent-reply",
+    "module": "book_product_checks",
+    "before": "reply = heuristic.select_rank(first, rng)",
+    "after": "reply = book_reply",
+    "test": "test_physical_posterior_and_payoff_oracle",
+    "caught": true
+  },
+  {
+    "mutation": "reverse-paired-seat-points",
+    "module": "book_product_checks",
+    "before": "result.total(role) - results[\"heuristic-both\"].total(role)",
+    "after": "results[\"heuristic-both\"].total(role) - result.total(role)",
+    "test": "test_joint_and_unilateral_reports_match_real_promotion_gate",
+    "caught": true
+  },
+  {
+    "mutation": "unpaired-seat-uncertainty",
+    "module": "book_product_checks",
+    "before": "result.total(role) - results[\"heuristic-both\"].total(role)",
+    "after": "result.total(role)",
+    "test": "test_joint_point_differences_are_paired_not_absolute_errors",
+    "caught": true
+  },
+  {
+    "mutation": "wrong-production-refinement",
+    "module": "book_keep_population",
+    "before": "outer_iterations=2, policy_table_samples=200, seed=42",
+    "after": "outer_iterations=1, policy_table_samples=200, seed=42",
+    "test": "test_fallback_builder_uses_production_settings_and_verifies_keeps",
+    "caught": true
+  },
+  {
+    "mutation": "ignore-keep-digest",
+    "module": "book_keep_population",
+    "before": "report[\"keeps_sha256\"]\n        !=",
+    "after": "report[\"keeps_sha256\"]\n        ==",
+    "test": "test_fallback_builder_uses_production_settings_and_verifies_keeps",
+    "caught": true
+  }
+]
