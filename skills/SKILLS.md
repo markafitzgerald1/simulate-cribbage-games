@@ -72,6 +72,10 @@ default skill for documentation and Python backend work.
     replace this gate. If review is unavailable or incomplete, report that
     status without claiming readiness. See `AGENTS.md`, "Pull Request Readiness".
 
+For pegging-policy shard publication changes, verify the pinned ZIP itself,
+the index inside it, and every indexed gzip digest. The release uses the ZIP
+as a single asset because the shard count exceeds GitHub's per-release limit.
+
 ## Skill Authoring Rules
 
 Future skills should be written in plain, model-agnostic Markdown. Each skill
