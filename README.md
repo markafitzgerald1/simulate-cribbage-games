@@ -832,3 +832,7 @@ attaches only the bytes pinned in
 [the release digests](examples/fixed-play-release.sha256), after the maintainer
 approves the `play-release` environment. See the fixed-policy
 contract for both workflows.
+
+The manual `publish-policy-shards.yml` workflow uses the same protected
+environment to publish the pinned pegging policy export. See the
+[policy shard release and format](docs/policy-shards.md).

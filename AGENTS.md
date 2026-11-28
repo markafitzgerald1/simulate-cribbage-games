@@ -853,6 +853,11 @@ would replace the CFR table. A step's own time limit fails the step and leaves
 later `failure()` steps to run, so a long step gets a limit under the job's and
 its partial work is uploaded last.
 
+The pegging-policy shard release uses the same approval pattern. GitHub allows
+1,000 assets per release, so ship the pinned export ZIP as one asset, preserving
+the index and role directories for vendoring. See [the shard
+contract](docs/policy-shards.md).
+
 ## Lint Configuration Expectations
 
 Do not assume lint rules are enforced unless they are present in local

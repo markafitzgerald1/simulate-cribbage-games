@@ -24,6 +24,16 @@ and uploads the folder as the artifact `pegging-policy-shards`. It publishes
 nothing. Dispatching it, publishing its output and vendoring it into the app
 each need separate authorization.
 
+## Release
+
+The manual `publish-policy-shards.yml` workflow uses the export run and
+digests in [the release pins](../examples/policy-shards-release.json).
+Dispatch it on main with approval `publish`, then approve the
+`play-release` environment. The rolling `pegging-policy-shards` release
+attaches the original export ZIP as `pegging-policy-shards.zip`. Extract it
+to obtain `shards.json` and the original per-hand gzip files for vendoring.
+The ZIP keeps the release within GitHub's 1,000-asset limit.
+
 ## Files
 
 The output folder holds `shards.json` and one file per own-hand menu, named
@@ -44,6 +54,9 @@ may compress differently, which `payload_sha256` lets a reader tell apart from
 a content change.
 
 ## Payload
+
+`CPS1` reads "Cribbage Policy Shard, version 1". A layout change ships
+with a new magic.
 
 A decompressed shard is little-endian, column by column so that gzip sees
 runs of similar bytes. With `n` rows:

@@ -1,0 +1,139 @@
+name: Publish pegging policy shards
+
+on:
+  workflow_dispatch:
+    inputs:
+      approval:
+        description: Enter publish to confirm the approved publication
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: pegging-policy-shards-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  PINS: examples/policy-shards-release.json
+  ARCHIVE: pegging-policy-shards.zip
+
+jobs:
+  verify:
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' &&
+      github.run_attempt == 1 && inputs.approval == 'publish'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Require main exactly
+        run: '[[ "$GITHUB_REF" == "refs/heads/main" ]]'
+      - name: Require a protected release environment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/environments/play-release" |
+            jq -e '.can_admins_bypass == false
+              and any(.protection_rules[]; .type == "required_reviewers" and (.reviewers | length) > 0)'
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+      - name: Download and verify the pinned export
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          run_id="$(jq -er .run_id "$PINS")"
+          digest="$(jq -er .artifact_sha256 "$PINS")"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" |
+            jq -e '.path == ".github/workflows/export-policy-shards.yml" and .event == "workflow_dispatch"
+              and .head_branch == "main" and .run_attempt == 1 and .conclusion == "success"'
+          artifact_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?name=pegging-policy-shards" |
+            jq -er --arg digest "sha256:$digest" '
+              select(.total_count == 1) | .artifacts[0] |
+              select(.name == "pegging-policy-shards" and .digest == $digest and .expired == false) | .id')"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > "$ARCHIVE"
+          printf '%s  %s\n' "$digest" "$ARCHIVE" | sha256sum --check --strict
+          python -m scripts.verify_policy_shards_release "$ARCHIVE" "$(jq -er .index_sha256 "$PINS")"
+      - name: Download the release this would replace
+        id: previous
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          release="$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
+            jq -c '.[][] | select(.tag_name == "pegging-policy-shards")')"
+          if [[ -n "$release" ]]; then
+            gh release download pegging-policy-shards --repo "$GITHUB_REPOSITORY" --dir previous
+            jq -r '.body // ""' <<< "$release" > previous/release-notes.md
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Preserve the release this would replace
+        if: steps.previous.outputs.exists == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: pegging-policy-shards-previous
+          if-no-files-found: error
+          retention-days: 90
+          path: previous/
+      - name: Pass the verified ZIP to publication
+        uses: actions/upload-artifact@v7
+        with:
+          name: verified-policy-shards
+          if-no-files-found: error
+          compression-level: 0
+          path: ${{ env.ARCHIVE }}
+
+  publish:
+    needs: verify
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' &&
+      github.run_attempt == 1 && inputs.approval == 'publish'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: play-release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: verified-policy-shards
+      - name: Match the ZIP to the committed digest
+        run: |
+          digest="$(jq -er .artifact_sha256 "$PINS")"
+          printf '%s  %s\n' "$digest" "$ARCHIVE" > release.sha256
+          sha256sum --check --strict release.sha256
+          run_id="$(jq -er .run_id "$PINS")"
+          index_digest="$(jq -er .index_sha256 "$PINS")"
+          {
+            printf '%s\n\n' 'Contains shards.json and the per-hand gzip shards. Extract for vendoring.'
+            printf 'Source export run: [%s](https://github.com/%s/actions/runs/%s)\n\n' \
+              "$run_id" "$GITHUB_REPOSITORY" "$run_id"
+            printf -- "- Artifact ZIP SHA-256: \`%s\`\n- shards.json SHA-256: \`%s\`\n" "$digest" "$index_digest"
+          } > release-notes.md
+      - name: Publish the rolling release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: pegging-policy-shards
+          target_commitish: ${{ github.sha }}
+          name: Pegging Policy Shards
+          body_path: release-notes.md
+          files: ${{ env.ARCHIVE }}
+          fail_on_unmatched_files: true
+          make_latest: false
+      - name: Verify the attached release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/pegging-policy-shards" |
+            bash scripts/check_crib_release_assets.sh release.sha256
