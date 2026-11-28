@@ -905,6 +905,23 @@ off-support share over non-forced calls, since forced calls never consult a
 row, and define off-support as zero opponent reach under the saved policy
 and prior, never as untrained or uncertified.
 
+A `--table-player` discards as the cribbage-trainer app advises
+(`artifact_pipeline/table_discards.py`): exact hand value over the 46 unseen
+starters, the crib table by starter rank and, where a cell splits it, by each
+unseen starter's suit relation, and the play table's margin for the seat.
+The tables are release assets and trainer commits, not repository files, so
+the command takes their paths and the report records each file's SHA-256;
+cite the release or commit beside the digest. Check the rule against the
+app's own TypeScript, not a second Python copy: export the trainer's `main`
+with `git archive`, run `npm ci --ignore-scripts` there, bundle a script
+that calls `allScoredKeepDiscardsByExpectedNetScoreDescending` with
+`esbuild --bundle --platform=node`, and compare every keep's value over a
+few thousand deals with both table sets. The app breaks exact ties by rank
+and suit; the ladder draws among them so no suit is favoured, and such
+ties occur in about 3% of deals. A test of an argument check must assert
+the check's own message: five table-player mutants survived because another
+check rejected the same command line first.
+
 ## Lint Configuration Expectations
 
 Do not assume lint rules are enforced unless they are present in local
