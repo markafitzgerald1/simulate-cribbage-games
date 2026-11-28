@@ -636,6 +636,13 @@ class TestPositionTallies(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertRegex(result.stdout, "in order to select discard")
+            # Rollouts hide play actions, so only outer hands show a starter.
+            # Count increments to catch unfinished rollouts that write zeros.
+            hands_played = result.stdout.count("Cut/starter card is:")
+            self.assertEqual(
+                result.stdout.count("game results tallies incremented to"),
+                hands_played,
+            )
             # The CLI pickles its tally type as __main__.GameScoreResultsTallies.
             with (
                 patch.object(
@@ -653,8 +660,6 @@ class TestPositionTallies(unittest.TestCase):
                     1,
                     "the opening position should record only the completed game",
                 )
-                # Rollouts hide play actions, so only real hands show a starter.
-                hands_played = result.stdout.count("Cut/starter card is:")
                 self.assertEqual(len(shelf), hands_played)
                 for position, tally in shelf.items():
                     self.assertEqual(sum(tally[:2]), 1, position)

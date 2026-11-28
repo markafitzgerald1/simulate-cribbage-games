@@ -55,7 +55,7 @@
     "column": 0,
     "symbol": "too-many-arguments",
     "message-id": "R0913",
-    "message": "Too many arguments (33/5)",
+    "message": "Too many arguments (32/5)",
     "type": "refactor",
     "obj": "simulate_game"
   },
@@ -75,7 +75,7 @@
     "column": 0,
     "symbol": "too-many-locals",
     "message-id": "R0914",
-    "message": "Too many local variables (96/15)",
+    "message": "Too many local variables (95/15)",
     "type": "refactor",
     "obj": "simulate_game"
   },
@@ -85,7 +85,7 @@
     "column": 0,
     "symbol": "too-many-positional-arguments",
     "message-id": "R0917",
-    "message": "Too many positional arguments (33/5)",
+    "message": "Too many positional arguments (32/5)",
     "type": "refactor",
     "obj": "simulate_game"
   },
