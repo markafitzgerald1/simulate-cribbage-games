@@ -60,11 +60,80 @@ The app-june player applies the app's current ranking to the tables it
 shipped in June 2026. The app's code then may have ranked keeps a little
 differently.
 
-Next on this ladder (issue #263): discards that ignore the starter (E(h)
-before the cut) or treat the two discards as possible starters (E(h) over
-48 starters, as older versions did), crib tables built against random and
-hand-only opponents, and a history of the simulator's past default players
-against one fixed reference.
+## Hand points before and after the cut
+
+These five players all peg with the legacy heuristic. Each hand-only player
+scores all 15 four-card keeps and draws uniformly among the best.
+
+| Player | How it ranks each keep |
+| --- | --- |
+| random keep | Uniform choice among the 15 keeps |
+| pre-cut-rank | Four-card points for pairs, runs and fifteens |
+| pre-cut-suit | The same points, plus four for a four-card flush |
+| hand-48 | Average hand points over the 48 cards outside the keep |
+| hand-46 | Average hand points over the 46 cards outside the deal, the hand rule used above |
+
+Before the cut the hand has no starter to score for nobs. The legacy
+suit-aware pre-cut flag attempts to read the missing starter's suit on a
+flush. The ladder awards the four-card flush directly. Both post-cut
+averages include flush and nobs points and enumerate physical starters.
+The 48-card model treats the two discarded cards as possible starters for
+ranking purposes. Real games always draw the starter from outside both
+dealt hands. The legacy simulator uses a 48-card rank-only average in one
+branch of its hand-plus-crib rule. The suit-aware 48-card rung here measures
+the starter-pool change in isolation.
+
+For 2C 3C 4C 4S JC JS, pre-cut-rank keeps 2C 3C 4C 4S for eight points
+from a pair and two runs. Pre-cut-suit keeps 2C 3C 4C JC for nine points
+from a run, a fifteen and a flush.
+
+For AC 5C 6S 7D 9H JD, the 48-card model keeps 5C 6S 7D 9H. Across all
+15 keeps its best total is 387 points over 48 starters, one more than the
+5C 6S 7D JD keep. Excluding both discards reverses their order. The JD
+keep leads with 374 over 46 starters versus 373 for the 9H keep.
+
+The full run used the code recorded in commit `59a6388`, seed 42, and Python
+3.14.10. Each of the ten matchups drew 50,000 independent deal pairs and
+played 100,000 games. The table gives the first player's win rate and Elo gap,
+each with one standard error computed over the deal pairs. Win-rate errors
+are in percentage points. The full results are in
+[`strength-ladder-hands-50000.json`](strength-ladder-hands-50000.json).
+
+| Match | Win % | Elo gap |
+| --- | ---: | ---: |
+| pre-cut-rank vs random keep | 94.58 +/- 0.07 | 496.89 +/- 2.36 |
+| pre-cut-suit vs random keep | 95.25 +/- 0.07 | 520.72 +/- 2.52 |
+| pre-cut-suit vs pre-cut-rank | 51.98 +/- 0.07 | 13.73 +/- 0.46 |
+| hand-48 vs random keep | 96.30 +/- 0.06 | 566.36 +/- 2.86 |
+| hand-48 vs pre-cut-rank | 56.79 +/- 0.11 | 47.48 +/- 0.76 |
+| hand-48 vs pre-cut-suit | 54.60 +/- 0.10 | 32.08 +/- 0.72 |
+| hand-46 vs random keep | 96.23 +/- 0.06 | 562.84 +/- 2.83 |
+| hand-46 vs pre-cut-rank | 56.66 +/- 0.11 | 46.52 +/- 0.76 |
+| hand-46 vs pre-cut-suit | 54.91 +/- 0.10 | 34.21 +/- 0.72 |
+| hand-46 vs hand-48 | 50.00 +/- 0.03 | -0.01 +/- 0.23 |
+
+Counting pre-cut flushes lifted the win rate to 51.98% against suitless
+scoring. Averaging over starters gave a larger edge against pre-cut
+suit-aware scoring, with both models winning over 54.5% of games. The two
+starter pools produced an essentially even head-to-head match.
+
+The command needs no policy bundle or crib and play tables.
+
+```bash
+python -m artifact_pipeline.strength_ladder \
+  --discards random --rungs heuristic,pre-cut-rank,pre-cut-suit,hand-48,hand-46 \
+  --hand-player pre-cut-rank pre-cut-rank \
+  --hand-player pre-cut-suit pre-cut-suit \
+  --hand-player hand-48 post-cut-48 \
+  --hand-player hand-46 post-cut-46 \
+  --workers 8 --cross-table --seed 42 --pairs 50000 --output strength-ladder-hands-50000.json
+```
+
+The CLI name `heuristic` uses random keeps here. The first cross table above
+uses random pegging for its random player.
+
+Issue #263 still calls for crib tables built against random and hand-only
+opponents and a history of past defaults against one fixed reference.
 
 ## Pegging alone
 
@@ -221,9 +290,8 @@ reports record these digests:
 | play table, June | `7420b1804f64a32a73edb2fcc7fe9f53fe427510755c8b2b3723142e503cca5c` |
 
 The pegging ladder was recorded at commit b10875a and the cross table at commit
-d01923a, both on Python 3.14.10. Later commits change only input checks and
-tests: the cross-table command above with `--pairs 300` gave identical match
-statistics and provenance at d01923a and at 06cf7ea, whose code is this page's.
+d01923a, both on Python 3.14.10. The cross-table command above with `--pairs 300`
+gave identical match statistics and provenance at d01923a and 06cf7ea.
 Workers change nothing but the time taken. They are forked, so more than one
 needs a platform with the fork start method. On an 8-core Apple M2 laptop the
 recorded pegging ladder (300,000 games) took 2 minutes 56 seconds, about a

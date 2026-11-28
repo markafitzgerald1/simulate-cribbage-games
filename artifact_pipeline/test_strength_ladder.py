@@ -486,5 +486,109 @@ class TestTablePlayers(unittest.TestCase):
         self.assertTrue("random discards; app-table discards for app." in mixed, mixed)
 
 
+class TestHandPlayers(unittest.TestCase):
+    def test_hand_only_players_run_without_a_bundle(self):
+        argv = [
+            "--hand-player",
+            "suitless",
+            "pre-cut-rank",
+            "--hand-player",
+            "suits",
+            "pre-cut-suit",
+            "--hand-player",
+            "kept",
+            "post-cut-48",
+            "--hand-player",
+            "dealt",
+            "post-cut-46",
+            "--rungs",
+            "suitless,suits,kept,dealt",
+            "--pairs",
+            "2",
+            "--cross-table",
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "ladder.json"
+            code, printed = run_cli([*argv, "--output", str(output)])
+            report = json.loads(output.read_text(encoding="utf-8"))
+        self.assertEqual(code, 0)
+        self.assertTrue(
+            printed.startswith(
+                "2 deal pairs per match, seed 42, "
+                "hand-only discards for suitless, suits, kept, dealt."
+            ),
+            printed,
+        )
+        self.assertEqual(len(report["matches"]), 12)
+        self.assertEqual(
+            [rung["description"] for rung in report["rungs"]],
+            [
+                f"{mode} discards, legacy simulator's default play"
+                for mode in (
+                    "pre-cut-rank",
+                    "pre-cut-suit",
+                    "post-cut-48",
+                    "post-cut-46",
+                )
+            ],
+        )
+        self.assertEqual(
+            report["provenance"]["hand_players"]["kept"],
+            {"pegging": "heuristic", "scoring": "post-cut-48"},
+        )
+        self.assertTrue(all(match["pairs"] == 2 for match in report["matches"]))
+
+        with ExitStack() as stack:
+            players, _ = build_players(parse_args(argv), stack)
+        flush_deal = [(1, 0), (2, 0), (3, 0), (3, 3), (10, 0), (10, 3)]
+        starter_deal = [(0, 0), (4, 0), (5, 3), (6, 1), (8, 2), (10, 1)]
+        for player, deal, keep in zip(
+            players,
+            [flush_deal, flush_deal, starter_deal, starter_deal],
+            [
+                flush_deal[:4],
+                [*flush_deal[:3], flush_deal[4]],
+                starter_deal[1:5],
+                [*starter_deal[1:4], starter_deal[5]],
+            ],
+            strict=True,
+        ):
+            self.assertEqual(
+                player.discard_rule.select_discard(PONE, deal, random.Random(0))[0],
+                tuple(keep),
+            )
+
+    def test_hand_player_validation(self):
+        hand = ["--hand-player", "hand", "post-cut-46"]
+        for argv, message in (
+            ([*hand, *hand], "names must be distinct"),
+            (
+                [*hand, "--table-player", "hand", "heuristic", "none", "none"],
+                "names must be distinct",
+            ),
+            (["--hand-player", "hand", "post-cut-47"], "--hand-player scoring must be"),
+        ):
+            self.assertTrue(message in rejected(self, argv), argv)
+        args = parse_args(["--policy-manifest", "policy.json", *hand])
+        self.assertEqual(args.rungs, ["random", "heuristic", "cfr", "hand"])
+
+    def test_hand_player_cannot_reuse_builtin_rung_name(self):
+        for name in ("random", "heuristic", "cfr"):
+            with self.subTest(name=name):
+                message = rejected(
+                    self,
+                    [
+                        "--discards",
+                        "random",
+                        "--rungs",
+                        "random,heuristic",
+                        "--hand-player",
+                        name,
+                        "post-cut-46",
+                    ],
+                )
+                self.assertTrue("names must be distinct and not in" in message, message)
+
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()

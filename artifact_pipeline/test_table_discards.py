@@ -20,6 +20,7 @@ from artifact_pipeline.pegging import (
     get_canonical_hands,
 )
 from artifact_pipeline.table_discards import (
+    HandScoring,
     RANK_LABELS,
     TableDiscardRule,
     load_crib_table,
@@ -84,7 +85,9 @@ def unseen(dealt):
 
 def oracle_hand(kept, dealt):
     starters = unseen(dealt)
-    return sum(score_cards(kept, starter, False) for starter in starters) / 46
+    return sum(score_cards(kept, starter, False) for starter in starters) / len(
+        starters
+    )
 
 
 def oracle_crib(table, role, discards, dealt):
@@ -119,6 +122,48 @@ def deals(count, seed):
 
 
 class TestKeepValue(unittest.TestCase):
+    def test_pre_cut_scores_four_cards_with_optional_flush(self):
+        # 5-6-7-8 scores a four-card run and one fifteen (7+8).
+        flush = [(4, 2), (5, 2), (6, 2), (7, 2)]
+        mixed = [*flush[:3], (7, 0)]
+        for kept, rank_points, suit_points in (
+            (flush, 6, 10),
+            (mixed, 6, 6),
+            ([(4, 0), (4, 1), (4, 2), (10, 2)], 14, 14),
+        ):
+            dealt = [*kept, (0, 0), (12, 0)]
+            for mode, expected in (
+                (HandScoring.PRE_CUT_RANK, rank_points),
+                (HandScoring.PRE_CUT_SUIT, suit_points),
+            ):
+                rule = TableDiscardRule(hand_scoring=mode)
+                for role in ROLES:
+                    self.assertEqual(rule.keep_value(role, kept, dealt), expected)
+
+    def test_post_cut_48_scores_each_physical_card_outside_the_keep(self):
+        rule = TableDiscardRule(hand_scoring=HandScoring.POST_CUT_48)
+        for dealt in deals(8, 48):
+            for kept in itertools.combinations(sorted(dealt), 4):
+                self.assertAlmostEqual(
+                    rule.keep_value(PONE, kept, dealt),
+                    oracle_hand(kept, kept),
+                    places=12,
+                )
+
+    def test_alternate_hand_models_require_hand_only_discards(self):
+        for mode in (
+            HandScoring.PRE_CUT_RANK,
+            HandScoring.PRE_CUT_SUIT,
+            HandScoring.POST_CUT_48,
+        ):
+            for tables in ({"crib": {}}, {"play": {}}):
+                with self.assertRaisesRegex(ValueError, "hand-only"):
+                    TableDiscardRule(hand_scoring=mode, **tables)
+
+    def test_unknown_hand_scoring_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "bogus-mode"):
+            TableDiscardRule(hand_scoring="bogus-mode")
+
     def test_hand_value_is_the_mean_over_the_46_unseen_starters(self):
         rule = TableDiscardRule()
         for dealt in deals(60, 3):

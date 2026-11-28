@@ -1,0 +1,953 @@
+{
+  "schema": "cribbage-strength-ladder.v1",
+  "seed": 42,
+  "pairs_per_match": 50000,
+  "target_score": 121,
+  "cross_table": true,
+  "python": "3.14.10",
+  "provenance": {
+    "discards": "random",
+    "hand_players": {
+      "pre-cut-rank": {
+        "pegging": "heuristic",
+        "scoring": "pre-cut-rank"
+      },
+      "pre-cut-suit": {
+        "pegging": "heuristic",
+        "scoring": "pre-cut-suit"
+      },
+      "hand-48": {
+        "pegging": "heuristic",
+        "scoring": "post-cut-48"
+      },
+      "hand-46": {
+        "pegging": "heuristic",
+        "scoring": "post-cut-46"
+      }
+    }
+  },
+  "rungs": [
+    {
+      "name": "heuristic",
+      "description": "random discards, legacy simulator's default play"
+    },
+    {
+      "name": "pre-cut-rank",
+      "description": "pre-cut-rank discards, legacy simulator's default play"
+    },
+    {
+      "name": "pre-cut-suit",
+      "description": "pre-cut-suit discards, legacy simulator's default play"
+    },
+    {
+      "name": "hand-48",
+      "description": "post-cut-48 discards, legacy simulator's default play"
+    },
+    {
+      "name": "hand-46",
+      "description": "post-cut-46 discards, legacy simulator's default play"
+    }
+  ],
+  "matches": [
+    {
+      "player": "hand-46",
+      "opponent": "hand-48",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 565,
+        "split": 48868,
+        "both_lost": 567
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.49998,
+        "se": 0.0003364554295075663
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.44668,
+        "se": 0.002223339474027377
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.55328,
+        "se": 0.002223358652686059
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": -0.00244,
+        "se": 0.008025245729532548
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": -0.00256,
+        "se": 0.003958507587923317
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 8.91004,
+        "se": 0.0040923195023822604
+      },
+      "elo": -0.013897423428324899,
+      "elo_se": 0.2337931786805084,
+      "win_rate_se_as_iid_games": 0.0015811388288192786,
+      "policy_decisions": {}
+    },
+    {
+      "player": "hand-46",
+      "opponent": "heuristic",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 46236,
+        "split": 3759,
+        "both_lost": 5
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.96231,
+        "se": 0.0005911820937117079
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.95092,
+        "se": 0.0009661478876625548
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.9737,
+        "se": 0.0007156650358434947
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": 32.92156,
+        "se": 0.044772069799068726
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": 1.98209,
+        "se": 0.024625885026172488
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 9.46476,
+        "se": 0.0035982803949158836
+      },
+      "elo": 562.8355445637228,
+      "elo_se": 2.831551321595419,
+      "win_rate_se_as_iid_games": 0.0006022413461395689,
+      "policy_decisions": {}
+    },
+    {
+      "player": "hand-46",
+      "opponent": "pre-cut-rank",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 9474,
+        "split": 37707,
+        "both_lost": 2819
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.56655,
+        "se": 0.0010680565363759063
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.51352,
+        "se": 0.0022352727173395237
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.61958,
+        "se": 0.002171199381479067
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": 3.35747,
+        "se": 0.032954710198095885
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": 0.7679,
+        "se": 0.01778126303911804
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 9.00692,
+        "se": 0.003821090719504803
+      },
+      "elo": 46.51969463829384,
+      "elo_se": 0.7555466662500963,
+      "win_rate_se_as_iid_games": 0.001567070826414684,
+      "policy_decisions": {}
+    },
+    {
+      "player": "hand-46",
+      "opponent": "pre-cut-suit",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 7923,
+        "split": 39061,
+        "both_lost": 3016
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.54907,
+        "se": 0.001022625844222776
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.4919,
+        "se": 0.0022357968994869627
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.60624,
+        "se": 0.0021850301451318017
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": 2.37386,
+        "se": 0.03106311111826127
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": 0.85107,
+        "se": 0.017018662985081878
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 8.97643,
+        "se": 0.003837666433612113
+      },
+      "elo": 34.20743436950834,
+      "elo_se": 0.7175038270391425,
+      "win_rate_se_as_iid_games": 0.0015735060695783794,
+      "policy_decisions": {}
+    },
+    {
+      "player": "hand-48",
+      "opponent": "hand-46",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 567,
+        "split": 48868,
+        "both_lost": 565
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.50002,
+        "se": 0.0003364554295075663
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.44672,
+        "se": 0.002223358652686059
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.55332,
+        "se": 0.002223339474027377
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": 0.00244,
+        "se": 0.008025245729532548
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": 0.00256,
+        "se": 0.003958507587923317
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 8.91004,
+        "se": 0.0040923195023822604
+      },
+      "elo": 0.013897423428318675,
+      "elo_se": 0.2337931786805084,
+      "win_rate_se_as_iid_games": 0.0015811388288192786,
+      "policy_decisions": {}
+    },
+    {
+      "player": "hand-48",
+      "opponent": "heuristic",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 46306,
+        "split": 3692,
+        "both_lost": 2
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.96304,
+        "se": 0.0005853939030434417
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.95344,
+        "se": 0.0009422638087190362
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.97264,
+        "se": 0.0007295472930421
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": 32.937,
+        "se": 0.04461401380961552
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": 1.98,
+        "se": 0.02442085026280926
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 9.46531,
+        "se": 0.0035857899040218064
+      },
+      "elo": 566.3649453730583,
+      "elo_se": 2.857039264636259,
+      "win_rate_se_as_iid_games": 0.0005966067247358179,
+      "policy_decisions": {}
+    },
+    {
+      "player": "hand-48",
+      "opponent": "pre-cut-rank",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 9570,
+        "split": 37650,
+        "both_lost": 2780
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.5679,
+        "se": 0.0010690250961942502
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.51204,
+        "se": 0.00223544195004349
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.62376,
+        "se": 0.002166509432996419
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": 3.37944,
+        "se": 0.03302528000048421
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": 0.79445,
+        "se": 0.018009263466933132
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 9.01661,
+        "se": 0.0038174695309160477
+      },
+      "elo": 47.4750409488916,
+      "elo_se": 0.7567911911719739,
+      "win_rate_se_as_iid_games": 0.0015664915895082234,
+      "policy_decisions": {}
+    },
+    {
+      "player": "hand-48",
+      "opponent": "pre-cut-suit",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 7762,
+        "split": 39080,
+        "both_lost": 3158
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.54604,
+        "se": 0.0010245132310259398
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.49206,
+        "se": 0.002235808378368347
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.60002,
+        "se": 0.002190893879748594
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": 2.29023,
+        "se": 0.030942937485791567
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": 0.81104,
+        "se": 0.01687206495066665
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 8.98089,
+        "se": 0.00382425007756725
+      },
+      "elo": 32.08274825781935,
+      "elo_se": 0.717992369452172,
+      "win_rate_se_as_iid_games": 0.0015744215394868047,
+      "policy_decisions": {}
+    },
+    {
+      "player": "heuristic",
+      "opponent": "hand-46",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 5,
+        "split": 3759,
+        "both_lost": 46236
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.03769,
+        "se": 0.0005911820937117079
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.0263,
+        "se": 0.0007156650358434947
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.04908,
+        "se": 0.0009661478876625548
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": -32.92156,
+        "se": 0.044772069799068726
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": -1.98209,
+        "se": 0.024625885026172488
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 9.46476,
+        "se": 0.0035982803949158836
+      },
+      "elo": -562.8355445637228,
+      "elo_se": 2.831551321595419,
+      "win_rate_se_as_iid_games": 0.0006022413461395689,
+      "policy_decisions": {}
+    },
+    {
+      "player": "heuristic",
+      "opponent": "hand-48",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 2,
+        "split": 3692,
+        "both_lost": 46306
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.03696,
+        "se": 0.0005853939030434417
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.02736,
+        "se": 0.0007295472930421
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.04656,
+        "se": 0.0009422638087190362
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": -32.937,
+        "se": 0.04461401380961552
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": -1.98,
+        "se": 0.02442085026280926
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 9.46531,
+        "se": 0.0035857899040218064
+      },
+      "elo": -566.3649453730583,
+      "elo_se": 2.8570392646362586,
+      "win_rate_se_as_iid_games": 0.000596606724735818,
+      "policy_decisions": {}
+    },
+    {
+      "player": "heuristic",
+      "opponent": "pre-cut-rank",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 7,
+        "split": 5401,
+        "both_lost": 44592
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.05415,
+        "se": 0.0006958916836007641
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.03652,
+        "se": 0.0008388920471653882
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.07178,
+        "se": 0.0011543739790837594
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": -30.20649,
+        "se": 0.046002539737184565
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": -1.30282,
+        "se": 0.02450937402587636
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 9.69278,
+        "se": 0.003757499142780496
+      },
+      "elo": -496.8895228875816,
+      "elo_se": 2.360289203803703,
+      "win_rate_se_as_iid_games": 0.0007156659660763531,
+      "policy_decisions": {}
+    },
+    {
+      "player": "heuristic",
+      "opponent": "pre-cut-suit",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 9,
+        "split": 4736,
+        "both_lost": 45255
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.04754,
+        "se": 0.0006572728566981624
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.0339,
+        "se": 0.000809338557451708
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.06118,
+        "se": 0.0010718036794406637
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": -31.12328,
+        "se": 0.04556394147006211
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": -1.27849,
+        "se": 0.02430977551730402
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 9.61896,
+        "se": 0.0036898567274154933
+      },
+      "elo": -520.7150273936215,
+      "elo_se": 2.521645760257083,
+      "win_rate_se_as_iid_games": 0.0006729037702376173,
+      "policy_decisions": {}
+    },
+    {
+      "player": "pre-cut-rank",
+      "opponent": "hand-46",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 2819,
+        "split": 37707,
+        "both_lost": 9474
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.43345,
+        "se": 0.0010680565363759063
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.38042,
+        "se": 0.002171199381479067
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.48648,
+        "se": 0.0022352727173395237
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": -3.35747,
+        "se": 0.032954710198095885
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": -0.7679,
+        "se": 0.01778126303911804
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 9.00692,
+        "se": 0.003821090719504803
+      },
+      "elo": -46.519694638293856,
+      "elo_se": 0.7555466662500963,
+      "win_rate_se_as_iid_games": 0.001567070826414684,
+      "policy_decisions": {}
+    },
+    {
+      "player": "pre-cut-rank",
+      "opponent": "hand-48",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 2780,
+        "split": 37650,
+        "both_lost": 9570
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.4321,
+        "se": 0.0010690250961942502
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.37624,
+        "se": 0.002166509432996419
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.48796,
+        "se": 0.00223544195004349
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": -3.37944,
+        "se": 0.03302528000048421
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": -0.79445,
+        "se": 0.018009263466933132
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 9.01661,
+        "se": 0.0038174695309160477
+      },
+      "elo": -47.475040948891646,
+      "elo_se": 0.7567911911719739,
+      "win_rate_se_as_iid_games": 0.0015664915895082234,
+      "policy_decisions": {}
+    },
+    {
+      "player": "pre-cut-rank",
+      "opponent": "heuristic",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 44592,
+        "split": 5401,
+        "both_lost": 7
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.94585,
+        "se": 0.0006958916836007641
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.92822,
+        "se": 0.0011543739790837594
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.96348,
+        "se": 0.0008388920471653882
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": 30.20649,
+        "se": 0.046002539737184565
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": 1.30282,
+        "se": 0.02450937402587636
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 9.69278,
+        "se": 0.003757499142780496
+      },
+      "elo": 496.8895228875815,
+      "elo_se": 2.3602892038037018,
+      "win_rate_se_as_iid_games": 0.0007156659660763534,
+      "policy_decisions": {}
+    },
+    {
+      "player": "pre-cut-rank",
+      "opponent": "pre-cut-suit",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 1221,
+        "split": 45583,
+        "both_lost": 3196
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.48025,
+        "se": 0.0006587165005892618
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.423,
+        "se": 0.002209415676225867
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.5375,
+        "se": 0.00222979246556463
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": -1.02306,
+        "se": 0.01719974073495374
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": 0.03105,
+        "se": 0.008260616363544195
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 9.07625,
+        "se": 0.004100140847958697
+      },
+      "elo": -13.730849787910184,
+      "elo_se": 0.4584383846408945,
+      "win_rate_se_as_iid_games": 0.0015799048626420516,
+      "policy_decisions": {}
+    },
+    {
+      "player": "pre-cut-suit",
+      "opponent": "hand-46",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 3016,
+        "split": 39061,
+        "both_lost": 7923
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.45093,
+        "se": 0.001022625844222776
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.39376,
+        "se": 0.0021850301451318017
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.5081,
+        "se": 0.0022357968994869627
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": -2.37386,
+        "se": 0.03106311111826127
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": -0.85107,
+        "se": 0.017018662985081878
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 8.97643,
+        "se": 0.003837666433612113
+      },
+      "elo": -34.20743436950838,
+      "elo_se": 0.7175038270391425,
+      "win_rate_se_as_iid_games": 0.0015735060695783794,
+      "policy_decisions": {}
+    },
+    {
+      "player": "pre-cut-suit",
+      "opponent": "hand-48",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 3158,
+        "split": 39080,
+        "both_lost": 7762
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.45396,
+        "se": 0.0010245132310259398
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.39998,
+        "se": 0.002190893879748594
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.50794,
+        "se": 0.002235808378368347
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": -2.29023,
+        "se": 0.030942937485791567
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": -0.81104,
+        "se": 0.01687206495066665
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 8.98089,
+        "se": 0.00382425007756725
+      },
+      "elo": -32.082748257819375,
+      "elo_se": 0.7179923694521719,
+      "win_rate_se_as_iid_games": 0.0015744215394868047,
+      "policy_decisions": {}
+    },
+    {
+      "player": "pre-cut-suit",
+      "opponent": "heuristic",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 45255,
+        "split": 4736,
+        "both_lost": 9
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.95246,
+        "se": 0.0006572728566981624
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.93882,
+        "se": 0.0010718036794406637
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.9661,
+        "se": 0.000809338557451708
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": 31.12328,
+        "se": 0.04556394147006211
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": 1.27849,
+        "se": 0.02430977551730402
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 9.61896,
+        "se": 0.0036898567274154933
+      },
+      "elo": 520.7150273936214,
+      "elo_se": 2.5216457602570816,
+      "win_rate_se_as_iid_games": 0.0006729037702376175,
+      "policy_decisions": {}
+    },
+    {
+      "player": "pre-cut-suit",
+      "opponent": "pre-cut-rank",
+      "pairs": 50000,
+      "games": 100000,
+      "pair_outcomes": {
+        "both_won": 3196,
+        "split": 45583,
+        "both_lost": 1221
+      },
+      "win_rate": {
+        "n": 50000,
+        "mu": 0.51975,
+        "se": 0.0006587165005892618
+      },
+      "won_as_first_pone": {
+        "n": 50000,
+        "mu": 0.4625,
+        "se": 0.00222979246556463
+      },
+      "won_as_first_dealer": {
+        "n": 50000,
+        "mu": 0.577,
+        "se": 0.002209415676225867
+      },
+      "point_margin": {
+        "n": 50000,
+        "mu": 1.02306,
+        "se": 0.01719974073495374
+      },
+      "pegging_margin": {
+        "n": 50000,
+        "mu": -0.03105,
+        "se": 0.008260616363544195
+      },
+      "hands_per_game": {
+        "n": 50000,
+        "mu": 9.07625,
+        "se": 0.004100140847958697
+      },
+      "elo": 13.730849787910243,
+      "elo_se": 0.4584383846408944,
+      "win_rate_se_as_iid_games": 0.0015799048626420516,
+      "policy_decisions": {}
+    }
+  ]
+}

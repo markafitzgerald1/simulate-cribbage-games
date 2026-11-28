@@ -1,13 +1,14 @@
 """Run the issue #263 strength ladder from the command line.
 
-Rungs differ only in pegging: random, the legacy heuristic, and a CFR+
+The default rungs differ only in pegging: random, the legacy heuristic, and a CFR+
 six-layer policy loaded from a verified bundle. Every rung shares one
 discard rule, either the frozen rank-only discard population bound into
 that bundle's manifest or uniformly random keeps, so a rung's edge over the
 one below it measures pegging alone. A --table-player instead discards as
 the cribbage-trainer app advises from a crib and a play table, with any of
-the three pegging policies; the report records each table's SHA-256. The
-table counts the CFR policy's
+the three pegging policies; the report records each table's SHA-256.
+A --hand-player uses one hand-only scoring model with heuristic pegging.
+The table counts the CFR policy's
 calls by what it did: heuristic fallbacks (no stored menu), off-support
 calls (zero opponent reach under its saved policy and prior; it still
 samples its stored row), and all calls including forced ones. Results go to
@@ -51,6 +52,7 @@ from artifact_pipeline.ladder_match import MatchAccumulator, run_ladder
 from artifact_pipeline.pegging import LegacyHeuristicPolicy, PeggingPolicy
 from artifact_pipeline.six_layer_policy import SixLayerPolicy, read_manifest
 from artifact_pipeline.table_discards import (
+    HandScoring,
     TableDiscardRule,
     load_crib_table,
     load_play_table,
@@ -84,11 +86,16 @@ class RankDiscardRule:  # pylint: disable=too-few-public-methods
 
 def _validate(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
     tables = {player[0]: player for player in args.table_player}
-    known = set(RUNGS) | set(tables)
-    if len(tables) != len(args.table_player) or set(tables) & set(RUNGS):
-        parser.error(f"--table-player names must be distinct and not in {RUNGS}")
+    declared = [player[0] for player in [*args.table_player, *args.hand_player]]
+    known = set(RUNGS) | set(declared)
+    if len(known) != len(RUNGS) + len(declared):
+        parser.error(
+            f"--table-player and --hand-player names must be distinct and not in {RUNGS}"
+        )
     if any(player[1] not in RUNGS for player in args.table_player):
         parser.error(f"--table-player pegging must be one of {RUNGS}")
+    if any(mode not in HandScoring for _, mode in args.hand_player):
+        parser.error(f"--hand-player scoring must be one of {', '.join(HandScoring)}")
     missing = [
         path
         for player in args.table_player
@@ -159,6 +166,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         metavar=("NAME", "PEGGING", "CRIB", "PLAY"),
         help="a player discarding by the app's tables; CRIB or PLAY may be none",
     )
+    parser.add_argument(
+        "--hand-player",
+        nargs=2,
+        action="append",
+        default=[],
+        metavar=("NAME", "SCORING"),
+        help=f"a hand-only player with heuristic pegging; SCORING is {', '.join(HandScoring)}",
+    )
     parser.add_argument("--pairs", type=int, default=1000)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--workers", type=int, default=1)
@@ -169,7 +184,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     args.rungs = (
         [name.strip() for name in args.rungs.split(",")]
         if args.rungs is not None
-        else [*RUNGS, *(player[0] for player in args.table_player)]
+        else [
+            *RUNGS,
+            *(player[0] for player in [*args.table_player, *args.hand_player]),
+        ]
     )
     if args.policy_manifest:
         # Load components, discards and the output guard from one directory,
@@ -253,12 +271,20 @@ def build_players(
     if policy is not None:
         pegging["cfr"] = (policy, "CFR+ six-layer policy from the bundle")
     tables = {player[0]: player for player in args.table_player}
+    hands = dict(args.hand_player)
     players = []
     for name in args.rungs:
         if name in tables:
             rule = _table_rule(tables[name], provenance)
             style = tables[name][1]
             discards = "app-table"
+        elif name in hands:
+            style, discards = "heuristic", hands[name]
+            rule = TableDiscardRule(hand_scoring=discards)
+            provenance.setdefault("hand_players", {})[name] = {
+                "pegging": style,
+                "scoring": discards,
+            }
         else:
             rule, style, discards = discard_rule, name, args.discards
         players.append(
@@ -320,8 +346,11 @@ def format_summary(report: Mapping[str, Any]) -> str:
     names = [rung["name"] for rung in report["rungs"]]
     by_pair = {(m["player"], m["opponent"]): m for m in report["matches"]}
     tables = list(report["provenance"].get("table_players", {}))
+    hands = list(report["provenance"].get("hand_players", {}))
     discards = [f"app-table discards for {', '.join(tables)}"] if tables else []
-    if set(names) - set(tables):
+    if hands:
+        discards.append(f"hand-only discards for {', '.join(hands)}")
+    if set(names) - set(tables) - set(hands):
         discards.insert(0, f"{report['provenance']['discards']} discards")
     lines = [
         f"{report['pairs_per_match']:,} deal pairs per match, seed {report['seed']}, "

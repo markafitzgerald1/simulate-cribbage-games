@@ -922,6 +922,15 @@ ties occur in about 3% of deals. A test of an argument check must assert
 the check's own message: five table-player mutants survived because another
 check rejected the same command line first.
 
+The hand-only rungs hold pegging fixed and change the information used to
+rank a discard. Pre-cut suit-aware scoring awards four points for four
+matching suits and needs no starter. The legacy pre-cut flag passes a
+missing starter to a flush scorer that dereferences it on a flush. The
+48-starter rung deliberately puts the two discards back into the scoring
+pool, while the 46-starter rung excludes all six dealt cards. The actual
+game still draws from outside both dealt hands. Test both the exact means
+and a deal whose best keep changes with the pool.
+
 ## Lint Configuration Expectations
 
 Do not assume lint rules are enforced unless they are present in local
