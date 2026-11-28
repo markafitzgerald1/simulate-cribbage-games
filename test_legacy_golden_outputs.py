@@ -15,13 +15,14 @@ assert the rules. A golden that changes because a bug was fixed is
 regenerated, and its diff is reviewed. Comparison is exact after normalizing
 timing figures in the simulator's performance lines and trailing newlines.
 
+Fixed defects: #267 (in the second, fourth, sixth and every other
+even-numbered hand, where the players have swapped roles, nested
+simulation-based play, simulation-based discard and the play coach received
+scores in the game's original seat order) changed cases B, C and E when it
+was fixed; their earlier files recorded the bug.
+
 Known recorded defects:
 
-- #267: in the second, fourth and later hands (where the players have swapped
-  roles), simulation-based play, simulation-based discard and the
-  play coach pass the nested simulation the scores in the game's original
-  seat order instead of the current hand's pone-dealer order. Cases B, C and
-  E reach an odd hand and record this.
 - #268: nested simulation-based play starts from the live score and then
   replays the starter and earlier pegging, so heels and earlier pegging
   points count twice. Case B shows the heels case; the pegging replay also

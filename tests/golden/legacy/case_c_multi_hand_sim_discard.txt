@@ -430,9 +430,9 @@ Simulating each of the 15 possible discards  10 times in order to select discard
 [K♣,T♣,2♦,2♣] - [J♣,3♥]:   +0.000 ±  0.000 game points;   -0.400 ±  0.978 Δ-peg +   -3.300 ±  3.120 Δ-hand +   -5.600 ±  1.437 crib =   -9.300 ±  3.241 overall
 [J♣,T♣,2♦,2♣] - [K♣,3♥]:   +0.000 ±  0.000 game points;   -0.800 ±  1.364 Δ-peg +   -4.600 ±  2.665 Δ-hand +   -4.100 ±  1.531 crib =   -9.500 ±  2.881 overall
 [K♣,T♣,3♥,2♣] - [J♣,2♦]:   +0.000 ±  0.000 game points;   -1.500 ±  1.248 Δ-peg +   -2.900 ±  2.096 Δ-hand +   -5.100 ±  1.558 crib =   -9.500 ±  2.287 overall
+[K♣,J♣,T♣,2♣] - [3♥,2♦]:   +0.000 ±  0.000 game points;   -1.300 ±  1.895 Δ-peg +   -1.400 ±  3.385 Δ-hand +   -7.500 ±  1.735 crib =  -10.200 ±  4.790 overall
 [K♣,J♣,T♣,3♥] - [2♦,2♣]:   +0.000 ±  0.000 game points;   -0.100 ±  1.715 Δ-peg +   -4.200 ±  3.019 Δ-hand +   -7.400 ±  1.552 crib =  -11.700 ±  3.332 overall
 [K♣,J♣,T♣,2♦] - [3♥,2♣]:   +0.000 ±  0.000 game points;   -2.400 ±  0.978 Δ-peg +   -4.300 ±  2.614 Δ-hand +   -8.400 ±  1.782 crib =  -15.100 ±  3.512 overall
-[K♣,J♣,T♣,2♣] - [3♥,2♦]:   -0.100 ±  0.196 game points;   -1.300 ±  1.895 Δ-peg +   -1.400 ±  3.385 Δ-hand +   -7.200 ±  1.648 crib =   -9.900 ±  4.416 overall
 Simulating each of the 15 possible discards  10 times in order to select discard
 [5♥,4♠,4♦,A♣] - [9♦,8♠]:   +0.000 ±  0.000 game points;   -1.700 ±  1.520 Δ-peg +   +1.300 ±  2.803 Δ-hand +   -6.500 ±  2.483 crib =   -6.900 ±  3.057 overall
 [9♦,8♠,4♠,4♦] - [5♥,A♣]:   +0.000 ±  0.000 game points;   -2.300 ±  1.705 Δ-peg +   +2.100 ±  1.858 Δ-hand +   -5.200 ±  1.045 crib =   -5.400 ±  3.163 overall
@@ -961,21 +961,21 @@ Simulating each of the 15 possible discards  10 times in order to select discard
 [7♥,7♦,5♦,3♠] - [K♣,J♣]:   +0.000 ±  0.000 game points;   -1.900 ±  2.116 Δ-peg +   +1.700 ±  2.863 Δ-hand +   -4.200 ±  1.648 crib =   -4.400 ±  3.136 overall
 [J♣,7♥,5♦,3♠] - [K♣,7♦]:   +0.000 ±  0.000 game points;   -1.500 ±  2.132 Δ-peg +   -0.600 ±  1.606 Δ-hand +   -3.500 ±  1.580 crib =   -5.600 ±  3.976 overall
 [K♣,7♦,5♦,3♠] - [J♣,7♥]:   +0.000 ±  0.000 game points;   -0.500 ±  1.877 Δ-peg +   -3.700 ±  2.908 Δ-hand +   -2.100 ±  0.849 crib =   -6.300 ±  2.614 overall
-[J♣,7♥,7♦,5♦] - [K♣,3♠]:   +0.000 ±  0.000 game points;   -1.000 ±  0.924 Δ-peg +   -2.700 ±  3.293 Δ-hand +   -2.800 ±  1.085 crib =   -6.500 ±  2.650 overall
 [K♣,J♣,7♦,5♦] - [7♥,3♠]:   +0.000 ±  0.000 game points;   -2.400 ±  2.028 Δ-peg +   -0.500 ±  2.535 Δ-hand +   -3.700 ±  1.491 crib =   -6.600 ±  3.150 overall
 [J♣,7♦,5♦,3♠] - [K♣,7♥]:   +0.000 ±  0.000 game points;   -2.000 ±  1.894 Δ-peg +   -1.500 ±  1.807 Δ-hand +   -3.600 ±  1.758 crib =   -7.100 ±  2.685 overall
-[K♣,J♣,7♥,5♦] - [7♦,3♠]:   +0.000 ±  0.000 game points;   -1.900 ±  3.098 Δ-peg +   -2.400 ±  3.955 Δ-hand +   -2.800 ±  1.333 crib =   -7.100 ±  6.780 overall
-[K♣,J♣,5♦,3♠] - [7♥,7♦]:   +0.000 ±  0.000 game points;   -1.200 ±  1.455 Δ-peg +   -1.400 ±  2.805 Δ-hand +   -4.800 ±  1.956 crib =   -7.400 ±  4.019 overall
-[K♣,7♥,5♦,3♠] - [J♣,7♦]:   +0.000 ±  0.000 game points;   -2.100 ±  1.835 Δ-peg +   -2.400 ±  3.217 Δ-hand +   -3.500 ±  1.023 crib =   -8.000 ±  3.974 overall
 [K♣,J♣,7♥,7♦] - [5♦,3♠]:   +0.000 ±  0.000 game points;   -1.900 ±  1.353 Δ-peg +   -2.900 ±  2.116 Δ-hand +   -5.300 ±  1.014 crib =  -10.100 ±  2.327 overall
 [K♣,7♥,7♦,5♦] - [J♣,3♠]:   +0.000 ±  0.000 game points;   -3.300 ±  2.463 Δ-peg +   -0.400 ±  1.021 Δ-hand +   -7.100 ±  1.764 crib =  -10.800 ±  3.211 overall
-[K♣,7♥,7♦,3♠] - [J♣,5♦]:   +0.000 ±  0.000 game points;   -1.700 ±  0.829 Δ-peg +   -3.000 ±  2.994 Δ-hand +   -8.800 ±  3.392 crib =  -13.500 ±  3.812 overall
-[J♣,7♥,7♦,3♠] - [K♣,5♦]:   +0.000 ±  0.000 game points;   -3.100 ±  1.858 Δ-peg +   -3.400 ±  4.175 Δ-hand +   -7.400 ±  3.150 crib =  -13.900 ±  4.406 overall
-[K♣,J♣,7♥,3♠] - [7♦,5♦]:   +0.000 ±  0.000 game points;   -2.300 ±  1.241 Δ-peg +   -7.600 ±  2.517 Δ-hand +   -6.100 ±  1.858 crib =  -16.000 ±  2.127 overall
-[K♣,J♣,7♦,3♠] - [7♥,5♦]:   +0.000 ±  0.000 game points;   -2.900 ±  1.445 Δ-peg +   -7.300 ±  2.392 Δ-hand +   -7.800 ±  1.595 crib =  -18.000 ±  2.127 overall
+[K♣,J♣,7♥,5♦] - [7♦,3♠]:   -0.200 ±  0.392 game points;   -1.900 ±  3.098 Δ-peg +   -2.000 ±  3.742 Δ-hand +   -2.400 ±  1.407 crib =   -6.300 ±  6.185 overall
+[J♣,7♥,7♦,5♦] - [K♣,3♠]:   -0.200 ±  0.392 game points;   -1.000 ±  0.924 Δ-peg +   -2.700 ±  3.293 Δ-hand +   -2.700 ±  1.133 crib =   -6.400 ±  2.534 overall
+[K♣,J♣,5♦,3♠] - [7♥,7♦]:   -0.200 ±  0.392 game points;   -1.200 ±  1.455 Δ-peg +   -1.400 ±  2.805 Δ-hand +   -4.700 ±  1.983 crib =   -7.300 ±  3.964 overall
+[K♣,J♣,7♥,3♠] - [7♦,5♦]:   -0.200 ±  0.392 game points;   -2.300 ±  1.241 Δ-peg +   -7.600 ±  2.517 Δ-hand +   -6.000 ±  1.871 crib =  -15.900 ±  2.034 overall
+[K♣,7♥,5♦,3♠] - [J♣,7♦]:   -0.400 ±  0.523 game points;   -2.100 ±  1.835 Δ-peg +   -2.400 ±  3.217 Δ-hand +   -3.300 ±  0.926 crib =   -7.800 ±  3.762 overall
+[K♣,7♥,7♦,3♠] - [J♣,5♦]:   -0.400 ±  0.523 game points;   -1.700 ±  0.829 Δ-peg +   -3.000 ±  2.994 Δ-hand +   -8.600 ±  3.282 crib =  -13.300 ±  3.638 overall
+[K♣,J♣,7♦,3♠] - [7♥,5♦]:   -0.400 ±  0.523 game points;   -2.900 ±  1.445 Δ-peg +   -7.300 ±  2.392 Δ-hand +   -7.100 ±  1.321 crib =  -17.300 ±  1.680 overall
+[J♣,7♥,7♦,3♠] - [K♣,5♦]:   -0.600 ±  0.599 game points;   -3.100 ±  1.858 Δ-peg +   -3.400 ±  4.175 Δ-hand +   -6.900 ±  2.555 crib =  -13.400 ±  4.175 overall
 Simulating each of the 15 possible discards  10 times in order to select discard
-[T♥,9♦,8♣,7♣] - [3♥,2♥]:   +0.000 ±  0.000 game points;   -1.900 ±  1.764 Δ-peg +   -2.800 ±  3.303 Δ-hand +   -6.400 ±  2.028 crib =  -11.100 ±  4.387 overall
-[T♥,9♦,3♥,2♥] - [8♣,7♣]:   +0.000 ±  0.000 game points;   -3.100 ±  0.989 Δ-peg +   +2.600 ±  2.028 Δ-hand +   -7.200 ±  2.626 crib =   -7.700 ±  3.293 overall
+[T♥,9♦,3♥,2♥] - [8♣,7♣]:   -0.200 ±  0.392 game points;   -3.100 ±  0.989 Δ-peg +   +2.600 ±  2.028 Δ-hand +   -7.200 ±  2.626 crib =   -7.700 ±  3.293 overall
+[T♥,9♦,8♣,7♣] - [3♥,2♥]:   -0.200 ±  0.392 game points;   -1.900 ±  1.764 Δ-peg +   -2.800 ±  3.303 Δ-hand +   -6.300 ±  2.067 crib =  -11.000 ±  4.324 overall
 [9♦,8♣,7♣,2♥] - [T♥,3♥]:   +0.000 ±  0.000 game points;   -0.900 ±  1.740 Δ-peg +   +0.200 ±  3.075 Δ-hand +   -4.100 ±  1.221 crib =   -4.800 ±  3.929 overall
 [8♣,7♣,3♥,2♥] - [T♥,9♦]:   +0.000 ±  0.000 game points;   -2.700 ±  2.046 Δ-peg +   +2.100 ±  3.259 Δ-hand +   -3.700 ±  1.939 crib =   -4.300 ±  5.243 overall
 [T♥,7♣,3♥,2♥] - [9♦,8♣]:   +0.000 ±  0.000 game points;   -0.800 ±  1.956 Δ-peg +   +1.500 ±  2.896 Δ-hand +   -3.100 ±  1.185 crib =   -2.400 ±  4.093 overall
@@ -988,112 +988,112 @@ Simulating each of the 15 possible discards  10 times in order to select discard
 [9♦,8♣,7♣,3♥] - [T♥,2♥]:   +0.000 ±  0.000 game points;   -0.700 ±  1.849 Δ-peg +   +2.700 ±  3.134 Δ-hand +   -2.000 ±  1.339 crib =   +0.000 ±  4.304 overall
 [T♥,9♦,7♣,3♥] - [8♣,2♥]:   +0.000 ±  0.000 game points;   -0.500 ±  1.378 Δ-peg +   +5.500 ±  1.965 Δ-hand +   -3.900 ±  1.858 crib =   +1.100 ±  3.126 overall
 [9♦,7♣,3♥,2♥] - [T♥,8♣]:   +0.000 ±  0.000 game points;   +0.800 ±  2.020 Δ-peg +   +5.200 ±  1.843 Δ-hand +   -4.700 ±  1.983 crib =   +1.300 ±  2.695 overall
-[T♥,9♦,8♣,3♥] - [7♣,2♥]:   +0.200 ±  0.392 game points;   +1.000 ±  1.871 Δ-peg +   +6.200 ±  3.211 Δ-hand +   -4.800 ±  2.259 crib =   +2.400 ±  5.444 overall
+[T♥,9♦,8♣,3♥] - [7♣,2♥]:   +0.000 ±  0.000 game points;   +1.000 ±  1.871 Δ-peg +   +6.000 ±  3.022 Δ-hand +   -5.000 ±  2.107 crib =   +2.000 ±  4.924 overall
 Pone   discarded [J♣,K♣] (sorted: [K♣,J♣])
-Dealer discarded [2♥,3♥] (sorted: [3♥,2♥])
+Dealer discarded [7♣,8♣] (sorted: [8♣,7♣])
 Pone   kept      [3♠,7♦,7♥,5♦] (sorted: [7♥,7♦,5♦,3♠])
-Dealer kept      [9♦,T♥,7♣,8♣] (sorted: [T♥,9♦,8♣,7♣])
+Dealer kept      [2♥,9♦,T♥,3♥] (sorted: [T♥,9♦,3♥,2♥])
 Cut/starter card is: 6♦
 Pone   plays 3♠ for 3 ([3♠])
-Dealer plays T♥ for 13 ([3♠,T♥])
-Pone   plays 7♦ for 20 ([3♠,T♥,7♦])
-Dealer plays 7♣ for 27 ([3♠,T♥,7♦,7♣])
+Dealer plays 3♥ for 6 ([3♠,3♥])
 !Pair for 2 points for Dealer. [98-68]
+Pone   plays 7♦ for 13 ([3♠,3♥,7♦])
+Dealer plays 2♥ for 15 ([3♠,3♥,7♦,2♥])
+!15 for 2 points for Dealer. [100-68]
+Pone   plays 5♦ for 20 ([3♠,3♥,7♦,2♥,5♦])
+Dealer plays T♥ for 30 ([3♠,3♥,7♦,2♥,5♦,T♥])
 Pone   says 'Go'
 Dealer says 'Go'
-!Go for 1 point for Dealer. [99-68]
+!Go for 1 point for Dealer. [101-68]
 ---resetting play count to 0---
-Pone   plays 7♥ for 7 ([3♠,T♥,7♦,7♣,Go,Go];[7♥])
-Dealer plays 8♣ for 15 ([3♠,T♥,7♦,7♣,Go,Go];[7♥,8♣])
-!15 for 2 points for Dealer. [101-68]
-Pone   plays 5♦ for 20 ([3♠,T♥,7♦,7♣,Go,Go];[7♥,8♣,5♦])
-Dealer plays 9♦ for 29 ([3♠,T♥,7♦,7♣,Go,Go];[7♥,8♣,5♦,9♦])
+Pone   plays 7♥ for 7 ([3♠,3♥,7♦,2♥,5♦,T♥,Go,Go];[7♥])
+Dealer plays 9♦ for 16 ([3♠,3♥,7♦,2♥,5♦,T♥,Go,Go];[7♥,9♦])
 !Last card for 1 point for Dealer [102-68].
 ![7♥,7♦,5♦,3♠] hand + starter 6♦ scores 12 points for Pone.   [102-80]
-![T♥,9♦,8♣,7♣] hand + starter 6♦ scores  9 points for Dealer. [111-80]
-![K♣,J♣,3♥,2♥] crib + starter 6♦ scores  4 points for Dealer. [115-80]
-+++ Game score is [115-80] for first pone and first dealer after 8 hands played.
+![T♥,9♦,3♥,2♥] hand + starter 6♦ scores  4 points for Dealer. [106-80]
+![K♣,J♣,8♣,7♣] crib + starter 6♦ scores  5 points for Dealer. [111-80]
++++ Game score is [111-80] for first pone and first dealer after 8 hands played.
 
 Pone   dealt     [Q♠,J♦,J♣,7♥,K♠,9♣] (sorted: [K♠,Q♠,J♦,J♣,9♣,7♥])
 Dealer dealt     [2♥,7♣,4♦,7♦,7♠,5♥] (sorted: [7♠,7♦,7♣,5♥,4♦,2♥])
 Simulating each of the 15 possible discards  10 times in order to select discard
-[K♠,Q♠,J♦,J♣] - [9♣,7♥]:   +2.000 ±  0.000 game points;   -3.200 ±  1.267 Δ-peg +   +5.000 ±  0.292 Δ-hand +   +0.000 ±  0.000 crib =   +1.800 ±  1.161 overall
-[K♠,Q♠,J♣,9♣] - [J♦,7♥]:   +1.800 ±  0.392 game points;   -0.700 ±  2.067 Δ-peg +   +2.700 ±  1.628 Δ-hand +   -0.400 ±  0.784 crib =   +1.600 ±  2.584 overall
-[K♠,Q♠,J♣,7♥] - [J♦,9♣]:   +1.600 ±  0.523 game points;   -2.300 ±  1.849 Δ-peg +   +2.000 ±  3.050 Δ-hand +   -1.100 ±  1.445 crib =   -1.400 ±  4.061 overall
-[K♠,Q♠,J♦,9♣] - [J♣,7♥]:   +1.600 ±  0.523 game points;   -4.000 ±  1.518 Δ-peg +   +2.100 ±  3.375 Δ-hand +   -0.700 ±  0.926 crib =   -2.600 ±  4.365 overall
-[K♠,J♦,J♣,9♣] - [Q♠,7♥]:   +1.200 ±  0.640 game points;   -0.700 ±  2.245 Δ-peg +   -0.300 ±  2.663 Δ-hand +   -1.700 ±  1.491 crib =   -2.700 ±  5.316 overall
-[Q♠,J♦,J♣,9♣] - [K♠,7♥]:   +1.200 ±  0.640 game points;   -1.700 ±  1.730 Δ-peg +   -0.200 ±  3.682 Δ-hand +   -1.600 ±  1.437 crib =   -3.500 ±  4.677 overall
-[J♦,J♣,9♣,7♥] - [K♠,Q♠]:   +1.200 ±  0.640 game points;   -1.700 ±  2.338 Δ-peg +   -1.800 ±  4.487 Δ-hand +   -0.900 ±  0.742 crib =   -4.400 ±  6.715 overall
-[Q♠,J♣,9♣,7♥] - [K♠,J♦]:   +1.200 ±  0.640 game points;   -1.700 ±  2.168 Δ-peg +   -1.800 ±  3.874 Δ-hand +   -1.500 ±  1.409 crib =   -5.000 ±  5.814 overall
-[K♠,Q♠,J♦,7♥] - [J♣,9♣]:   +1.200 ±  0.640 game points;   -3.300 ±  1.917 Δ-peg +   -1.400 ±  4.113 Δ-hand +   -1.600 ±  1.606 crib =   -6.300 ±  5.866 overall
-[Q♠,J♦,J♣,7♥] - [K♠,9♣]:   +1.000 ±  0.653 game points;   -3.700 ±  2.283 Δ-peg +   -0.300 ±  3.888 Δ-hand +   -2.700 ±  1.849 crib =   -6.700 ±  6.682 overall
-[K♠,J♦,J♣,7♥] - [Q♠,9♣]:   +0.600 ±  0.599 game points;   -1.500 ±  2.360 Δ-peg +   -4.000 ±  2.892 Δ-hand +   -2.800 ±  1.455 crib =   -8.300 ±  5.967 overall
-[Q♠,J♦,9♣,7♥] - [K♠,J♣]:   +0.600 ±  0.599 game points;   -2.400 ±  1.658 Δ-peg +   -4.600 ±  4.452 Δ-hand +   -2.700 ±  2.187 crib =   -9.700 ±  6.415 overall
-[K♠,J♦,9♣,7♥] - [Q♠,J♣]:   +0.400 ±  0.523 game points;   -2.200 ±  2.082 Δ-peg +   -3.400 ±  2.465 Δ-hand +   -4.300 ±  2.207 crib =   -9.900 ±  5.608 overall
-[K♠,Q♠,9♣,7♥] - [J♦,J♣]:   +0.200 ±  0.392 game points;   -4.000 ±  1.729 Δ-peg +   -3.500 ±  2.230 Δ-hand +   -6.300 ±  2.757 crib =  -13.800 ±  4.691 overall
+[K♠,Q♠,J♦,J♣] - [9♣,7♥]:   +1.200 ±  0.640 game points;   -3.200 ±  1.267 Δ-peg +   +4.100 ±  4.043 Δ-hand +   -1.400 ±  1.552 crib =   -0.500 ±  5.484 overall
+[J♦,J♣,9♣,7♥] - [K♠,Q♠]:   +0.600 ±  0.599 game points;   -1.900 ±  2.195 Δ-peg +   -2.400 ±  4.538 Δ-hand +   -2.300 ±  1.628 crib =   -6.600 ±  6.651 overall
+[K♠,Q♠,J♣,9♣] - [J♦,7♥]:   +0.400 ±  0.523 game points;   -1.500 ±  1.468 Δ-peg +   +0.000 ±  2.147 Δ-hand +   -3.200 ±  1.699 crib =   -4.700 ±  3.942 overall
+[Q♠,J♦,J♣,9♣] - [K♠,7♥]:   +0.400 ±  0.523 game points;   -1.700 ±  1.730 Δ-peg +   -2.700 ±  4.091 Δ-hand +   -2.500 ±  1.497 crib =   -6.900 ±  4.483 overall
+[K♠,J♦,J♣,7♥] - [Q♠,9♣]:   +0.400 ±  0.523 game points;   -1.900 ±  2.096 Δ-peg +   -4.100 ±  2.928 Δ-hand +   -2.800 ±  1.455 crib =   -8.800 ±  5.731 overall
+[K♠,Q♠,J♣,7♥] - [J♦,9♣]:   +0.400 ±  0.523 game points;   -2.400 ±  1.709 Δ-peg +   -1.600 ±  3.230 Δ-hand +   -3.900 ±  1.970 crib =   -7.900 ±  4.954 overall
+[Q♠,J♦,J♣,7♥] - [K♠,9♣]:   +0.200 ±  0.392 game points;   -3.700 ±  2.283 Δ-peg +   -2.900 ±  3.560 Δ-hand +   -4.100 ±  1.255 crib =  -10.700 ±  5.404 overall
+[K♠,Q♠,J♦,7♥] - [J♣,9♣]:   +0.200 ±  0.392 game points;   -3.300 ±  1.917 Δ-peg +   -4.200 ±  3.316 Δ-hand +   -3.200 ±  1.648 crib =  -10.700 ±  4.810 overall
+[Q♠,J♦,9♣,7♥] - [K♠,J♣]:   +0.200 ±  0.392 game points;   -2.400 ±  1.658 Δ-peg +   -5.200 ±  4.342 Δ-hand +   -3.700 ±  2.067 crib =  -11.300 ±  5.651 overall
+[K♠,Q♠,J♦,9♣] - [J♣,7♥]:   +0.200 ±  0.392 game points;   -4.000 ±  1.518 Δ-peg +   -0.800 ±  3.576 Δ-hand +   -4.800 ±  2.278 crib =   -9.600 ±  4.500 overall
+[K♠,J♦,J♣,9♣] - [Q♠,7♥]:   +0.000 ±  0.000 game points;   -0.800 ±  2.123 Δ-peg +   -2.600 ±  2.248 Δ-hand +   -4.900 ±  1.289 crib =   -8.300 ±  3.079 overall
+[K♠,J♦,9♣,7♥] - [Q♠,J♣]:   +0.000 ±  0.000 game points;   -2.200 ±  2.082 Δ-peg +   -4.600 ±  1.524 Δ-hand +   -5.300 ±  1.917 crib =  -12.100 ±  3.678 overall
+[Q♠,J♣,9♣,7♥] - [K♠,J♦]:   +0.000 ±  0.000 game points;   -1.700 ±  2.168 Δ-peg +   -6.300 ±  3.147 Δ-hand +   -4.900 ±  2.571 crib =  -12.900 ±  4.568 overall
 [K♠,J♣,9♣,7♥] - [Q♠,J♦]:   +0.000 ±  0.000 game points;   -2.000 ±  1.490 Δ-peg +   -6.000 ±  2.445 Δ-hand +   -6.300 ±  2.788 crib =  -14.300 ±  3.953 overall
+[K♠,Q♠,9♣,7♥] - [J♦,J♣]:   +0.000 ±  0.000 game points;   -4.000 ±  1.729 Δ-peg +   -4.100 ±  1.740 Δ-hand +   -7.100 ±  2.400 crib =  -15.200 ±  3.442 overall
 Simulating each of the 15 possible discards  10 times in order to select discard
-[7♠,7♦,7♣,4♦] - [5♥,2♥]:   +1.400 ±  0.599 game points;   -1.600 ±  1.021 Δ-peg +   +1.700 ±  3.093 Δ-hand +   -1.600 ±  1.632 crib =   -1.500 ±  5.080 overall
-[7♣,5♥,4♦,2♥] - [7♠,7♦]:   +1.500 ±  0.527 game points;   -2.700 ±  1.983 Δ-peg +   +3.200 ±  1.568 Δ-hand +   -0.600 ±  0.837 crib =   -0.100 ±  2.346 overall
-[7♦,5♥,4♦,2♥] - [7♠,7♣]:   +1.600 ±  0.523 game points;   -3.500 ±  1.783 Δ-peg +   +3.500 ±  1.141 Δ-hand +   -1.800 ±  2.510 crib =   -1.800 ±  3.885 overall
-[7♦,7♣,5♥,4♦] - [7♠,2♥]:   +1.600 ±  0.523 game points;   -2.200 ±  1.085 Δ-peg +   +2.400 ±  2.267 Δ-hand +   -1.500 ±  2.211 crib =   -1.300 ±  4.517 overall
-[7♠,7♣,5♥,4♦] - [7♦,2♥]:   +1.600 ±  0.523 game points;   -2.700 ±  1.372 Δ-peg +   +3.200 ±  1.724 Δ-hand +   -0.700 ±  1.014 crib =   -0.200 ±  3.211 overall
-[7♠,7♦,7♣,2♥] - [5♥,4♦]:   +1.600 ±  0.523 game points;   -1.100 ±  0.849 Δ-peg +   +2.800 ±  2.675 Δ-hand +   -2.300 ±  3.280 crib =   -0.600 ±  5.599 overall
-[7♠,7♦,4♦,2♥] - [7♣,5♥]:   +1.600 ±  0.523 game points;   -2.100 ±  1.221 Δ-peg +   +3.300 ±  1.730 Δ-hand +   -1.800 ±  2.370 crib =   -0.600 ±  3.789 overall
-[7♦,7♣,4♦,2♥] - [7♠,5♥]:   +1.600 ±  0.523 game points;   -1.700 ±  1.055 Δ-peg +   +2.600 ±  1.806 Δ-hand +   -1.400 ±  1.852 crib =   -0.500 ±  3.460 overall
-[7♠,7♣,5♥,2♥] - [7♦,4♦]:   +1.600 ±  0.523 game points;   -2.700 ±  2.004 Δ-peg +   +3.100 ±  1.764 Δ-hand +   -0.600 ±  1.176 crib =   -0.200 ±  4.025 overall
-[7♠,7♦,5♥,2♥] - [7♣,4♦]:   +1.800 ±  0.392 game points;   -2.600 ±  1.345 Δ-peg +   +2.800 ±  2.493 Δ-hand +   -0.200 ±  0.392 crib =   +0.000 ±  3.602 overall
-[7♦,7♣,5♥,2♥] - [7♠,4♦]:   +1.800 ±  0.392 game points;   -2.900 ±  1.185 Δ-peg +   +3.900 ±  1.764 Δ-hand +   -0.400 ±  0.784 crib =   +0.600 ±  2.744 overall
-[7♠,5♥,4♦,2♥] - [7♦,7♣]:   +1.800 ±  0.392 game points;   -2.500 ±  1.659 Δ-peg +   +4.100 ±  1.255 Δ-hand +   -0.400 ±  0.784 crib =   +1.200 ±  2.738 overall
-[7♠,7♣,4♦,2♥] - [7♦,5♥]:   +1.800 ±  0.392 game points;   -1.200 ±  1.796 Δ-peg +   +3.700 ±  1.939 Δ-hand +   -0.800 ±  1.568 crib =   +1.700 ±  3.267 overall
-[7♠,7♦,5♥,4♦] - [7♣,2♥]:   +1.800 ±  0.392 game points;   -1.100 ±  1.384 Δ-peg +   +3.400 ±  1.212 Δ-hand +   -0.200 ±  0.392 crib =   +2.100 ±  1.612 overall
-[7♠,7♦,7♣,5♥] - [4♦,2♥]:   +2.000 ±  0.000 game points;   -2.100 ±  1.321 Δ-peg +   +3.800 ±  0.570 Δ-hand +   +0.000 ±  0.000 crib =   +1.700 ±  1.433 overall
+[7♠,7♣,5♥,4♦] - [7♦,2♥]:   +0.400 ±  0.523 game points;   -2.700 ±  1.372 Δ-peg +   +3.100 ±  2.327 Δ-hand +   -3.500 ±  1.659 crib =   -3.100 ±  3.043 overall
+[7♠,7♦,7♣,2♥] - [5♥,4♦]:   +0.600 ±  0.599 game points;   -1.100 ±  0.849 Δ-peg +   +0.800 ±  3.564 Δ-hand +   -6.700 ±  3.708 crib =   -7.000 ±  6.688 overall
+[7♠,7♦,7♣,4♦] - [5♥,2♥]:   +0.600 ±  0.599 game points;   -1.600 ±  1.021 Δ-peg +   +1.100 ±  3.769 Δ-hand +   -3.900 ±  1.715 crib =   -4.400 ±  5.491 overall
+[7♦,7♣,5♥,4♦] - [7♠,2♥]:   +0.600 ±  0.599 game points;   -2.200 ±  1.085 Δ-peg +   +3.100 ±  2.621 Δ-hand +   -3.600 ±  2.111 crib =   -2.700 ±  4.739 overall
+[7♠,5♥,4♦,2♥] - [7♦,7♣]:   +0.800 ±  0.640 game points;   -2.500 ±  1.659 Δ-peg +   +4.200 ±  2.240 Δ-hand +   -7.100 ±  5.501 crib =   -5.400 ±  7.742 overall
+[7♦,5♥,4♦,2♥] - [7♠,7♣]:   +0.800 ±  0.640 game points;   -3.500 ±  1.783 Δ-peg +   +4.000 ±  2.802 Δ-hand +   -5.000 ±  2.994 crib =   -4.500 ±  4.943 overall
+[7♠,7♣,4♦,2♥] - [7♦,5♥]:   +0.800 ±  0.640 game points;   -1.400 ±  1.579 Δ-peg +   +3.400 ±  2.286 Δ-hand +   -3.400 ±  1.964 crib =   -1.400 ±  4.286 overall
+[7♠,7♦,4♦,2♥] - [7♣,5♥]:   +1.000 ±  0.653 game points;   -2.100 ±  1.221 Δ-peg +   +5.000 ±  2.225 Δ-hand +   -3.700 ±  2.514 crib =   -0.800 ±  4.673 overall
+[7♠,7♦,5♥,2♥] - [7♣,4♦]:   +1.000 ±  0.653 game points;   -2.600 ±  1.345 Δ-peg +   +3.800 ±  3.117 Δ-hand +   -1.800 ±  1.364 crib =   -0.600 ±  4.462 overall
+[7♣,5♥,4♦,2♥] - [7♠,7♦]:   +1.000 ±  0.653 game points;   -2.700 ±  1.983 Δ-peg +   +4.100 ±  2.571 Δ-hand +   -1.900 ±  1.384 crib =   -0.500 ±  4.519 overall
+[7♠,7♣,5♥,2♥] - [7♦,4♦]:   +1.000 ±  0.653 game points;   -2.700 ±  2.004 Δ-peg +   +3.500 ±  3.557 Δ-hand +   -0.800 ±  1.198 crib =   +0.000 ±  4.792 overall
+[7♦,7♣,5♥,2♥] - [7♠,4♦]:   +1.000 ±  0.653 game points;   -2.900 ±  1.185 Δ-peg +   +4.500 ±  2.360 Δ-hand +   -1.400 ±  1.021 crib =   +0.200 ±  3.918 overall
+[7♠,7♦,7♣,5♥] - [4♦,2♥]:   +1.200 ±  0.640 game points;   -2.100 ±  1.321 Δ-peg +   +2.600 ±  4.155 Δ-hand +   -1.300 ±  1.095 crib =   -0.800 ±  5.370 overall
+[7♦,7♣,4♦,2♥] - [7♠,5♥]:   +1.200 ±  0.640 game points;   -1.700 ±  1.055 Δ-peg +   +4.300 ±  2.663 Δ-hand +   -2.700 ±  2.187 crib =   -0.100 ±  4.945 overall
+[7♠,7♦,5♥,4♦] - [7♣,2♥]:   +1.200 ±  0.640 game points;   -1.300 ±  1.095 Δ-peg +   +5.100 ±  2.034 Δ-hand +   -1.200 ±  1.045 crib =   +2.600 ±  3.282 overall
 Pone   discarded [7♥,9♣] (sorted: [9♣,7♥])
-Dealer discarded [2♥,5♥] (sorted: [5♥,2♥])
+Dealer discarded [2♥,7♦] (sorted: [7♦,2♥])
 Pone   kept      [Q♠,J♦,J♣,K♠] (sorted: [K♠,Q♠,J♦,J♣])
-Dealer kept      [7♣,4♦,7♦,7♠] (sorted: [7♠,7♦,7♣,4♦])
+Dealer kept      [7♣,4♦,7♠,5♥] (sorted: [7♠,7♣,5♥,4♦])
 Cut/starter card is: T♦
 Pone   plays Q♠ for 10 ([Q♠])
-Dealer plays 7♣ for 17 ([Q♠,7♣])
-Pone   plays J♦ for 27 ([Q♠,7♣,J♦])
-Dealer plays 4♦ for 31 ([Q♠,7♣,J♦,4♦])
-!31 for 1 point for Dealer. [115-81]
+Dealer plays 5♥ for 15 ([Q♠,5♥])
+!15 for 2 points for Dealer. [111-82]
+Pone   plays J♦ for 25 ([Q♠,5♥,J♦])
+Dealer plays 4♦ for 29 ([Q♠,5♥,J♦,4♦])
 Pone   says 'Go'
 Dealer says 'Go'
-!Go for 1 point for Dealer. [115-82]
+!Go for 1 point for Dealer. [111-83]
 ---resetting play count to 0---
-Pone   plays J♣ for 10 ([Q♠,7♣,J♦,4♦,Go,Go];[J♣])
-Dealer plays 7♦ for 17 ([Q♠,7♣,J♦,4♦,Go,Go];[J♣,7♦])
-Pone   plays K♠ for 27 ([Q♠,7♣,J♦,4♦,Go,Go];[J♣,7♦,K♠])
+Pone   plays J♣ for 10 ([Q♠,5♥,J♦,4♦,Go,Go];[J♣])
+Dealer plays 7♣ for 17 ([Q♠,5♥,J♦,4♦,Go,Go];[J♣,7♣])
+Pone   plays K♠ for 27 ([Q♠,5♥,J♦,4♦,Go,Go];[J♣,7♣,K♠])
 Dealer says 'Go'
 Pone   says 'Go'
-!Go for 1 point for Pone. [116-82]
+!Go for 1 point for Pone. [112-83]
 ---resetting play count to 0---
-Dealer plays 7♠ for 7 ([Q♠,7♣,J♦,4♦,Go,Go];[J♣,7♦,K♠,Go,Go];[7♠])
-!Last card for 1 point for Dealer [116-83].
-![K♠,Q♠,J♦,J♣] hand + starter T♦ scores 11 points for Pone.   [121-83]
-+++ Score at end of game simulation: [121-83] for first pone and first dealer.
+Dealer plays 7♠ for 7 ([Q♠,5♥,J♦,4♦,Go,Go];[J♣,7♣,K♠,Go,Go];[7♠])
+!Last card for 1 point for Dealer [112-84].
+![K♠,Q♠,J♦,J♣] hand + starter T♦ scores 11 points for Pone.   [121-84]
++++ Score at end of game simulation: [121-84] for first pone and first dealer.
 ### Game points at end of game simulation: [[2.00000-0.00000]] for pone and dealer.
 
 Mean play statistics 95% confidence intervals (n = 2):
 First Pone                    Play  points:  +25.00000 ±  7.83986
-First Pone                    Hand  points:  +74.50000 ±  6.85987
-First Pone                    Crib  points:  +11.50000 ±  4.89991
+First Pone                    Hand  points:  +74.00000 ±  5.87989
+First Pone                    Crib  points:  +12.00000 ±  5.87989
 First Pone                    Total points: +111.00000 ± 19.59964
 First Pone                    Game  points:   +1.00000 ±  1.95996
 First Pone                    Game  wins  :   +0.50000 ±  0.97998
 -----------------------------------------------------
-First Dealer                  Play  points:  +20.00000 ±  1.95996
+First Dealer                  Play  points:  +20.50000 ±  0.97998
 First Dealer                  Hand  points:  +63.50000 ± 22.53959
 First Dealer                  Crib  points:  +18.50000 ± 12.73977
-First Dealer                  Total points: +102.00000 ± 37.23932
+First Dealer                  Total points: +102.50000 ± 36.25933
 First Dealer                  Game  points:   +0.50000 ±  0.97998
 First Dealer                  Game  wins  :   +0.50000 ±  0.97998
 -----------------------------------------------------
-First Pone minus First Dealer Play  points:   +5.00000 ±  9.79982
-First Pone minus First Dealer Hand  points:  +11.00000 ± 29.39946
-First Pone minus First Dealer Crib  points:   -7.00000 ± 17.63968
-First Pone minus First Dealer Total points:   +9.00000 ± 56.83896
+First Pone minus First Dealer Play  points:   +4.50000 ±  8.81984
+First Pone minus First Dealer Hand  points:  +10.50000 ± 28.41948
+First Pone minus First Dealer Crib  points:   -6.50000 ± 18.61966
+First Pone minus First Dealer Total points:   +8.50000 ± 55.85897
 First Pone minus First Dealer Game  points:   +0.50000 ±  2.93995
 Simulated 2 games at <SPEED> games/s (<TIME> ns/game) in <ELAPSED> s
 Simulated 2 games with 1 worker processes at <SPEED> games/s (<TIME> ns/game) in <ELAPSED> s

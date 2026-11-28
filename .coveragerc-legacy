@@ -1,0 +1,7 @@
+# Coverage floor for simulate_cribbage_games.py alone, reported from the
+# default suite's data by pre-push and the legacy-tests CI job. Raise
+# fail_under to the measured value, rounded down, in any pull request that
+# adds legacy tests.
+[report]
+include = simulate_cribbage_games.py
+fail_under = 58

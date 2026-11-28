@@ -266,6 +266,7 @@ Python validation set before marking work ready for review:
 coverage run
 coverage xml
 coverage report
+coverage report --rcfile=.coveragerc-legacy
 coverage run -m unittest discover artifact_pipeline
 coverage run --append scripts/run_slow_analytical_tests.py
 coverage run --append -m unittest test_fixed_play_release test_check_legacy_pylint_ratchet
@@ -443,6 +444,12 @@ documentation, or new modules around the legacy file. If a direct edit is
 explicitly requested, keep it minimal, explain why no safer boundary exists, and
 run the full Python validation set.
 
+Nested simulations started by `play_based_on_simulation` and
+`player_select_kept_cards_based_on_simulation` seat the current hand's pone as
+nested first pone. Pass the parent's scores in current-hand order using
+`pone_is_parent_game_first_pone`. Before the seat-flip fix, odd hands received
+swapped scores.
+
 `test_legacy_golden_outputs.py` compares normalized output exactly for any
 legacy edit. Its golden files record current behavior, known bugs included, so a
 golden is never evidence of correctness: assert correct cribbage behavior in
@@ -452,6 +459,22 @@ shelf. Regenerate only with `--regenerate <case>` for cases the edit is
 expected to change, after showing that every other case still matches. The two
 README commands with `--process-count 2` run with one process in this suite,
 which leaves multi-process paths uncovered.
+
+Inserting lines into the legacy file shifts the pylint ratchet's line-keyed
+baseline. Confirm that the message multiset (symbol, object, column) is
+unchanged, report any increase in an `(actual/limit)` count, and get the
+maintainer's approval before running `--refresh`.
+
+The default suite has two coverage floors, both ratchets: the total in
+`.coveragerc` and the legacy file's own in `.coveragerc-legacy`, which pre-push
+and the `legacy-tests` CI job report with `--rcfile`. Coverage.py holds one
+`fail_under` per configuration file, hence the second file. A pull request that
+adds legacy tests raises both floors to the measured value, rounded down.
+Coverage.py compares each floor with the run's combined line and branch
+percentage rounded to a whole number. Much legacy coverage is incidental: tests
+that play whole hands execute code they never assert. Read the floor as code
+executed, not code tested, and use per-test coverage contexts or mutation
+testing to tell them apart.
 
 Near the end of this section, observe these boundaries: agents must never
 attempt to format, lint, refactor, reorganize, modernize, or mechanically clean
