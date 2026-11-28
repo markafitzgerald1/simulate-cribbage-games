@@ -28,7 +28,11 @@ from artifact_pipeline.strength_ladder import (
     main,
     parse_args,
 )
-from artifact_pipeline.table_discards import TableDiscardRule
+from artifact_pipeline.table_discards import (
+    TableDiscardRule,
+    load_crib_table,
+    load_play_table,
+)
 from artifact_pipeline.test_fixed_policy_fixtures import make_bundle
 from artifact_pipeline.test_table_discards import crib_json, play_json
 
@@ -332,32 +336,25 @@ class TestTablePlayers(unittest.TestCase):
 
     def test_rejects_bad_table_players(self):
         app = self.table_args("app", "heuristic", self.crib)
-        for argv in (
-            [*app, *app, "--rungs", "app,heuristic", "--discards", "random"],
-            [*self.table_args("cfr", "heuristic"), "--discards", "random"],
-            [*self.table_args("app", "expert"), "--discards", "random"],
-            [*app, "--rungs", "app,other"],
-            [*self.table_args("app", "cfr"), "--rungs", "app,heuristic"],
-            [*app, "--rungs", "app,heuristic"],
-            [
-                *app,
-                *self.table_args("hand", "random"),
-                "--rungs",
-                "app,hand",
+        random_app = ["--rungs", "app,heuristic", "--discards", "random"]
+        for argv, reason in (
+            ([*app, *app, *random_app], "names must be distinct"),
+            (
+                [*self.table_args("heuristic", "random"), *random_app[2:]],
+                "names must be distinct and not in",
+            ),
+            ([*self.table_args("app", "expert"), *random_app], "pegging must be"),
+            ([*app, "--rungs", "app,other"], "--rungs needs"),
+            ([*self.table_args("app", "cfr"), *random_app], "--policy-manifest"),
+            ([*app, "--rungs", "app,heuristic"], "--policy-manifest"),
+            (
+                [*app, *self.table_args("hand", "random"), "--rungs", "app,hand"]
+                + ["--policy-manifest", "policy.json"],
                 "--policy-manifest",
-                "policy.json",
-            ],
-            [
-                *app,
-                "--rungs",
-                "app,heuristic",
-                "--discards",
-                "random",
-                "--output",
-                str(self.crib),
-            ],
+            ),
+            ([*app, *random_app, "--output", str(self.crib)], "a table file"),
         ):
-            rejected(self, argv)
+            self.assertTrue(reason in rejected(self, argv), (argv, reason))
         args = parse_args(
             [*app, *self.table_args("hand", "random"), "--rungs", "hand,app"]
         )
@@ -424,15 +421,18 @@ class TestTablePlayers(unittest.TestCase):
             },
         )
         dealt = [(0, 2), (0, 3), (3, 2), (6, 1), (9, 0), (9, 1)]
-        crib_only = TableDiscardRule()
-        self.assertEqual(
-            hand.discard_rule.keep_value(PONE, dealt[:4], dealt),
-            crib_only.keep_value(PONE, dealt[:4], dealt),
+        both = TableDiscardRule(
+            load_crib_table(crib_json()), load_play_table(play_json())
         )
-        self.assertNotEqual(
-            app.discard_rule.keep_value(PONE, dealt[:4], dealt),
-            crib_only.keep_value(PONE, dealt[:4], dealt),
-        )
+        for kept in (dealt[:4], dealt[2:]):
+            self.assertEqual(
+                hand.discard_rule.keep_value(PONE, kept, dealt),
+                TableDiscardRule().keep_value(PONE, kept, dealt),
+            )
+            self.assertEqual(
+                app.discard_rule.keep_value(PONE, kept, dealt),
+                both.keep_value(PONE, kept, dealt),
+            )
 
     def test_a_table_only_ladder_runs_without_a_bundle(self):
         output = self.root / "ladder.json"

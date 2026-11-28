@@ -53,8 +53,8 @@ CribCell = tuple[float, Mapping[str, float]]
 def discard_key(first: PhysicalCard, second: PhysicalCard) -> str:
     """Return the crib table's key for two discards, lower rank first."""
     low, high = sorted((first, second))
-    suited = low[0] != high[0] and low[1] == high[1]
-    group = "Suited" if suited else "Unsuited"
+    # Two cards of one suit always differ in rank, so a pair is never suited.
+    group = "Suited" if low[1] == high[1] else "Unsuited"
     return f"{RANK_LABELS[low[0]]}_{RANK_LABELS[high[0]]}_{group}"
 
 
