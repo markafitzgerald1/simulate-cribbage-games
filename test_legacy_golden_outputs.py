@@ -6,7 +6,15 @@
 
 Each case executes ``simulate_cribbage_games.py`` in a fresh temporary working
 directory with an empty tally shelf, ``PYTHONHASHSEED=0``, and a fixed
-``random.seed(12345)`` wrapper matching ``scratch/verify_upgrade.py``.
+``random.seed(12345)`` wrapper matching ``scratch/verify_upgrade.py``. A case
+with ``GOLDEN_SETUP`` commands runs them first, seeded the same way, in the
+same directory; only the case's own output is compared.
+
+Case F covers the incomplete-game estimates path with simulation-based discard
+and play. Estimate lookups all miss on an empty shelf, so its setup tallies
+2,000 games first. Many lookups still miss, and the golden records those
+messages too. Its simulation counts are far below the README command's, to
+keep the case short.
 
 These golden files record what the legacy simulator does now, not what it should
 do. They exist to catch unintended changes, and they are not evidence that
@@ -20,12 +28,13 @@ Known recorded defects:
 - #267: in the second, fourth and later hands (where the players have swapped
   roles), simulation-based play, simulation-based discard and the
   play coach pass the nested simulation the scores in the game's original
-  seat order instead of the current hand's pone-dealer order. Cases B, C and
-  E reach an odd hand and record this.
+  seat order instead of the current hand's pone-dealer order. Cases B, C,
+  E and F reach an odd hand and record this.
 - #268: nested simulation-based play starts from the live score and then
   replays the starter and earlier pegging, so heels and earlier pegging
   points count twice. Case B shows the heels case; the pegging replay also
-  appears in case D's play run, case E and readme_552.
+  appears in case D's play run, case E and readme_552. Case F also uses
+  simulation-based play.
 
 README smoke-test coverage. Case names carry the README line number each
 command had when the suite was written (2026-11-26):
@@ -35,25 +44,26 @@ command had when the suite was written (2026-11-26):
   match the default-worker cases readme_532 and readme_547a and say nothing
   about multi-process behavior. Commands with ``--infinite-game-count`` run a
   small finite count.
-- Not covered: the multi-hand command combining dynamic discard, dynamic play
-  and incomplete-game estimates (about 11.5 s even at minimal counts; cases B
-  and C exercise dynamic play and discard separately, without estimates), and
-  the two interactive play-against commands. Case E covers the interactive
-  play coach instead: first pone's plays come from a scripted card cycle, and
-  the game reaches an odd hand near 121.
+- Not covered: the two interactive play-against commands. Case E covers the
+  interactive play coach instead: first pone's plays come from a scripted card
+  cycle, and the game reaches an odd hand near 121.
 """
 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import difflib
+import fcntl
 import os
 from pathlib import Path
 import re
 import shelve
+import signal
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 
@@ -520,6 +530,44 @@ GOLDEN_CASES: dict[str, list[str]] = {
         "--initial-dealer-score",
         "100",
     ],
+    "case_f_multi_hand_sim_estimates": [
+        "--process-count",
+        "1",
+        "--game-count",
+        "1",
+        "--unlimited-hands-per-game",
+        "--first-pone-discard-based-on-simulations",
+        "4",
+        "--first-pone-play-based-on-simulations",
+        "10",
+        "--first-dealer-discard-based-on-simulations",
+        "4",
+        "--first-dealer-play-based-on-simulations",
+        "10",
+        "--estimate-first-pone-incomplete-game-wins-and-game-points",
+        "--estimate-first-dealer-incomplete-game-wins-and-game-points",
+        "--hide-play-actions",
+    ],
+}
+
+# Seeded commands run in a case's temporary directory before the case itself.
+# Case F's estimates read start-of-hand tallies, and every lookup misses on the
+# empty shelf, so a tallying run (which tallies only with one process, default
+# strategies, zero initial scores and no fixed cards) fills the shelf first.
+GOLDEN_SETUP: dict[str, list[list[str]]] = {
+    "case_f_multi_hand_sim_estimates": [
+        [
+            "--process-count",
+            "1",
+            "--game-count",
+            "2000",
+            "--unlimited-hands-per-game",
+            "--tally-start-of-hand-position-results",
+            "--hide-first-pone-hands",
+            "--hide-first-dealer-hands",
+            "--hide-play-actions",
+        ],
+    ],
 }
 
 # Scripted stdin for interactive cases. The simulator re-prompts until it reads
@@ -555,37 +603,93 @@ def format_golden_record(returncode: int, stdout: str, stderr: str) -> str:
     )
 
 
+def run_in_process_group(
+    command: list[str],
+    *,
+    cwd: str,
+    env: dict[str, str],
+    input_text: str | None,
+    timeout: float,
+) -> subprocess.CompletedProcess[str]:
+    """Run ``command`` in its own session and kill that whole group on failure.
+
+    ``subprocess.run`` kills only the direct child on timeout, so processes the
+    child started (for example simulator workers) survive it. Any other
+    exception while waiting kills the group too: in its own session, the child
+    no longer receives a terminal's Ctrl-C. A Ctrl-C that lands while the child
+    is still being launched can leave it to finish its finite run. The cleanup
+    is POSIX-only (macOS and Linux).
+    """
+    with subprocess.Popen(
+        command,
+        cwd=cwd,
+        env=env,
+        encoding="utf-8",
+        stdin=subprocess.DEVNULL if input_text is None else subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        start_new_session=True,
+    ) as process:
+        try:
+            stdout, stderr = process.communicate(input_text, timeout=timeout)
+        except BaseException:
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(process.pid, signal.SIGKILL)
+            process.wait()
+            raise
+    return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+
+
+def run_seeded_simulator(
+    args: list[str], cwd: str, input_text: str | None, label: str
+) -> subprocess.CompletedProcess[str]:
+    """Run the simulator once with the fixed seed in ``cwd``."""
+    env = os.environ.copy()
+    env["PYTHONHASHSEED"] = "0"
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUTF8"] = "1"
+    code = SEED_PREFIX.format(script_path=repr(str(SIMULATOR_SCRIPT)), args=repr(args))
+    try:
+        return run_in_process_group(
+            [sys.executable, "-c", code],
+            cwd=cwd,
+            env=env,
+            input_text=input_text,
+            timeout=CASE_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        raise AssertionError(
+            f"{label} timed out after {CASE_TIMEOUT_SECONDS} s"
+        ) from None
+
+
 def run_simulator_case(case_name: str) -> tuple[int, str]:
-    """Run ``simulate_cribbage_games.py`` in an isolated seeded temp directory."""
+    """Run ``simulate_cribbage_games.py`` in an isolated seeded temp directory.
+
+    Setup commands from ``GOLDEN_SETUP`` run first, in order and in the same
+    directory, so the case sees the tally shelf and disk cache they leave.
+    Only the case's own output is recorded; a failed setup step fails the case.
+    """
     with tempfile.TemporaryDirectory(prefix="legacy_golden_") as temp_dir:
         shelf_path = os.path.join(temp_dir, TALLY_SHELF_NAME)
         with shelve.open(shelf_path, flag="c"):
             pass
 
-        env = os.environ.copy()
-        env["PYTHONHASHSEED"] = "0"
-        env["PYTHONIOENCODING"] = "utf-8"
-        env["PYTHONUTF8"] = "1"
-        code = SEED_PREFIX.format(
-            script_path=repr(str(SIMULATOR_SCRIPT)), args=repr(GOLDEN_CASES[case_name])
+        for step, setup_args in enumerate(GOLDEN_SETUP.get(case_name, []), 1):
+            label = f"Setup step {step} of golden case {case_name}"
+            setup = run_seeded_simulator(setup_args, temp_dir, None, label)
+            if setup.returncode != 0:
+                raise AssertionError(
+                    f"{label} exited with {setup.returncode}:\n"
+                    f"{format_golden_record(setup.returncode, setup.stdout, setup.stderr)}"
+                )
+
+        result = run_seeded_simulator(
+            GOLDEN_CASES[case_name],
+            temp_dir,
+            GOLDEN_STDIN.get(case_name),
+            f"Golden case {case_name}",
         )
-        scripted_input = GOLDEN_STDIN.get(case_name)
-        try:
-            result = subprocess.run(
-                [sys.executable, "-c", code],
-                cwd=temp_dir,
-                env=env,
-                encoding="utf-8",
-                input=scripted_input,
-                stdin=subprocess.DEVNULL if scripted_input is None else None,
-                capture_output=True,
-                check=False,
-                timeout=CASE_TIMEOUT_SECONDS,
-            )
-        except subprocess.TimeoutExpired:
-            raise AssertionError(
-                f"Golden case {case_name} timed out after {CASE_TIMEOUT_SECONDS} s"
-            ) from None
         return (
             result.returncode,
             format_golden_record(result.returncode, result.stdout, result.stderr),
@@ -726,6 +830,9 @@ class TestSeatFlipAndKnownIssueGoldenOutputs(unittest.TestCase):
     def test_case_e_multi_hand_coach_play(self) -> None:
         assert_case_matches_golden(self, "case_e_multi_hand_coach_play")
 
+    def test_case_f_multi_hand_sim_estimates(self) -> None:
+        assert_case_matches_golden(self, "case_f_multi_hand_sim_estimates")
+
 
 def regenerate_golden_outputs(case_names: list[str]) -> None:
     """Regenerate the explicitly selected cases after all runs succeed."""
@@ -764,30 +871,170 @@ class TestGoldenHarness(unittest.TestCase):
         )
 
     def test_timeout_names_the_case(self) -> None:
-        with patch.object(
-            subprocess, "run", side_effect=subprocess.TimeoutExpired("python", 120)
+        with patch(
+            f"{__name__}.run_in_process_group",
+            side_effect=subprocess.TimeoutExpired("python", 120),
         ) as run:
             with self.assertRaisesRegex(
-                AssertionError, "readme_526_basic_hands timed out after 120 s"
+                AssertionError,
+                "Golden case readme_526_basic_hands timed out after 120 s",
             ):
                 run_simulator_case("readme_526_basic_hands")
         options = run.call_args.kwargs
         self.assertEqual(options["timeout"], 120)
-        self.assertEqual(options["encoding"], "utf-8")
-        self.assertEqual(options["stdin"], subprocess.DEVNULL)
+        self.assertIsNone(options["input_text"])
+        self.assertEqual(options["env"]["PYTHONHASHSEED"], "0")
         self.assertEqual(options["env"]["PYTHONIOENCODING"], "utf-8")
         self.assertEqual(options["env"]["PYTHONUTF8"], "1")
 
     def test_interactive_case_receives_scripted_stdin(self) -> None:
-        with patch.object(
-            subprocess, "run", side_effect=subprocess.TimeoutExpired("python", 120)
+        with patch(
+            f"{__name__}.run_in_process_group",
+            side_effect=subprocess.TimeoutExpired("python", 120),
         ) as run:
             with self.assertRaises(AssertionError):
                 run_simulator_case("case_e_multi_hand_coach_play")
-        options = run.call_args.kwargs
-        self.assertIsNone(options["stdin"])
-        self.assertTrue(options["input"].startswith("AC\nAD\nAH\nAS\n2C\n"))
-        self.assertEqual(options["input"].count("\n"), 52 * 400)
+        scripted_input = run.call_args.kwargs["input_text"]
+        self.assertTrue(scripted_input.startswith("AC\nAD\nAH\nAS\n2C\n"))
+        self.assertEqual(scripted_input.count("\n"), 52 * 400)
+
+    def test_process_group_runner_feeds_stdin(self) -> None:
+        command = [sys.executable, "-c", "import sys; print(repr(sys.stdin.read()))"]
+        for input_text, stdin, expected in (
+            ("typed\n", subprocess.PIPE, "'typed\\n'\n"),
+            (None, subprocess.DEVNULL, "''\n"),
+        ):
+            with (
+                self.subTest(input_text=input_text),
+                patch.object(subprocess, "Popen", wraps=subprocess.Popen) as popen,
+            ):
+                result = run_in_process_group(
+                    command,
+                    cwd=str(REPO_ROOT),
+                    env=os.environ.copy(),
+                    input_text=input_text,
+                    timeout=30,
+                )
+                self.assertEqual((result.returncode, result.stdout), (0, expected))
+                # An inherited empty stdin reads like DEVNULL, so check the argument.
+                self.assertEqual(popen.call_args.kwargs["stdin"], stdin)
+
+    def test_timeout_kills_the_whole_process_group(self) -> None:
+        # The grandchild holds a file lock for as long as it lives, and says
+        # when it has it, so no assertion depends on how fast processes start.
+        # It leaves a mark if it ever gets to exit on its own.
+        grandchild = (
+            "import fcntl, pathlib, time\n"
+            "lock = open('alive.lock', 'w')\n"
+            "fcntl.flock(lock, fcntl.LOCK_EX)\n"
+            "pathlib.Path('ready').touch()\n"
+            "time.sleep(60)\n"
+            "pathlib.Path('exited').touch()\n"
+        )
+        parent = (
+            "import subprocess, sys, time\n"
+            f"subprocess.Popen([sys.executable, '-c', {grandchild!r}])\n"
+            "time.sleep(60)\n"
+        )
+        communicate = subprocess.Popen.communicate
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+
+            def time_out_once_ready(
+                process: subprocess.Popen[str], input_text: str | None, **_: float
+            ) -> tuple[str, str]:
+                deadline = time.monotonic() + 50
+                while not Path(temp_dir, "ready").exists():
+                    self.assertLess(time.monotonic(), deadline, "never became ready")
+                    time.sleep(0.05)
+                return communicate(process, input_text, timeout=0.1)
+
+            with (
+                patch.object(subprocess.Popen, "communicate", time_out_once_ready),
+                self.assertRaises(subprocess.TimeoutExpired),
+            ):
+                run_in_process_group(
+                    [sys.executable, "-c", parent],
+                    cwd=temp_dir,
+                    env=os.environ.copy(),
+                    input_text=None,
+                    timeout=120,
+                )
+            with open(Path(temp_dir, "alive.lock"), encoding="utf-8") as lock:
+                deadline = time.monotonic() + 20
+                while True:
+                    try:
+                        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                        break
+                    except BlockingIOError:
+                        self.assertLess(
+                            time.monotonic(), deadline, "grandchild survived"
+                        )
+                        time.sleep(0.05)
+            self.assertFalse(
+                Path(temp_dir, "exited").exists(), "grandchild was not killed"
+            )
+
+    def test_any_other_exception_also_kills_the_child(self) -> None:
+        for error in (RuntimeError, KeyboardInterrupt):
+            with self.subTest(error=error.__name__):
+                with (
+                    patch.object(
+                        subprocess.Popen,
+                        "communicate",
+                        autospec=True,
+                        side_effect=error,
+                    ) as communicate,
+                    patch.object(
+                        subprocess.Popen,
+                        "wait",
+                        autospec=True,
+                        side_effect=subprocess.Popen.wait,
+                    ) as wait,
+                    self.assertRaises(error),
+                ):
+                    run_in_process_group(
+                        [sys.executable, "-c", "import time; time.sleep(5)"],
+                        cwd=str(REPO_ROOT),
+                        env=os.environ.copy(),
+                        input_text=None,
+                        timeout=30,
+                    )
+                process = communicate.call_args.args[0]
+                self.assertEqual(process.returncode, -signal.SIGKILL)
+                # After Ctrl-C, ``Popen.__exit__`` does not call ``wait``, so
+                # only the runner's own reaping call reaches it.
+                wait.assert_any_call(process)
+
+    def test_setup_runs_first_in_the_case_directory(self) -> None:
+        done = subprocess.CompletedProcess([], 0, "", "")
+        with (
+            patch.dict(GOLDEN_SETUP, {"readme_526_basic_hands": [["a"], ["b"]]}),
+            patch(f"{__name__}.run_seeded_simulator", return_value=done) as run,
+        ):
+            run_simulator_case("readme_526_basic_hands")
+        self.assertEqual(
+            [call.args[0] for call in run.call_args_list],
+            [["a"], ["b"], GOLDEN_CASES["readme_526_basic_hands"]],
+        )
+        self.assertEqual(len({call.args[1] for call in run.call_args_list}), 1)
+
+    def test_failed_setup_fails_the_case_before_it_runs(self) -> None:
+        failed = subprocess.CompletedProcess([], 3, "", "shelf broke")
+        with (
+            patch.dict(GOLDEN_SETUP, {"readme_526_basic_hands": [["a"]]}),
+            patch(f"{__name__}.run_seeded_simulator", return_value=failed) as run,
+            self.assertRaisesRegex(
+                AssertionError,
+                "(?s)Setup step 1 of golden case readme_526_basic_hands"
+                " exited with 3.*shelf broke",
+            ),
+        ):
+            run_simulator_case("readme_526_basic_hands")
+        run.assert_called_once()
+
+    def test_every_setup_belongs_to_a_case(self) -> None:
+        self.assertLessEqual(set(GOLDEN_SETUP), set(GOLDEN_CASES))
 
     def test_regeneration_rejects_unknown_case_before_running(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

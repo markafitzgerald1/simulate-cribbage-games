@@ -23,6 +23,7 @@
   "words": [
     "getrusage",
     "kibibytes",
+    "killpg",
     "maxrss",
     "RUSAGE",
     "byteswap",

@@ -1,0 +1,1324 @@
+EXIT_CODE: 0
+--- STDOUT ---
+Simulating 1 games of up to unlimited hands each
+
+Pone   dealt     [J♥,J♦,5♣,4♣,6♠,2♣] (sorted: [J♥,J♦,6♠,5♣,4♣,2♣])
+Dealer dealt     [K♣,5♦,A♦,9♠,Q♠,A♥] (sorted: [K♣,Q♠,9♠,5♦,A♥,A♦])
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(4, 26, True) after initial action [J♥,J♦,6♠,4♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(11, 6, True) after initial action [J♥,6♠,5♣,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 28, True) after initial action [J♥,J♦,6♠,5♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(4, 26, True) after initial action [J♥,J♦,6♠,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(8, 36, True) after initial action [J♦,5♣,4♣,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(3, 27, True) after initial action [J♦,6♠,4♣,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 5, True) after initial action [J♦,6♠,5♣,2♣], None.
+[J♥,J♦,6♠,5♣] - [4♣,2♣]:   +0.307 ±  0.696 game points;   +1.500 ±  5.338 Δ-peg +   +0.500 ±  2.333 Δ-hand +   -5.250 ±  4.892 crib =   -3.250 ±  6.712 overall
+[J♥,J♦,5♣,4♣] - [6♠,2♣]:   +0.061 ±  0.427 game points;   -3.000 ±  4.597 Δ-peg +   +4.250 ±  2.926 Δ-hand +   -6.000 ±  1.386 crib =   -4.750 ±  2.577 overall
+[J♦,6♠,5♣,4♣] - [J♥,2♣]:   -0.006 ±  0.528 game points;   -2.500 ±  0.980 Δ-peg +   +0.250 ±  5.209 Δ-hand +   -6.000 ±  4.801 crib =   -8.250 ±  6.519 overall
+[J♦,5♣,4♣,2♣] - [J♥,6♠]:   -0.038 ±  0.382 game points;   -1.250 ±  0.938 Δ-peg +   -6.500 ±  7.612 Δ-hand +   -5.000 ±  3.299 crib =  -12.750 ± 10.259 overall
+[6♠,5♣,4♣,2♣] - [J♥,J♦]:   -0.056 ±  0.189 game points;   -0.750 ±  3.699 Δ-peg +   -0.250 ±  0.938 Δ-hand +   -5.750 ±  3.238 crib =   -6.750 ±  1.674 overall
+[J♥,J♦,6♠,2♣] - [5♣,4♣]:   -0.060 ±  0.525 game points;   -2.000 ±  0.800 Δ-peg +   -5.000 ±  7.840 Δ-hand +   -4.000 ±  2.772 crib =  -11.000 ±  7.881 overall
+[J♥,J♦,6♠,4♣] - [5♣,2♣]:   -0.167 ±  0.447 game points;   -3.250 ±  2.577 Δ-peg +   -3.250 ±  2.815 Δ-hand +   -5.000 ±  2.530 crib =  -11.500 ±  6.906 overall
+[J♥,6♠,5♣,4♣] - [J♦,2♣]:   -0.192 ±  0.186 game points;   -3.750 ±  2.815 Δ-peg +   +4.000 ±  4.158 Δ-hand +   -5.750 ±  3.238 crib =   -5.500 ±  5.686 overall
+[J♥,J♦,5♣,2♣] - [6♠,4♣]:   -0.271 ±  0.173 game points;   -1.500 ±  0.566 Δ-peg +   +1.250 ±  2.173 Δ-hand +   -6.000 ±  2.117 crib =   -6.250 ±  1.233 overall
+[J♥,6♠,5♣,2♣] - [J♦,4♣]:   -0.325 ±  0.387 game points;   -3.250 ±  3.335 Δ-peg +   -1.750 ±  6.712 Δ-hand +   -5.500 ±  2.593 crib =  -10.500 ± 10.448 overall
+[J♥,5♣,4♣,2♣] - [J♦,6♠]:   -0.359 ±  0.159 game points;   +0.000 ±  1.386 Δ-peg +   +2.000 ±  0.800 Δ-hand +   -5.000 ±  3.837 crib =   -3.000 ±  4.158 overall
+[J♥,J♦,4♣,2♣] - [6♠,5♣]:   -0.422 ±  0.361 game points;   -2.500 ±  1.265 Δ-peg +   -1.000 ±  2.885 Δ-hand +   -6.500 ±  2.940 crib =  -10.000 ±  1.600 overall
+[J♦,6♠,5♣,2♣] - [J♥,4♣]:   -0.425 ±  0.601 game points;   -1.500 ±  5.798 Δ-peg +   -3.000 ±  6.041 Δ-hand +   -4.000 ±  1.386 crib =   -8.500 ± 12.664 overall
+[J♦,6♠,4♣,2♣] - [J♥,5♣]:   -0.450 ±  0.546 game points;   -2.000 ±  1.386 Δ-peg +   -4.500 ±  5.155 Δ-hand +   -9.500 ±  3.047 crib =  -16.000 ±  6.837 overall
+[J♥,6♠,4♣,2♣] - [J♦,5♣]:   -0.562 ±  0.644 game points;   -1.750 ±  2.020 Δ-peg +   -3.750 ±  2.450 Δ-hand +   -6.750 ±  2.577 crib =  -12.250 ±  3.785 overall
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(19, 6, True) after initial action [K♣,Q♠,5♦,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(5, 5, True) after initial action [K♣,Q♠,9♠,A♦], None.
+[K♣,Q♠,5♦,A♦] - [9♠,A♥]:   -0.183 ±  0.135 game points;   -1.750 ±  2.450 Δ-peg +   +2.500 ±  6.275 Δ-hand +   -1.750 ±  1.233 crib =   -1.000 ±  9.193 overall
+[K♣,9♠,5♦,A♥] - [Q♠,A♦]:   -0.064 ±  0.627 game points;   -2.000 ±  2.885 Δ-peg +   -0.500 ±  3.710 Δ-hand +   -4.000 ±  2.772 crib =   -6.500 ±  5.798 overall
+[K♣,Q♠,9♠,A♥] - [5♦,A♦]:   -0.050 ±  0.806 game points;   -1.250 ±  1.855 Δ-peg +   +4.750 ±  5.021 Δ-hand +   -6.000 ±  2.772 crib =   -2.500 ±  5.630 overall
+[K♣,Q♠,5♦,A♥] - [9♠,A♦]:   -0.043 ±  0.901 game points;   -2.750 ±  2.020 Δ-peg +   -1.000 ±  2.530 Δ-hand +   -2.500 ±  3.710 crib =   -6.250 ±  3.699 overall
+[Q♠,9♠,5♦,A♦] - [K♣,A♥]:   -0.034 ±  0.215 game points;   -3.250 ±  0.938 Δ-peg +   -2.500 ±  1.877 Δ-hand +   -2.500 ±  0.980 crib =   -8.250 ±  1.674 overall
+[K♣,Q♠,9♠,5♦] - [A♥,A♦]:   +0.013 ±  0.361 game points;   -0.500 ±  3.710 Δ-peg +   +2.750 ±  2.020 Δ-hand +   -4.000 ±  2.772 crib =   -1.750 ±  5.021 overall
+[K♣,Q♠,A♥,A♦] - [9♠,5♦]:   +0.053 ±  0.225 game points;   -1.750 ±  1.233 Δ-peg +   +3.500 ±  4.119 Δ-hand +   -3.500 ±  0.980 crib =   -1.750 ±  5.622 overall
+[K♣,9♠,A♥,A♦] - [Q♠,5♦]:   +0.093 ±  0.677 game points;   -3.500 ±  3.623 Δ-peg +   +3.750 ±  4.553 Δ-hand +   -5.750 ±  1.233 crib =   -5.500 ±  4.900 overall
+[K♣,5♦,A♥,A♦] - [Q♠,9♠]:   +0.135 ±  0.445 game points;   -1.750 ±  3.785 Δ-peg +   -2.000 ±  5.061 Δ-hand +   -3.250 ±  1.855 crib =   -7.000 ±  4.455 overall
+[Q♠,5♦,A♥,A♦] - [K♣,9♠]:   +0.162 ±  0.466 game points;   -2.500 ±  1.697 Δ-peg +   +2.750 ±  3.335 Δ-hand +   -1.000 ±  1.960 crib =   -0.750 ±  4.482 overall
+[Q♠,9♠,5♦,A♥] - [K♣,A♦]:   +0.201 ±  0.716 game points;   -4.750 ±  1.674 Δ-peg +   +0.750 ±  2.173 Δ-hand +   -2.000 ±  1.600 crib =   -6.000 ±  4.597 overall
+[K♣,9♠,5♦,A♦] - [Q♠,A♥]:   +0.209 ±  0.368 game points;   -2.000 ±  1.386 Δ-peg +   -0.250 ±  4.691 Δ-hand +   -3.500 ±  3.347 crib =   -5.750 ±  6.519 overall
+[9♠,5♦,A♥,A♦] - [K♣,Q♠]:   +0.316 ±  0.500 game points;   -2.250 ±  1.470 Δ-peg +   +1.250 ±  3.522 Δ-hand +   -2.500 ±  3.710 crib =   -3.500 ±  7.612 overall
+[Q♠,9♠,A♥,A♦] - [K♣,5♦]:   +0.339 ±  1.091 game points;   -1.250 ±  1.855 Δ-peg +   +5.250 ±  4.892 Δ-hand +   -7.250 ±  2.699 crib =   -3.250 ±  3.699 overall
+[K♣,Q♠,9♠,A♦] - [5♦,A♥]:   +0.521 ±  0.634 game points;   -0.250 ±  2.450 Δ-peg +   +6.000 ±  1.789 Δ-hand +   -5.250 ±  1.470 crib =   +0.500 ±  2.466 overall
+Pone   discarded [4♣,2♣] (sorted: [4♣,2♣])
+Dealer discarded [9♠,A♥] (sorted: [9♠,A♥])
+Pone   kept      [J♥,J♦,5♣,6♠] (sorted: [J♥,J♦,6♠,5♣])
+Dealer kept      [K♣,5♦,A♦,Q♠] (sorted: [K♣,Q♠,5♦,A♦])
+Simulating each of the 4 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(9, 3, True) after initial action [], 6♠.
+J♥ first play:   +0.176 ±  0.437 game points;   -0.800 ±  2.370 Δ-peg +   +0.700 ±  3.370 Δ-hand +   -2.900 ±  1.031 crib =   -3.000 ±  5.733 overall
+J♦ first play:   +0.100 ±  0.304 game points;   +0.600 ±  2.028 Δ-peg +   +1.100 ±  1.639 Δ-hand +   -3.500 ±  2.305 crib =   -1.800 ±  3.034 overall
+6♠ first play:   -0.087 ±  0.265 game points;   -1.700 ±  1.095 Δ-peg +   -0.800 ±  2.691 Δ-hand +   -4.200 ±  2.706 crib =   -6.700 ±  3.899 overall
+5♣ first play:   -0.110 ±  0.344 game points;   -3.900 ±  1.503 Δ-peg +   +0.300 ±  2.226 Δ-hand +   -4.500 ±  2.050 crib =   -8.100 ±  3.014 overall
+Simulating each of the 4 possible dealer plays 10 times in order to select the play:
+A♦ first play:   -0.062 ±  0.360 game points;   -2.875 ±  0.940 Δ-peg +   +3.750 ±  3.093 Δ-hand +   -3.375 ±  1.432 crib =   -2.500 ±  3.077 overall
+K♣ first play:   +0.212 ±  0.266 game points;   -1.833 ±  0.929 Δ-peg +   +1.417 ±  2.191 Δ-hand +   -3.000 ±  1.182 crib =   -3.417 ±  1.876 overall
+5♦ first play:   +0.228 ±  0.482 game points;   -2.700 ±  0.657 Δ-peg +   +4.100 ±  3.220 Δ-hand +   -1.600 ±  0.784 crib =   -0.200 ±  3.103 overall
+Q♠ first play:   +0.288 ±  0.484 game points;   -1.400 ±  0.886 Δ-peg +   +3.300 ±  2.995 Δ-hand +   -2.400 ±  0.523 crib =   -0.500 ±  3.123 overall
+Simulating each of the 3 possible pone plays 10 times in order to select the play:
+5♣ first play:   +0.370 ±  0.332 game points;   +0.091 ±  1.280 Δ-peg +   +0.818 ±  2.061 Δ-hand +   -3.091 ±  1.104 crib =   -2.182 ±  2.654 overall
+6♠ first play:   +0.313 ±  0.399 game points;   -0.111 ±  0.949 Δ-peg +   +2.556 ±  2.289 Δ-hand +   -3.111 ±  1.513 crib =   -0.667 ±  3.667 overall
+J♦ first play:   -0.061 ±  0.251 game points;   -1.300 ±  1.433 Δ-peg +   -1.200 ±  2.334 Δ-hand +   -3.500 ±  2.211 crib =   -6.000 ±  1.848 overall
+Simulating each of the 3 possible dealer plays 10 times in order to select the play:
+Q♠ first play:   +0.212 ±  0.455 game points;   -0.500 ±  0.566 Δ-peg +   +5.750 ±  1.823 Δ-hand +   -3.333 ±  1.033 crib =   +1.917 ±  2.332 overall
+5♦ first play:   +0.375 ±  0.347 game points;   -0.727 ±  1.350 Δ-peg +   +5.273 ±  1.926 Δ-hand +   -3.182 ±  1.084 crib =   +1.364 ±  1.965 overall
+K♣ first play:   +0.657 ±  0.698 game points;   -0.286 ±  0.560 Δ-peg +   +3.714 ±  1.947 Δ-hand +   -2.571 ±  1.120 crib =   +0.857 ±  1.933 overall
+Simulating each of the 2 possible pone plays 10 times in order to select the play:
+6♠ first play:   +0.084 ±  0.195 game points;   -1.000 ±  0.000 Δ-peg +   +0.545 ±  0.552 Δ-hand +   -3.000 ±  0.877 crib =   -3.455 ±  1.036 overall
+J♦ first play:   +0.030 ±  0.248 game points;   -1.222 ±  0.436 Δ-peg +   +0.333 ±  0.653 Δ-hand +   -3.111 ±  1.152 crib =   -4.000 ±  1.222 overall
+Pone   dealt     [J♦,2♣,5♣,4♥,T♦,9♣] (sorted: [J♦,T♦,9♣,5♣,4♥,2♣])
+Dealer dealt     [6♦,3♣,5♦,2♥,5♥,7♦] (sorted: [7♦,6♦,5♥,5♦,3♣,2♥])
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(13, 27, True) after initial action [J♦,5♣,4♥,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 33, True) after initial action [J♦,T♦,5♣,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 33, True) after initial action [J♦,9♣,5♣,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(20, 30, True) after initial action [J♦,T♦,9♣,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 27, True) after initial action [J♦,T♦,5♣,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(13, 25, True) after initial action [J♦,9♣,5♣,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 31, True) after initial action [J♦,T♦,9♣,5♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 30, True) after initial action [J♦,T♦,9♣,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 31, True) after initial action [T♦,9♣,5♣,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 31, True) after initial action [T♦,9♣,5♣,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 32, True) after initial action [J♦,5♣,4♥,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 27, True) after initial action [J♦,T♦,5♣,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(14, 30, True) after initial action [J♦,9♣,4♥,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 38, True) after initial action [J♦,T♦,9♣,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(19, 26, True) after initial action [J♦,T♦,9♣,5♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 31, True) after initial action [J♦,T♦,9♣,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 28, True) after initial action [T♦,5♣,4♥,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(13, 33, True) after initial action [9♣,5♣,4♥,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(13, 33, True) after initial action [T♦,9♣,4♥,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 25, True) after initial action [J♦,T♦,5♣,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 33, True) after initial action [J♦,T♦,4♥,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(16, 36, True) after initial action [J♦,9♣,4♥,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(13, 31, True) after initial action [J♦,T♦,9♣,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(16, 26, True) after initial action [J♦,T♦,5♣,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(19, 28, True) after initial action [J♦,T♦,9♣,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(16, 30, True) after initial action [T♦,5♣,4♥,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(16, 34, True) after initial action [9♣,5♣,4♥,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(16, 45, True) after initial action [J♦,T♦,5♣,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 28, True) after initial action [J♦,9♣,5♣,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(13, 32, True) after initial action [J♦,T♦,4♥,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 27, True) after initial action [J♦,9♣,4♥,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 31, True) after initial action [J♦,T♦,9♣,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(19, 27, True) after initial action [J♦,T♦,5♣,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 39, True) after initial action [J♦,9♣,5♣,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 32, True) after initial action [J♦,T♦,9♣,5♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 35, True) after initial action [J♦,T♦,9♣,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(16, 31, True) after initial action [T♦,9♣,5♣,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 33, True) after initial action [T♦,9♣,4♥,2♣], None.
+[J♦,9♣,5♣,4♥] - [T♦,2♣]:   +0.000 ±  0.000 game points;   -2.000 ±  2.117 Δ-peg +   -1.500 ±  4.700 Δ-hand +   -5.000 ±  6.094 crib =   -8.500 ±  9.106 overall
+[T♦,9♣,4♥,2♣] - [J♦,5♣]:   +0.000 ±  0.800 game points;   -0.500 ±  3.047 Δ-peg +   -5.000 ±  5.247 Δ-hand +   -4.750 ±  1.470 crib =  -10.250 ±  6.665 overall
+[J♦,T♦,9♣,4♥] - [5♣,2♣]:   +0.000 ±  0.000 game points;   -2.750 ±  2.577 Δ-peg +   -1.500 ±  5.630 Δ-hand +   -7.000 ±  2.530 crib =  -11.250 ±  4.482 overall
+[J♦,T♦,5♣,2♣] - [9♣,4♥]:   +0.000 ±  0.000 game points;   -1.500 ±  3.347 Δ-peg +   -6.500 ±  8.180 Δ-hand +   -4.500 ±  2.466 crib =  -12.500 ±  9.552 overall
+[J♦,T♦,9♣,2♣] - [5♣,4♥]:   +0.000 ±  0.000 game points;   +0.750 ±  2.450 Δ-peg +   -2.250 ±  2.173 Δ-hand +  -11.000 ±  2.530 crib =  -12.500 ±  4.834 overall
+[J♦,9♣,5♣,2♣] - [T♦,4♥]:   -0.075 ±  0.293 game points;   -0.250 ±  3.699 Δ-peg +   -3.000 ±  4.080 Δ-hand +   -3.500 ±  3.047 crib =   -6.750 ±  4.482 overall
+[9♣,5♣,4♥,2♣] - [J♦,T♦]:   -0.083 ±  0.163 game points;   -3.250 ±  1.470 Δ-peg +   -5.000 ±  3.395 Δ-hand +   -3.750 ±  1.233 crib =  -12.000 ±  4.597 overall
+[J♦,T♦,5♣,4♥] - [9♣,2♣]:   -0.150 ±  0.294 game points;   +0.250 ±  1.674 Δ-peg +   -1.500 ±  3.047 Δ-hand +   -4.500 ±  2.466 crib =   -5.750 ±  1.470 overall
+[J♦,9♣,4♥,2♣] - [T♦,5♣]:   -0.250 ±  0.490 game points;   -1.250 ±  1.674 Δ-peg +   -4.250 ±  6.993 Δ-hand +   -5.500 ±  0.980 crib =  -11.000 ±  5.061 overall
+[J♦,T♦,9♣,5♣] - [4♥,2♣]:   -0.333 ±  0.653 game points;   -3.750 ±  0.490 Δ-peg +   +1.250 ±  3.522 Δ-hand +   -6.750 ±  4.482 crib =   -9.250 ±  3.522 overall
+[J♦,5♣,4♥,2♣] - [T♦,9♣]:   -0.458 ±  0.523 game points;   -2.250 ±  2.020 Δ-peg +   -4.250 ±  5.209 Δ-hand +   -5.000 ±  2.885 crib =  -11.500 ±  6.426 overall
+[T♦,9♣,5♣,2♣] - [J♦,4♥]:   -0.500 ±  0.693 game points;   -0.500 ±  0.980 Δ-peg +   -2.000 ±  2.772 Δ-hand +   -5.500 ±  3.442 crib =   -8.000 ±  5.486 overall
+[T♦,5♣,4♥,2♣] - [J♦,9♣]:   -0.500 ±  0.566 game points;   +0.000 ±  1.600 Δ-peg +   -3.250 ±  2.450 Δ-hand +   -5.750 ±  1.674 crib =   -9.000 ±  4.309 overall
+[J♦,T♦,4♥,2♣] - [9♣,5♣]:   -0.500 ±  0.566 game points;   -2.250 ±  3.238 Δ-peg +   -7.000 ±  2.885 Δ-hand +   -6.250 ±  1.674 crib =  -15.500 ±  1.265 overall
+[T♦,9♣,5♣,4♥] - [J♦,2♣]:   -0.750 ±  0.490 game points;   -0.500 ±  0.566 Δ-peg +   -1.500 ±  5.338 Δ-hand +   -3.500 ±  3.347 crib =   -5.500 ±  3.710 overall
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(21, 31, True) after initial action [7♦,6♦,3♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 33, True) after initial action [7♦,6♦,5♦,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 30, True) after initial action [7♦,6♦,5♥,5♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 47, True) after initial action [5♥,5♦,3♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(16, 31, True) after initial action [7♦,5♦,3♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 31, True) after initial action [7♦,5♥,5♦,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 33, True) after initial action [7♦,5♥,3♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(12, 34, True) after initial action [7♦,5♥,5♦,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 23, True) after initial action [6♦,5♦,3♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(16, 31, True) after initial action [6♦,5♥,5♦,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 33, True) after initial action [7♦,6♦,5♦,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(19, 30, True) after initial action [7♦,6♦,3♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(13, 34, True) after initial action [7♦,6♦,5♥,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(24, 27, True) after initial action [6♦,5♥,5♦,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(19, 33, True) after initial action [7♦,6♦,5♥,5♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(19, 44, True) after initial action [5♥,5♦,3♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 30, True) after initial action [7♦,5♥,5♦,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(13, 28, True) after initial action [7♦,5♥,3♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(21, 34, True) after initial action [6♦,5♥,3♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(14, 34, True) after initial action [7♦,6♦,5♥,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(21, 15, True) after initial action [6♦,5♥,5♦,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(19, 33, True) after initial action [7♦,6♦,5♦,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 40, True) after initial action [7♦,6♦,5♥,5♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(21, 41, True) after initial action [5♥,5♦,3♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(19, 34, True) after initial action [7♦,5♥,3♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 36, True) after initial action [6♦,5♦,3♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(13, 25, True) after initial action [6♦,5♥,5♦,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(23, 30, True) after initial action [7♦,6♦,5♦,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 31, True) after initial action [6♦,5♥,3♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 28, True) after initial action [7♦,6♦,5♥,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(16, 34, True) after initial action [7♦,6♦,5♥,5♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 31, True) after initial action [7♦,6♦,5♥,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 28, True) after initial action [5♥,5♦,3♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(21, 27, True) after initial action [7♦,5♦,3♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(13, 30, True) after initial action [7♦,5♥,3♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(20, 21, True) after initial action [7♦,5♥,5♦,2♥], None.
+[6♦,5♥,3♣,2♥] - [7♦,5♦]:   -0.750 ±  0.938 game points;   -1.500 ±  2.593 Δ-peg +   +2.500 ±  2.940 Δ-hand +   -8.500 ±  3.047 crib =   -7.500 ±  7.737 overall
+[6♦,5♥,5♦,3♣] - [7♦,2♥]:   -0.500 ±  0.566 game points;   -3.750 ±  2.926 Δ-peg +   -6.000 ±  3.578 Δ-hand +   -3.500 ±  2.940 crib =  -13.250 ±  4.109 overall
+[7♦,6♦,5♦,2♥] - [5♥,3♣]:   -0.333 ±  0.462 game points;   -1.000 ±  4.734 Δ-peg +   -2.750 ±  5.084 Δ-hand +   -7.000 ±  3.395 crib =  -10.750 ±  2.020 overall
+[7♦,6♦,5♥,2♥] - [5♦,3♣]:   -0.250 ±  0.938 game points;   -3.000 ±  5.186 Δ-peg +   +0.250 ±  2.815 Δ-hand +   -5.750 ±  1.233 crib =   -8.500 ±  4.562 overall
+[7♦,6♦,5♦,3♣] - [5♥,2♥]:   -0.250 ±  0.490 game points;   -3.000 ±  3.488 Δ-peg +   +0.500 ±  5.907 Δ-hand +   -4.000 ±  0.000 crib =   -6.500 ±  6.224 overall
+[5♥,5♦,3♣,2♥] - [7♦,6♦]:   +0.000 ±  0.000 game points;   -7.750 ±  3.612 Δ-peg +   -3.000 ±  0.000 Δ-hand +   -8.250 ±  5.209 crib =  -19.000 ±  7.112 overall
+[7♦,6♦,5♥,5♦] - [3♣,2♥]:   +0.000 ±  0.000 game points;   -1.000 ±  3.299 Δ-peg +   -6.750 ±  4.482 Δ-hand +   -5.750 ±  1.470 crib =  -13.500 ±  4.346 overall
+[7♦,5♥,3♣,2♥] - [6♦,5♦]:   +0.000 ±  0.000 game points;   -3.500 ±  1.265 Δ-peg +   -2.750 ±  1.855 Δ-hand +   -6.250 ±  1.674 crib =  -12.500 ±  0.980 overall
+[6♦,5♦,3♣,2♥] - [7♦,5♥]:   +0.000 ±  0.800 game points;   -4.000 ±  4.734 Δ-peg +   +1.750 ±  3.785 Δ-hand +   -5.750 ±  1.233 crib =   -8.000 ±  6.550 overall
+[7♦,5♥,5♦,3♣] - [6♦,2♥]:   +0.000 ±  0.267 game points;   -1.250 ±  3.238 Δ-peg +   -4.000 ±  4.234 Δ-hand +   -2.750 ±  1.470 crib =   -8.000 ±  2.885 overall
+[7♦,6♦,3♣,2♥] - [5♥,5♦]:   +0.000 ±  0.000 game points;   -3.750 ±  0.938 Δ-peg +   +3.250 ±  2.577 Δ-hand +   -7.250 ±  2.450 crib =   -7.750 ±  0.490 overall
+[6♦,5♥,5♦,2♥] - [7♦,3♣]:   +0.100 ±  0.650 game points;   +1.500 ±  4.562 Δ-peg +   +0.000 ±  4.801 Δ-hand +   -1.000 ±  1.960 crib =   +0.500 ±  5.798 overall
+[7♦,5♦,3♣,2♥] - [6♦,5♥]:   +0.125 ±  1.010 game points;   +0.250 ±  0.938 Δ-peg +   +1.500 ±  3.442 Δ-hand +   -7.250 ±  3.869 crib =   -5.500 ±  4.700 overall
+[7♦,6♦,5♥,3♣] - [5♦,2♥]:   +0.125 ±  0.245 game points;   -4.000 ±  1.132 Δ-peg +   -3.750 ±  0.938 Δ-hand +   -5.500 ±  2.940 crib =  -13.250 ±  4.892 overall
+[7♦,5♥,5♦,2♥] - [6♦,3♣]:   +0.350 ±  1.113 game points;   +0.250 ±  5.330 Δ-peg +   -0.750 ±  5.390 Δ-hand +   -4.000 ±  1.600 crib =   -4.500 ±  9.946 overall
+Pone   discarded [2♣,T♦] (sorted: [T♦,2♣])
+Dealer discarded [5♦,7♦] (sorted: [7♦,5♦])
+Pone   kept      [J♦,5♣,4♥,9♣] (sorted: [J♦,9♣,5♣,4♥])
+Dealer kept      [6♦,3♣,2♥,5♥] (sorted: [6♦,5♥,3♣,2♥])
+Simulating each of the 4 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 29, True) after initial action [], 4♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(16, 35, True) after initial action [], 5♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 31, True) after initial action [], J♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 40, True) after initial action [], 4♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(21, 29, True) after initial action [], 9♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(16, 31, True) after initial action [], 4♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 29, True) after initial action [], 5♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 27, True) after initial action [], J♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 28, True) after initial action [], 9♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 32, True) after initial action [], 5♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 29, True) after initial action [], 4♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 31, True) after initial action [], 4♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(19, 32, True) after initial action [], J♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 30, True) after initial action [], 9♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 32, True) after initial action [], 4♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 40, True) after initial action [], 5♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 33, True) after initial action [], J♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 31, True) after initial action [], 4♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 28, True) after initial action [], 5♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 30, True) after initial action [], 4♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 27, True) after initial action [], 5♣.
+J♦ first play:   +0.333 ±  0.413 game points;   +0.400 ±  1.407 Δ-peg +   -2.300 ±  2.818 Δ-hand +   -4.100 ±  1.384 crib =   -6.000 ±  2.965 overall
+9♣ first play:   +0.180 ±  0.494 game points;   -0.800 ±  2.041 Δ-peg +   -2.400 ±  1.552 Δ-hand +   -3.000 ±  1.307 crib =   -6.200 ±  1.568 overall
+4♥ first play:   +0.000 ±  0.292 game points;   -1.400 ±  1.496 Δ-peg +   -6.300 ±  2.863 Δ-hand +   -2.400 ±  1.139 crib =  -10.100 ±  3.207 overall
+5♣ first play:   -0.183 ±  0.414 game points;   -3.900 ±  1.111 Δ-peg +   -2.800 ±  1.673 Δ-hand +   -4.500 ±  1.877 crib =  -11.200 ±  3.225 overall
+Simulating each of the 4 possible dealer plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(23, 24, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(22, 29, True) after initial action [], 5♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(27, 22, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(19, 31, True) after initial action [], 6♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(14, 28, True) after initial action [], 5♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 23, True) after initial action [], 6♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(20, 27, True) after initial action [], 6♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(25, 24, True) after initial action [], 5♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(27, 27, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(20, 27, True) after initial action [], 5♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 29, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 37, True) after initial action [], 6♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 25, True) after initial action [], 5♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(21, 23, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(14, 30, True) after initial action [], 5♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(20, 21, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(22, 23, True) after initial action [], 6♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(19, 24, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(16, 32, True) after initial action [], 5♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(23, 25, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(19, 27, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(25, 23, True) after initial action [], 5♥.
+6♦ first play:   +0.000 ±  0.458 game points;   -4.182 ±  2.391 Δ-peg +   +3.273 ±  2.181 Δ-hand +   -5.727 ±  1.297 crib =   -6.636 ±  4.424 overall
+2♥ first play:   +0.038 ±  0.395 game points;   -0.125 ±  2.142 Δ-peg +   +4.250 ±  2.863 Δ-hand +   -5.750 ±  1.423 crib =   -1.625 ±  3.312 overall
+5♥ first play:   +0.091 ±  0.414 game points;   -3.818 ±  2.010 Δ-peg +   +4.545 ±  2.294 Δ-hand +   -6.091 ±  1.039 crib =   -5.364 ±  3.796 overall
+3♣ first play:   +0.130 ±  0.551 game points;   -2.300 ±  2.480 Δ-peg +   +5.800 ±  2.799 Δ-hand +   -5.500 ±  1.685 crib =   -2.000 ±  4.702 overall
+Simulating each of the 3 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(14, 39, True) after initial action [], 9♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 31, True) after initial action [], 9♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(14, 34, True) after initial action [], 5♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(16, 26, True) after initial action [], 5♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(14, 34, True) after initial action [], 5♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(14, 30, True) after initial action [], 4♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 27, True) after initial action [], 5♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(14, 32, True) after initial action [], 5♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 32, True) after initial action [], 4♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 31, True) after initial action [], 5♣.
+4♥ first play:   -0.086 ±  0.628 game points;   -1.286 ±  2.252 Δ-peg +   -2.429 ±  3.986 Δ-hand +   -2.429 ±  1.807 crib =   -6.143 ±  3.907 overall
+5♣ first play:   -0.195 ±  0.300 game points;   -3.385 ±  1.226 Δ-peg +   -0.615 ±  1.851 Δ-hand +   -5.231 ±  1.949 crib =   -9.231 ±  2.895 overall
+9♣ first play:   -0.350 ±  0.686 game points;   -2.300 ±  1.403 Δ-peg +   -2.600 ±  2.091 Δ-hand +   -5.200 ±  1.568 crib =  -10.100 ±  3.450 overall
+Simulating each of the 3 possible dealer plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(25, 26, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(19, 30, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(25, 29, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(12, 32, True) after initial action [], 5♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(25, 26, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(19, 32, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(26, 26, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(19, 31, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 34, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(14, 28, True) after initial action [], 5♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(20, 36, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(21, 27, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(15, 36, True) after initial action [], 5♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(25, 26, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 35, True) after initial action [], 5♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(25, 29, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(20, 30, True) after initial action [], 5♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(19, 27, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(18, 31, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(17, 28, True) after initial action [], 5♥.
+5♥ first play:   -0.273 ±  0.382 game points;   -7.636 ±  2.052 Δ-peg +   +3.727 ±  1.907 Δ-hand +   -6.455 ±  1.002 crib =  -10.364 ±  2.788 overall
+3♣ first play:   -0.100 ±  0.352 game points;   -7.500 ±  3.082 Δ-peg +   +4.200 ±  1.233 Δ-hand +   -6.700 ±  1.872 crib =  -10.000 ±  3.494 overall
+2♥ first play:   +0.111 ±  0.218 game points;   -2.111 ±  3.072 Δ-peg +   +5.222 ±  1.659 Δ-hand +   -5.778 ±  1.256 crib =   -2.667 ±  3.488 overall
+Simulating each of the 2 possible dealer plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(25, 27, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(25, 34, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(24, 27, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(22, 34, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(24, 34, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(24, 34, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(22, 34, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(22, 32, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(24, 28, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(23, 33, True) after initial action [], 2♥.
+2♥ first play:   -0.063 ±  0.538 game points;   -3.000 ±  0.907 Δ-peg +   +4.625 ±  0.823 Δ-hand +   -6.625 ±  1.922 crib =   -5.000 ±  1.527 overall
+3♣ first play:   +0.292 ±  0.459 game points;   -3.083 ±  0.742 Δ-peg +   +4.667 ±  0.776 Δ-hand +   -5.917 ±  1.496 crib =   -4.333 ±  2.280 overall
+Pone   dealt     [6♣,J♠,2♥,7♠,6♠,J♦] (sorted: [J♠,J♦,7♠,6♠,6♣,2♥])
+Dealer dealt     [K♥,Q♠,4♠,6♦,Q♦,2♠] (sorted: [K♥,Q♠,Q♦,6♦,4♠,2♠])
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(27, 28, True) after initial action [J♠,6♠,6♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(24, 34, True) after initial action [J♠,J♦,6♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(23, 36, True) after initial action [J♠,7♠,6♠,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(29, 33, True) after initial action [7♠,6♠,6♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(24, 38, True) after initial action [J♠,7♠,6♠,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(23, 42, True) after initial action [J♦,6♠,6♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(26, 32, True) after initial action [J♠,7♠,6♠,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(23, 43, True) after initial action [J♠,J♦,7♠,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(25, 35, True) after initial action [J♠,J♦,7♠,6♠], None.
+[J♠,7♠,6♠,6♣] - [J♦,2♥]:   +1.000 ±  0.000 game points;   -4.500 ±  2.466 Δ-peg +   -1.250 ±  4.482 Δ-hand +   -5.000 ±  4.001 crib =  -10.750 ±  6.760 overall
+[J♠,J♦,6♠,6♣] - [7♠,2♥]:   +0.500 ±  1.059 game points;   -2.000 ±  2.400 Δ-peg +   -4.250 ±  1.674 Δ-hand +   -1.500 ±  1.877 crib =   -7.750 ±  3.335 overall
+[J♠,J♦,6♠,2♥] - [7♠,6♣]:   +0.250 ±  1.079 game points;   -1.000 ±  1.960 Δ-peg +   -1.250 ±  3.699 Δ-hand +   -6.750 ±  4.482 crib =   -9.000 ±  4.158 overall
+[J♠,J♦,7♠,6♠] - [6♣,2♥]:   +0.250 ±  0.938 game points;   -2.000 ±  1.600 Δ-peg +   -4.250 ±  2.926 Δ-hand +   -4.000 ±  1.600 crib =  -10.250 ±  2.926 overall
+[7♠,6♠,6♣,2♥] - [J♠,J♦]:   +0.138 ±  0.411 game points;   -3.000 ±  1.960 Δ-peg +   +1.500 ±  4.346 Δ-hand +   -4.250 ±  1.470 crib =   -5.750 ±  4.892 overall
+[J♦,7♠,6♠,6♣] - [J♠,2♥]:   +0.117 ±  1.277 game points;   -2.000 ±  1.386 Δ-peg +   -2.000 ±  5.601 Δ-hand +   -3.500 ±  1.877 crib =   -7.500 ±  3.347 overall
+[J♠,J♦,6♣,2♥] - [7♠,6♠]:   +0.000 ±  0.800 game points;   -1.250 ±  0.938 Δ-peg +   -3.250 ±  2.450 Δ-hand +   -5.750 ±  2.450 crib =  -10.250 ±  0.938 overall
+[J♠,7♠,6♠,2♥] - [J♦,6♣]:   +0.000 ±  0.000 game points;   -2.250 ±  2.926 Δ-peg +   -5.000 ±  3.667 Δ-hand +   -4.250 ±  2.577 crib =  -11.500 ±  3.623 overall
+[J♠,J♦,7♠,2♥] - [6♠,6♣]:   -0.033 ±  0.949 game points;   -2.500 ±  2.593 Δ-peg +   -5.500 ±  3.250 Δ-hand +   -5.500 ±  2.466 crib =  -13.500 ±  6.476 overall
+[J♦,6♠,6♣,2♥] - [J♠,7♠]:   -0.375 ±  1.086 game points;   -1.000 ±  3.488 Δ-peg +   -8.500 ±  4.346 Δ-hand +   -4.250 ±  1.855 crib =  -13.750 ±  5.209 overall
+[J♠,7♠,6♣,2♥] - [J♦,6♠]:   -0.625 ±  1.086 game points;   -1.250 ±  0.490 Δ-peg +   -2.500 ±  3.047 Δ-hand +   -7.750 ±  4.826 crib =  -11.500 ±  6.275 overall
+[J♠,J♦,7♠,6♣] - [6♠,2♥]:   -0.688 ±  1.489 game points;   -3.750 ±  2.450 Δ-peg +   -4.500 ±  4.346 Δ-hand +   -5.000 ±  1.132 crib =  -13.250 ±  5.679 overall
+[J♠,6♠,6♣,2♥] - [J♦,7♠]:   -0.750 ±  0.938 game points;   -3.000 ±  1.789 Δ-peg +   -3.000 ±  3.488 Δ-hand +   -4.000 ±  3.837 crib =  -10.000 ±  5.601 overall
+[J♦,7♠,6♣,2♥] - [J♠,6♠]:   -0.833 ±  0.327 game points;   -2.750 ±  0.490 Δ-peg +   -3.000 ±  3.099 Δ-hand +   -4.250 ±  2.020 crib =  -10.000 ±  4.001 overall
+[J♦,7♠,6♠,2♥] - [J♠,6♣]:   -1.188 ±  0.732 game points;   -4.250 ±  1.855 Δ-peg +   -3.250 ±  3.238 Δ-hand +   -5.000 ±  0.800 crib =  -12.500 ±  4.562 overall
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(30, 23, True) after initial action [K♥,Q♠,6♦,4♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(32, 30, True) after initial action [K♥,Q♠,4♠,2♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(34, 29, True) after initial action [K♥,Q♦,6♦,4♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(35, 29, True) after initial action [K♥,6♦,4♠,2♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(25, 27, True) after initial action [K♥,Q♦,4♠,2♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(28, 25, True) after initial action [K♥,Q♦,6♦,2♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(24, 25, True) after initial action [Q♠,6♦,4♠,2♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(33, 31, True) after initial action [Q♠,Q♦,4♠,2♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(35, 29, True) after initial action [Q♦,6♦,4♠,2♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(32, 23, True) after initial action [K♥,Q♠,6♦,4♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(31, 31, True) after initial action [K♥,Q♦,4♠,2♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(34, 24, True) after initial action [Q♠,Q♦,6♦,4♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(34, 25, True) after initial action [Q♠,6♦,4♠,2♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(29, 28, True) after initial action [Q♠,Q♦,4♠,2♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(33, 31, True) after initial action [Q♦,6♦,4♠,2♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(30, 30, True) after initial action [K♥,Q♠,Q♦,4♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(26, 26, True) after initial action [K♥,Q♠,6♦,2♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(35, 30, True) after initial action [K♥,Q♦,6♦,4♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(28, 24, True) after initial action [K♥,Q♦,4♠,2♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(25, 33, True) after initial action [Q♠,Q♦,4♠,2♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(28, 25, True) after initial action [K♥,Q♠,4♠,2♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(33, 25, True) after initial action [K♥,Q♠,Q♦,6♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(34, 25, True) after initial action [K♥,Q♠,6♦,2♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(33, 31, True) after initial action [K♥,6♦,4♠,2♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(33, 25, True) after initial action [K♥,Q♦,4♠,2♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(33, 30, True) after initial action [K♥,Q♦,6♦,2♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(35, 29, True) after initial action [Q♠,Q♦,6♦,4♠], None.
+[K♥,Q♠,6♦,2♠] - [Q♦,4♠]:   -0.500 ±  0.566 game points;   +0.250 ±  5.622 Δ-peg +   +5.250 ±  2.699 Δ-hand +   -5.250 ±  2.926 crib =   +0.250 ±  9.514 overall
+[K♥,6♦,4♠,2♠] - [Q♠,Q♦]:   -0.333 ±  0.462 game points;   -4.000 ±  2.885 Δ-peg +   +8.750 ±  3.137 Δ-hand +   -5.500 ±  4.631 crib =   -0.750 ±  7.522 overall
+[K♥,Q♠,Q♦,6♦] - [4♠,2♠]:   +0.000 ±  0.800 game points;   +0.500 ±  2.940 Δ-peg +   +4.750 ±  1.470 Δ-hand +   -4.000 ±  2.772 crib =   +1.250 ±  4.826 overall
+[K♥,Q♦,4♠,2♠] - [Q♠,6♦]:   +0.000 ±  0.000 game points;   -2.750 ±  1.674 Δ-peg +   +6.750 ±  3.335 Δ-hand +   -2.500 ±  0.980 crib =   +1.500 ±  4.346 overall
+[Q♠,Q♦,4♠,2♠] - [K♥,6♦]:   +0.050 ±  0.098 game points;   -3.000 ±  2.654 Δ-peg +   +3.750 ±  4.262 Δ-hand +   -3.500 ±  3.047 crib =   -2.750 ±  4.410 overall
+[Q♦,6♦,4♠,2♠] - [K♥,Q♠]:   +0.250 ±  0.490 game points;   +0.500 ±  2.333 Δ-peg +   +5.750 ±  0.938 Δ-hand +   -2.750 ±  0.938 crib =   +3.500 ±  2.333 overall
+[Q♠,Q♦,6♦,2♠] - [K♥,4♠]:   +0.300 ±  0.926 game points;   -1.250 ±  1.470 Δ-peg +   +5.000 ±  5.658 Δ-hand +   -5.000 ±  3.395 crib =   -1.250 ±  5.021 overall
+[K♥,Q♠,Q♦,2♠] - [6♦,4♠]:   +0.500 ±  1.265 game points;   -1.250 ±  2.173 Δ-peg +   +2.250 ±  4.109 Δ-hand +   -4.500 ±  1.877 crib =   -3.500 ±  3.623 overall
+[K♥,Q♦,6♦,2♠] - [Q♠,4♠]:   +0.500 ±  0.566 game points;   -1.000 ±  2.885 Δ-peg +   +4.500 ±  3.795 Δ-hand +   -2.750 ±  2.699 crib =   +0.750 ±  3.869 overall
+[Q♠,6♦,4♠,2♠] - [K♥,Q♦]:   +0.500 ±  0.566 game points;   +1.000 ±  4.597 Δ-peg +   +3.500 ±  2.940 Δ-hand +   -3.500 ±  3.347 crib =   +1.000 ±  4.867 overall
+[K♥,Q♦,6♦,4♠] - [Q♠,2♠]:   +0.500 ±  0.566 game points;   +1.750 ±  2.815 Δ-peg +   +3.500 ±  3.623 Δ-hand +   -4.000 ±  3.299 crib =   +1.250 ±  5.390 overall
+[K♥,Q♠,6♦,4♠] - [Q♦,2♠]:   +0.500 ±  0.566 game points;   +2.000 ±  1.386 Δ-peg +   +4.750 ±  3.522 Δ-hand +   -2.750 ±  3.335 crib =   +4.000 ±  4.734 overall
+[K♥,Q♠,Q♦,4♠] - [6♦,2♠]:   +0.625 ±  0.469 game points;   +1.000 ±  1.386 Δ-peg +   +5.500 ±  2.940 Δ-hand +   -3.750 ±  2.316 crib =   +2.750 ±  3.430 overall
+[Q♠,Q♦,6♦,4♠] - [K♥,2♠]:   +0.750 ±  0.938 game points;   -0.250 ±  3.699 Δ-peg +   +6.250 ±  2.577 Δ-hand +   -3.500 ±  2.466 crib =   +2.500 ±  5.853 overall
+[K♥,Q♠,4♠,2♠] - [Q♦,6♦]:   +0.750 ±  0.938 game points;   -1.750 ±  2.699 Δ-peg +   +5.500 ±  4.419 Δ-hand +   -1.000 ±  1.132 crib =   +2.750 ±  5.021 overall
+Pone   discarded [2♥,J♦] (sorted: [J♦,2♥])
+Dealer discarded [4♠,Q♦] (sorted: [Q♦,4♠])
+Pone   kept      [6♣,J♠,7♠,6♠] (sorted: [J♠,7♠,6♠,6♣])
+Dealer kept      [K♥,Q♠,6♦,2♠] (sorted: [K♥,Q♠,6♦,2♠])
+Simulating each of the 4 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(29, 33, True) after initial action [], J♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(30, 30, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(28, 30, True) after initial action [], J♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(28, 26, True) after initial action [], 7♠.
+7♠ first play:   +0.292 ±  0.465 game points;   -1.900 ±  1.221 Δ-peg +   +1.000 ±  2.756 Δ-hand +   -4.500 ±  1.178 crib =   -5.400 ±  3.460 overall
+J♠ first play:   +0.035 ±  0.574 game points;   -1.500 ±  2.050 Δ-peg +   -0.700 ±  2.187 Δ-hand +   -3.800 ±  1.568 crib =   -6.000 ±  1.825 overall
+6♠ first play:   -0.304 ±  0.451 game points;   -1.900 ±  1.612 Δ-peg +   -3.500 ±  1.921 Δ-hand +   -4.000 ±  1.339 crib =   -9.400 ±  1.942 overall
+6♣ first play:   -0.417 ±  0.523 game points;   -3.200 ±  1.673 Δ-peg +   -1.700 ±  2.445 Δ-hand +   -4.300 ±  1.095 crib =   -9.200 ±  3.144 overall
+Simulating each of the 4 possible dealer plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(34, 24, True) after initial action [], Q♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(40, 31, True) after initial action [], 2♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(27, 25, True) after initial action [], 6♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(28, 29, True) after initial action [], Q♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(27, 26, True) after initial action [], K♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(30, 23, True) after initial action [], 6♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(25, 30, True) after initial action [], Q♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(44, 27, True) after initial action [], 2♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(36, 25, True) after initial action [], 2♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(27, 23, True) after initial action [], 6♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(25, 26, True) after initial action [], K♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(36, 23, True) after initial action [], Q♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(29, 25, True) after initial action [], 2♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(41, 25, True) after initial action [], K♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(34, 29, True) after initial action [], Q♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(29, 25, True) after initial action [], 2♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(38, 29, True) after initial action [], 6♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(25, 26, True) after initial action [], 2♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(42, 25, True) after initial action [], K♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(27, 28, True) after initial action [], Q♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(30, 23, True) after initial action [], 2♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(27, 28, True) after initial action [], Q♠.
+Q♠ first play:   +0.050 ±  0.308 game points;   -1.800 ±  0.640 Δ-peg +   +7.600 ±  2.413 Δ-hand +   -3.800 ±  1.198 crib =   +2.000 ±  3.445 overall
+2♠ first play:   +0.167 ±  0.472 game points;   +1.583 ±  1.416 Δ-peg +   +6.917 ±  2.307 Δ-hand +   -2.333 ±  0.945 crib =   +6.167 ±  2.749 overall
+K♥ first play:   +0.222 ±  0.436 game points;   -2.556 ±  0.986 Δ-peg +   +9.111 ±  4.265 Δ-hand +   -2.556 ±  1.428 crib =   +4.000 ±  4.526 overall
+6♦ first play:   +0.444 ±  0.576 game points;   +1.333 ±  1.132 Δ-peg +   +9.111 ±  4.636 Δ-hand +   -2.667 ±  1.132 crib =   +7.778 ±  3.664 overall
+Simulating each of the 3 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(27, 42, True) after initial action [], 6♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(29, 28, True) after initial action [], J♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(29, 30, True) after initial action [], J♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(27, 36, True) after initial action [], 6♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(30, 30, True) after initial action [], 6♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(28, 29, True) after initial action [], 6♠.
+J♠ first play:   +0.150 ±  0.548 game points;   -1.100 ±  0.849 Δ-peg +   +0.100 ±  2.075 Δ-hand +   -4.900 ±  1.503 crib =   -5.900 ±  2.013 overall
+6♠ first play:   -0.407 ±  0.491 game points;   -3.000 ±  1.424 Δ-peg +   -1.556 ±  2.120 Δ-hand +   -5.222 ±  1.489 crib =   -9.778 ±  3.903 overall
+6♣ first play:   -0.485 ±  0.567 game points;   -2.091 ±  1.307 Δ-peg +   +0.273 ±  1.324 Δ-hand +   -5.545 ±  1.193 crib =   -7.364 ±  2.135 overall
+Simulating each of the 2 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(28, 27, True) after initial action [], 6♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(27, 29, True) after initial action [], 6♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(27, 27, True) after initial action [], 6♣.
+6♣ first play:   +0.075 ±  0.547 game points;   -1.400 ±  0.523 Δ-peg +   +1.900 ±  1.715 Δ-hand +   -4.200 ±  1.673 crib =   -3.700 ±  1.308 overall
+6♠ first play:   -0.125 ±  0.543 game points;   -1.600 ±  0.728 Δ-peg +   +1.000 ±  1.205 Δ-hand +   -3.900 ±  1.255 crib =   -4.500 ±  1.735 overall
+Simulating each of the 2 possible dealer plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(28, 27, True) after initial action [], K♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(27, 28, True) after initial action [], K♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(28, 25, True) after initial action [], K♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(29, 30, True) after initial action [], 6♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(25, 29, True) after initial action [], 6♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(25, 29, True) after initial action [], K♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(28, 27, True) after initial action [], 6♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(25, 27, True) after initial action [], K♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(25, 25, True) after initial action [], K♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(28, 25, True) after initial action [], K♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(28, 27, True) after initial action [], 6♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(29, 25, True) after initial action [], K♥.
+K♥ first play:   -0.136 ±  0.376 game points;   -2.091 ±  0.319 Δ-peg +   +3.909 ±  0.969 Δ-hand +   -2.000 ±  1.182 crib =   -0.182 ±  1.808 overall
+6♦ first play:   -0.074 ±  0.404 game points;   -3.333 ±  1.307 Δ-peg +   +4.889 ±  0.829 Δ-hand +   -1.667 ±  1.132 crib =   -0.111 ±  2.025 overall
+Pone   dealt     [T♣,7♦,3♥,4♣,A♥,8♥] (sorted: [T♣,8♥,7♦,4♣,3♥,A♥])
+Dealer dealt     [6♠,A♦,3♠,9♣,Q♠,5♦] (sorted: [Q♠,9♣,6♠,5♦,3♠,A♦])
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(32, 53, True) after initial action [T♣,7♦,4♣,A♥], None.
+[8♥,7♦,3♥,A♥] - [T♣,4♣]:   +0.250 ±  0.633 game points;   -0.500 ±  1.877 Δ-peg +   -4.750 ±  7.479 Δ-hand +   -3.750 ±  2.020 crib =   -9.000 ±  4.455 overall
+[T♣,8♥,7♦,3♥] - [4♣,A♥]:   +0.213 ±  0.747 game points;   -3.000 ±  1.386 Δ-peg +   -0.750 ±  0.490 Δ-hand +   -4.500 ±  1.877 crib =   -8.250 ±  3.522 overall
+[8♥,7♦,4♣,A♥] - [T♣,3♥]:   +0.077 ±  0.208 game points;   -2.250 ±  1.674 Δ-peg +   -0.500 ±  4.119 Δ-hand +   -3.500 ±  0.980 crib =   -6.250 ±  3.034 overall
+[T♣,8♥,4♣,A♥] - [7♦,3♥]:   +0.000 ±  0.800 game points;   +0.750 ±  1.470 Δ-peg +   -4.500 ±  3.047 Δ-hand +   -7.500 ±  1.697 crib =  -11.250 ±  2.173 overall
+[T♣,7♦,4♣,A♥] - [8♥,3♥]:   -0.042 ±  0.804 game points;   +1.250 ±  1.470 Δ-peg +   -6.750 ±  6.568 Δ-hand +   -4.750 ±  2.926 crib =  -10.250 ±  7.522 overall
+[T♣,8♥,7♦,4♣] - [3♥,A♥]:   -0.125 ±  0.837 game points;   -0.250 ±  2.173 Δ-peg +   -2.500 ±  3.047 Δ-hand +   -3.250 ±  3.137 crib =   -6.000 ±  5.601 overall
+[8♥,7♦,4♣,3♥] - [T♣,A♥]:   -0.357 ±  0.464 game points;   -1.000 ±  2.654 Δ-peg +   -0.750 ±  1.674 Δ-hand +   -3.000 ±  2.885 crib =   -4.750 ±  2.815 overall
+[T♣,4♣,3♥,A♥] - [8♥,7♦]:   -0.404 ±  0.884 game points;   +2.000 ±  1.600 Δ-peg +   -3.500 ±  2.940 Δ-hand +   -8.500 ±  2.940 crib =  -10.000 ±  5.061 overall
+[T♣,8♥,7♦,A♥] - [4♣,3♥]:   -0.500 ±  0.650 game points;   -1.750 ±  2.699 Δ-peg +   -3.750 ±  5.209 Δ-hand +   -5.000 ±  4.666 crib =  -10.500 ±  9.881 overall
+[8♥,4♣,3♥,A♥] - [T♣,7♦]:   -0.500 ±  0.825 game points;   -1.250 ±  3.238 Δ-peg +   -1.000 ±  3.753 Δ-hand +   -3.000 ±  2.530 crib =   -5.250 ±  6.008 overall
+[T♣,7♦,4♣,3♥] - [8♥,A♥]:   -0.500 ±  0.980 game points;   -1.750 ±  2.316 Δ-peg +   -4.000 ±  1.386 Δ-hand +   -5.500 ±  1.877 crib =  -11.250 ±  1.470 overall
+[T♣,7♦,3♥,A♥] - [8♥,4♣]:   -0.512 ±  0.428 game points;   +2.250 ±  0.490 Δ-peg +   -7.750 ±  3.238 Δ-hand +   -5.750 ±  2.020 crib =  -11.250 ±  2.926 overall
+[7♦,4♣,3♥,A♥] - [T♣,8♥]:   -0.537 ±  0.395 game points;   +0.250 ±  1.674 Δ-peg +   -5.750 ±  4.410 Δ-hand +   -4.000 ±  2.772 crib =   -9.500 ±  4.562 overall
+[T♣,8♥,3♥,A♥] - [7♦,4♣]:   -0.658 ±  0.731 game points;   -3.000 ±  3.488 Δ-peg +   -3.500 ±  3.623 Δ-hand +   -5.000 ±  3.753 crib =  -11.500 ±  7.696 overall
+[T♣,8♥,4♣,3♥] - [7♦,A♥]:   -1.021 ±  0.367 game points;   -3.750 ±  4.109 Δ-peg +   -5.500 ±  2.466 Δ-hand +   -4.500 ±  1.877 crib =  -13.750 ±  4.691 overall
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(30, 44, True) after initial action [Q♠,6♠,5♦,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(46, 40, True) after initial action [9♣,6♠,5♦,A♦], None.
+[Q♠,9♣,6♠,A♦] - [5♦,3♠]:   -0.600 ±  0.480 game points;   -2.000 ±  2.772 Δ-peg +   +7.500 ±  5.686 Δ-hand +   -5.250 ±  1.470 crib =   +0.250 ±  3.699 overall
+[9♣,6♠,5♦,3♠] - [Q♠,A♦]:   -0.583 ±  0.490 game points;   -2.500 ±  4.119 Δ-peg +   +4.250 ±  2.577 Δ-hand +   -2.000 ±  1.600 crib =   -0.250 ±  3.869 overall
+[Q♠,5♦,3♠,A♦] - [9♣,6♠]:   -0.475 ±  0.403 game points;   -3.000 ±  1.960 Δ-peg +   +1.000 ±  1.132 Δ-hand +   -5.500 ±  3.347 crib =   -7.500 ±  3.347 overall
+[9♣,6♠,3♠,A♦] - [Q♠,5♦]:   -0.464 ±  0.459 game points;   +0.500 ±  3.347 Δ-peg +   +0.250 ±  1.233 Δ-hand +   -6.750 ±  3.137 crib =   -6.000 ±  4.597 overall
+[9♣,6♠,5♦,A♦] - [Q♠,3♠]:   -0.150 ±  0.563 game points;   -1.000 ±  3.099 Δ-peg +   +3.000 ±  5.368 Δ-hand +   -3.000 ±  1.132 crib =   -1.000 ±  6.041 overall
+[Q♠,9♣,6♠,3♠] - [5♦,A♦]:   -0.125 ±  0.245 game points;   +0.750 ±  3.785 Δ-peg +   +4.750 ±  4.623 Δ-hand +   -5.750 ±  2.316 crib =   -0.250 ±  7.038 overall
+[Q♠,6♠,3♠,A♦] - [9♣,5♦]:   -0.050 ±  0.722 game points;   -1.250 ±  3.335 Δ-peg +   +5.500 ±  0.980 Δ-hand +   -4.750 ±  2.173 crib =   -0.500 ±  5.092 overall
+[Q♠,9♣,5♦,A♦] - [6♠,3♠]:   +0.050 ±  0.882 game points;   -1.500 ±  1.265 Δ-peg +   +1.000 ±  3.395 Δ-hand +   -3.500 ±  3.347 crib =   -4.000 ±  5.601 overall
+[Q♠,9♣,6♠,5♦] - [3♠,A♦]:   +0.100 ±  0.196 game points;   +0.500 ±  1.265 Δ-peg +   +0.500 ±  3.047 Δ-hand +   -4.000 ±  1.386 crib =   -3.000 ±  3.753 overall
+[Q♠,9♣,5♦,3♠] - [6♠,A♦]:   +0.107 ±  0.803 game points;   -2.000 ±  2.885 Δ-peg +   +2.500 ±  3.047 Δ-hand +   -4.500 ±  2.940 crib =   -4.000 ±  8.729 overall
+[Q♠,6♠,5♦,3♠] - [9♣,A♦]:   +0.138 ±  0.632 game points;   -2.750 ±  2.926 Δ-peg +   +2.500 ±  3.623 Δ-hand +   -3.000 ±  1.132 crib =   -3.250 ±  7.174 overall
+[9♣,5♦,3♠,A♦] - [Q♠,6♠]:   +0.287 ±  0.875 game points;   -4.000 ±  3.488 Δ-peg +   +1.000 ±  3.099 Δ-hand +   -2.750 ±  0.938 crib =   -5.750 ±  4.262 overall
+[Q♠,6♠,5♦,A♦] - [9♣,3♠]:   +0.429 ±  0.498 game points;   -2.500 ±  4.041 Δ-peg +   +0.000 ±  5.601 Δ-hand +   -1.250 ±  1.855 crib =   -3.750 ±  9.412 overall
+[6♠,5♦,3♠,A♦] - [Q♠,9♣]:   +0.633 ±  0.418 game points;   +2.000 ±  3.578 Δ-peg +   +0.500 ±  4.419 Δ-hand +   -2.000 ±  1.600 crib =   +0.500 ±  7.612 overall
+[Q♠,9♣,3♠,A♦] - [6♠,5♦]:   +0.917 ±  0.163 game points;   -1.250 ±  1.470 Δ-peg +   +6.750 ±  5.147 Δ-hand +   -5.250 ±  1.470 crib =   +0.250 ±  7.084 overall
+Pone   discarded [T♣,4♣] (sorted: [T♣,4♣])
+Dealer discarded [3♠,5♦] (sorted: [5♦,3♠])
+Pone   kept      [7♦,3♥,A♥,8♥] (sorted: [8♥,7♦,3♥,A♥])
+Dealer kept      [6♠,A♦,9♣,Q♠] (sorted: [Q♠,9♣,6♠,A♦])
+Simulating each of the 4 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(33, 53, True) after initial action [], 3♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(33, 53, True) after initial action [], 3♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(33, 53, True) after initial action [], 7♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(33, 54, True) after initial action [], A♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(34, 55, True) after initial action [], 3♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(35, 63, True) after initial action [], 8♥.
+A♥ first play:   -0.191 ±  0.397 game points;   -1.500 ±  1.213 Δ-peg +   -4.300 ±  1.802 Δ-hand +   -6.300 ±  1.171 crib =  -12.100 ±  2.096 overall
+3♥ first play:   -0.287 ±  0.418 game points;   -1.800 ±  1.866 Δ-peg +   -3.700 ±  2.392 Δ-hand +   -9.300 ±  2.067 crib =  -14.800 ±  3.647 overall
+7♦ first play:   -0.602 ±  0.532 game points;   -0.300 ±  1.547 Δ-peg +   -4.700 ±  3.147 Δ-hand +   -7.700 ±  2.283 crib =  -12.700 ±  2.375 overall
+8♥ first play:   -0.727 ±  0.484 game points;   -1.900 ±  2.116 Δ-peg +   -7.700 ±  3.788 Δ-hand +   -6.900 ±  1.503 crib =  -16.500 ±  4.668 overall
+Simulating each of the 4 possible dealer plays 10 times in order to select the play:
+Q♠ first play:   -0.327 ±  0.311 game points;   +0.333 ±  0.653 Δ-peg +   +1.222 ±  1.524 Δ-hand +   -7.111 ±  0.949 crib =   -5.556 ±  2.170 overall
+9♣ first play:   -0.287 ±  0.342 game points;   +1.333 ±  1.083 Δ-peg +   +1.000 ±  0.924 Δ-hand +   -8.556 ±  0.986 crib =   -6.222 ±  2.328 overall
+6♠ first play:   -0.286 ±  0.412 game points;   -0.636 ±  1.501 Δ-peg +   +1.727 ±  1.376 Δ-hand +   -8.364 ±  1.947 crib =   -7.273 ±  3.003 overall
+A♦ first play:   +0.080 ±  0.552 game points;   -1.455 ±  1.931 Δ-peg +   +0.818 ±  0.785 Δ-hand +   -6.909 ±  1.782 crib =   -7.545 ±  3.378 overall
+Simulating each of the 3 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(33, 53, True) after initial action [], 7♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(33, 53, True) after initial action [], 7♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(32, 51, True) after initial action [], 8♥.
+8♥ first play:   -0.313 ±  0.350 game points;   -2.100 ±  0.196 Δ-peg +   -7.800 ±  3.062 Δ-hand +   -7.200 ±  2.406 crib =  -17.100 ±  3.375 overall
+7♦ first play:   -0.717 ±  0.338 game points;   +0.100 ±  0.989 Δ-peg +   -9.000 ±  2.445 Δ-hand +   -6.500 ±  1.103 crib =  -15.400 ±  1.709 overall
+3♥ first play:   -0.787 ±  0.273 game points;   -1.500 ±  1.213 Δ-peg +   -6.900 ±  2.215 Δ-hand +   -7.300 ±  2.168 crib =  -15.700 ±  2.818 overall
+Simulating each of the 3 possible dealer plays 10 times in order to select the play:
+6♠ first play:   -0.600 ±  0.388 game points;   -2.571 ±  0.583 Δ-peg +   -0.571 ±  1.649 Δ-hand +   -9.429 ±  1.120 crib =  -12.571 ±  1.592 overall
+9♣ first play:   -0.158 ±  0.400 game points;   +0.333 ±  1.088 Δ-peg +   -0.583 ±  1.287 Δ-hand +   -9.917 ±  1.064 crib =  -10.167 ±  2.222 overall
+A♦ first play:   -0.048 ±  0.441 game points;   -0.727 ±  0.596 Δ-peg +   +0.545 ±  0.929 Δ-hand +   -8.636 ±  1.405 crib =   -8.818 ±  2.027 overall
+Pone   dealt     [4♠,Q♣,3♣,5♣,8♣,9♦] (sorted: [Q♣,9♦,8♣,5♣,4♠,3♣])
+Dealer dealt     [Q♦,4♦,8♦,J♠,6♦,7♠] (sorted: [Q♦,J♠,8♦,7♠,6♦,4♦])
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(50, 47, True) after initial action [Q♣,8♣,4♠,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(52, 54, True) after initial action [Q♣,9♦,8♣,4♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 38, True) after initial action [8♣,5♣,4♠,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 50, True) after initial action [Q♣,8♣,5♣,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(51, 47, True) after initial action [Q♣,8♣,4♠,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(50, 48, True) after initial action [Q♣,9♦,4♠,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(50, 47, True) after initial action [Q♣,9♦,8♣,4♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(49, 50, True) after initial action [9♦,8♣,4♠,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(50, 47, True) after initial action [9♦,8♣,5♣,4♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 44, True) after initial action [Q♣,9♦,8♣,5♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(56, 45, True) after initial action [Q♣,8♣,5♣,4♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 39, True) after initial action [Q♣,9♦,5♣,4♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(50, 54, True) after initial action [Q♣,9♦,8♣,4♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(49, 54, True) after initial action [9♦,8♣,4♠,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(58, 44, True) after initial action [Q♣,8♣,5♣,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(48, 54, True) after initial action [Q♣,9♦,8♣,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(53, 56, True) after initial action [9♦,8♣,5♣,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(61, 41, True) after initial action [Q♣,5♣,4♠,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(50, 51, True) after initial action [Q♣,8♣,4♠,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 44, True) after initial action [Q♣,8♣,5♣,4♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 53, True) after initial action [Q♣,9♦,5♣,4♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(58, 43, True) after initial action [8♣,5♣,4♠,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 41, True) after initial action [9♦,5♣,4♠,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(50, 55, True) after initial action [9♦,8♣,4♠,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(58, 46, True) after initial action [Q♣,8♣,5♣,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 49, True) after initial action [Q♣,9♦,5♣,3♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 48, True) after initial action [Q♣,9♦,8♣,5♣], None.
+[Q♣,9♦,5♣,3♣] - [8♣,4♠]:   +0.583 ±  0.490 game points;   -0.750 ±  0.938 Δ-peg +   -4.250 ±  5.791 Δ-hand +   -4.250 ±  2.020 crib =   -9.250 ±  6.061 overall
+[9♦,8♣,5♣,4♠] - [Q♣,3♣]:   +0.542 ±  0.837 game points;   -3.500 ±  1.877 Δ-peg +   -2.500 ±  3.047 Δ-hand +   -2.000 ±  0.000 crib =   -8.000 ±  4.597 overall
+[Q♣,5♣,4♠,3♣] - [9♦,8♣]:   +0.500 ±  1.265 game points;   -1.000 ±  1.600 Δ-peg +   +1.000 ±  8.655 Δ-hand +   -4.000 ±  3.201 crib =   -4.000 ±  8.655 overall
+[Q♣,9♦,5♣,4♠] - [8♣,3♣]:   +0.500 ±  0.566 game points;   -0.500 ±  2.333 Δ-peg +   -3.750 ±  4.410 Δ-hand +   -4.500 ±  2.040 crib =   -8.750 ±  6.568 overall
+[Q♣,9♦,8♣,5♣] - [4♠,3♣]:   +0.500 ±  0.566 game points;   -2.750 ±  2.020 Δ-peg +   -0.750 ±  0.938 Δ-hand +   -7.500 ±  6.426 crib =  -11.000 ±  7.591 overall
+[9♦,8♣,4♠,3♣] - [Q♣,5♣]:   +0.375 ±  0.735 game points;   -3.000 ±  2.654 Δ-peg +   -4.250 ±  5.791 Δ-hand +   -7.500 ±  5.630 crib =  -14.750 ±  7.896 overall
+[9♦,8♣,5♣,3♣] - [Q♣,4♠]:   +0.250 ±  0.938 game points;   +0.250 ±  1.470 Δ-peg +   -5.500 ±  3.347 Δ-hand +   -5.750 ±  5.565 crib =  -11.000 ±  6.451 overall
+[Q♣,9♦,8♣,3♣] - [5♣,4♠]:   +0.250 ±  0.558 game points;   -1.250 ±  1.674 Δ-peg +   -7.000 ±  6.094 Δ-hand +   -5.000 ±  1.960 crib =  -13.250 ±  5.209 overall
+[Q♣,8♣,5♣,3♣] - [9♦,4♠]:   +0.250 ±  0.490 game points;   -1.000 ±  0.800 Δ-peg +   +2.250 ±  1.674 Δ-hand +   -7.250 ±  4.482 crib =   -6.000 ±  4.867 overall
+[Q♣,8♣,5♣,4♠] - [9♦,3♣]:   +0.250 ±  0.490 game points;   -1.250 ±  1.855 Δ-peg +   -2.250 ±  4.482 Δ-hand +   -5.250 ±  2.173 crib =   -8.750 ±  6.807 overall
+[8♣,5♣,4♠,3♣] - [Q♣,9♦]:   +0.000 ±  0.800 game points;   -3.250 ±  2.577 Δ-peg +   +1.750 ±  8.815 Δ-hand +   -4.000 ±  3.578 crib =   -5.500 ± 11.245 overall
+[9♦,5♣,4♠,3♣] - [Q♣,8♣]:   -0.250 ±  0.938 game points;   -0.500 ±  2.466 Δ-peg +   -4.000 ±  4.666 Δ-hand +   -2.500 ±  2.466 crib =   -7.000 ±  4.932 overall
+[Q♣,8♣,4♠,3♣] - [9♦,5♣]:   -0.250 ±  0.490 game points;   -3.250 ±  0.938 Δ-peg +   -2.500 ±  4.700 Δ-hand +   -8.000 ±  4.734 crib =  -13.750 ±  2.577 overall
+[Q♣,9♦,8♣,4♠] - [5♣,3♣]:   -0.250 ±  0.490 game points;   -2.750 ±  2.926 Δ-peg +   -7.500 ±  4.965 Δ-hand +   -7.750 ±  3.430 crib =  -18.000 ±  4.867 overall
+[Q♣,9♦,4♠,3♣] - [8♣,5♣]:   -0.500 ±  1.265 game points;   -2.500 ±  2.040 Δ-peg +   -6.500 ±  1.697 Δ-hand +   -7.000 ±  0.800 crib =  -16.000 ±  3.395 overall
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 49, True) after initial action [Q♦,J♠,8♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(59, 46, True) after initial action [Q♦,8♦,7♠,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 39, True) after initial action [Q♦,J♠,6♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(59, 40, True) after initial action [Q♦,J♠,8♦,6♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(52, 43, True) after initial action [Q♦,J♠,8♦,7♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(56, 48, True) after initial action [Q♦,8♦,7♠,6♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 46, True) after initial action [J♠,8♦,6♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 35, True) after initial action [J♠,8♦,7♠,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 38, True) after initial action [J♠,7♠,6♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 49, True) after initial action [J♠,8♦,7♠,6♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 43, True) after initial action [Q♦,8♦,6♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(61, 41, True) after initial action [Q♦,8♦,7♠,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 43, True) after initial action [Q♦,J♠,6♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 42, True) after initial action [Q♦,J♠,7♠,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(60, 42, True) after initial action [Q♦,7♠,6♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(56, 39, True) after initial action [Q♦,J♠,8♦,6♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 44, True) after initial action [Q♦,J♠,8♦,7♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(61, 41, True) after initial action [Q♦,8♦,7♠,6♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(53, 43, True) after initial action [J♠,8♦,6♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 41, True) after initial action [J♠,8♦,7♠,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(56, 44, True) after initial action [8♦,7♠,6♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 41, True) after initial action [J♠,7♠,6♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(59, 46, True) after initial action [Q♦,8♦,6♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 39, True) after initial action [Q♦,8♦,7♠,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(63, 41, True) after initial action [Q♦,J♠,6♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(51, 44, True) after initial action [Q♦,7♠,6♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 39, True) after initial action [Q♦,J♠,8♦,6♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 49, True) after initial action [Q♦,J♠,8♦,7♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 48, True) after initial action [Q♦,J♠,7♠,6♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(59, 40, True) after initial action [J♠,8♦,6♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(65, 37, True) after initial action [J♠,8♦,7♠,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(60, 35, True) after initial action [J♠,7♠,6♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(59, 47, True) after initial action [Q♦,J♠,8♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 45, True) after initial action [Q♦,8♦,6♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 48, True) after initial action [Q♦,8♦,7♠,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 43, True) after initial action [Q♦,J♠,6♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(62, 43, True) after initial action [Q♦,J♠,7♠,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(59, 37, True) after initial action [Q♦,7♠,6♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(63, 38, True) after initial action [Q♦,J♠,8♦,6♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(58, 42, True) after initial action [Q♦,J♠,7♠,6♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 44, True) after initial action [J♠,8♦,6♦,4♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 41, True) after initial action [J♠,8♦,7♠,4♦], None.
+[8♦,7♠,6♦,4♦] - [Q♦,J♠]:   -0.250 ±  0.938 game points;   -2.500 ±  1.265 Δ-peg +   +0.000 ±  2.885 Δ-hand +   -4.250 ±  3.612 crib =   -6.750 ±  4.262 overall
+[J♠,8♦,7♠,6♦] - [Q♦,4♦]:   -0.250 ±  0.938 game points;   -0.500 ±  2.333 Δ-peg +   -2.500 ±  3.047 Δ-hand +   -3.250 ±  1.855 crib =   -6.250 ±  0.938 overall
+[Q♦,J♠,8♦,7♠] - [6♦,4♦]:   +0.000 ±  0.000 game points;   -1.500 ±  2.940 Δ-peg +   +2.500 ±  1.877 Δ-hand +   -8.250 ±  4.109 crib =   -7.250 ±  2.577 overall
+[Q♦,J♠,7♠,6♦] - [8♦,4♦]:   +0.000 ±  0.800 game points;   -2.000 ±  1.386 Δ-peg +   +3.000 ±  4.158 Δ-hand +   -3.500 ±  1.877 crib =   -2.500 ±  3.047 overall
+[J♠,8♦,6♦,4♦] - [Q♦,7♠]:   +0.000 ±  0.000 game points;   -2.000 ±  2.530 Δ-peg +   +3.750 ±  2.699 Δ-hand +   -3.500 ±  3.347 crib =   -1.750 ±  3.950 overall
+[Q♦,8♦,7♠,4♦] - [J♠,6♦]:   +0.000 ±  0.000 game points;   -3.000 ±  4.597 Δ-peg +   +6.000 ±  1.386 Δ-hand +   -3.750 ±  2.815 crib =   -0.750 ±  4.482 overall
+[Q♦,J♠,6♦,4♦] - [8♦,7♠]:   +0.000 ±  0.000 game points;   +1.750 ±  2.450 Δ-peg +   +6.750 ±  2.450 Δ-hand +   -6.500 ±  0.980 crib =   +2.000 ±  3.753 overall
+[Q♦,J♠,8♦,6♦] - [7♠,4♦]:   +0.000 ±  0.000 game points;   +1.750 ±  2.699 Δ-peg +   +4.250 ±  3.137 Δ-hand +   -2.000 ±  1.600 crib =   +4.000 ±  4.234 overall
+[J♠,8♦,7♠,4♦] - [Q♦,6♦]:   +0.000 ±  0.000 game points;   +0.000 ±  1.386 Δ-peg +   +5.750 ±  5.791 Δ-hand +   -1.500 ±  0.980 crib =   +4.250 ±  6.370 overall
+[Q♦,8♦,6♦,4♦] - [J♠,7♠]:   +0.250 ±  0.490 game points;   -0.750 ±  2.173 Δ-peg +   +0.250 ±  1.470 Δ-hand +   -4.250 ±  2.815 crib =   -4.750 ±  4.109 overall
+[Q♦,7♠,6♦,4♦] - [J♠,8♦]:   +0.312 ±  0.612 game points;   -1.750 ±  5.449 Δ-peg +   +6.500 ±  2.940 Δ-hand +   -3.250 ±  2.926 crib =   +1.500 ±  6.426 overall
+[Q♦,J♠,8♦,4♦] - [7♠,6♦]:   +0.500 ±  0.566 game points;   -1.500 ±  3.623 Δ-peg +   +4.750 ±  2.316 Δ-hand +   -7.000 ±  2.885 crib =   -3.750 ±  2.926 overall
+[J♠,7♠,6♦,4♦] - [Q♦,8♦]:   +0.500 ±  0.980 game points;   -0.750 ±  2.450 Δ-peg +   +7.000 ±  4.455 Δ-hand +   -1.750 ±  2.316 crib =   +4.500 ±  5.798 overall
+[Q♦,J♠,7♠,4♦] - [8♦,6♦]:   +0.583 ±  0.673 game points;   -0.750 ±  1.674 Δ-peg +   +5.250 ±  4.186 Δ-hand +   -7.250 ±  6.061 crib =   -2.750 ±  4.892 overall
+[Q♦,8♦,7♠,6♦] - [J♠,4♦]:   +0.625 ±  0.735 game points;   -2.500 ±  1.265 Δ-peg +   +2.000 ±  4.867 Δ-hand +   -4.000 ±  4.001 crib =   -4.500 ±  6.275 overall
+Pone   discarded [4♠,8♣] (sorted: [8♣,4♠])
+Dealer discarded [Q♦,J♠] (sorted: [Q♦,J♠])
+Pone   kept      [Q♣,3♣,5♣,9♦] (sorted: [Q♣,9♦,5♣,3♣])
+Dealer kept      [4♦,8♦,6♦,7♠] (sorted: [8♦,7♠,6♦,4♦])
+Simulating each of the 4 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 48, True) after initial action [], 9♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(53, 56, True) after initial action [], 5♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 45, True) after initial action [], Q♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(53, 44, True) after initial action [], 9♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 48, True) after initial action [], 9♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 42, True) after initial action [], 9♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(53, 58, True) after initial action [], Q♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(53, 42, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 47, True) after initial action [], 9♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 49, True) after initial action [], 5♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(56, 44, True) after initial action [], 5♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 46, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 45, True) after initial action [], Q♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 51, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 49, True) after initial action [], 9♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 47, True) after initial action [], 5♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(56, 43, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 51, True) after initial action [], 9♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 44, True) after initial action [], Q♣.
+5♣ first play:   +0.650 ±  0.654 game points;   -2.200 ±  1.395 Δ-peg +   -1.000 ±  1.600 Δ-hand +   -6.400 ±  1.898 crib =   -9.600 ±  3.150 overall
+Q♣ first play:   +0.380 ±  0.333 game points;   -1.000 ±  1.777 Δ-peg +   -2.100 ±  2.055 Δ-hand +   -6.900 ±  1.558 crib =  -10.000 ±  4.324 overall
+3♣ first play:   +0.300 ±  0.588 game points;   -1.300 ±  1.433 Δ-peg +   -0.100 ±  1.764 Δ-hand +   -8.400 ±  2.377 crib =   -9.800 ±  3.647 overall
+9♦ first play:   +0.167 ±  0.280 game points;   -1.800 ±  1.513 Δ-peg +   -0.800 ±  1.541 Δ-hand +   -6.800 ±  2.041 crib =   -9.400 ±  3.812 overall
+Simulating each of the 4 possible dealer plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(53, 42, True) after initial action [], 8♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(62, 43, True) after initial action [], 6♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(62, 51, True) after initial action [], 8♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 45, True) after initial action [], 4♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(66, 49, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(58, 44, True) after initial action [], 8♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(70, 49, True) after initial action [], 6♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(58, 44, True) after initial action [], 4♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(60, 47, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 44, True) after initial action [], 6♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 43, True) after initial action [], 4♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(69, 48, True) after initial action [], 6♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(74, 52, True) after initial action [], 4♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 49, True) after initial action [], 8♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(61, 49, True) after initial action [], 6♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 48, True) after initial action [], 4♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(61, 44, True) after initial action [], 8♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(58, 50, True) after initial action [], 4♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 43, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 45, True) after initial action [], 8♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(58, 46, True) after initial action [], 6♦.
+6♦ first play:   +0.025 ±  0.441 game points;   -0.900 ±  2.116 Δ-peg +   +2.000 ±  1.938 Δ-hand +   -2.900 ±  1.255 crib =   -1.800 ±  3.264 overall
+8♦ first play:   +0.300 ±  0.510 game points;   -2.500 ±  2.211 Δ-peg +   +0.400 ±  1.875 Δ-hand +   -3.100 ±  1.221 crib =   -5.200 ±  2.659 overall
+4♦ first play:   +0.727 ±  0.535 game points;   -3.091 ±  1.434 Δ-peg +   +3.727 ±  2.320 Δ-hand +   -3.000 ±  1.211 crib =   -2.364 ±  2.763 overall
+7♠ first play:   +0.889 ±  0.484 game points;   -2.667 ±  2.014 Δ-peg +   +2.444 ±  1.990 Δ-hand +   -2.889 ±  1.198 crib =   -3.111 ±  3.370 overall
+Simulating each of the 3 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 52, True) after initial action [], Q♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 40, True) after initial action [], 9♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 47, True) after initial action [], 9♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 52, True) after initial action [], 9♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 41, True) after initial action [], Q♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(53, 43, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 48, True) after initial action [], 9♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 41, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 48, True) after initial action [], Q♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(53, 48, True) after initial action [], 9♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(56, 42, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(53, 44, True) after initial action [], 9♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 54, True) after initial action [], Q♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 48, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 45, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(56, 44, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(53, 56, True) after initial action [], Q♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(53, 42, True) after initial action [], 3♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 41, True) after initial action [], 9♦.
+Q♣ first play:   +0.200 ±  0.570 game points;   -1.400 ±  1.139 Δ-peg +   -1.900 ±  2.400 Δ-hand +   -5.700 ±  2.480 crib =   -9.000 ±  3.530 overall
+3♣ first play:   +0.091 ±  0.491 game points;   -0.818 ±  1.206 Δ-peg +   +0.909 ±  1.660 Δ-hand +   -5.364 ±  2.215 crib =   -5.273 ±  3.060 overall
+9♦ first play:   -0.111 ±  0.218 game points;   -1.111 ±  1.284 Δ-peg +   -1.444 ±  2.831 Δ-hand +   -5.889 ±  1.004 crib =   -8.444 ±  3.489 overall
+Simulating each of the 3 possible dealer plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 45, True) after initial action [], 8♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(56, 40, True) after initial action [], 4♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(56, 44, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 41, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(56, 44, True) after initial action [], 8♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 41, True) after initial action [], 8♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 45, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 48, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 45, True) after initial action [], 4♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 41, True) after initial action [], 4♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 41, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 42, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(62, 43, True) after initial action [], 4♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 45, True) after initial action [], 8♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(54, 41, True) after initial action [], 4♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 45, True) after initial action [], 8♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(56, 43, True) after initial action [], 4♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 43, True) after initial action [], 7♠.
+4♦ first play:   -0.091 ±  0.414 game points;   -0.545 ±  0.552 Δ-peg +   +0.727 ±  1.185 Δ-hand +   -3.000 ±  1.423 crib =   -2.818 ±  2.078 overall
+8♦ first play:   +0.125 ±  0.245 game points;   -2.375 ±  0.823 Δ-peg +   +0.500 ±  1.283 Δ-hand +   -2.875 ±  0.940 crib =   -4.750 ±  2.152 overall
+7♠ first play:   +0.273 ±  0.535 game points;   -1.909 ±  0.491 Δ-peg +   +1.000 ±  1.423 Δ-hand +   -2.545 ±  1.407 crib =   -3.455 ±  1.894 overall
+Simulating each of the 2 possible dealer plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 40, True) after initial action [], 8♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 40, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(61, 43, True) after initial action [], 8♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(56, 40, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 40, True) after initial action [], 8♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(63, 40, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 40, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 43, True) after initial action [], 8♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(59, 40, True) after initial action [], 8♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 42, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 40, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 49, True) after initial action [], 8♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(61, 44, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(65, 43, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 43, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 40, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 40, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 43, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(57, 45, True) after initial action [], 8♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(65, 44, True) after initial action [], 8♦.
+8♦ first play:   +0.000 ±  0.000 game points;   +0.000 ±  0.000 Δ-peg +   +2.750 ±  2.020 Δ-hand +   -3.000 ±  2.160 crib =   -0.250 ±  2.911 overall
+7♠ first play:   +0.000 ±  0.000 game points;   +0.167 ±  0.327 Δ-peg +   +1.750 ±  1.725 Δ-hand +   -1.250 ±  0.907 crib =   +0.667 ±  1.660 overall
+Pone   dealt     [A♦,2♠,4♦,5♣,Q♠,T♠] (sorted: [Q♠,T♠,5♣,4♦,2♠,A♦])
+Dealer dealt     [4♥,5♠,8♠,Q♣,6♣,K♦] (sorted: [K♦,Q♣,8♠,6♣,5♠,4♥])
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(60, 62, True) after initial action [T♠,4♦,2♠,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(56, 56, True) after initial action [Q♠,T♠,2♠,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(64, 59, True) after initial action [Q♠,5♣,4♦,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(60, 62, True) after initial action [5♣,4♦,2♠,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(61, 63, True) after initial action [5♣,4♦,2♠,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(55, 60, True) after initial action [Q♠,T♠,2♠,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(63, 64, True) after initial action [Q♠,5♣,4♦,A♦], None.
+[T♠,5♣,4♦,A♦] - [Q♠,2♠]:   +1.312 ±  0.464 game points;   +2.250 ±  3.430 Δ-peg +   -0.500 ±  1.697 Δ-hand +   -4.000 ±  1.600 crib =   -2.250 ±  5.622 overall
+[T♠,5♣,4♦,2♠] - [Q♠,A♦]:   +0.550 ±  0.515 game points;   -1.000 ±  1.960 Δ-peg +   -2.500 ±  2.466 Δ-hand +   -5.750 ±  5.449 crib =   -9.250 ±  4.186 overall
+[Q♠,T♠,5♣,2♠] - [4♦,A♦]:   +0.250 ±  0.938 game points;   -3.000 ±  2.885 Δ-peg +   -1.500 ±  4.834 Δ-hand +   -7.750 ±  3.430 crib =  -12.250 ±  7.690 overall
+[Q♠,5♣,4♦,A♦] - [T♠,2♠]:   +0.125 ±  0.617 game points;   -2.750 ±  3.699 Δ-peg +   -0.250 ±  4.691 Δ-hand +   -4.750 ±  2.699 crib =   -7.750 ±  7.262 overall
+[Q♠,4♦,2♠,A♦] - [T♠,5♣]:   +0.125 ±  0.837 game points;   +0.500 ±  2.333 Δ-peg +   +0.500 ±  1.877 Δ-hand +   -9.250 ±  4.482 crib =   -8.250 ±  6.061 overall
+[T♠,5♣,2♠,A♦] - [Q♠,4♦]:   +0.125 ±  0.837 game points;   -1.000 ±  1.960 Δ-peg +   -3.000 ±  5.186 Δ-hand +   -4.250 ±  3.950 crib =   -8.250 ±  8.482 overall
+[Q♠,T♠,5♣,A♦] - [4♦,2♠]:   +0.050 ±  0.806 game points;   -1.000 ±  0.800 Δ-peg +   +1.750 ±  2.577 Δ-hand +   -7.500 ±  2.940 crib =   -6.750 ±  2.577 overall
+[5♣,4♦,2♠,A♦] - [Q♠,T♠]:   -0.083 ±  0.163 game points;   -1.000 ±  2.530 Δ-peg +   -4.750 ±  0.938 Δ-hand +   -4.250 ±  1.674 crib =  -10.000 ±  1.386 overall
+[Q♠,T♠,4♦,2♠] - [5♣,A♦]:   -0.190 ±  0.219 game points;   -0.500 ±  3.795 Δ-peg +   -8.000 ±  5.368 Δ-hand +   -6.750 ±  3.950 crib =  -15.250 ±  6.901 overall
+[Q♠,5♣,2♠,A♦] - [T♠,4♦]:   -0.200 ±  0.594 game points;   -3.250 ±  5.147 Δ-peg +   -4.500 ±  2.940 Δ-hand +   -4.500 ±  2.940 crib =  -12.250 ±  4.691 overall
+[Q♠,T♠,4♦,A♦] - [5♣,2♠]:   -0.250 ±  0.938 game points;   -2.000 ±  0.800 Δ-peg +   -4.250 ±  2.815 Δ-hand +   -6.750 ±  2.926 crib =  -13.000 ±  5.123 overall
+[Q♠,5♣,4♦,2♠] - [T♠,A♦]:   -0.500 ±  0.980 game points;   -1.500 ±  2.593 Δ-peg +   -3.250 ±  3.137 Δ-hand +   -5.500 ±  5.092 crib =  -10.250 ±  1.470 overall
+[Q♠,T♠,2♠,A♦] - [5♣,4♦]:   -0.500 ±  0.566 game points;   -1.250 ±  1.855 Δ-peg +   -5.750 ±  2.316 Δ-hand +   -6.250 ±  2.020 crib =  -13.250 ±  3.699 overall
+[T♠,4♦,2♠,A♦] - [Q♠,5♣]:   -0.625 ±  0.469 game points;   -2.000 ±  2.654 Δ-peg +   -3.250 ±  3.522 Δ-hand +   -9.000 ±  1.132 crib =  -14.250 ±  3.137 overall
+[Q♠,T♠,5♣,4♦] - [2♠,A♦]:   -0.700 ±  0.993 game points;   -5.750 ±  0.938 Δ-peg +   -5.250 ±  6.269 Δ-hand +   -4.500 ±  1.877 crib =  -15.500 ±  8.180 overall
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(66, 58, True) after initial action [Q♣,8♠,6♣,5♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(62, 56, True) after initial action [K♦,Q♣,8♠,6♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(63, 64, True) after initial action [8♠,6♣,5♠,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(71, 53, True) after initial action [K♦,8♠,5♠,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(63, 52, True) after initial action [K♦,Q♣,5♠,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(60, 62, True) after initial action [K♦,6♣,5♠,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(65, 55, True) after initial action [Q♣,8♠,6♣,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(72, 57, True) after initial action [K♦,Q♣,8♠,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(73, 56, True) after initial action [Q♣,8♠,6♣,5♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(65, 54, True) after initial action [K♦,8♠,6♣,5♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(62, 54, True) after initial action [8♠,6♣,5♠,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(68, 48, True) after initial action [K♦,Q♣,6♣,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(62, 50, True) after initial action [K♦,8♠,6♣,5♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(58, 55, True) after initial action [K♦,Q♣,6♣,5♠], None.
+[K♦,8♠,6♣,5♠] - [Q♣,4♥]:   -0.500 ±  0.566 game points;   -1.250 ±  3.335 Δ-peg +   +2.500 ±  1.265 Δ-hand +   -4.000 ±  3.578 crib =   -2.750 ±  6.166 overall
+[Q♣,6♣,5♠,4♥] - [K♦,8♠]:   -0.187 ±  0.881 game points;   -1.500 ±  4.562 Δ-peg +   -4.750 ±  4.691 Δ-hand +   -3.250 ±  2.173 crib =   -9.500 ±  6.426 overall
+[K♦,Q♣,8♠,5♠] - [6♣,4♥]:   -0.167 ±  0.980 game points;   -0.500 ±  2.466 Δ-peg +   +4.000 ±  6.451 Δ-hand +   -5.750 ±  4.691 crib =   -2.250 ±  4.262 overall
+[K♦,Q♣,5♠,4♥] - [8♠,6♣]:   +0.083 ±  0.938 game points;   -1.500 ±  2.829 Δ-peg +   -1.250 ±  3.238 Δ-hand +   -2.500 ±  0.980 crib =   -5.250 ±  6.269 overall
+[8♠,6♣,5♠,4♥] - [K♦,Q♣]:   +0.083 ±  0.163 game points;   -1.250 ±  3.699 Δ-peg +   -2.750 ±  1.855 Δ-hand +   -4.000 ±  3.578 crib =   -8.000 ±  5.368 overall
+[Q♣,8♠,5♠,4♥] - [K♦,6♣]:   +0.250 ±  1.470 game points;   -2.500 ±  2.940 Δ-peg +   +3.750 ±  0.490 Δ-hand +   -4.250 ±  2.577 crib =   -3.000 ±  4.867 overall
+[Q♣,8♠,6♣,5♠] - [K♦,4♥]:   +0.250 ±  1.233 game points;   +0.250 ±  2.020 Δ-peg +   +7.250 ±  2.450 Δ-hand +   -3.000 ±  1.132 crib =   +4.500 ±  4.272 overall
+[K♦,6♣,5♠,4♥] - [Q♣,8♠]:   +0.479 ±  0.750 game points;   -3.750 ±  1.674 Δ-peg +   -2.500 ±  3.347 Δ-hand +   -3.000 ±  1.132 crib =   -9.250 ±  3.034 overall
+[K♦,Q♣,6♣,5♠] - [8♠,4♥]:   +0.500 ±  0.566 game points;   -0.750 ±  3.238 Δ-peg +   -0.250 ±  0.490 Δ-hand +   -2.500 ±  0.980 crib =   -3.500 ±  4.119 overall
+[K♦,8♠,6♣,4♥] - [Q♣,5♠]:   +0.583 ±  1.046 game points;   +0.000 ±  2.400 Δ-peg +   +5.250 ±  4.031 Δ-hand +   -7.250 ±  3.869 crib =   -2.000 ±  2.530 overall
+[K♦,8♠,5♠,4♥] - [Q♣,6♣]:   +0.625 ±  0.928 game points;   +0.250 ±  2.450 Δ-peg +   +7.000 ±  4.309 Δ-hand +   -3.500 ±  1.877 crib =   +3.750 ±  3.785 overall
+[K♦,Q♣,6♣,4♥] - [8♠,5♠]:   +0.667 ±  0.596 game points;   +3.000 ±  6.146 Δ-peg +   +8.250 ±  5.791 Δ-hand +   -6.500 ±  4.346 crib =   +4.750 ±  4.826 overall
+[Q♣,8♠,6♣,4♥] - [K♦,5♠]:   +0.833 ±  0.864 game points;   -2.000 ±  4.158 Δ-peg +   +5.500 ±  3.250 Δ-hand +   -5.000 ±  2.530 crib =   -1.500 ±  4.346 overall
+[K♦,Q♣,8♠,6♣] - [5♠,4♥]:   +0.833 ±  0.864 game points;   +0.000 ±  0.800 Δ-peg +   +9.000 ±  5.601 Δ-hand +   -5.750 ±  2.316 crib =   +3.250 ±  5.565 overall
+[K♦,Q♣,8♠,4♥] - [6♣,5♠]:   +1.000 ±  0.693 game points;   +0.250 ±  4.337 Δ-peg +   +5.750 ±  2.020 Δ-hand +   -6.750 ±  3.699 crib =   -0.750 ±  4.482 overall
+Pone   discarded [2♠,Q♠] (sorted: [Q♠,2♠])
+Dealer discarded [4♥,Q♣] (sorted: [Q♣,4♥])
+Pone   kept      [A♦,4♦,5♣,T♠] (sorted: [T♠,5♣,4♦,A♦])
+Dealer kept      [5♠,8♠,6♣,K♦] (sorted: [K♦,8♠,6♣,5♠])
+Simulating each of the 4 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(66, 57, True) after initial action [], A♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(66, 58, True) after initial action [], T♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(69, 59, True) after initial action [], A♦.
+A♦ first play:   +0.625 ±  0.674 game points;   -1.900 ±  1.926 Δ-peg +   +1.000 ±  1.871 Δ-hand +   -3.700 ±  1.802 crib =   -4.600 ±  3.422 overall
+4♦ first play:   +0.458 ±  0.635 game points;   -1.800 ±  1.820 Δ-peg +   -0.500 ±  2.501 Δ-hand +   -6.200 ±  1.999 crib =   -8.500 ±  3.217 overall
+5♣ first play:   +0.398 ±  0.534 game points;   -2.700 ±  1.754 Δ-peg +   +1.500 ±  2.050 Δ-hand +   -7.100 ±  1.148 crib =   -8.300 ±  2.463 overall
+T♠ first play:   +0.367 ±  0.565 game points;   -3.200 ±  1.934 Δ-peg +   +1.300 ±  2.679 Δ-hand +   -5.400 ±  1.875 crib =   -7.300 ±  2.679 overall
+Simulating each of the 4 possible dealer plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(65, 54, True) after initial action [], 6♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(65, 55, True) after initial action [], K♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(71, 55, True) after initial action [], K♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(72, 55, True) after initial action [], K♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(66, 60, True) after initial action [], K♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(64, 59, True) after initial action [], K♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(67, 52, True) after initial action [], 5♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(65, 54, True) after initial action [], K♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(63, 52, True) after initial action [], K♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(66, 55, True) after initial action [], 5♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(69, 59, True) after initial action [], 8♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(66, 57, True) after initial action [], 5♠.
+K♦ first play:   +0.087 ±  0.338 game points;   -2.769 ±  1.648 Δ-peg +   +3.615 ±  1.712 Δ-hand +   -2.923 ±  1.004 crib =   -2.077 ±  2.602 overall
+6♣ first play:   +0.407 ±  0.374 game points;   -2.667 ±  1.132 Δ-peg +   +3.444 ±  1.428 Δ-hand +   -3.111 ±  1.440 crib =   -2.333 ±  2.848 overall
+5♠ first play:   +0.421 ±  0.519 game points;   -1.091 ±  1.434 Δ-peg +   +1.545 ±  1.382 Δ-hand +   -2.909 ±  1.359 crib =   -2.455 ±  2.398 overall
+8♠ first play:   +0.500 ±  0.771 game points;   -3.857 ±  2.240 Δ-peg +   +3.429 ±  2.000 Δ-hand +   -3.143 ±  1.625 crib =   -3.571 ±  3.846 overall
+Simulating each of the 3 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(66, 74, True) after initial action [], T♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(64, 59, True) after initial action [], T♠.
+4♦ first play:   +0.987 ±  0.340 game points;   -1.231 ±  1.735 Δ-peg +   -0.154 ±  1.551 Δ-hand +   -4.385 ±  1.929 crib =   -5.769 ±  2.683 overall
+5♣ first play:   +0.762 ±  0.489 game points;   -2.600 ±  0.886 Δ-peg +   -1.100 ±  2.487 Δ-hand +   -2.300 ±  1.171 crib =   -6.000 ±  3.267 overall
+T♠ first play:   +0.190 ±  0.568 game points;   -5.714 ±  3.277 Δ-peg +   -2.429 ±  2.666 Δ-hand +   -2.571 ±  1.409 crib =  -10.714 ±  5.285 overall
+Simulating each of the 3 possible dealer plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(72, 57, True) after initial action [], 6♣.
+8♠ first play:   +0.648 ±  0.593 game points;   -2.000 ±  1.265 Δ-peg +   +5.778 ±  1.213 Δ-hand +   -1.444 ±  0.986 crib =   +2.333 ±  2.333 overall
+6♣ first play:   +0.667 ±  0.474 game points;   +0.154 ±  0.826 Δ-peg +   +4.538 ±  1.728 Δ-hand +   -1.769 ±  0.707 crib =   +2.923 ±  1.978 overall
+5♠ first play:   +1.042 ±  0.337 game points;   -0.750 ±  1.323 Δ-peg +   +3.750 ±  1.373 Δ-hand +   -3.625 ±  2.311 crib =   -0.625 ±  3.988 overall
+Simulating each of the 2 possible dealer plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(71, 55, True) after initial action [], 5♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(71, 59, True) after initial action [], 5♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(71, 59, True) after initial action [], 5♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(69, 59, True) after initial action [], 6♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(71, 58, True) after initial action [], 5♠.
+6♣ first play:   -0.083 ±  0.509 game points;   -0.333 ±  0.653 Δ-peg +   +4.333 ±  0.653 Δ-hand +   -2.500 ±  1.765 crib =   +1.500 ±  1.765 overall
+5♠ first play:   +0.417 ±  0.344 game points;   -0.000 ±  2.191 Δ-peg +   +5.125 ±  0.864 Δ-hand +   -3.750 ±  1.767 crib =   +1.375 ±  3.120 overall
+Pone   dealt     [6♠,7♦,4♥,8♦,K♦,4♠] (sorted: [K♦,8♦,7♦,6♠,4♠,4♥])
+Dealer dealt     [K♥,6♥,2♣,6♣,A♥,8♣] (sorted: [K♥,8♣,6♥,6♣,2♣,A♥])
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(76, 73, True) after initial action [8♦,7♦,6♠,4♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(69, 72, True) after initial action [K♦,7♦,6♠,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(63, 75, True) after initial action [K♦,8♦,6♠,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(77, 66, True) after initial action [8♦,7♦,6♠,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(74, 88, True) after initial action [K♦,8♦,7♦,6♠], None.
+[7♦,6♠,4♠,4♥] - [K♦,8♦]:   +1.125 ±  0.245 game points;   +4.750 ±  5.565 Δ-peg +   -5.500 ±  7.399 Δ-hand +   -4.750 ±  1.855 crib =   -5.500 ± 10.169 overall
+[K♦,8♦,7♦,4♥] - [6♠,4♠]:   +1.000 ±  0.000 game points;   -3.000 ±  4.001 Δ-peg +   -5.500 ±  6.476 Δ-hand +   -2.250 ±  2.020 crib =  -10.750 ±  7.262 overall
+[K♦,8♦,7♦,4♠] - [6♠,4♥]:   +0.667 ±  0.377 game points;   -1.000 ±  3.099 Δ-peg +   -3.000 ±  4.997 Δ-hand +   -6.500 ±  3.250 crib =  -10.500 ±  6.120 overall
+[8♦,7♦,6♠,4♠] - [K♦,4♥]:   +0.400 ±  0.480 game points;   -3.750 ±  1.470 Δ-peg +   +2.750 ±  1.674 Δ-hand +   -3.000 ±  1.132 crib =   -4.000 ±  1.386 overall
+[K♦,8♦,6♠,4♠] - [7♦,4♥]:   +0.250 ±  0.938 game points;   -0.500 ±  2.333 Δ-peg +   -4.000 ±  0.800 Δ-hand +   -5.000 ±  1.960 crib =   -9.500 ±  2.940 overall
+[K♦,8♦,4♠,4♥] - [7♦,6♠]:   +0.000 ±  1.132 game points;   -1.500 ±  2.593 Δ-peg +   -7.500 ±  5.907 Δ-hand +   -6.000 ±  4.234 crib =  -15.000 ±  4.526 overall
+[K♦,6♠,4♠,4♥] - [8♦,7♦]:   -0.083 ±  0.817 game points;   +0.750 ±  1.674 Δ-peg +   -2.500 ±  1.697 Δ-hand +   -8.750 ±  4.892 crib =  -10.500 ±  4.900 overall
+[8♦,6♠,4♠,4♥] - [K♦,7♦]:   -0.250 ±  0.938 game points;   -1.000 ±  4.080 Δ-peg +   -0.500 ±  5.686 Δ-hand +   -3.250 ±  2.173 crib =   -4.750 ±  4.892 overall
+[K♦,7♦,6♠,4♥] - [8♦,4♠]:   -0.250 ±  0.558 game points;   -1.750 ±  2.020 Δ-peg +   -4.500 ±  2.593 Δ-hand +   -2.250 ±  0.490 crib =   -8.500 ±  1.877 overall
+[K♦,8♦,7♦,6♠] - [4♠,4♥]:   -0.250 ±  0.938 game points;   -4.250 ±  1.674 Δ-peg +   -1.500 ±  6.906 Δ-hand +   -7.000 ±  1.132 crib =  -12.750 ±  7.896 overall
+[K♦,7♦,4♠,4♥] - [8♦,6♠]:   -0.417 ±  0.673 game points;   -1.000 ±  1.386 Δ-peg +   -2.500 ±  3.710 Δ-hand +   -1.750 ±  1.233 crib =   -5.250 ±  3.238 overall
+[8♦,7♦,6♠,4♥] - [K♦,4♠]:   -0.417 ±  0.673 game points;   -0.500 ±  1.877 Δ-peg +   -0.250 ±  7.129 Δ-hand +   -5.750 ±  2.020 crib =   -6.500 ±  8.411 overall
+[K♦,8♦,6♠,4♥] - [7♦,4♠]:   -0.458 ±  0.408 game points;   -2.750 ±  1.674 Δ-peg +   -6.000 ±  1.600 Δ-hand +   -5.500 ±  3.250 crib =  -14.250 ±  3.699 overall
+[K♦,7♦,6♠,4♠] - [8♦,4♥]:   -0.500 ±  0.566 game points;   -2.500 ±  3.250 Δ-peg +   -7.250 ±  0.938 Δ-hand +   -6.000 ±  2.772 crib =  -15.750 ±  4.482 overall
+[8♦,7♦,4♠,4♥] - [K♦,6♠]:   -0.750 ±  0.490 game points;   -1.250 ±  2.173 Δ-peg +   -3.000 ±  2.530 Δ-hand +   -4.250 ±  2.020 crib =   -8.500 ±  2.940 overall
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(80, 63, True) after initial action [6♥,6♣,2♣,A♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(79, 70, True) after initial action [8♣,6♥,6♣,A♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(72, 68, True) after initial action [K♥,8♣,6♥,6♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(83, 67, True) after initial action [K♥,8♣,6♣,A♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(72, 68, True) after initial action [8♣,6♥,6♣,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(82, 64, True) after initial action [K♥,8♣,6♥,A♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(64, 59, True) after initial action [K♥,6♣,2♣,A♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(81, 63, True) after initial action [K♥,8♣,2♣,A♥], None.
+[8♣,6♥,6♣,A♥] - [K♥,2♣]:   -0.583 ±  0.490 game points;   -1.750 ±  2.815 Δ-peg +   +2.000 ±  4.234 Δ-hand +   -3.500 ±  0.566 crib =   -3.250 ±  4.410 overall
+[K♥,8♣,6♥,A♥] - [6♣,2♣]:   -0.417 ±  0.673 game points;   +0.750 ±  3.034 Δ-peg +   +4.500 ±  3.347 Δ-hand +   -3.250 ±  3.699 crib =   +2.000 ±  7.716 overall
+[K♥,6♣,2♣,A♥] - [8♣,6♥]:   -0.250 ±  0.938 game points;   -3.500 ±  2.593 Δ-peg +   +2.500 ±  2.040 Δ-hand +   -3.000 ±  3.395 crib =   -4.000 ±  5.308 overall
+[K♥,8♣,2♣,A♥] - [6♥,6♣]:   -0.125 ±  0.617 game points;   +0.250 ±  3.612 Δ-peg +   +5.750 ±  3.238 Δ-hand +   -4.500 ±  2.466 crib =   +1.500 ±  6.718 overall
+[K♥,8♣,6♣,A♥] - [6♥,2♣]:   -0.017 ±  0.686 game points;   -2.250 ±  3.522 Δ-peg +   +5.750 ±  5.954 Δ-hand +   -6.250 ±  4.482 crib =   -2.750 ± 11.495 overall
+[8♣,6♣,2♣,A♥] - [K♥,6♥]:   +0.250 ±  0.938 game points;   -1.000 ±  4.597 Δ-peg +   +5.000 ±  3.299 Δ-hand +   -2.500 ±  0.980 crib =   +1.500 ±  7.612 overall
+[8♣,6♥,2♣,A♥] - [K♥,6♣]:   +0.333 ±  0.462 game points;   -4.000 ±  2.530 Δ-peg +   +2.000 ±  2.885 Δ-hand +   -4.500 ±  3.710 crib =   -6.500 ±  2.829 overall
+[8♣,6♥,6♣,2♣] - [K♥,A♥]:   +0.333 ±  1.222 game points;   -4.500 ±  1.265 Δ-peg +   +2.500 ±  5.155 Δ-hand +   -3.500 ±  4.346 crib =   -5.500 ±  8.928 overall
+[K♥,6♥,6♣,A♥] - [8♣,2♣]:   +0.500 ±  0.778 game points;   -0.500 ±  1.265 Δ-peg +   +5.250 ±  1.470 Δ-hand +   -4.500 ±  1.877 crib =   +0.250 ±  2.020 overall
+[6♥,6♣,2♣,A♥] - [K♥,8♣]:   +0.542 ±  0.408 game points;   -2.000 ±  4.597 Δ-peg +   +2.750 ±  6.665 Δ-hand +   -2.000 ±  1.600 crib =   -1.250 ±  9.714 overall
+[K♥,6♥,2♣,A♥] - [8♣,6♣]:   +0.567 ±  1.203 game points;   -1.750 ±  3.335 Δ-peg +   +2.500 ±  4.272 Δ-hand +   -3.500 ±  3.347 crib =   -2.750 ±  9.547 overall
+[K♥,8♣,6♥,6♣] - [2♣,A♥]:   +0.775 ±  0.622 game points;   -0.500 ±  2.040 Δ-peg +   +3.500 ±  3.623 Δ-hand +   -2.750 ±  2.926 crib =   +0.250 ±  2.699 overall
+[K♥,6♥,6♣,2♣] - [8♣,A♥]:   +0.833 ±  0.327 game points;   -1.500 ±  2.593 Δ-peg +   +4.500 ±  4.119 Δ-hand +   -2.250 ±  1.674 crib =   +0.750 ±  3.950 overall
+[K♥,8♣,6♣,2♣] - [6♥,A♥]:   +1.125 ±  0.245 game points;   -0.250 ±  3.335 Δ-peg +   +6.000 ±  4.234 Δ-hand +   -5.750 ±  3.238 crib =   +0.000 ± 10.026 overall
+[K♥,8♣,6♥,2♣] - [6♣,A♥]:   +1.125 ±  0.469 game points;   -1.500 ±  0.566 Δ-peg +   +6.750 ±  0.938 Δ-hand +   -3.000 ±  1.132 crib =   +2.250 ±  0.490 overall
+Pone   discarded [8♦,K♦] (sorted: [K♦,8♦])
+Dealer discarded [K♥,2♣] (sorted: [K♥,2♣])
+Pone   kept      [6♠,7♦,4♥,4♠] (sorted: [7♦,6♠,4♠,4♥])
+Dealer kept      [6♥,6♣,A♥,8♣] (sorted: [8♣,6♥,6♣,A♥])
+Simulating each of the 4 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(81, 71, True) after initial action [], 4♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(71, 73, True) after initial action [], 6♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(73, 77, True) after initial action [], 4♥.
+4♠ first play:   +0.650 ±  0.414 game points;   +0.300 ±  1.705 Δ-peg +   -4.800 ±  1.911 Δ-hand +   -4.400 ±  1.021 crib =   -8.900 ±  3.438 overall
+4♥ first play:   +0.350 ±  0.507 game points;   -0.000 ±  2.547 Δ-peg +   -3.200 ±  1.889 Δ-hand +   -4.500 ±  0.980 crib =   -7.700 ±  3.470 overall
+6♠ first play:   +0.260 ±  0.573 game points;   -1.800 ±  1.333 Δ-peg +   -3.500 ±  1.944 Δ-hand +   -3.900 ±  1.185 crib =   -9.200 ±  3.034 overall
+7♦ first play:   +0.000 ±  0.497 game points;   -1.000 ±  1.339 Δ-peg +   -3.200 ±  2.259 Δ-hand +   -4.700 ±  1.575 crib =   -8.900 ±  2.156 overall
+Simulating each of the 4 possible dealer plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(74, 71, True) after initial action [], 6♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(80, 65, True) after initial action [], 6♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(73, 67, True) after initial action [], 8♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(84, 68, True) after initial action [], 6♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(72, 68, True) after initial action [], 6♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(74, 66, True) after initial action [], A♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(73, 67, True) after initial action [], 6♣.
+6♣ first play:   +0.050 ±  0.425 game points;   -0.900 ±  1.970 Δ-peg +   +1.800 ±  2.493 Δ-hand +   -4.000 ±  1.431 crib =   -3.100 ±  4.198 overall
+A♥ first play:   +0.303 ±  0.470 game points;   +0.000 ±  1.024 Δ-peg +   +1.182 ±  1.939 Δ-hand +   -3.909 ±  1.072 crib =   -2.727 ±  1.944 overall
+8♣ first play:   +0.367 ±  0.529 game points;   -1.200 ±  1.233 Δ-peg +   -0.900 ±  1.558 Δ-hand +   -3.400 ±  1.176 crib =   -5.500 ±  2.191 overall
+6♥ first play:   +0.389 ±  0.606 game points;   -0.556 ±  1.570 Δ-peg +   +0.444 ±  2.656 Δ-hand +   -4.222 ±  1.524 crib =   -4.333 ±  3.865 overall
+Simulating each of the 3 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(67, 73, True) after initial action [], 4♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(69, 76, True) after initial action [], 6♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(72, 68, True) after initial action [], 7♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(71, 77, True) after initial action [], 4♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(67, 74, True) after initial action [], 4♥.
+4♥ first play:   +0.185 ±  0.409 game points;   -3.333 ±  1.729 Δ-peg +   -1.444 ±  1.851 Δ-hand +   -5.111 ±  1.364 crib =   -9.889 ±  2.052 overall
+6♠ first play:   -0.020 ±  0.577 game points;   -0.700 ±  2.849 Δ-peg +   -1.600 ±  1.852 Δ-hand +   -4.800 ±  1.333 crib =   -7.100 ±  3.233 overall
+7♦ first play:   -0.061 ±  0.497 game points;   -0.818 ±  1.017 Δ-peg +   -1.636 ±  1.635 Δ-hand +   -5.455 ±  1.069 crib =   -7.909 ±  1.968 overall
+Simulating each of the 3 possible dealer plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(73, 67, True) after initial action [], 8♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(72, 68, True) after initial action [], 6♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(74, 71, True) after initial action [], 6♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(72, 68, True) after initial action [], 6♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(69, 72, True) after initial action [], A♥.
+6♥ first play:   +0.300 ±  0.510 game points;   -0.600 ±  1.658 Δ-peg +   +1.800 ±  2.041 Δ-hand +   -4.600 ±  1.942 crib =   -3.400 ±  3.710 overall
+8♣ first play:   +0.333 ±  0.475 game points;   -1.444 ±  0.930 Δ-peg +   +1.222 ±  1.659 Δ-hand +   -5.333 ±  2.167 crib =   -5.556 ±  2.511 overall
+A♥ first play:   +0.455 ±  0.406 game points;   -2.636 ±  1.501 Δ-peg +   +2.182 ±  1.343 Δ-hand +   -3.000 ±  0.877 crib =   -3.455 ±  2.526 overall
+Simulating each of the 2 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(67, 81, True) after initial action [], 7♦.
+6♠ first play:   +0.106 ±  0.496 game points;   +0.167 ±  0.897 Δ-peg +   -3.333 ±  1.695 Δ-hand +   -5.167 ±  1.835 crib =   -8.333 ±  1.762 overall
+7♦ first play:   +0.000 ±  0.642 game points;   -1.750 ±  1.687 Δ-peg +   -4.250 ±  2.613 Δ-hand +   -4.250 ±  1.727 crib =  -10.250 ±  3.968 overall
+Pone   dealt     [2♣,5♦,3♦,K♦,J♦,A♥] (sorted: [K♦,J♦,5♦,3♦,2♣,A♥])
+Dealer dealt     [3♠,4♠,4♥,2♥,4♣,5♠] (sorted: [5♠,4♠,4♥,4♣,3♠,2♥])
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(74, 97, True) after initial action [K♦,J♦,5♦,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(75, 102, True) after initial action [K♦,3♦,2♣,A♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(73, 89, True) after initial action [K♦,J♦,5♦,A♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(73, 88, True) after initial action [K♦,J♦,3♦,A♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(74, 90, True) after initial action [J♦,5♦,2♣,A♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(83, 97, True) after initial action [K♦,J♦,5♦,3♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(76, 92, True) after initial action [K♦,J♦,5♦,A♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(80, 92, True) after initial action [K♦,5♦,3♦,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(74, 88, True) after initial action [K♦,J♦,5♦,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(77, 89, True) after initial action [K♦,5♦,3♦,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(75, 87, True) after initial action [J♦,5♦,3♦,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(79, 91, True) after initial action [5♦,3♦,2♣,A♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(79, 91, True) after initial action [K♦,J♦,3♦,2♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(83, 79, True) after initial action [K♦,3♦,2♣,A♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(80, 104, True) after initial action [J♦,3♦,2♣,A♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(76, 99, True) after initial action [K♦,5♦,3♦,A♥], None.
+[K♦,5♦,3♦,2♣] - [J♦,A♥]:   +0.500 ±  0.566 game points;   +0.750 ±  3.699 Δ-peg +   +2.250 ±  1.674 Δ-hand +   -6.500 ±  2.466 crib =   -3.500 ±  6.224 overall
+[5♦,3♦,2♣,A♥] - [K♦,J♦]:   +0.250 ±  0.490 game points;   +0.750 ±  1.470 Δ-peg +   +2.250 ±  2.173 Δ-hand +   -6.250 ±  3.430 crib =   -3.250 ±  6.008 overall
+[J♦,5♦,3♦,2♣] - [K♦,A♥]:   +0.250 ±  0.938 game points;   -1.750 ±  2.020 Δ-peg +   +0.000 ±  2.530 Δ-hand +   -5.000 ±  4.080 crib =   -6.750 ±  5.209 overall
+[K♦,J♦,5♦,A♥] - [3♦,2♣]:   +0.250 ±  0.490 game points;   -1.750 ±  3.430 Δ-peg +   -2.750 ±  2.020 Δ-hand +   -5.250 ±  2.926 crib =   -9.750 ±  3.869 overall
+[K♦,J♦,3♦,A♥] - [5♦,2♣]:   +0.083 ±  0.817 game points;   -2.250 ±  2.815 Δ-peg +   -2.750 ±  2.173 Δ-hand +   -5.500 ±  1.265 crib =  -10.500 ±  5.338 overall
+[K♦,J♦,5♦,3♦] - [2♣,A♥]:   -0.125 ±  0.245 game points;   -0.750 ±  0.490 Δ-peg +   +2.750 ±  0.938 Δ-hand +   -7.500 ±  4.900 crib =   -5.500 ±  4.041 overall
+[K♦,5♦,3♦,A♥] - [J♦,2♣]:   -0.250 ±  0.938 game points;   -1.500 ±  2.940 Δ-peg +   -3.500 ±  4.562 Δ-hand +   -5.250 ±  5.209 crib =  -10.250 ±  7.350 overall
+[K♦,5♦,2♣,A♥] - [J♦,3♦]:   -0.350 ±  0.774 game points;   -0.250 ±  1.233 Δ-peg +   -3.750 ±  1.674 Δ-hand +   -5.250 ±  2.450 crib =   -9.250 ±  1.855 overall
+[J♦,5♦,2♣,A♥] - [K♦,3♦]:   -0.350 ±  0.774 game points;   -0.500 ±  2.040 Δ-peg +   -6.500 ±  3.623 Δ-hand +   -4.250 ±  2.815 crib =  -11.250 ±  2.316 overall
+[K♦,J♦,5♦,2♣] - [3♦,A♥]:   -0.500 ±  0.566 game points;   -1.500 ±  2.333 Δ-peg +   -1.750 ±  5.084 Δ-hand +   -6.000 ±  4.801 crib =   -9.250 ±  7.976 overall
+[K♦,3♦,2♣,A♥] - [J♦,5♦]:   -0.500 ±  0.566 game points;   -3.000 ±  2.885 Δ-peg +   +0.000 ± 10.309 Δ-hand +   -9.000 ±  5.825 crib =  -12.000 ± 13.172 overall
+[K♦,J♦,3♦,2♣] - [5♦,A♥]:   -0.583 ±  0.490 game points;   -1.250 ±  2.926 Δ-peg +   +0.750 ±  3.335 Δ-hand +   -6.000 ±  0.800 crib =   -6.500 ±  4.700 overall
+[J♦,5♦,3♦,A♥] - [K♦,2♣]:   -0.750 ±  0.490 game points;   -0.250 ±  2.173 Δ-peg +   -1.500 ±  4.562 Δ-hand +   -4.250 ±  2.020 crib =   -6.000 ±  3.201 overall
+[J♦,3♦,2♣,A♥] - [K♦,5♦]:   -0.750 ±  0.490 game points;   -2.500 ±  5.092 Δ-peg +   +0.250 ±  3.335 Δ-hand +   -7.500 ±  4.631 crib =   -9.750 ±  7.855 overall
+[K♦,J♦,2♣,A♥] - [5♦,3♦]:   -0.750 ±  0.490 game points;   -2.750 ±  2.450 Δ-peg +   -5.500 ±  3.623 Δ-hand +   -7.000 ±  1.132 crib =  -15.250 ±  4.410 overall
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(79, 90, True) after initial action [5♠,4♠,4♥,3♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(77, 87, True) after initial action [4♠,4♥,4♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(78, 97, True) after initial action [4♠,4♥,3♠,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(80, 95, True) after initial action [5♠,4♠,4♣,3♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(83, 79, True) after initial action [5♠,4♠,4♥,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(78, 102, True) after initial action [5♠,4♠,4♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(78, 79, True) after initial action [5♠,4♥,4♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(74, 88, True) after initial action [4♠,4♥,4♣,3♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(76, 92, True) after initial action [5♠,4♥,4♣,3♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(79, 85, True) after initial action [5♠,4♣,3♠,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(85, 104, True) after initial action [4♠,4♥,3♠,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(77, 87, True) after initial action [4♥,4♣,3♠,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(75, 92, True) after initial action [5♠,4♠,4♣,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(83, 92, True) after initial action [5♠,4♥,4♣,2♥], None.
+[4♠,4♣,3♠,2♥] - [5♠,4♥]:   -1.000 ±  0.000 game points;   -1.250 ±  2.316 Δ-peg +   -6.250 ±  2.316 Δ-hand +   -6.750 ±  0.938 crib =  -14.250 ±  3.522 overall
+[5♠,4♠,4♥,3♠] - [4♣,2♥]:   -0.750 ±  0.490 game points;   +0.750 ±  3.699 Δ-peg +   -5.250 ±  4.482 Δ-hand +   -4.000 ±  2.772 crib =   -8.500 ±  2.333 overall
+[5♠,4♠,4♥,2♥] - [4♣,3♠]:   -0.750 ±  0.490 game points;   -1.000 ±  3.099 Δ-peg +   +0.750 ±  4.337 Δ-hand +   -6.750 ±  4.892 crib =   -7.000 ±  9.962 overall
+[5♠,4♥,3♠,2♥] - [4♠,4♣]:   -0.667 ±  0.377 game points;   -0.750 ±  5.084 Δ-peg +   -1.500 ±  2.466 Δ-hand +   -8.000 ±  3.578 crib =  -10.250 ±  3.699 overall
+[5♠,4♠,4♣,3♠] - [4♥,2♥]:   -0.625 ±  0.469 game points;   -2.250 ±  2.699 Δ-peg +   -4.500 ±  2.466 Δ-hand +   -3.000 ±  1.960 crib =   -9.750 ±  3.522 overall
+[5♠,4♥,4♣,3♠] - [4♠,2♥]:   -0.583 ±  0.490 game points;   -1.000 ±  1.960 Δ-peg +   -6.750 ±  5.147 Δ-hand +   -5.750 ±  3.238 crib =  -13.500 ±  7.268 overall
+[4♠,4♥,4♣,2♥] - [5♠,3♠]:   -0.583 ±  0.490 game points;   -1.750 ±  0.490 Δ-peg +   +2.000 ±  3.201 Δ-hand +   -6.500 ±  1.697 crib =   -6.250 ±  3.522 overall
+[4♠,4♥,4♣,3♠] - [5♠,2♥]:   -0.500 ±  0.566 game points;   -3.250 ±  0.490 Δ-peg +   -3.750 ±  8.482 Δ-hand +   -4.500 ±  0.980 crib =  -11.500 ±  8.999 overall
+[5♠,4♥,4♣,2♥] - [4♠,3♠]:   -0.500 ±  0.566 game points;   -1.500 ±  1.877 Δ-peg +   +1.500 ±  3.347 Δ-hand +   -3.000 ±  3.395 crib =   -3.000 ±  3.395 overall
+[5♠,4♠,4♥,4♣] - [3♠,2♥]:   -0.300 ±  0.926 game points;   -0.250 ±  2.450 Δ-peg +   -3.500 ±  2.593 Δ-hand +   -7.000 ±  2.530 crib =  -10.750 ±  4.410 overall
+[4♠,4♥,3♠,2♥] - [5♠,4♣]:   -0.250 ±  0.490 game points;   -2.500 ±  2.829 Δ-peg +   +0.000 ±  4.234 Δ-hand +   -7.250 ±  3.522 crib =   -9.750 ±  7.350 overall
+[5♠,4♣,3♠,2♥] - [4♠,4♥]:   -0.225 ±  0.671 game points;   -1.750 ±  2.020 Δ-peg +   -1.750 ±  1.674 Δ-hand +   -2.000 ±  0.000 crib =   -5.500 ±  2.040 overall
+[4♥,4♣,3♠,2♥] - [5♠,4♠]:   -0.083 ±  0.817 game points;   -2.250 ±  1.233 Δ-peg +   -3.000 ±  3.395 Δ-hand +   -4.000 ±  1.600 crib =   -9.250 ±  3.137 overall
+[5♠,4♠,4♣,2♥] - [4♥,3♠]:   +0.000 ±  0.800 game points;   -2.500 ±  0.566 Δ-peg +   -1.250 ±  7.479 Δ-hand +   -8.750 ±  4.186 crib =  -12.500 ±  9.280 overall
+[5♠,4♠,3♠,2♥] - [4♥,4♣]:   +0.000 ±  1.132 game points;   -5.000 ±  2.117 Δ-peg +   -2.250 ±  2.815 Δ-hand +   -3.750 ±  0.490 crib =  -11.000 ±  2.117 overall
+Pone   discarded [J♦,A♥] (sorted: [J♦,A♥])
+Dealer discarded [4♥,5♠] (sorted: [5♠,4♥])
+Pone   kept      [2♣,5♦,3♦,K♦] (sorted: [K♦,5♦,3♦,2♣])
+Dealer kept      [3♠,4♠,2♥,4♣] (sorted: [4♠,4♣,3♠,2♥])
+Simulating each of the 4 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(79, 90, True) after initial action [], 3♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(83, 92, True) after initial action [], K♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(80, 100, True) after initial action [], 5♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(79, 90, True) after initial action [], 3♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(80, 86, True) after initial action [], 2♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(78, 92, True) after initial action [], K♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(78, 83, True) after initial action [], 5♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(81, 84, True) after initial action [], 3♦.
+3♦ first play:   -0.090 ±  0.486 game points;   +1.500 ±  1.315 Δ-peg +   +2.100 ±  1.690 Δ-hand +   -7.200 ±  1.595 crib =   -3.600 ±  3.686 overall
+5♦ first play:   -0.183 ±  0.585 game points;   -3.200 ±  1.568 Δ-peg +   +1.600 ±  2.377 Δ-hand +   -5.900 ±  1.858 crib =   -7.500 ±  3.944 overall
+K♦ first play:   -0.347 ±  0.297 game points;   +0.100 ±  0.898 Δ-peg +   -0.000 ±  1.777 Δ-hand +   -7.300 ±  1.802 crib =   -7.200 ±  2.041 overall
+2♣ first play:   -0.383 ±  0.542 game points;   -0.100 ±  2.470 Δ-peg +   -1.400 ±  3.965 Δ-hand +   -7.300 ±  1.849 crib =   -8.800 ±  4.852 overall
+Simulating each of the 4 possible dealer plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(82, 101, True) after initial action [], 4♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(80, 104, True) after initial action [], 3♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(83, 97, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(73, 99, True) after initial action [], 4♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(78, 98, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(91, 117, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(74, 96, True) after initial action [], 4♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(82, 96, True) after initial action [], 2♥.
+3♠ first play:   -0.821 ±  0.201 game points;   -0.000 ±  1.747 Δ-peg +   -8.692 ±  2.223 Δ-hand +   -6.000 ±  1.332 crib =  -14.692 ±  3.383 overall
+4♠ first play:   -0.818 ±  0.477 game points;   -0.273 ±  1.270 Δ-peg +   -8.636 ±  1.405 Δ-hand +   -6.455 ±  1.572 crib =  -15.364 ±  2.511 overall
+2♥ first play:   -0.750 ±  0.490 game points;   -1.500 ±  2.191 Δ-peg +   -8.125 ±  1.197 Δ-hand +   -7.625 ±  2.915 crib =  -17.250 ±  3.950 overall
+4♣ first play:   -0.625 ±  0.359 game points;   -2.500 ±  0.980 Δ-peg +   -8.500 ±  2.160 Δ-hand +   -5.250 ±  0.717 crib =  -16.250 ±  2.690 overall
+Simulating each of the 3 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(81, 84, True) after initial action [], 5♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(80, 92, True) after initial action [], K♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(80, 92, True) after initial action [], 5♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(82, 96, True) after initial action [], K♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(84, 94, True) after initial action [], 2♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(81, 95, True) after initial action [], 2♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(80, 86, True) after initial action [], 5♦.
+2♣ first play:   -0.305 ±  0.444 game points;   -5.143 ±  1.508 Δ-peg +   +0.143 ±  1.717 Δ-hand +   -6.143 ±  1.629 crib =  -11.143 ±  3.510 overall
+5♦ first play:   -0.625 ±  0.359 game points;   -3.375 ±  2.370 Δ-peg +   +1.125 ±  3.910 Δ-hand +   -7.125 ±  1.502 crib =   -9.375 ±  4.444 overall
+K♦ first play:   -0.750 ±  0.321 game points;   -4.375 ±  1.850 Δ-peg +   -2.625 ±  2.591 Δ-hand +   -7.000 ±  1.482 crib =  -14.000 ±  3.455 overall
+Simulating each of the 3 possible dealer plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(79, 108, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(79, 99, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(79, 108, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(88, 103, True) after initial action [], 4♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(88, 103, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(81, 108, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(79, 101, True) after initial action [], 4♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(81, 108, True) after initial action [], 2♥.
+4♣ first play:   -0.813 ±  0.367 game points;   -5.500 ±  1.571 Δ-peg +   -6.625 ±  1.383 Δ-hand +   -6.250 ±  2.276 crib =  -18.375 ±  2.060 overall
+4♠ first play:   -0.700 ±  0.510 game points;   -4.400 ±  1.579 Δ-peg +   -7.300 ±  1.341 Δ-hand +   -5.200 ±  2.123 crib =  -16.900 ±  2.364 overall
+2♥ first play:   -0.444 ±  0.371 game points;   -3.250 ±  1.528 Δ-peg +   -8.083 ±  0.979 Δ-hand +   -8.917 ±  2.478 crib =  -20.250 ±  4.166 overall
+Simulating each of the 2 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(82, 100, True) after initial action [], K♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(82, 96, True) after initial action [], K♦.
+5♦ first play:   -0.500 ±  0.527 game points;   -4.900 ±  1.503 Δ-peg +   -3.800 ±  2.889 Δ-hand +   -5.600 ±  1.313 crib =  -14.300 ±  3.742 overall
+K♦ first play:   -0.600 ±  0.433 game points;   -6.600 ±  1.139 Δ-peg +   -3.400 ±  2.341 Δ-hand +   -6.500 ±  1.607 crib =  -16.500 ±  3.675 overall
+Simulating each of the 2 possible dealer plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(88, 113, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(87, 101, True) after initial action [], 2♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(88, 103, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(88, 103, True) after initial action [], 4♠.
+2♥ first play:   -0.909 ±  0.178 game points;   -1.455 ±  0.309 Δ-peg +   -9.455 ±  0.309 Δ-hand +   -7.091 ±  2.265 crib =  -18.000 ±  2.643 overall
+4♠ first play:   -0.444 ±  0.344 game points;   -0.778 ±  0.785 Δ-peg +   -8.778 ±  0.968 Δ-hand +   -6.889 ±  2.703 crib =  -16.444 ±  2.358 overall
+Pone   dealt     [4♠,Q♦,7♠,4♥,A♦,8♥] (sorted: [Q♦,8♥,7♠,4♠,4♥,A♦])
+Dealer dealt     [4♣,A♥,3♥,T♣,A♣,J♥] (sorted: [J♥,T♣,4♣,3♥,A♥,A♣])
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(108, 101, True) after initial action [Q♦,7♠,4♠,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(105, 105, True) after initial action [Q♦,8♥,7♠,4♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(111, 110, True) after initial action [Q♦,8♥,7♠,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(108, 96, True) after initial action [Q♦,7♠,4♠,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(105, 106, True) after initial action [Q♦,8♥,7♠,4♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(110, 98, True) after initial action [Q♦,4♠,4♥,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(110, 98, True) after initial action [8♥,4♠,4♥,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(104, 99, True) after initial action [Q♦,8♥,7♠,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(108, 101, True) after initial action [Q♦,8♥,4♥,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(109, 103, True) after initial action [Q♦,7♠,4♠,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(108, 96, True) after initial action [Q♦,8♥,7♠,4♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(109, 104, True) after initial action [Q♦,7♠,4♥,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(108, 101, True) after initial action [8♥,7♠,4♥,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(104, 92, True) after initial action [Q♦,8♥,7♠,4♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(108, 101, True) after initial action [Q♦,8♥,4♠,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(112, 101, True) after initial action [7♠,4♠,4♥,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(108, 106, True) after initial action [8♥,7♠,4♠,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(114, 111, True) after initial action [8♥,4♠,4♥,A♦], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(108, 101, True) after initial action [Q♦,8♥,7♠,4♥], None.
+[7♠,4♠,4♥,A♦] - [Q♦,8♥]:   +1.000 ±  0.800 game points;   +2.250 ±  3.612 Δ-peg +   +1.000 ±  6.550 Δ-hand +   -3.250 ±  2.926 crib =   +0.000 ± 11.145 overall
+[Q♦,8♥,4♠,4♥] - [7♠,A♦]:   +0.833 ±  0.327 game points;   +0.250 ±  1.470 Δ-peg +   -3.500 ±  1.697 Δ-hand +   -3.750 ±  2.577 crib =   -7.000 ±  3.201 overall
+[Q♦,4♠,4♥,A♦] - [8♥,7♠]:   +0.750 ±  0.490 game points;   +0.500 ±  2.940 Δ-peg +   +1.750 ±  1.674 Δ-hand +   -6.750 ±  3.522 crib =   -4.500 ±  3.961 overall
+[Q♦,8♥,4♠,A♦] - [7♠,4♥]:   +0.750 ±  0.490 game points;   -0.500 ±  2.333 Δ-peg +   -0.750 ±  2.926 Δ-hand +   -7.000 ±  3.753 crib =   -8.250 ±  2.173 overall
+[8♥,7♠,4♥,A♦] - [Q♦,4♠]:   +0.625 ±  0.469 game points;   -0.250 ±  4.892 Δ-peg +   -4.750 ±  3.238 Δ-hand +   -5.500 ±  2.593 crib =  -10.500 ±  5.630 overall
+[Q♦,7♠,4♥,A♦] - [8♥,4♠]:   +0.583 ±  0.490 game points;   -0.500 ±  4.419 Δ-peg +   -3.500 ±  1.265 Δ-hand +   -5.000 ±  5.186 crib =   -9.000 ±  1.789 overall
+[Q♦,8♥,4♥,A♦] - [7♠,4♠]:   +0.583 ±  0.490 game points;   +0.750 ±  0.938 Δ-peg +   -3.750 ±  2.577 Δ-hand +   -6.500 ±  0.980 crib =   -9.500 ±  3.623 overall
+[Q♦,7♠,4♠,4♥] - [8♥,A♦]:   +0.583 ±  0.490 game points;   -4.000 ±  5.247 Δ-peg +   -2.500 ±  1.877 Δ-hand +   -6.000 ±  4.801 crib =  -12.500 ±  2.593 overall
+[8♥,7♠,4♠,4♥] - [Q♦,A♦]:   +0.500 ±  0.980 game points;   -1.250 ±  1.470 Δ-peg +   -2.000 ±  4.234 Δ-hand +   -4.000 ±  2.772 crib =   -7.250 ±  2.173 overall
+[Q♦,8♥,7♠,4♥] - [4♠,A♦]:   +0.500 ±  0.566 game points;   -2.000 ±  2.117 Δ-peg +   -3.500 ±  4.041 Δ-hand +   -4.000 ±  1.600 crib =   -9.500 ±  6.813 overall
+[Q♦,8♥,7♠,A♦] - [4♠,4♥]:   +0.300 ±  0.467 game points;   -0.750 ±  4.109 Δ-peg +   -8.000 ±  5.601 Δ-hand +   -5.000 ±  3.395 crib =  -13.750 ±  4.759 overall
+[Q♦,8♥,7♠,4♠] - [4♥,A♦]:   +0.250 ±  0.490 game points;   -2.000 ±  2.400 Δ-peg +   -2.500 ±  4.419 Δ-hand +   -5.750 ±  3.238 crib =  -10.250 ±  7.084 overall
+[8♥,7♠,4♠,A♦] - [Q♦,4♥]:   +0.250 ±  0.938 game points;   -1.750 ±  1.233 Δ-peg +   -2.250 ±  4.759 Δ-hand +   -7.250 ±  3.522 crib =  -11.250 ±  5.954 overall
+[Q♦,7♠,4♠,A♦] - [8♥,4♥]:   +0.125 ±  0.245 game points;   -1.000 ±  1.386 Δ-peg +   -3.500 ±  3.250 Δ-hand +   -5.000 ±  1.386 crib =   -9.500 ±  4.419 overall
+[8♥,4♠,4♥,A♦] - [Q♦,7♠]:   +0.000 ±  0.800 game points;   -0.500 ±  2.333 Δ-peg +   -2.500 ±  4.900 Δ-hand +   -6.750 ±  4.186 crib =   -9.750 ±  5.565 overall
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(112, 92, True) after initial action [T♣,4♣,3♥,A♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(113, 98, True) after initial action [4♣,3♥,A♥,A♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(115, 109, True) after initial action [J♥,4♣,A♥,A♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(113, 95, True) after initial action [J♥,T♣,4♣,A♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(114, 100, True) after initial action [J♥,3♥,A♥,A♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(117, 95, True) after initial action [T♣,4♣,3♥,A♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(105, 94, True) after initial action [4♣,3♥,A♥,A♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(119, 102, True) after initial action [T♣,4♣,A♥,A♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(112, 95, True) after initial action [J♥,T♣,4♣,A♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(106, 91, True) after initial action [J♥,T♣,A♥,A♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(107, 103, True) after initial action [J♥,T♣,3♥,A♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(107, 102, True) after initial action [J♥,4♣,A♥,A♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(111, 108, True) after initial action [T♣,4♣,3♥,A♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(106, 91, True) after initial action [J♥,T♣,4♣,3♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(109, 97, True) after initial action [J♥,4♣,3♥,A♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(113, 96, True) after initial action [T♣,3♥,A♥,A♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(107, 93, True) after initial action [J♥,T♣,A♥,A♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(111, 92, True) after initial action [T♣,4♣,3♥,A♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(109, 96, True) after initial action [J♥,T♣,4♣,3♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(110, 98, True) after initial action [J♥,4♣,3♥,A♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(109, 97, True) after initial action [J♥,T♣,4♣,A♣], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(111, 95, True) after initial action [J♥,T♣,3♥,A♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(113, 92, True) after initial action [J♥,3♥,A♥,A♣], None.
+[J♥,T♣,4♣,A♣] - [3♥,A♥]:   +0.250 ±  0.490 game points;   -2.000 ±  1.600 Δ-peg +   +5.750 ±  2.173 Δ-hand +   -4.500 ±  0.566 crib =   -0.750 ±  2.699 overall
+[T♣,4♣,3♥,A♥] - [J♥,A♣]:   +0.250 ±  0.490 game points;   -1.000 ±  2.654 Δ-peg +   +6.750 ±  3.699 Δ-hand +   -1.750 ±  1.674 crib =   +4.000 ±  1.386 overall
+[4♣,3♥,A♥,A♣] - [J♥,T♣]:   +0.500 ±  0.566 game points;   -2.750 ±  2.020 Δ-peg +   +3.000 ±  2.400 Δ-hand +   -5.000 ±  4.001 crib =   -4.750 ±  2.577 overall
+[J♥,4♣,3♥,A♣] - [T♣,A♥]:   +0.500 ±  0.566 game points;   -2.750 ±  1.674 Δ-peg +   +0.750 ±  4.031 Δ-hand +   -1.500 ±  0.980 crib =   -3.500 ±  3.250 overall
+[J♥,T♣,A♥,A♣] - [4♣,3♥]:   +0.500 ±  0.566 game points;   -0.750 ±  1.233 Δ-peg +   +3.250 ±  4.482 Δ-hand +   -4.500 ±  1.877 crib =   -2.000 ±  3.667 overall
+[J♥,3♥,A♥,A♣] - [T♣,4♣]:   +0.500 ±  0.566 game points;   -1.000 ±  1.789 Δ-peg +   +3.500 ±  5.338 Δ-hand +   -1.750 ±  1.674 crib =   +0.750 ±  6.319 overall
+[J♥,T♣,4♣,3♥] - [A♥,A♣]:   +0.500 ±  0.566 game points;   -2.250 ±  3.785 Δ-peg +   +8.250 ±  7.773 Δ-hand +   -3.500 ±  2.466 crib =   +2.500 ±  6.525 overall
+[T♣,4♣,A♥,A♣] - [J♥,3♥]:   +0.750 ±  0.490 game points;   -2.000 ±  2.530 Δ-peg +   -0.750 ±  4.759 Δ-hand +   -3.750 ±  1.674 crib =   -6.500 ±  5.853 overall
+[T♣,4♣,3♥,A♣] - [J♥,A♥]:   +0.750 ±  0.490 game points;   -2.500 ±  2.593 Δ-peg +   +2.750 ±  4.892 Δ-hand +   -5.000 ±  5.247 crib =   -4.750 ±  6.993 overall
+[J♥,4♣,A♥,A♣] - [T♣,3♥]:   +0.750 ±  0.938 game points;   -1.000 ±  4.158 Δ-peg +   +1.750 ±  7.218 Δ-hand +   -3.500 ±  2.940 crib =   -2.750 ± 12.431 overall
+[T♣,3♥,A♥,A♣] - [J♥,4♣]:   +0.750 ±  0.490 game points;   +0.250 ±  2.020 Δ-peg +   +1.750 ±  0.490 Δ-hand +   -4.250 ±  0.490 crib =   -2.250 ±  2.173 overall
+[J♥,T♣,3♥,A♣] - [4♣,A♥]:   +0.750 ±  0.490 game points;   -3.500 ±  2.829 Δ-peg +   +5.750 ±  5.209 Δ-hand +   -3.750 ±  1.674 crib =   -1.500 ±  9.484 overall
+[J♥,T♣,4♣,A♥] - [3♥,A♣]:   +1.000 ±  0.000 game points;   -3.500 ±  2.040 Δ-peg +   +0.500 ±  3.347 Δ-hand +   -3.000 ±  2.530 crib =   -6.000 ±  2.885 overall
+[J♥,4♣,3♥,A♥] - [T♣,A♣]:   +1.000 ±  0.000 game points;   -3.000 ±  1.386 Δ-peg +   +3.750 ±  3.950 Δ-hand +   -2.250 ±  1.674 crib =   -1.500 ±  6.671 overall
+[J♥,T♣,3♥,A♥] - [4♣,A♣]:   +1.000 ±  0.800 game points;   +0.000 ±  1.600 Δ-peg +   +7.750 ±  8.017 Δ-hand +   -3.000 ±  2.530 crib =   +4.750 ±  9.845 overall
+Pone   discarded [Q♦,8♥] (sorted: [Q♦,8♥])
+Dealer discarded [A♥,3♥] (sorted: [3♥,A♥])
+Pone   kept      [4♠,7♠,4♥,A♦] (sorted: [7♠,4♠,4♥,A♦])
+Dealer kept      [4♣,T♣,A♣,J♥] (sorted: [J♥,T♣,4♣,A♣])
+Simulating each of the 4 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(114, 92, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(112, 98, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(115, 102, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(119, 102, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(114, 100, True) after initial action [], 4♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(111, 100, True) after initial action [], A♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(113, 95, True) after initial action [], 4♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(114, 100, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(115, 109, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(115, 97, True) after initial action [], A♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(120, 99, True) after initial action [], 4♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(114, 99, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(114, 100, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(112, 101, True) after initial action [], 7♠.
+4♥ first play:   +0.800 ±  0.392 game points;   +2.400 ±  1.632 Δ-peg +   +3.800 ±  2.769 Δ-hand +   -5.000 ±  1.982 crib =   +1.200 ±  4.242 overall
+A♦ first play:   +0.733 ±  0.272 game points;   +0.200 ±  1.820 Δ-peg +   +2.600 ±  1.579 Δ-hand +   -6.300 ±  2.108 crib =   -3.500 ±  3.557 overall
+7♠ first play:   +0.600 ±  0.320 game points;   -1.800 ±  1.364 Δ-peg +   +3.600 ±  1.313 Δ-hand +   -7.200 ±  2.123 crib =   -5.400 ±  2.925 overall
+4♠ first play:   +0.500 ±  0.327 game points;   +0.500 ±  1.553 Δ-peg +   +2.400 ±  3.067 Δ-hand +   -6.200 ±  2.202 crib =   -3.300 ±  3.051 overall
+Simulating each of the 4 possible dealer plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(114, 95, True) after initial action [], J♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(117, 99, True) after initial action [], 4♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(104, 91, True) after initial action [], A♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(107, 96, True) after initial action [], T♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(111, 93, True) after initial action [], 4♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(110, 98, True) after initial action [], T♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(112, 95, True) after initial action [], J♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(109, 95, True) after initial action [], T♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(115, 103, True) after initial action [], 4♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(108, 96, True) after initial action [], J♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(107, 99, True) after initial action [], J♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(107, 96, True) after initial action [], T♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(108, 92, True) after initial action [], T♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(110, 98, True) after initial action [], T♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(108, 91, True) after initial action [], A♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(110, 94, True) after initial action [], T♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(120, 96, True) after initial action [], A♣.
+T♣ first play:   +0.417 ±  0.291 game points;   -1.250 ±  1.135 Δ-peg +   +1.583 ±  0.949 Δ-hand +   -2.417 ±  1.714 crib =   -2.083 ±  1.374 overall
+J♥ first play:   +0.500 ±  0.370 game points;   -0.500 ±  1.111 Δ-peg +   +1.375 ±  3.008 Δ-hand +   -3.625 ±  1.654 crib =   -2.750 ±  3.266 overall
+A♣ first play:   +0.733 ±  0.399 game points;   +0.000 ±  1.093 Δ-peg +   +4.100 ±  3.747 Δ-hand +   -3.700 ±  2.108 crib =   +0.400 ±  4.490 overall
+4♣ first play:   +0.800 ±  0.392 game points;   +1.300 ±  1.802 Δ-peg +   +3.500 ±  2.396 Δ-hand +   -2.500 ±  1.525 crib =   +2.300 ±  4.007 overall
+Simulating each of the 3 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(114, 97, True) after initial action [], A♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(112, 95, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(114, 103, True) after initial action [], A♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(113, 98, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(112, 96, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(113, 106, True) after initial action [], 7♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(115, 94, True) after initial action [], A♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(112, 98, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(115, 102, True) after initial action [], A♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(112, 96, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(115, 94, True) after initial action [], A♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(113, 98, True) after initial action [], 7♠.
+7♠ first play:   +0.667 ±  0.327 game points;   -0.889 ±  1.242 Δ-peg +   +4.111 ±  2.476 Δ-hand +   -7.778 ±  2.186 crib =   -4.556 ±  2.043 overall
+4♠ first play:   +0.600 ±  0.320 game points;   +0.400 ±  0.433 Δ-peg +   +3.700 ±  1.241 Δ-hand +   -6.800 ±  1.977 crib =   -2.700 ±  1.917 overall
+A♦ first play:   +0.545 ±  0.309 game points;   +2.364 ±  0.398 Δ-peg +   +4.455 ±  1.432 Δ-hand +   -6.545 ±  2.384 crib =   +0.273 ±  2.066 overall
+Simulating each of the 3 possible dealer plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(112, 91, True) after initial action [], A♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(111, 92, True) after initial action [], 4♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(110, 91, True) after initial action [], A♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(107, 93, True) after initial action [], J♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(116, 95, True) after initial action [], A♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(108, 95, True) after initial action [], A♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(108, 95, True) after initial action [], A♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(108, 91, True) after initial action [], A♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(114, 91, True) after initial action [], A♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(114, 91, True) after initial action [], 4♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(113, 96, True) after initial action [], 4♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(110, 95, True) after initial action [], 4♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(108, 96, True) after initial action [], A♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(114, 95, True) after initial action [], 4♣.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(112, 91, True) after initial action [], 4♣.
+A♣ first play:   +0.333 ±  0.279 game points;   +0.417 ±  0.817 Δ-peg +   +4.417 ±  1.813 Δ-hand +   -2.667 ±  1.329 crib =   +2.167 ±  2.517 overall
+4♣ first play:   +0.462 ±  0.282 game points;   -1.077 ±  1.004 Δ-peg +   +4.077 ±  1.623 Δ-hand +   -1.000 ±  0.942 crib =   +2.000 ±  1.883 overall
+J♥ first play:   +0.800 ±  0.392 game points;   -2.000 ±  1.960 Δ-peg +   +4.200 ±  3.417 Δ-hand +   -0.400 ±  0.784 crib =   +1.800 ±  4.036 overall
+Simulating each of the 2 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(111, 100, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(113, 98, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(114, 100, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(112, 96, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(111, 100, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(112, 96, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(111, 102, True) after initial action [], 4♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(117, 102, True) after initial action [], A♦.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(117, 95, True) after initial action [], A♦.
+A♦ first play:   +0.750 ±  0.321 game points;   +1.625 ±  2.819 Δ-peg +   +5.250 ±  0.807 Δ-hand +   -7.625 ±  2.341 crib =   -0.750 ±  3.470 overall
+4♠ first play:   +0.417 ±  0.291 game points;   -1.000 ±  1.132 Δ-peg +   +5.917 ±  0.564 Δ-hand +   -7.500 ±  1.829 crib =   -2.583 ±  2.382 overall
+Pone   dealt     [K♠,6♠,2♥,7♥,9♠,J♥] (sorted: [K♠,J♥,9♠,7♥,6♠,2♥])
+Dealer dealt     [K♣,J♠,T♣,A♠,5♥,T♥] (sorted: [K♣,J♠,T♥,T♣,5♥,A♠])
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(120, 108, True) after initial action [K♠,J♥,7♥,6♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(120, 108, True) after initial action [K♠,9♠,6♠,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(120, 111, True) after initial action [K♠,J♥,7♥,6♠], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(120, 108, True) after initial action [J♥,7♥,6♠,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(120, 99, True) after initial action [J♥,9♠,7♥,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(119, 102, True) after initial action [K♠,J♥,6♠,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(120, 108, True) after initial action [K♠,J♥,9♠,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(117, 110, True) after initial action [J♥,9♠,7♥,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(119, 105, True) after initial action [K♠,9♠,7♥,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(119, 110, True) after initial action [J♥,7♥,6♠,2♥], None.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(119, 105, True) after initial action [J♥,9♠,7♥,2♥], None.
+[K♠,7♥,6♠,2♥] - [J♥,9♠]:   +1.000 ±  0.000 game points;   -1.750 ±  0.938 Δ-peg +   +3.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   +1.250 ±  0.938 overall
+[9♠,7♥,6♠,2♥] - [K♠,J♥]:   +1.000 ±  0.000 game points;   -2.000 ±  1.132 Δ-peg +   +3.250 ±  0.490 Δ-hand +   +0.000 ±  0.000 crib =   +1.250 ±  0.938 overall
+[J♥,9♠,6♠,2♥] - [K♠,7♥]:   +1.000 ±  0.000 game points;   -0.500 ±  3.047 Δ-peg +   +1.750 ±  1.470 Δ-hand +   +0.000 ±  0.000 crib =   +1.250 ±  1.855 overall
+[J♥,9♠,7♥,6♠] - [K♠,2♥]:   +1.000 ±  0.000 game points;   -2.500 ±  3.250 Δ-peg +   +1.250 ±  0.938 Δ-hand +   +0.000 ±  0.000 crib =   -1.250 ±  3.238 overall
+[K♠,J♥,9♠,7♥] - [6♠,2♥]:   +1.000 ±  0.000 game points;   -2.000 ±  2.400 Δ-peg +   -0.500 ±  4.346 Δ-hand +   -1.250 ±  2.450 crib =   -3.750 ±  8.669 overall
+[K♠,9♠,7♥,6♠] - [J♥,2♥]:   +1.000 ±  0.000 game points;   +0.500 ±  3.961 Δ-peg +   -3.500 ±  4.631 Δ-hand +   -3.500 ±  4.272 crib =   -6.500 ± 11.909 overall
+[K♠,J♥,9♠,6♠] - [7♥,2♥]:   +1.000 ±  0.000 game points;   -4.750 ±  1.233 Δ-peg +   +0.750 ±  2.020 Δ-hand +   -2.500 ±  4.900 crib =   -6.500 ±  7.570 overall
+[K♠,J♥,7♥,2♥] - [9♠,6♠]:   +1.000 ±  0.000 game points;   -2.250 ±  0.938 Δ-peg +   -6.250 ±  2.815 Δ-hand +   -6.500 ±  4.041 crib =  -15.000 ±  3.299 overall
+[K♠,J♥,9♠,2♥] - [7♥,6♠]:   +0.750 ±  0.490 game points;   +0.750 ±  1.470 Δ-peg +   -0.250 ±  4.623 Δ-hand +   -1.250 ±  2.450 crib =   -0.750 ±  7.350 overall
+[K♠,9♠,6♠,2♥] - [J♥,7♥]:   +0.750 ±  0.490 game points;   +0.000 ±  0.000 Δ-peg +   +0.500 ±  1.697 Δ-hand +   -2.500 ±  4.900 crib =   -2.000 ±  6.550 overall
+[K♠,9♠,7♥,2♥] - [J♥,6♠]:   +0.750 ±  0.490 game points;   -1.000 ±  1.386 Δ-peg +   -1.250 ±  3.522 Δ-hand +   -2.500 ±  2.940 crib =   -4.750 ±  6.568 overall
+[K♠,J♥,6♠,2♥] - [9♠,7♥]:   +0.750 ±  0.490 game points;   -1.000 ±  3.395 Δ-peg +   -5.000 ±  3.837 Δ-hand +   -5.750 ±  1.674 crib =  -11.750 ±  4.759 overall
+[J♥,7♥,6♠,2♥] - [K♠,9♠]:   +0.500 ±  0.566 game points;   -3.000 ±  1.789 Δ-peg +   -1.750 ±  5.209 Δ-hand +   -2.000 ±  2.772 crib =   -6.750 ±  7.732 overall
+[K♠,J♥,7♥,6♠] - [9♠,2♥]:   +0.500 ±  0.566 game points;   -3.500 ±  2.333 Δ-peg +   -4.000 ±  4.455 Δ-hand +   -4.250 ±  3.612 crib =  -11.750 ±  8.330 overall
+[J♥,9♠,7♥,2♥] - [K♠,6♠]:   +0.250 ±  0.490 game points;   -1.000 ±  2.400 Δ-peg +   -3.500 ±  4.562 Δ-hand +   -2.250 ±  2.020 crib =   -6.750 ±  8.482 overall
+Simulating each of the 15 possible discards with game result estimation enabled 4 times in order to select discard
+[K♣,T♣,5♥,A♠] - [J♠,T♥]:   +1.000 ±  0.000 game points;   -3.000 ±  0.800 Δ-peg +   +2.500 ±  2.940 Δ-hand +   -1.250 ±  2.450 crib =   -1.750 ±  5.449 overall
+[K♣,J♠,T♥,5♥] - [T♣,A♠]:   +1.000 ±  0.000 game points;   -0.750 ±  2.577 Δ-peg +   -0.250 ±  5.330 Δ-hand +   -0.500 ±  0.980 crib =   -1.500 ±  6.326 overall
+[J♠,T♥,T♣,5♥] - [K♣,A♠]:   +1.000 ±  0.000 game points;   -2.250 ±  3.034 Δ-peg +   +2.000 ±  0.800 Δ-hand +   +0.000 ±  0.000 crib =   -0.250 ±  2.699 overall
+[K♣,J♠,T♣,5♥] - [T♥,A♠]:   +1.000 ±  0.000 game points;   -1.500 ±  0.566 Δ-peg +   +2.000 ±  1.132 Δ-hand +   +0.000 ±  0.000 crib =   +0.500 ±  0.566 overall
+[J♠,T♥,T♣,A♠] - [K♣,5♥]:   +1.000 ±  0.000 game points;   -1.250 ±  2.450 Δ-peg +   +1.750 ±  1.470 Δ-hand +   +0.000 ±  0.000 crib =   +0.500 ±  1.265 overall
+[T♥,T♣,5♥,A♠] - [K♣,J♠]:   +1.000 ±  0.000 game points;   -2.250 ±  2.173 Δ-peg +   +3.000 ±  1.386 Δ-hand +   +0.000 ±  0.000 crib =   +0.750 ±  1.674 overall
+[K♣,T♥,5♥,A♠] - [J♠,T♣]:   +1.000 ±  0.000 game points;   -0.750 ±  0.490 Δ-peg +   +1.750 ±  0.490 Δ-hand +   +0.000 ±  0.000 crib =   +1.000 ±  0.000 overall
+[J♠,T♥,5♥,A♠] - [K♣,T♣]:   +1.000 ±  0.000 game points;   -1.000 ±  1.386 Δ-peg +   +2.000 ±  0.800 Δ-hand +   +0.000 ±  0.000 crib =   +1.000 ±  1.789 overall
+[K♣,J♠,T♣,A♠] - [T♥,5♥]:   +1.000 ±  0.000 game points;   -0.750 ±  1.855 Δ-peg +   +2.000 ±  1.789 Δ-hand +   +0.000 ±  0.000 crib =   +1.250 ±  1.470 overall
+[K♣,J♠,5♥,A♠] - [T♥,T♣]:   +1.000 ±  0.000 game points;   -1.750 ±  0.938 Δ-peg +   +3.000 ±  0.800 Δ-hand +   +0.000 ±  0.000 crib =   +1.250 ±  1.470 overall
+[K♣,T♥,T♣,A♠] - [J♠,5♥]:   +1.000 ±  0.000 game points;   -1.500 ±  1.877 Δ-peg +   +3.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   +1.500 ±  1.877 overall
+[K♣,T♥,T♣,5♥] - [J♠,A♠]:   +1.000 ±  0.000 game points;   -1.750 ±  0.490 Δ-peg +   +3.250 ±  1.470 Δ-hand +   +0.000 ±  0.000 crib =   +1.500 ±  0.980 overall
+[J♠,T♣,5♥,A♠] - [K♣,T♥]:   +1.000 ±  0.000 game points;   +0.250 ±  2.020 Δ-peg +   +1.500 ±  1.697 Δ-hand +   +0.000 ±  0.000 crib =   +1.750 ±  1.233 overall
+[K♣,J♠,T♥,T♣] - [5♥,A♠]:   +1.000 ±  0.000 game points;   +0.000 ±  2.885 Δ-peg +   +2.250 ±  1.470 Δ-hand +   +0.000 ±  0.000 crib =   +2.250 ±  1.674 overall
+[K♣,J♠,T♥,A♠] - [T♣,5♥]:   +1.000 ±  0.000 game points;   +1.000 ±  2.117 Δ-peg +   +1.500 ±  1.265 Δ-hand +   +0.000 ±  0.000 crib =   +2.500 ±  1.265 overall
+Pone   discarded [9♠,J♥] (sorted: [J♥,9♠])
+Dealer discarded [J♠,T♥] (sorted: [J♠,T♥])
+Pone   kept      [K♠,6♠,2♥,7♥] (sorted: [K♠,7♥,6♠,2♥])
+Dealer kept      [K♣,T♣,A♠,5♥] (sorted: [K♣,T♣,5♥,A♠])
+Simulating each of the 4 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(119, 120, True) after initial action [], 6♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(120, 108, True) after initial action [], K♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(120, 108, True) after initial action [], 6♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(120, 111, True) after initial action [], K♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(119, 103, True) after initial action [], 7♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(120, 111, True) after initial action [], K♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(120, 111, True) after initial action [], 7♥.
+2♥ first play:   +1.000 ±  0.000 game points;   -1.100 ±  1.586 Δ-peg +   +1.000 ±  0.826 Δ-hand +   -0.800 ±  1.085 crib =   -0.900 ±  2.571 overall
+6♠ first play:   +0.800 ±  0.261 game points;   -4.600 ±  2.267 Δ-peg +   -5.400 ±  2.851 Δ-hand +   -4.500 ±  1.439 crib =  -14.500 ±  5.088 overall
+7♥ first play:   +0.800 ±  0.261 game points;   -2.400 ±  2.007 Δ-peg +   -2.600 ±  2.744 Δ-hand +   -2.700 ±  2.067 crib =   -7.700 ±  5.002 overall
+K♠ first play:   +0.700 ±  0.299 game points;   -3.000 ±  0.969 Δ-peg +   -4.900 ±  2.435 Δ-hand +   -4.200 ±  1.772 crib =  -12.100 ±  3.914 overall
+Simulating each of the 4 possible dealer plays 10 times in order to select the play:
+K♣ first play:   +1.000 ±  0.000 game points;   -1.154 ±  1.084 Δ-peg +   +1.769 ±  1.371 Δ-hand +   -0.692 ±  1.357 crib =   -0.077 ±  3.038 overall
+A♠ first play:   +1.000 ±  0.000 game points;   -0.714 ±  1.584 Δ-peg +   +1.000 ±  0.428 Δ-hand +   +0.000 ±  0.000 crib =   +0.286 ±  1.333 overall
+5♥ first play:   +1.000 ±  0.000 game points;   -0.400 ±  1.758 Δ-peg +   +2.500 ±  0.935 Δ-hand +   +0.000 ±  0.000 crib =   +2.100 ±  0.944 overall
+T♣ first play:   +1.000 ±  0.000 game points;   +0.100 ±  1.858 Δ-peg +   +1.600 ±  0.728 Δ-hand +   +0.000 ±  0.000 crib =   +1.700 ±  1.206 overall
+Simulating each of the 3 possible pone plays 10 times in order to select the play:
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(120, 108, True) after initial action [], 7♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(120, 110, True) after initial action [], 7♥.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(120, 111, True) after initial action [], 6♠.
+No incomplete game wins and game points estimate available at start_of_next_hand_score=StartOfHandScore(119, 110, True) after initial action [], 6♠.
+K♠ first play:   +1.000 ±  0.000 game points;   +1.700 ±  0.719 Δ-peg +   +0.700 ±  0.299 Δ-hand +   +0.000 ±  0.000 crib =   +2.400 ±  0.666 overall
+7♥ first play:   +0.800 ±  0.261 game points;   -1.100 ±  1.812 Δ-peg +   -4.200 ±  2.441 Δ-hand +   -5.000 ±  2.167 crib =  -10.300 ±  5.924 overall
+6♠ first play:   +0.800 ±  0.261 game points;   -1.600 ±  1.280 Δ-peg +   -3.400 ±  2.713 Δ-hand +   -3.900 ±  2.272 crib =   -8.900 ±  4.587 overall
+Simulating each of the 3 possible dealer plays 10 times in order to select the play:
+A♠ first play:   +1.000 ±  0.000 game points;   +0.235 ±  0.798 Δ-peg +   +1.529 ±  0.341 Δ-hand +   +0.000 ±  0.000 crib =   +1.765 ±  0.491 overall
+5♥ first play:   +1.000 ±  0.000 game points;   +1.538 ±  1.145 Δ-peg +   +0.923 ±  0.469 Δ-hand +   +0.000 ±  0.000 crib =   +2.462 ±  0.723 overall
+Simulating each of the 2 possible pone plays 10 times in order to select the play:
+7♥ first play:   +1.000 ±  0.000 game points;   +1.000 ±  1.057 Δ-peg +   +1.273 ±  0.276 Δ-hand +   +0.000 ±  0.000 crib =   +2.273 ±  0.797 overall
+6♠ first play:   +1.000 ±  0.000 game points;   +0.778 ±  1.121 Δ-peg +   +1.444 ±  0.344 Δ-hand +   +0.000 ±  0.000 crib =   +2.222 ±  0.850 overall
+Simulating each of the 2 possible dealer plays 10 times in order to select the play:
+T♣ first play:   +1.000 ±  0.000 game points;   +2.000 ±  0.000 Δ-peg +   +1.000 ±  0.000 Δ-hand +   +0.000 ±  0.000 crib =   +3.000 ±  0.000 overall
+5♥ first play:   +1.000 ±  0.000 game points;   +2.400 ±  0.784 Δ-peg +   +0.800 ±  0.392 Δ-hand +   +0.000 ±  0.000 crib =   +3.200 ±  0.392 overall
+Mean play statistics:
+First Pone                    Play  points:  +26.00000
+First Pone                    Hand  points:  +68.00000
+First Pone                    Crib  points:  +27.00000
+First Pone                    Total points: +121.00000
+First Pone                    Game  points:   +1.00000
+First Pone                    Game  wins  :   +1.00000
+-----------------------------------------------------
+First Dealer                  Play  points:  +29.00000
+First Dealer                  Hand  points:  +53.00000
+First Dealer                  Crib  points:  +16.00000
+First Dealer                  Total points:  +98.00000
+First Dealer                  Game  points:   +0.00000
+First Dealer                  Game  wins  :   +0.00000
+-----------------------------------------------------
+First Pone minus First Dealer Play  points:   -3.00000
+First Pone minus First Dealer Hand  points:  +15.00000
+First Pone minus First Dealer Crib  points:  +11.00000
+First Pone minus First Dealer Total points:  +23.00000
+First Pone minus First Dealer Game  points:   +1.00000
+Simulated 1 games at <SPEED> games/s (<TIME> ns/game) in <ELAPSED> s
+Simulated 1 games with 1 worker processes at <SPEED> games/s (<TIME> ns/game) in <ELAPSED> s
+--- STDERR ---
+
+--- END ---

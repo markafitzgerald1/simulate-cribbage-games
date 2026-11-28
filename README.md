@@ -526,9 +526,9 @@ above):
 `test_legacy_golden_outputs.py` runs most of these in CI at small, seeded game
 counts and compares their normalized output (timing figures and trailing
 newlines) exactly with `tests/golden/legacy/`. Commands with `--process-count 2` run with one
-process there, and infinite runs use a small count. It does not run the
-multi-hand command with incomplete-game estimates or the two interactive
-play-against commands. The golden files record current behavior, not correct
+process there, and infinite runs use a small count. The multi-hand command with
+incomplete-game estimates first tallies a small shelf, and hides play actions.
+The suite does not run the two interactive play-against commands. The golden files record current behavior, not correct
 behavior.
 
 - Simulate play of 10 reasonably well discarded and played hands of cribbage: `python simulate_cribbage_games.py --game-count 10`;
