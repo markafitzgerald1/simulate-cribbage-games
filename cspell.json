@@ -25,6 +25,7 @@
     "kibibytes",
     "maxrss",
     "killpg",
+    "PYTHONUNBUFFERED",
     "RUSAGE",
     "byteswap",
     "tobytes",

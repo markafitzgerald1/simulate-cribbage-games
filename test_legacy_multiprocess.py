@@ -48,7 +48,10 @@ def run_two_workers(working_directory: str) -> subprocess.CompletedProcess[str]:
         stderr=subprocess.PIPE,
         text=True,
         encoding="utf-8",
-        env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+        # Unbuffered, so each worker's summary reaches the pipe while it still
+        # holds the statistics lock and n = 100 cannot print after n = 200.
+        # The variable, unlike -u, also reaches spawned workers.
+        env={**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUNBUFFERED": "1"},
         start_new_session=True,
     ) as process:
         try:
