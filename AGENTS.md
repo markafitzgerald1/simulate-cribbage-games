@@ -249,6 +249,11 @@ data:
 python -c "import shelve; shelve.open('start_of_hand_position_results_tallies_shelf', flag='c').close()"
 ```
 
+Only outer game simulations may increment the tally shelf. Nested strategy
+rollouts can read it to estimate game outcomes. Validate tally counts per
+position: a complete game contributes once to each starting position it
+visits, so summing the whole shelf counts hands rather than games.
+
 The Python simulator is currently packaged by `setup.py` and tested through
 `coverage run`, which discovers the existing unittest suite.
 

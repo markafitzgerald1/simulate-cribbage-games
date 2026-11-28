@@ -107,6 +107,11 @@ Mozilla Public License 2.0. See `LICENSE` for details.
 - Check for flake8 flagged code issues: `flake8`
 - _Optional:_ Build the start of hand position + current dealer wins, losses and game points database to improve positional play of simulation-based play and discard strategies' (takes about 30 minutes on my laptop): `python simulate_cribbage_games.py --unlimited-hands-per-game --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions --games-per-update 2000 --tally-start-of-hand-position-results --game-count 1000000 --show-calc-cache-usage-stats`. Can be run longer (`--infinite-game-count` then Control+C to stop) for likely better results - exact point of diminishing returns currently hard to measure for performance and open bug reasons and not yet established.
 
+  Rebuild from an empty shelf if an older run combined tallying with
+  simulation-based discards. Those runs could mix discard rollouts with actual
+  game results in the same counters. The build command above uses the default
+  discard strategy.
+
 ### Node.js
 
 - Install [Node.js](https://nodejs.org/en/) 24 or newer. The spellcheck
