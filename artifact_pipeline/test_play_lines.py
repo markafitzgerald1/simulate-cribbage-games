@@ -4,10 +4,13 @@ from copy import deepcopy
 import hashlib
 import json
 import math
+from pathlib import Path
 import random
+from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
+from artifact_pipeline.export_uncertainty import build_sidecar
 from artifact_pipeline.generate_play_table import (
     GENERATION_METHOD,
     build_client_table,
@@ -21,7 +24,8 @@ from artifact_pipeline.pegging import (
     PeggingResult,
     simulate_pegging,
 )
-from artifact_pipeline.play_lines import OpeningLines, build_lines, decode_lines
+from artifact_pipeline.play_lines import OpeningLines, build_lines, decode_lines, main
+from artifact_pipeline.test_export_uncertainty import fixture as uncertainty_fixture
 
 
 class RandomPolicy:  # pylint: disable=too-few-public-methods
@@ -37,7 +41,7 @@ def measured_result(lead, response, role, delta):
 
 
 class TestPlayLines(unittest.TestCase):
-    def fixture(self):
+    def _fixture(self):
         # Lead A has three different outcomes. Dealer lead 9 has two responses:
         # the non-modal response's -8 must contribute to its lead mean too.
         scripted = [
@@ -68,23 +72,28 @@ class TestPlayLines(unittest.TestCase):
         return full, means, build_lines(full, means)
 
     def test_generator_lead_counts_and_all_outcome_attribution(self):
-        full, _means, data = self.fixture()
+        full, _means, data = self._fixture()
         self.assertAlmostEqual(full["A_2_3_4"][PONE]["mu"], 0.6)
         self.assertAlmostEqual(full["A_2_3_4"][DEALER]["mu"], -0.8)
         pone, dealer = data["entries"][0]
         self.assertEqual(
             pone, [[0, 3, 2.0, 2.3], [1, 1, None, None], [2, 1, None, None]]
         )
-        self.assertEqual(dealer, [[8, 3, -1.333, 3.5, 0, 2], [9, 2, 0.0, 0.0, 2, 1]])
+        self.assertEqual(data["schema"], "expected-play-lines.v2")
+        self.assertEqual(data["columns"][1], ["lead", "n", "mu", "se", "responses"])
+        self.assertEqual(
+            dealer,
+            [[8, 3, -1.333, 3.5, [[0, 2], [1, 1]]], [9, 2, 0.0, 0.0, [[2, 1], [3, 1]]]],
+        )
         # Counts give lead frequency 3/5 and response frequency 2/3,
         # independent of the role's whole-hand mean or the modal outcome mean.
         self.assertEqual(sum(row[1] for row in dealer), 5)
         self.assertEqual(dealer[0][1] / 5, 0.6)
-        self.assertAlmostEqual(dealer[0][5] / dealer[0][1], 2 / 3)
+        self.assertAlmostEqual(dealer[0][4][0][1] / dealer[0][1], 2 / 3)
         self.assertNotIn(3, [row[0] for row in pone])
 
     def test_digest_pairs_exact_bytes_including_whitespace(self):
-        _full, means, data = self.fixture()
+        _full, means, data = self._fixture()
         encoded = json.dumps(data).encode()
         self.assertEqual(data["means_sha256"], hashlib.sha256(means).hexdigest())
         self.assertEqual(decode_lines(encoded, means), data)
@@ -157,11 +166,15 @@ class TestPlayLines(unittest.TestCase):
         self.assertEqual(json.dumps(rows), "[[0, 2, 0.0, 0.0]]")
         self.assertEqual(lines.checkpoint(), before)
 
-    def test_mode_uses_count_before_rank(self):
+    def test_response_order_uses_rank_before_count_and_keeps_thin_cells(self):
         lines = OpeningLines()
-        for response in (0, 3, 3):
+        for response in (3, 0, 3):
             lines.add([9, response], 0)
-        self.assertEqual(lines.rows(DEALER), [[9, 3, 0.0, 0.0, 3, 2]])
+        lines.add([10, 3], -1)
+        self.assertEqual(
+            lines.rows(DEALER),
+            [[9, 3, 0.0, 0.0, [[0, 1], [3, 2]]], [10, 1, None, None, [[3, 1]]]],
+        )
 
     def test_publication_sorts_leads_observed_out_of_order(self):
         lines = OpeningLines()
@@ -196,7 +209,7 @@ class TestPlayLines(unittest.TestCase):
             validate_resume_table(old, 42)
 
     def test_reader_rejects_non_object_and_malformed_containers_as_value_error(self):
-        _full, means, data = self.fixture()
+        _full, means, data = self._fixture()
         for document in (
             None,
             True,
@@ -220,11 +233,11 @@ class TestPlayLines(unittest.TestCase):
                 decode_lines(json.dumps(document).encode(), means)
 
     def test_reader_requires_rank_order_keys_and_ascending_lead_rows(self):
-        _full, means, data = self.fixture()
+        _full, means, data = self._fixture()
         data["keys"] = ["A_A_A_A", "2_2_2_2"]
         data["entries"] = [
-            [[[0, 2, 0, 0]], [[3, 2, 0, 0, 0, 1]]],
-            [[[1, 2, 0, 0]], [[3, 2, 0, 0, 1, 1]]],
+            [[[0, 2, 0, 0]], [[3, 2, 0, 0, [[0, 2]]]]],
+            [[[1, 2, 0, 0]], [[3, 2, 0, 0, [[1, 2]]]]],
         ]
         self.assertEqual(decode_lines(json.dumps(data).encode(), means), data)
         reversed_keys = {
@@ -234,7 +247,7 @@ class TestPlayLines(unittest.TestCase):
         }
         with self.assertRaises(ValueError):
             decode_lines(json.dumps(reversed_keys).encode(), means)
-        _full, means, data = self.fixture()
+        _full, means, data = self._fixture()
         for role_index in (0, 1):
             broken = deepcopy(data)
             broken["entries"][0][role_index].reverse()
@@ -242,7 +255,7 @@ class TestPlayLines(unittest.TestCase):
                 decode_lines(json.dumps(broken).encode(), means)
 
     def test_rank_order_provenance_and_old_checkpoint_rejection(self):
-        full, means, _data = self.fixture()
+        full, means, _data = self._fixture()
         full["2_3_4_5"] = deepcopy(full["A_2_3_4"])
         data = build_lines(full, means)
         self.assertEqual(data["keys"], ["A_2_3_4", "2_3_4_5"])
@@ -256,7 +269,7 @@ class TestPlayLines(unittest.TestCase):
             )
 
     def test_reader_requires_qualifications_and_frozen_policy(self):
-        _full, means, data = self.fixture()
+        _full, means, data = self._fixture()
         for field, value in (
             ("qualifications", {}),
             ("qualifications", {**data["qualifications"], "policy": ""}),
@@ -271,13 +284,13 @@ class TestPlayLines(unittest.TestCase):
                 decode_lines(json.dumps(broken).encode(), means)
 
     def test_reader_rejects_missing_seed(self):
-        _full, means, data = self.fixture()
+        _full, means, data = self._fixture()
         del data["provenance"]["seed"]
         with self.assertRaises(ValueError):
             decode_lines(json.dumps(data).encode(), means)
 
     def test_reader_rejects_object_and_other_non_integer_seeds(self):
-        _full, means, data = self.fixture()
+        _full, means, data = self._fixture()
         for seed in ({}, {"seed": 42}, [], None, "42", 42.0, True, False):
             broken = deepcopy(data)
             broken["provenance"]["seed"] = seed
@@ -285,7 +298,7 @@ class TestPlayLines(unittest.TestCase):
                 decode_lines(json.dumps(broken).encode(), means)
 
     def test_reader_accepts_integer_seed_without_coercion(self):
-        _full, means, data = self.fixture()
+        _full, means, data = self._fixture()
         for seed in (-1, 0, 42, 2**64):
             data["provenance"]["seed"] = seed
             with self.subTest(seed=seed):
@@ -294,9 +307,9 @@ class TestPlayLines(unittest.TestCase):
                 self.assertIs(type(decoded["provenance"]["seed"]), int)
 
     def test_reader_rejects_invalid_positional_data(self):
-        _full, means, data = self.fixture()
+        _full, means, data = self._fixture()
         mutations = [
-            ("schema", "old"),
+            ("schema", "expected-play-lines.v1"),
             ("ranks", ""),
             ("roles", [DEALER, PONE]),
             ("precision", {}),
@@ -332,17 +345,118 @@ class TestPlayLines(unittest.TestCase):
             broken["entries"][0][0] = [row]
             with self.subTest(row=row), self.assertRaises(ValueError):
                 decode_lines(json.dumps(broken).encode(), means)
-        for response, count in ((True, 1), (13, 1), (4, 1), (0, True), (0, 0), (0, 4)):
-            broken = deepcopy(data)
-            broken["entries"][0][1] = [[8, 3, 0, 0, response, count]]
-            with self.subTest(response=response, count=count), self.assertRaises(
-                ValueError
-            ):
-                decode_lines(json.dumps(broken).encode(), means)
         broken = deepcopy(data)
         broken["entries"][0][0].append(broken["entries"][0][0][0])
         with self.assertRaises(ValueError):
             decode_lines(json.dumps(broken).encode(), means)
+        for responses in (
+            None,
+            [],
+            [0],
+            [[0, 3, 1]],
+            [[True, 3]],
+            [[13, 3]],
+            [[4, 3]],
+            [[0, True], [1, 2]],
+            [[0, 0], [1, 3]],
+            [[0, 2.5], [1, 0.5]],
+            [[1, 1], [0, 2]],
+            [[0, 1], [0, 2]],
+            [[0, 2]],
+            [[0, 4]],
+            [[0, 2], [1, 2]],
+        ):
+            data["entries"][0][1] = [[8, 3, 0, 0, responses]]
+            with self.subTest(responses=responses), self.assertRaisesRegex(
+                ValueError, "response"
+            ):
+                decode_lines(json.dumps(data).encode(), means)
+
+    def test_export_uses_the_exact_released_measurement(self):
+        full, means, expected = self._fixture()
+        full_bytes = json.dumps(full).encode()
+        sidecar = json.dumps(build_sidecar("play", full_bytes, means)).encode()
+        with TemporaryDirectory() as directory:
+            folder = Path(directory)
+            sources = {"full": full_bytes, "means": means, "sidecar": sidecar}
+            args = ["play_lines"]
+            for name, contents in sources.items():
+                path = folder / name
+                path.write_bytes(contents)
+                args.extend((f"--{name}", str(path)))
+            output = folder / "lines"
+            args.extend(("--output", str(output)))
+            with patch("sys.argv", args):
+                (folder / "full").write_bytes(full_bytes + b"\n")
+                with self.assertRaisesRegex(ValueError, "does not bind"):
+                    main()
+                self.assertFalse(output.exists())
+                (folder / "full").write_bytes(full_bytes)
+                main()
+                self.assertEqual(decode_lines(output.read_bytes(), means), expected)
+                with self.assertRaises(FileExistsError):
+                    main()
+            for name, contents in sources.items():
+                self.assertEqual((folder / name).read_bytes(), contents)
+
+    def test_export_validates_the_sidecar_and_opening_data(self):
+        full, means, _ = self._fixture()
+        full_bytes = json.dumps(full).encode()
+        forged_statistics = build_sidecar("play", full_bytes, means)
+        first_record = next(
+            iter(forged_statistics["record_groups"]["totals"]["records"].values())
+        )
+        first_record["reported_marginal_se"] += 1
+        self._assert_export_rejected(
+            full_bytes, means, forged_statistics, "does not bind"
+        )
+
+        changed_means = json.loads(means)
+        changed_means["A_2_3_4"][PONE]["mu"] += 1
+        changed_bytes = json.dumps(changed_means).encode()
+        forged_pairing = build_sidecar("play", full_bytes, means)
+        forged_pairing["means_sha256"] = hashlib.sha256(changed_bytes).hexdigest()
+        self._assert_export_rejected(
+            full_bytes, changed_bytes, forged_pairing, "Source and client means"
+        )
+
+        crib_full, crib_means = uncertainty_fixture("crib")
+        crib_full_bytes = json.dumps(crib_full).encode()
+        crib_means_bytes = json.dumps(crib_means).encode()
+        self._assert_export_rejected(
+            crib_full_bytes,
+            crib_means_bytes,
+            build_sidecar("crib", crib_full_bytes, crib_means_bytes),
+            "Unexpected artifact keys",
+        )
+
+        # Keep the response total valid so only the final decoder rejects it.
+        full["A_2_3_4"][DEALER]["opening"]["8"]["responses"] = {"0": 3, "1": 0}
+        full_bytes = json.dumps(full).encode()
+        self._assert_export_rejected(
+            full_bytes,
+            means,
+            build_sidecar("play", full_bytes, means),
+            "Invalid Dealer response rank or count",
+        )
+
+    def _assert_export_rejected(self, full_bytes, means_bytes, sidecar, error):
+        with TemporaryDirectory() as directory:
+            folder = Path(directory)
+            args = ["play_lines"]
+            for name, contents in (
+                ("full", full_bytes),
+                ("means", means_bytes),
+                ("sidecar", json.dumps(sidecar).encode()),
+            ):
+                path = folder / name
+                path.write_bytes(contents)
+                args.extend((f"--{name}", str(path)))
+            output = folder / "lines"
+            with patch("sys.argv", [*args, "--output", str(output)]):
+                with self.assertRaisesRegex(ValueError, error):
+                    main()
+            self.assertFalse(output.exists())
 
 
 if __name__ == "__main__":  # pragma: no cover

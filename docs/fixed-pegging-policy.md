@@ -185,9 +185,12 @@ needs Mark's approval.
 the rolling `expected-play-points` release. It never measures. It is manual,
 main-only and first-attempt-only, with the approval input `publish`, and it has
 no schedule. The run is the `MEASUREMENT_RUN` named in the workflow.
-`examples/fixed-play-release.sha256` pins the four released files' bytes and
+`examples/fixed-play-release.sha256` pins the four files from that run and
 `examples/fixed-play-release.md` holds the release notes. Change all three
 together, only from one such run, and never pin a table measured locally.
+The [lines-only migration](pegging-lines.md#re-export-and-rollback) records its
+replacement lines digest separately. The fixed-play publisher requires a v2
+bundle under the current verifier.
 
 Its first job has a read-only token. It requires a reviewer on `play-release`
 whom an administrator cannot bypass, because Actions gives a job that names a

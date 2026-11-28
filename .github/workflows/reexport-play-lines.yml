@@ -1,0 +1,108 @@
+name: Re-export play opening lines
+
+on:
+  workflow_dispatch:
+    inputs:
+      approval:
+        description: >-
+          Enter publish-lines to replace the release asset after the trainer
+          reader and updater support v2 (cribbage-trainer#1001)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: expected-play-points-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  export:
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' &&
+      github.run_attempt == 1 && inputs.approval == 'publish-lines'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Require main exactly
+        run: '[[ "$GITHUB_REF" == "refs/heads/main" ]]'
+      - name: Require a protected release environment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/environments/play-release" |
+            jq -e '.can_admins_bypass == false
+              and any(.protection_rules[]; .type == "required_reviewers" and (.reviewers | length) > 0)'
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+      - name: Download the current release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download expected-play-points --repo "$GITHUB_REPOSITORY" --dir previous
+      - name: Match the released measurement to the committed digests
+        working-directory: previous
+        run: sha256sum --check --strict ../examples/fixed-play-release.sha256
+      - name: Export version 2 without measuring
+        run: |
+          mkdir candidate
+          python -S -m artifact_pipeline.play_lines \
+            --full previous/expected_play_points.json \
+            --means previous/expected_play_points.client.json \
+            --sidecar previous/expected_play_points.uncertainty.json \
+            --output candidate/expected_play_points.lines.json
+          (cd candidate && sha256sum --check --strict ../examples/reexport-play-lines.sha256)
+          digest="$(sha256sum candidate/expected_play_points.lines.json)"
+          printf 'Opening lines v2 SHA-256 %s\n' "${digest%% *}" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Preserve the version 1 asset
+        uses: actions/upload-artifact@v7
+        with:
+          name: previous-play-lines
+          path: previous/expected_play_points.lines.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Upload the replacement asset
+        uses: actions/upload-artifact@v7
+        with:
+          name: replacement-play-lines
+          path: candidate/expected_play_points.lines.json
+          if-no-files-found: error
+
+  publish:
+    needs: export
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' &&
+      github.run_attempt == 1 && inputs.approval == 'publish-lines'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: play-release
+    permissions:
+      contents: write
+    steps:
+      - name: Require main exactly
+        run: '[[ "$GITHUB_REF" == "refs/heads/main" ]]'
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: replacement-play-lines
+          path: candidate
+      - name: Verify and replace only the lines asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          manifest=examples/fixed-play-release.sha256
+          replacement=examples/reexport-play-lines.sha256
+          release_api="repos/$GITHUB_REPOSITORY/releases/tags/expected-play-points"
+          (cd candidate && sha256sum --check --strict "../$replacement")
+          gh api "$release_api" | bash scripts/check_crib_release_assets.sh "$manifest"
+          awk '$2 != "expected_play_points.lines.json"' "$manifest" > published.sha256
+          cat "$replacement" >> published.sha256
+          gh release upload expected-play-points candidate/expected_play_points.lines.json --repo "$GITHUB_REPOSITORY" --clobber
+          gh api "$release_api" | bash scripts/check_crib_release_assets.sh published.sha256

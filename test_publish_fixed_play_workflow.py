@@ -19,6 +19,7 @@ WORKFLOW = ROOT / ".github/workflows/publish-fixed-play.yml"
 MEASURE = ROOT / ".github/workflows/measure-fixed-play.yml"
 PLAY = ROOT / ".github/workflows/generate-play-artifact.yml"
 BACKFILL = ROOT / ".github/workflows/export-uncertainty.yml"
+REEXPORT = ROOT / ".github/workflows/reexport-play-lines.yml"
 DIGESTS = ROOT / "examples/fixed-play-release.sha256"
 NOTES = ROOT / "examples/fixed-play-release.md"
 ENVIRONMENT = "play-release"
@@ -149,8 +150,13 @@ class PublishFixedPlayWorkflowTest(unittest.TestCase):
 
     def test_every_writer_of_the_release_waits_for_the_reviewer(self) -> None:
         # Catches a job that can write the release without the environment.
-        for path, job in ((PLAY, "release-artifact"), (BACKFILL, "export")):
-            self.assertEqual(load(path)["jobs"][job]["environment"], ENVIRONMENT)
+        for path, job in (
+            (PLAY, "release-artifact"),
+            (BACKFILL, "export"),
+            (REEXPORT, "publish"),
+        ):
+            with self.subTest(workflow=path.name):
+                self.assertEqual(load(path)["jobs"][job]["environment"], ENVIRONMENT)
 
     def test_publication_shares_the_release_writer_lock(self) -> None:
         # Catches a group that no longer excludes generate-play-artifact.yml, and

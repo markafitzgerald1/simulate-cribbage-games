@@ -656,10 +656,12 @@ default.
 The expected-play pipeline is separate from the expected-crib pipeline.
 Its [opening-lines companion](docs/pegging-lines.md) observes the first two
 actual selections in the final frozen-policy measurement simulations. Dealer
-delta means condition on the opponent lead, including every response; modal
-response frequency uses that lead's count. Retain thin cells with counts and
+delta means condition on the opponent lead, including every response. The
+response counts must sum to that lead's count. Retain thin cells with counts and
 null mean/SE, and hash exact client means bytes. Published rounded SEs are not
-checkpoint moments. Keep the companion in the same release publication call.
+checkpoint moments. Keep the companion in the same release publication call
+for new measurements. The lines-only re-export verifies that the existing
+sidecar binds both full and client bytes before replacing the companion.
 
 `generate_play_table.py` uses the analytical `E(h +/- c)` solution as its
 initial discard policy, trains a rank-only hidden-information pegging policy by
@@ -852,6 +854,14 @@ first-attempt guard. Its weekly schedule is retired, because a scheduled run
 would replace the CFR table. A step's own time limit fails the step and leaves
 later `failure()` steps to run, so a long step gets a limit under the job's and
 its partial work is uploaded last.
+
+`reexport-play-lines.yml` rebuilds the v2 companion from the pinned v1
+release using only the Python standard library. It rebuilds the play
+uncertainty sidecar in memory to verify the full table and means. Both jobs
+check `examples/reexport-play-lines.sha256`, and the export job prints the
+verified digest in its log and summary before approval. The writer downloads
+into a dedicated directory separate from the checked-in manifests. It checks
+the complete release before and after replacing the lines asset.
 
 ## Lint Configuration Expectations
 

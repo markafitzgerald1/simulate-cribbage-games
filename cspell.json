@@ -61,6 +61,7 @@
     "nextest",
     "nobs",
     "parseable",
+    "pipefail",
     "pone",
     "pylint",
     "pylintrc",

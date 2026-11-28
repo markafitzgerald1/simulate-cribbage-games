@@ -150,7 +150,9 @@ Expected-play generation also writes the compact
 frozen policy as the play means and paired to their exact bytes. Observed thin
 cells retain counts with null conditional mean/SE; missing data is unavailable,
 never zero. Generation prints its minified and gzip sizes. The workflow
-publishes it beside the means in the same rolling-release call.
+publishes it beside the means in the same rolling-release call. The
+[lines re-export workflow](.github/workflows/reexport-play-lines.yml) can
+replace the pinned release's v1 companion with v2 from existing measurements.
 
 The experimental shared-rank crib decomposition is isolated in
 `artifact_pipeline/crib_decomposition.py`. It is an opt-in library for the
@@ -832,3 +834,10 @@ attaches only the bytes pinned in
 [the release digests](examples/fixed-play-release.sha256), after the maintainer
 approves the `play-release` environment. See the fixed-policy
 contract for both workflows.
+
+The manual [opening-lines re-export workflow](.github/workflows/reexport-play-lines.yml)
+rebuilds v2 from the pinned v1 release with Python's standard library.
+It reports the verified [replacement digest](examples/reexport-play-lines.sha256)
+before approval in `play-release`. The write job checks that pin and the
+complete release asset set before replacing the lines file, then verifies the
+resulting asset set. See the [opening-lines contract](docs/pegging-lines.md).
