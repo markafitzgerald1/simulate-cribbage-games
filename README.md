@@ -150,7 +150,9 @@ Expected-play generation also writes the compact
 frozen policy as the play means and paired to their exact bytes. Observed thin
 cells retain counts with null conditional mean/SE; missing data is unavailable,
 never zero. Generation prints its minified and gzip sizes. The workflow
-publishes it beside the means in the same rolling-release call.
+publishes it beside the means in the same rolling-release call. The
+[lines re-export workflow](.github/workflows/reexport-play-lines.yml) can
+replace the pinned release's v1 companion with v2 from existing measurements.
 
 The experimental shared-rank crib decomposition is isolated in
 `artifact_pipeline/crib_decomposition.py`. It is an opt-in library for the

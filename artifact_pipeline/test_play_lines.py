@@ -4,10 +4,13 @@ from copy import deepcopy
 import hashlib
 import json
 import math
+from pathlib import Path
 import random
+from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
+from artifact_pipeline.export_uncertainty import build_sidecar
 from artifact_pipeline.generate_play_table import (
     GENERATION_METHOD,
     build_client_table,
@@ -21,7 +24,7 @@ from artifact_pipeline.pegging import (
     PeggingResult,
     simulate_pegging,
 )
-from artifact_pipeline.play_lines import OpeningLines, build_lines, decode_lines
+from artifact_pipeline.play_lines import OpeningLines, build_lines, decode_lines, main
 
 
 class RandomPolicy:  # pylint: disable=too-few-public-methods
@@ -75,12 +78,17 @@ class TestPlayLines(unittest.TestCase):
         self.assertEqual(
             pone, [[0, 3, 2.0, 2.3], [1, 1, None, None], [2, 1, None, None]]
         )
-        self.assertEqual(dealer, [[8, 3, -1.333, 3.5, 0, 2], [9, 2, 0.0, 0.0, 2, 1]])
+        self.assertEqual(data["schema"], "expected-play-lines.v2")
+        self.assertEqual(data["columns"][1], ["lead", "n", "mu", "se", "responses"])
+        self.assertEqual(
+            dealer,
+            [[8, 3, -1.333, 3.5, [[0, 2], [1, 1]]], [9, 2, 0.0, 0.0, [[2, 1], [3, 1]]]],
+        )
         # Counts give lead frequency 3/5 and response frequency 2/3,
         # independent of the role's whole-hand mean or the modal outcome mean.
         self.assertEqual(sum(row[1] for row in dealer), 5)
         self.assertEqual(dealer[0][1] / 5, 0.6)
-        self.assertAlmostEqual(dealer[0][5] / dealer[0][1], 2 / 3)
+        self.assertAlmostEqual(dealer[0][4][0][1] / dealer[0][1], 2 / 3)
         self.assertNotIn(3, [row[0] for row in pone])
 
     def test_digest_pairs_exact_bytes_including_whitespace(self):
@@ -157,11 +165,15 @@ class TestPlayLines(unittest.TestCase):
         self.assertEqual(json.dumps(rows), "[[0, 2, 0.0, 0.0]]")
         self.assertEqual(lines.checkpoint(), before)
 
-    def test_mode_uses_count_before_rank(self):
+    def test_response_order_uses_rank_before_count_and_keeps_thin_cells(self):
         lines = OpeningLines()
-        for response in (0, 3, 3):
+        for response in (3, 0, 3):
             lines.add([9, response], 0)
-        self.assertEqual(lines.rows(DEALER), [[9, 3, 0.0, 0.0, 3, 2]])
+        lines.add([10, 3], -1)
+        self.assertEqual(
+            lines.rows(DEALER),
+            [[9, 3, 0.0, 0.0, [[0, 1], [3, 2]]], [10, 1, None, None, [[3, 1]]]],
+        )
 
     def test_publication_sorts_leads_observed_out_of_order(self):
         lines = OpeningLines()
@@ -223,8 +235,8 @@ class TestPlayLines(unittest.TestCase):
         _full, means, data = self.fixture()
         data["keys"] = ["A_A_A_A", "2_2_2_2"]
         data["entries"] = [
-            [[[0, 2, 0, 0]], [[3, 2, 0, 0, 0, 1]]],
-            [[[1, 2, 0, 0]], [[3, 2, 0, 0, 1, 1]]],
+            [[[0, 2, 0, 0]], [[3, 2, 0, 0, [[0, 2]]]]],
+            [[[1, 2, 0, 0]], [[3, 2, 0, 0, [[1, 2]]]]],
         ]
         self.assertEqual(decode_lines(json.dumps(data).encode(), means), data)
         reversed_keys = {
@@ -296,7 +308,7 @@ class TestPlayLines(unittest.TestCase):
     def test_reader_rejects_invalid_positional_data(self):
         _full, means, data = self.fixture()
         mutations = [
-            ("schema", "old"),
+            ("schema", "expected-play-lines.v1"),
             ("ranks", ""),
             ("roles", [DEALER, PONE]),
             ("precision", {}),
@@ -332,17 +344,59 @@ class TestPlayLines(unittest.TestCase):
             broken["entries"][0][0] = [row]
             with self.subTest(row=row), self.assertRaises(ValueError):
                 decode_lines(json.dumps(broken).encode(), means)
-        for response, count in ((True, 1), (13, 1), (4, 1), (0, True), (0, 0), (0, 4)):
-            broken = deepcopy(data)
-            broken["entries"][0][1] = [[8, 3, 0, 0, response, count]]
-            with self.subTest(response=response, count=count), self.assertRaises(
-                ValueError
-            ):
-                decode_lines(json.dumps(broken).encode(), means)
         broken = deepcopy(data)
         broken["entries"][0][0].append(broken["entries"][0][0][0])
         with self.assertRaises(ValueError):
             decode_lines(json.dumps(broken).encode(), means)
+        for responses in (
+            None,
+            [],
+            [0],
+            [[0, 3, 1]],
+            [[True, 3]],
+            [[13, 3]],
+            [[4, 3]],
+            [[0, True], [1, 2]],
+            [[0, 0], [1, 3]],
+            [[0, 2.5], [1, 0.5]],
+            [[1, 1], [0, 2]],
+            [[0, 1], [0, 2]],
+            [[0, 2]],
+            [[0, 4]],
+            [[0, 2], [1, 2]],
+        ):
+            data["entries"][0][1] = [[8, 3, 0, 0, responses]]
+            with self.subTest(responses=responses), self.assertRaisesRegex(
+                ValueError, "response"
+            ):
+                decode_lines(json.dumps(data).encode(), means)
+
+    def test_export_uses_the_exact_released_measurement(self):
+        full, means, expected = self.fixture()
+        full_bytes = json.dumps(full).encode()
+        sidecar = json.dumps(build_sidecar("play", full_bytes, means)).encode()
+        with TemporaryDirectory() as directory:
+            folder = Path(directory)
+            sources = {"full": full_bytes, "means": means, "sidecar": sidecar}
+            args = ["play_lines"]
+            for name, contents in sources.items():
+                path = folder / name
+                path.write_bytes(contents)
+                args.extend((f"--{name}", str(path)))
+            output = folder / "lines"
+            args.extend(("--output", str(output)))
+            with patch("sys.argv", args):
+                (folder / "full").write_bytes(full_bytes + b"\n")
+                with self.assertRaisesRegex(ValueError, "does not bind"):
+                    main()
+                self.assertFalse(output.exists())
+                (folder / "full").write_bytes(full_bytes)
+                main()
+                self.assertEqual(decode_lines(output.read_bytes(), means), expected)
+                with self.assertRaises(FileExistsError):
+                    main()
+            for name, contents in sources.items():
+                self.assertEqual((folder / name).read_bytes(), contents)
 
 
 if __name__ == "__main__":  # pragma: no cover

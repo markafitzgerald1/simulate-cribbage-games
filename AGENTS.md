@@ -656,10 +656,12 @@ default.
 The expected-play pipeline is separate from the expected-crib pipeline.
 Its [opening-lines companion](docs/pegging-lines.md) observes the first two
 actual selections in the final frozen-policy measurement simulations. Dealer
-delta means condition on the opponent lead, including every response; modal
-response frequency uses that lead's count. Retain thin cells with counts and
+delta means condition on the opponent lead, including every response. The
+response counts must sum to that lead's count. Retain thin cells with counts and
 null mean/SE, and hash exact client means bytes. Published rounded SEs are not
-checkpoint moments. Keep the companion in the same release publication call.
+checkpoint moments. Keep the companion in the same release publication call
+for new measurements. The lines-only re-export verifies that the existing
+sidecar binds both full and client bytes before replacing the companion.
 
 `generate_play_table.py` uses the analytical `E(h +/- c)` solution as its
 initial discard policy, trains a rank-only hidden-information pegging policy by

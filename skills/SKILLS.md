@@ -195,7 +195,8 @@ TypeScript with Python-generated golden tests.
 
 The [opening-lines contract](../docs/pegging-lines.md) retains observed thin
 cells with counts and null conditional moments. Dealer means include all
-responses to the opponent lead; modal frequency uses that lead's count. Observe
+responses to the opponent lead. Derive reply frequencies from that lead's
+count and verify that every response count contributes to the total. Observe
 actual policy selections without additional randomness, keep unrounded
 checkpoint moments, and validate exact client-byte digest pairing before use.
 Publish this companion in the same release call as its means.
