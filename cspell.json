@@ -24,6 +24,7 @@
     "getrusage",
     "kibibytes",
     "maxrss",
+    "killpg",
     "RUSAGE",
     "byteswap",
     "tobytes",

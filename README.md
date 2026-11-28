@@ -668,9 +668,6 @@ behavior.
 ## Current known bugs
 
 - 2023-02-12T17:37-05: `python simulate_cribbage_games.py --first-dealer-dealt-cards 9♦,T♠,7♦,5♥,J♥,A♥ --first-dealer-kept-cards T♠,5♥,J♥,A♥ --initial-play-actions K♥ --select-each-post-initial-play --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions --game-count 20000 --games-per-update 2000 --initial-pone-score 118 --initial-dealer-score 119` indicates that J♥ is the best play with expected game points of -0.33725 ± 0.08178 and 5♥ is the worst play with expected game points of -1.00000 ± 0.00000 when 5♥ would in fact immediately win for first dealer and should be _preferred_!
-- 2021-07-08T00:08-04: Runs with `--process-count` greater than 1 crash with `TypeError: cannot pickle '_gdbm.gdbm' object`:
-  - Recreate of database did not fix this.
-  - Only reported on Apple Silicon (M1) to present.
 - Long program executions using the current position and dealer to end of game results database tend to hang after 1-4 hours of execution. This occurs even then winpty is not used to run python. This also occurs when the tally database is opened in read-only mode by multiple processes ([which is safe](https://docs.python.org/3/library/shelve.html#restrictions)). This does _not_ happen if the current position and dealer to end of game results database is _not_ in use. Perhaps it does _not_ happen when only _one_ process is accessing the dealer-position-results shelf?
 
 ## Current possible bugs
@@ -755,6 +752,8 @@ behavior.
 
 ## Fixed past product bugs
 
+- 2026-11-27: Runs with `--process-count` greater than 1 crashed in every worker with `TypeError: 'in <string>' requires string as left operand, not tuple` and then never exited when the tally shelf was empty, which is the state the setup step above creates. `main()` located the open shelf among the worker arguments with `list.index`, which compares by equality, and an empty shelf equals the empty statistics dictionary that comes before it, so the statistics dictionary was replaced by the shelf's path. The shelf is now located by identity, and `test_legacy_multiprocess.py` runs two workers against an empty shelf ([#278](https://github.com/markafitzgerald1/simulate-cribbage-games/issues/278)).
+- 2021-07-08T00:08-04: Runs with `--process-count` greater than 1 crashed with `TypeError: cannot pickle '_gdbm.gdbm' object`, because the open tally shelf was passed to the worker processes. Workers now receive the shelf's path and open it themselves ([#153](https://github.com/markafitzgerald1/simulate-cribbage-games/pull/153), 2026-09-24).
 - 'Go' `PlayActionComponents`s render with a `false` class where no class should be in the HTML Element.
 - 'Go' `VisibleHandCard`s render lower than non-'Go' `VisibleHandCard`s in Firefox 89.0.2 but not in Safari 14.1.1 or Chrome 91.0.4472.114 (arm).
 - `python simulate_cribbage_games.py --initial-dealer-score 7 --initial-pone-score 12 --first-dealer-dealt-cards 3c,5c,6h,6s,8s,jc --first-dealer-select-each-possible-kept-hand --infinite-game-count --hide-first-pone-hand --hide-first-dealer-hand --hide-play-actions --games-per-update 1000 --process-count 4 --estimate-first-dealer-incomplete-game-wins-and-game-points` is not using the position result estimate database in its discard calculations, but _is_ using it if `--estimate-first-pone-incomplete-game-wins-and-game-points` was added. I've confirmed this is not an issue for simulation-based players, is not an issue for `--first-pone-select-each-possible-kept-hand`, is not an issue for `--select-each-post-initial-play` (play analysis iteration over possibilities is implemented differently) but is an issue for `--first-dealer-select-each-possible-kept-hand`.
