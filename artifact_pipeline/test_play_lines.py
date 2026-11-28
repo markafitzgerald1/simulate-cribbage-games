@@ -399,7 +399,7 @@ class TestPlayLines(unittest.TestCase):
             for name, contents in sources.items():
                 self.assertEqual((folder / name).read_bytes(), contents)
 
-    def test_export_rebuilds_sidecar_from_full_and_means(self):
+    def test_export_validates_the_sidecar_and_opening_data(self):
         full, means, _ = self._fixture()
         full_bytes = json.dumps(full).encode()
         forged_statistics = build_sidecar("play", full_bytes, means)
@@ -428,6 +428,16 @@ class TestPlayLines(unittest.TestCase):
             crib_means_bytes,
             build_sidecar("crib", crib_full_bytes, crib_means_bytes),
             "Unexpected artifact keys",
+        )
+
+        # Keep the response total valid so only the final decoder rejects it.
+        full["A_2_3_4"][DEALER]["opening"]["8"]["responses"] = {"0": 3, "1": 0}
+        full_bytes = json.dumps(full).encode()
+        self._assert_export_rejected(
+            full_bytes,
+            means,
+            build_sidecar("play", full_bytes, means),
+            "Invalid Dealer response rank or count",
         )
 
     def _assert_export_rejected(self, full_bytes, means_bytes, sidecar, error):

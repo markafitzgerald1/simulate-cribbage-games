@@ -67,7 +67,8 @@ schema check, so opening lines for both roles are unavailable if it receives
 v2. The v1 updater rejects the v2 schema before vendoring. Existing trainer
 builds use their bundled v1 asset. Update the reader and updater in
 [cribbage-trainer#1001](https://github.com/markafitzgerald1/cribbage-trainer/issues/1001)
-before vendoring v2.
+before approving publication. The old updater validates all three play files
+before writing any of them, so v2 lines would block the whole play refresh.
 
 ## Meaning for consumers
 
@@ -151,13 +152,35 @@ bytes, then write the minified companion. Report minified bytes and reproducible
 gzip level-9 bytes (`mtime=0`). Publish the companion, means and uncertainty
 sidecar in a single rolling-release publication call.
 
+## Re-export and rollback
+
 [Re-export play opening lines](../.github/workflows/reexport-play-lines.yml)
 rebuilds v2 from the pinned rolling release using `python -S -m
 artifact_pipeline.play_lines`. The exporter verifies the play sidecar by
 rebuilding it from the exact full table and means bytes. The read-only job
 checks the [v2 pin](../examples/reexport-play-lines.sha256), prints the digest
-in its log and run summary, and preserves the v1 asset in Actions artifacts.
+in its log and run summary, and keeps the v1 asset as `previous-play-lines`
+for 90 days.
 After approval in `play-release`, the writer checks the downloaded file
 against the checked-in pin, verifies the v1 release, replaces the lines
-asset, and checks the resulting four assets. The existing fixed-play
-publication workflow requires a v2 bundle to pass the current reference reader.
+asset, and checks the resulting four assets. The resulting release uses the
+three full, means and uncertainty digests from the
+[fixed measurement manifest](../examples/fixed-play-release.sha256) and the
+lines digest from the v2 pin. The manifest still identifies the original
+measurement bundle. A fresh re-export dispatch expects the original v1 release
+and will refuse a release that already has v2 lines.
+
+For an authorized rollback, download `previous-play-lines` from the migration
+run and verify the v1 lines digest in the fixed measurement manifest. Check
+that the other three released files still match that manifest, then run the
+following command from the directory containing the recovered asset.
+
+```sh
+gh release upload expected-play-points expected_play_points.lines.json \
+  --repo markafitzgerald1/simulate-cribbage-games --clobber
+```
+
+Verify all four release assets against the fixed measurement manifest after
+upload. Restore v1 manually because the current fixed-play publisher requires
+v2 lines. Keep a copy of the v1 asset if rollback may be needed after the
+Actions artifact expires.

@@ -63,8 +63,11 @@ class ReexportPlayLinesWorkflowTest(unittest.TestCase):
         approval = self.workflow["on"]["workflow_dispatch"]["inputs"]["approval"]
         self.assertEqual(approval["required"], "true")
         self.assertEqual(approval["type"], "string")
+        self.assertRegex(approval["description"], "cribbage-trainer#1001")
         self.assertNotIn("default", approval)
-        self.assertEqual(self.workflow["permissions"], {"contents": "read"})
+        self.assertEqual(
+            self.workflow["permissions"], {"contents": "read", "actions": "read"}
+        )
         self.assertEqual(self.workflow["defaults"], {"run": {"shell": "bash"}})
         self.assertEqual(self.workflow["concurrency"], load(PLAY)["concurrency"])
         self.assertEqual(self.workflow["concurrency"]["cancel-in-progress"], "false")
@@ -189,8 +192,9 @@ gh() {
         )
 
     def test_export_checks_the_v1_inputs_and_reports_the_pinned_v2_without_site(self):
+        release = self.folder / "release"
+        release.mkdir()
         previous = self.folder / "previous"
-        previous.mkdir()
         metadata = {
             "generation_method": "fixture",
             "joint_policy_converged": False,
@@ -215,11 +219,21 @@ gh() {
             LINES: b"previous",
         }
         for filename, data in files.items():
-            (previous / filename).write_bytes(data)
+            (release / filename).write_bytes(data)
         (self.folder / MANIFEST.parent).mkdir()
         (self.folder / MANIFEST).write_text(
-            "".join(digest_line(previous / filename) for filename in files)
+            "".join(digest_line(release / filename) for filename in files)
         )
+        download = "Download the current release"
+        self.assertEqual(self.steps["export"][download].get("env"), TOKEN)
+        download_stub = """
+gh() {
+    [[ "$*" == 'release download expected-play-points --repo o/r --dir previous' ]] || return 2
+    cp -R release previous
+}
+"""
+        result = self.run_step("export", download, download_stub)
+        self.assertEqual(result.returncode, 0, result.stderr)
         check = "Match the released measurement to the committed digests"
         self.assertEqual(self.run_step("export", check).returncode, 0)
         (previous / LINES).write_bytes(b"wrong v1")

@@ -4,12 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       approval:
-        description: Enter publish-lines to confirm replacement of the pinned lines asset
+        description: >-
+          Enter publish-lines to replace the release asset after the trainer
+          reader and updater support v2 (cribbage-trainer#1001)
         required: true
         type: string
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: expected-play-points-release-${{ github.ref_name }}
