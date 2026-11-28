@@ -27,7 +27,9 @@ from artifact_pipeline.strength_ladder import (
     main,
     parse_args,
 )
+from artifact_pipeline.table_discards import TableDiscardRule
 from artifact_pipeline.test_fixed_policy_fixtures import make_bundle
+from artifact_pipeline.test_table_discards import crib_json, play_json
 
 RANDOM_ARGS = ["--discards", "random", "--rungs", "random,heuristic"]
 
@@ -313,6 +315,158 @@ class TestMain(unittest.TestCase):
                 run_cli([*RANDOM_ARGS, "--pairs", "4", "--workers", "2"]), (0, printed)
             )
         self.assertEqual(spy.call_args.kwargs["workers"], 2)
+
+
+class TestTablePlayers(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        self.crib = self.root / "crib.json"
+        self.play = self.root / "play.json"
+        self.crib.write_text(json.dumps(crib_json()), encoding="utf-8")
+        self.play.write_text(json.dumps(play_json()), encoding="utf-8")
+
+    def table_args(self, name, pegging, crib="none", play="none"):
+        return ["--table-player", name, pegging, str(crib), str(play)]
+
+    def test_rejects_bad_table_players(self):
+        app = self.table_args("app", "heuristic", self.crib)
+        for argv in (
+            [*app, *app, "--rungs", "app,heuristic", "--discards", "random"],
+            [*self.table_args("cfr", "heuristic"), "--discards", "random"],
+            [*self.table_args("app", "expert"), "--discards", "random"],
+            [*app, "--rungs", "app,other"],
+            [*self.table_args("app", "cfr"), "--rungs", "app,heuristic"],
+            [*app, "--rungs", "app,heuristic"],
+            [
+                *app,
+                *self.table_args("hand", "random"),
+                "--rungs",
+                "app,hand",
+                "--policy-manifest",
+                "policy.json",
+            ],
+            [
+                *app,
+                "--rungs",
+                "app,heuristic",
+                "--discards",
+                "random",
+                "--output",
+                str(self.crib),
+            ],
+        ):
+            rejected(self, argv)
+        args = parse_args(
+            [*app, *self.table_args("hand", "random"), "--rungs", "hand,app"]
+        )
+        self.assertEqual(args.rungs, ["hand", "app"])
+        with patch.object(Path, "exists", return_value=False):
+            parse_args(
+                [
+                    *app,
+                    "--rungs",
+                    "app,heuristic",
+                    "--discards",
+                    "random",
+                    "--output",
+                    str(self.crib),
+                ]
+            )
+
+    def test_default_rungs_put_table_players_last(self):
+        manifest = bundle_in(self.root / "bundle")
+        args = parse_args(
+            [
+                "--policy-manifest",
+                str(manifest),
+                *self.table_args("app", "cfr", self.crib, self.play),
+            ]
+        )
+        self.assertEqual(args.rungs, ["random", "heuristic", "cfr", "app"])
+
+    def test_table_players_record_their_tables_and_pegging(self):
+        manifest = bundle_in(self.root / "bundle")
+        argv = [
+            "--policy-manifest",
+            str(manifest),
+            "--rungs",
+            "hand,heuristic,app",
+            *self.table_args("hand", "random"),
+            *self.table_args("app", "cfr", self.crib, self.play),
+        ]
+        with ExitStack() as stack:
+            players, provenance = build_players(parse_args(argv), stack)
+            self.assertEqual([p.name for p in players], ["hand", "heuristic", "app"])
+            hand, heuristic, app = players[0], players[1], players[2]
+            self.assertIsInstance(hand.discard_rule, TableDiscardRule)
+            self.assertIsInstance(app.discard_rule, TableDiscardRule)
+            self.assertIsInstance(heuristic.discard_rule, RankDiscardRule)
+            self.assertIsInstance(app.pegging_policy, SixLayerPolicy)
+            self.assertEqual(
+                hand.pegging_policy.__class__.__name__, "RandomPeggingPolicy"
+            )
+            self.assertTrue(app.description.startswith("app-table discards, CFR+"))
+        digest = {
+            path: hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in (self.crib, self.play)
+        }
+        self.assertEqual(
+            provenance["table_players"],
+            {
+                "hand": {"pegging": "random"},
+                "app": {
+                    "pegging": "cfr",
+                    "crib_sha256": digest[self.crib],
+                    "play_sha256": digest[self.play],
+                },
+            },
+        )
+        dealt = [(0, 2), (0, 3), (3, 2), (6, 1), (9, 0), (9, 1)]
+        crib_only = TableDiscardRule()
+        self.assertEqual(
+            hand.discard_rule.keep_value(PONE, dealt[:4], dealt),
+            crib_only.keep_value(PONE, dealt[:4], dealt),
+        )
+        self.assertNotEqual(
+            app.discard_rule.keep_value(PONE, dealt[:4], dealt),
+            crib_only.keep_value(PONE, dealt[:4], dealt),
+        )
+
+    def test_a_table_only_ladder_runs_without_a_bundle(self):
+        output = self.root / "ladder.json"
+        code, printed = run_cli(
+            [
+                *self.table_args("hand", "heuristic"),
+                *self.table_args("app", "heuristic", self.crib, self.play),
+                "--rungs",
+                "hand,app",
+                "--pairs",
+                "3",
+                "--output",
+                str(output),
+            ]
+        )
+        report = json.loads(output.read_text(encoding="utf-8"))
+        self.assertEqual(code, 0)
+        self.assertEqual(
+            [r["description"] for r in report["rungs"]],
+            ["app-table discards, legacy simulator's default play"] * 2,
+        )
+        self.assertTrue(
+            "seed 42, app-table discards for hand, app. Win" in printed, printed
+        )
+        _, mixed = run_cli(
+            [
+                *self.table_args("app", "heuristic", self.crib),
+                "--discards",
+                "random",
+                "--rungs",
+                "random,app",
+                "--pairs",
+                "2",
+            ]
+        )
+        self.assertTrue("random discards; app-table discards for app." in mixed, mixed)
 
 
 if __name__ == "__main__":  # pragma: no cover
