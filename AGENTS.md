@@ -463,6 +463,19 @@ add focused coverage for every legacy function, class, constant, and execution
 path used by that comparison. Do not use full-game comparison harnesses as a
 shortcut around the immutable-dependency coverage requirement.
 
+Multi-process runs hand workers a copy of `simulate_games_args` with the open
+tally shelf swapped for its path. In its `__main__` block, locate the shelf by
+identity, never with the tuple's `.index()`, which compares by equality: an empty shelf is a
+`Mapping` and equals the empty `Manager().dict()` statistics proxy earlier in
+the tuple (#278). Test multi-process runs by invariants of the final summary, such as the
+game count, not by golden snapshots, because spawned workers do not inherit the
+parent's random seed and their output interleaves. Run such a test in its own
+session and kill the process group on timeout: a worker that raises while
+holding the statistics lock leaves the others blocked and the parent waiting
+forever, and a plain timeout kills only the parent. Set `PYTHONUNBUFFERED` for
+such a test, so that workers' summaries reach a pipe in lock order; `-u` does
+not reach spawned workers.
+
 ## Code Style And Documentation
 
 Follow existing project style. Keep Markdown plain, model-agnostic, and readable

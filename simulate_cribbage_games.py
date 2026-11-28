@@ -4323,8 +4323,8 @@ if __name__ == "__main__":
     if args.process_count == 1:
         simulate_games(*simulate_games_args)
     else:
-        shelf_index = simulate_games_args.index(
-            args_start_of_hand_position_results_tallies
+        shelf_index = [id(argument) for argument in simulate_games_args].index(
+            id(args_start_of_hand_position_results_tallies)
         )
         args_start_of_hand_position_results_tallies.close()
         worker_simulate_games_args = list(simulate_games_args)
