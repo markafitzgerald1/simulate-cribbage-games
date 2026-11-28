@@ -15,13 +15,14 @@ The app ranks each of the 15 keeps by E(hand) +/- E(crib) + E(deltaP):
 
 The app breaks exact ties by rank and then suit. Here the seat's discard
 stream picks uniformly among keeps whose values agree to 1e-9, so no suit
-is favoured; a tie can only matter between keeps the tables cannot tell
-apart.
+is favoured. The ladder also uses this selector for hand-only rungs based
+on four-card points or a 48-starter average.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from enum import StrEnum
 import itertools
 import math
 import random
@@ -52,6 +53,15 @@ MATCHING_RANK_1 = "matching_rank_1_suit"
 MATCHING_RANK_2 = "matching_rank_2_suit"
 
 CribCell = tuple[float, Mapping[str, float]]
+
+
+class HandScoring(StrEnum):
+    """The information used to rank a four-card keep by hand points."""
+
+    PRE_CUT_RANK = "pre-cut-rank"
+    PRE_CUT_SUIT = "pre-cut-suit"
+    POST_CUT_48 = "post-cut-48"
+    POST_CUT_46 = "post-cut-46"
 
 
 def discard_key(first: PhysicalCard, second: PhysicalCard) -> str:
@@ -151,24 +161,38 @@ def load_play_table(
 
 
 class TableDiscardRule:  # pylint: disable=too-few-public-methods
-    """Keep the four cards the app's hand, crib and play values rank first."""
+    """Rank keeps by hand value and any supplied crib and play tables."""
 
     def __init__(
         self,
         crib: Mapping[tuple[str, str], tuple[CribCell, ...]] | None = None,
         play: Mapping[tuple[str, tuple[int, ...]], float] | None = None,
+        *,
+        hand_scoring: HandScoring = HandScoring.POST_CUT_46,
     ) -> None:
+        if hand_scoring != HandScoring.POST_CUT_46 and (
+            crib is not None or play is not None
+        ):
+            raise ValueError("Alternate hand scoring requires a hand-only discard rule")
         self._crib = crib
         self._play = play
+        self._hand_scoring = hand_scoring
 
     def keep_value(
         self, role: str, kept: Sequence[PhysicalCard], dealt: Sequence[PhysicalCard]
     ) -> float:
-        """Return E(hand) +/- E(crib) + E(deltaP) for one keep."""
-        discards = [card for card in dealt if card not in kept]
-        held = [[suit for rank, suit in dealt if rank == r] for r in range(13)]
+        """Return the keep's hand value, adjusted by any crib and play tables."""
         ranks = tuple(sorted(rank for rank, _suit in kept))
         suits = {suit for _rank, suit in kept}
+        if self._hand_scoring in (HandScoring.PRE_CUT_RANK, HandScoring.PRE_CUT_SUIT):
+            hand = cached_pairs_runs_and_fifteens_points(ranks)
+            if self._hand_scoring == HandScoring.PRE_CUT_SUIT and len(suits) == 1:
+                hand += 4
+            return hand
+
+        known = kept if self._hand_scoring == HandScoring.POST_CUT_48 else dealt
+        held = [[suit for rank, suit in known if rank == r] for r in range(13)]
+        discards = [card for card in dealt if card not in kept]
         hand = 0.0
         crib = 0.0
         for rank in range(13):
@@ -182,7 +206,7 @@ class TableDiscardRule:  # pylint: disable=too-few-public-methods
                 hand += (JACK, suit) in kept
             if self._crib is not None:
                 crib += self._crib_points(role, discards, rank, unseen)
-        value = (hand + (crib if role == DEALER else -crib)) / 46
+        value = (hand + (crib if role == DEALER else -crib)) / (52 - len(known))
         if self._play is not None:
             value += self._play[(role, ranks)]
         return value
