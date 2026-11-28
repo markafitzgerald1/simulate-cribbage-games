@@ -523,6 +523,14 @@ All of the following should exit with status code 0 and no raised exception
 (the tally shelf must exist in the working directory first — see Python Setup
 above):
 
+`test_legacy_golden_outputs.py` runs most of these in CI at small, seeded game
+counts and compares their normalized output (timing figures and trailing
+newlines) exactly with `tests/golden/legacy/`. Commands with `--process-count 2` run with one
+process there, and infinite runs use a small count. It does not run the
+multi-hand command with incomplete-game estimates or the two interactive
+play-against commands. The golden files record current behavior, not correct
+behavior.
+
 - Simulate play of 10 reasonably well discarded and played hands of cribbage: `python simulate_cribbage_games.py --game-count 10`;
 - Simulate play of 10 reasonably well discarded and played games of cribbage: `python simulate_cribbage_games.py --game-count 10 --unlimited-hands-per-game`;
 - Simulate and summarize play of 5,000 reasonably well discarded and played hand pairs: `python simulate_cribbage_games.py --game-count 5000 --hide-first-pone-hands --hide-first-dealer-hands --hide-play-actions`;

@@ -12,26 +12,35 @@ These golden files record what the legacy simulator does now, not what it should
 do. They exist to catch unintended changes, and they are not evidence that
 the recorded behavior is correct. Correctness belongs in unit tests that
 assert the rules. A golden that changes because a bug was fixed is
-regenerated, and its diff is reviewed. Known recorded defects: Case B's
-simulation-based play still double-counts heels and earlier pegging points
-(nested play starts from the live score and replays them); fixing that will
-change Case B.
+regenerated, and its diff is reviewed. Comparison is exact after normalizing
+timing figures in the simulator's performance lines and trailing newlines.
 
-README coverage notes (lines 522-555):
-- Two ``--process-count 2`` README commands (lines 533 and 547) are executed
-  with ``--process-count 1`` because spawned worker processes on macOS under
-  ``runpy.run_path`` hang and cannot deterministically share the parent random
-  seed or worker update ordering. Their golden files are therefore
-  byte-identical to the default-worker cases 532 and 547a, and they are not
-  evidence about multi-process behavior.
-- README line 553 (multi-hand ``--unlimited-hands-per-game`` with dynamic
-  discard, dynamic play, and incomplete-game estimates) is omitted from the
-  regression-invariant README set because it takes ~11.5s at minimal counts
-  and exercises odd-hand dynamic play/discard (covered by Cases B and C).
-- README lines 554-555 (interactive human play-against) are omitted because
-  they require multi-hand scripted stdin across changing opponent choices.
-  Case E covers the interactive play coach instead: first pone's plays come
-  from a scripted card cycle, and the game reaches an odd hand near 121.
+Fixed defects: #267 (in the second, fourth and later hands, nested
+simulation-based play, simulation-based discard and the play coach received
+scores in the game's original seat order) changed cases B, C and E when it
+was fixed; their earlier files recorded the bug.
+
+Known recorded defects:
+
+- #268: nested simulation-based play starts from the live score and then
+  replays the starter and earlier pegging, so heels and earlier pegging
+  points count twice. Case B shows the heels case; the pegging replay also
+  appears in case D's play run, case E and readme_552.
+
+README smoke-test coverage. Case names carry the README line number each
+command had when the suite was written (2026-11-26):
+- Commands with ``--process-count 2`` (readme_533, readme_547b) run with one
+  process, because spawned workers under ``runpy.run_path`` hang on macOS and
+  cannot share the parent's random seed deterministically. Their golden files
+  match the default-worker cases readme_532 and readme_547a and say nothing
+  about multi-process behavior. Commands with ``--infinite-game-count`` run a
+  small finite count.
+- Not covered: the multi-hand command combining dynamic discard, dynamic play
+  and incomplete-game estimates (about 11.5 s even at minimal counts; cases B
+  and C exercise dynamic play and discard separately, without estimates), and
+  the two interactive play-against commands. Case E covers the interactive
+  play coach instead: first pone's plays come from a scripted card cycle, and
+  the game reaches an odd hand near 121.
 """
 
 from __future__ import annotations
@@ -602,7 +611,7 @@ def assert_case_matches_golden(test_case: unittest.TestCase, case_name: str) -> 
 
 
 class TestReadmeSmokeGoldenOutputsPart1(unittest.TestCase):
-    """Golden checks for README smoke tests (lines 526-539)."""
+    """Golden checks for the first half of the README smoke tests."""
 
     def test_readme_526_basic_hands(self) -> None:
         assert_case_matches_golden(self, "readme_526_basic_hands")
@@ -648,7 +657,7 @@ class TestReadmeSmokeGoldenOutputsPart1(unittest.TestCase):
 
 
 class TestReadmeSmokeGoldenOutputsPart2(unittest.TestCase):
-    """Golden checks for README smoke tests (lines 540-552)."""
+    """Golden checks for the second half of the README smoke tests."""
 
     def test_readme_540a_pone_leads_kept_only(self) -> None:
         assert_case_matches_golden(self, "readme_540a_pone_leads_kept_only")

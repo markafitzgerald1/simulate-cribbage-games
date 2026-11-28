@@ -450,7 +450,7 @@ nested first pone. Pass the parent's scores in current-hand order using
 `pone_is_parent_game_first_pone`. Before the seat-flip fix, odd hands received
 swapped scores.
 
-`test_legacy_golden_outputs.py` is the byte-for-byte regression check for any
+`test_legacy_golden_outputs.py` compares normalized output exactly for any
 legacy edit. Its golden files record current behavior, known bugs included, so a
 golden is never evidence of correctness: assert correct cribbage behavior in
 unit tests, and never write a unit test that expects a known bug. Its seeded,
@@ -1044,3 +1044,12 @@ sidecar afterward from the final full bytes.
 Artifact-only discovery replaces the default coverage data. Append the root
 release acceptance and legacy ratchet tests before the combined local threshold;
 CI combines their default-suite data with artifact data instead.
+
+Browser policy shards ([their format](docs/policy-shards.md)) read rows only
+through `SixLayerPolicy.menu_rows`, the one place that maps a menu record to
+its global row, offset and support byte; do not re-derive that mapping in
+another module. The export keeps every row, including those the seat's own
+zero-count actions cannot reach: the app's review needs a row after a player
+leaves the policy, and the app must replay the solver's event rules exactly,
+since a history recorded differently finds no row. The trainer checked its
+port by enumerating every feasible opponent keep for real shards.
