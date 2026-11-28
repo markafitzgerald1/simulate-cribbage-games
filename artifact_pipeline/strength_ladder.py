@@ -280,7 +280,7 @@ def build_players(
             discards = "app-table"
         elif name in hands:
             style, discards = "heuristic", hands[name]
-            rule = TableDiscardRule(hand_scoring=HandScoring(discards))
+            rule = TableDiscardRule(hand_scoring=discards)
             provenance.setdefault("hand_players", {})[name] = {
                 "pegging": style,
                 "scoring": discards,

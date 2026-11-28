@@ -92,10 +92,12 @@ For AC 5C 6S 7D 9H JD, the 48-card model keeps 5C 6S 7D 9H. Across all
 5C 6S 7D JD keep. Excluding both discards reverses their order. The JD
 keep leads with 374 over 46 starters versus 373 for the 9H keep.
 
-The full run used seed 42 on Python 3.14.10. Each of the ten matchups drew
-50,000 independent deal pairs and played 100,000 games. The table gives
-the first player's win rate and Elo gap, each with one standard error
-computed over the deal pairs. Win-rate errors are in percentage points.
+The full run used the code recorded in commit `59a6388`, seed 42, and Python
+3.14.10. Each of the ten matchups drew 50,000 independent deal pairs and
+played 100,000 games. The table gives the first player's win rate and Elo gap,
+each with one standard error computed over the deal pairs. Win-rate errors
+are in percentage points. The full results are in
+[`strength-ladder-hands-50000.json`](strength-ladder-hands-50000.json).
 
 | Match | Win % | Elo gap |
 | --- | ---: | ---: |
@@ -124,7 +126,7 @@ python -m artifact_pipeline.strength_ladder \
   --hand-player pre-cut-suit pre-cut-suit \
   --hand-player hand-48 post-cut-48 \
   --hand-player hand-46 post-cut-46 \
-  --workers 8 --cross-table --seed 42 --pairs 50000 --output hand-50000.json
+  --workers 8 --cross-table --seed 42 --pairs 50000 --output strength-ladder-hands-50000.json
 ```
 
 The CLI name `heuristic` uses random keeps here. The first cross table above
@@ -288,9 +290,8 @@ reports record these digests:
 | play table, June | `7420b1804f64a32a73edb2fcc7fe9f53fe427510755c8b2b3723142e503cca5c` |
 
 The pegging ladder was recorded at commit b10875a and the cross table at commit
-d01923a, both on Python 3.14.10. Later commits change only input checks and
-tests: the cross-table command above with `--pairs 300` gave identical match
-statistics and provenance at d01923a and at 06cf7ea, whose code is this page's.
+d01923a, both on Python 3.14.10. The cross-table command above with `--pairs 300`
+gave identical match statistics and provenance at d01923a and 06cf7ea.
 Workers change nothing but the time taken. They are forked, so more than one
 needs a platform with the fork start method. On an 8-core Apple M2 laptop the
 recorded pegging ladder (300,000 games) took 2 minutes 56 seconds, about a

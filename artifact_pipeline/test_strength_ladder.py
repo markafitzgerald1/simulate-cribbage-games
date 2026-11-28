@@ -513,7 +513,11 @@ class TestHandPlayers(unittest.TestCase):
             report = json.loads(output.read_text(encoding="utf-8"))
         self.assertEqual(code, 0)
         self.assertTrue(
-            "hand-only discards for suitless, suits, kept, dealt." in printed
+            printed.startswith(
+                "2 deal pairs per match, seed 42, "
+                "hand-only discards for suitless, suits, kept, dealt."
+            ),
+            printed,
         )
         self.assertEqual(len(report["matches"]), 12)
         self.assertEqual(
@@ -567,6 +571,23 @@ class TestHandPlayers(unittest.TestCase):
             self.assertTrue(message in rejected(self, argv), argv)
         args = parse_args(["--policy-manifest", "policy.json", *hand])
         self.assertEqual(args.rungs, ["random", "heuristic", "cfr", "hand"])
+
+    def test_hand_player_cannot_reuse_builtin_rung_name(self):
+        for name in ("random", "heuristic", "cfr"):
+            with self.subTest(name=name):
+                message = rejected(
+                    self,
+                    [
+                        "--discards",
+                        "random",
+                        "--rungs",
+                        "random,heuristic",
+                        "--hand-player",
+                        name,
+                        "post-cut-46",
+                    ],
+                )
+                self.assertTrue("names must be distinct and not in" in message, message)
 
 
 if __name__ == "__main__":  # pragma: no cover

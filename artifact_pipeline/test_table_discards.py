@@ -151,10 +151,18 @@ class TestKeepValue(unittest.TestCase):
                 )
 
     def test_alternate_hand_models_require_hand_only_discards(self):
-        for mode in (HandScoring.PRE_CUT_RANK, HandScoring.POST_CUT_48):
+        for mode in (
+            HandScoring.PRE_CUT_RANK,
+            HandScoring.PRE_CUT_SUIT,
+            HandScoring.POST_CUT_48,
+        ):
             for tables in ({"crib": {}}, {"play": {}}):
                 with self.assertRaisesRegex(ValueError, "hand-only"):
                     TableDiscardRule(hand_scoring=mode, **tables)
+
+    def test_unknown_hand_scoring_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "bogus-mode"):
+            TableDiscardRule(hand_scoring="bogus-mode")
 
     def test_hand_value_is_the_mean_over_the_46_unseen_starters(self):
         rule = TableDiscardRule()

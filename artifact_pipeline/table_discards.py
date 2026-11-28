@@ -168,15 +168,16 @@ class TableDiscardRule:  # pylint: disable=too-few-public-methods
         crib: Mapping[tuple[str, str], tuple[CribCell, ...]] | None = None,
         play: Mapping[tuple[str, tuple[int, ...]], float] | None = None,
         *,
-        hand_scoring: HandScoring = HandScoring.POST_CUT_46,
+        hand_scoring: str = HandScoring.POST_CUT_46,
     ) -> None:
-        if hand_scoring != HandScoring.POST_CUT_46 and (
+        scoring = HandScoring(hand_scoring)
+        if scoring != HandScoring.POST_CUT_46 and (
             crib is not None or play is not None
         ):
             raise ValueError("Alternate hand scoring requires a hand-only discard rule")
         self._crib = crib
         self._play = play
-        self._hand_scoring = hand_scoring
+        self._hand_scoring = scoring
 
     def keep_value(
         self, role: str, kept: Sequence[PhysicalCard], dealt: Sequence[PhysicalCard]
