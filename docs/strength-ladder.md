@@ -33,23 +33,26 @@ column, in percent. Each cell's standard error is 0.03 to 0.11 points.
 
 What the numbers say:
 
-- **Counting the hand is most of the game.** Keeping the best average hand
-  wins 98.9% of games against random play, and never loses both games of a
-  deal pair.
+- **A sensible player crushes random play.** hand, which keeps the best
+  average hand and pegs with the legacy heuristic, wins 98.9% of games
+  against random discards and random pegging. It lost both games of none of
+  the 50,000 deal pairs.
 - **Counting the crib adds 3.9 points.** hand-crib beats hand 53.93% +/-
-  0.10%. Its keeps peg slightly worse (0.57 points a game) and score more in
-  hand and crib.
-- **The play table adds little to heuristic pegging.** The app's June advice
-  beats hand-crib by 0.64 +/- 0.08 points, and its November advice by only
-  0.30 +/- 0.08. With the legacy heuristic pegging, the November tables do
-  slightly worse than the June ones: 49.73% +/- 0.07%. The November play
-  table was measured with CFR+ pegging, so it recommends keeps for a player
-  who pegs that way. The play table's release found the same 49.7% when only
-  the play table changed.
-- **CFR+ pegging is the largest step after the crib.** With identical
-  November discards, CFR+ pegging wins 55.58% +/- 0.09% against the legacy
-  heuristic. Today's trainer advice with CFR+ pegging wins 59.93% against
-  hand-only discards.
+  0.10%. Its keeps peg 0.57 points a game worse, yet it finishes 1.99 points
+  a game ahead.
+- **The play table adds little to heuristic pegging.** Adding the November
+  play table to hand-crib's crib table (app-nov) wins 50.30% +/- 0.08%. The
+  June advice wins 50.64% +/- 0.08% against hand-crib, but it also uses an
+  older crib table. With heuristic pegging the November tables do slightly
+  worse than the June ones, 49.73% +/- 0.07%. The November play table was
+  measured with CFR+ pegging, so it recommends keeps for a player who pegs
+  that way. The play table's release reports 49.724% +/- 0.023% for the
+  same comparison with one crib table for both.
+- **CFR+ pegging is the largest step after the crib.** With the same
+  November discard rule, CFR+ pegging wins 55.58% +/- 0.09% against the
+  legacy heuristic. Today's trainer advice with CFR+ pegging wins 59.93%
+  against hand, a comparison of complete bots that differ in both discards
+  and pegging.
 - **These are bots, not people.** The ladder shows which advice wins when a
   bot follows it exactly. It does not show how much a person gains.
 
@@ -58,7 +61,8 @@ shipped in June 2026. The app's code then may have ranked keeps a little
 differently.
 
 Next on this ladder (issue #263): discards that ignore the starter (E(h)
-before the cut, and over 48 starters), crib tables built against random and
+before the cut) or treat the two discards as possible starters (E(h) over
+48 starters, as older versions did), crib tables built against random and
 hand-only opponents, and a history of the simulator's past default players
 against one fixed reference.
 
@@ -120,10 +124,12 @@ keeps as the trainer app does: the exact hand value over the 46 unseen
 starters; the crib table's mean for the two discards, per starter rank and,
 for suited or Jack discards, per starter suit; and the play table's mean
 pegging margin for the kept ranks. The crib is added as dealer and
-subtracted as pone. On 4,000 deals with both table sets, every one of the
-60,000 keep values matched the app's own TypeScript to within 1e-14. The app
-breaks exact ties by rank and then suit; here the seat's random stream picks
-among them, so no suit is favoured. Such ties occur in about 3% of deals.
+subtracted as pone. A check run while writing this page, outside the test
+suite, ran the app's own TypeScript on 4,000 random deals: for each table
+set all 60,000 keep values matched to within 1e-14, and every keep the
+ladder chose was among the app's best. The app breaks exact ties by rank and
+then suit; here the seat's random stream picks among them, so no suit is
+favoured. 110 of those 4,000 deals (2.75%) had such a tie.
 
 In the pegging ladder every rung keeps the ranks named by the rank-only
 discard population bound into the CFR policy bundle (`discard_population`).
@@ -146,7 +152,8 @@ and the CFR policy's decision counts.
 | CFR+ vs random | 63.39% +/- 0.22 | 74.06% +/- 0.20 | 9.79 +/- 0.02 | 18,898 / 30,928 / 174 |
 
 The pegging margin is the mean, per game, of the upper player's pegging points
-minus the opponent's (his heels excluded). A game averages 8.9 to 9.3 hands.
+minus the opponent's (his heels excluded). A game averages 9.1 to 9.2 hands
+in these matches and 8.9 to 9.3 in the cross table's.
 
 Against the heuristic the CFR policy was called 3.60 million times. 1.23
 million calls were forced (one legal rank). None of the 2.38 million
@@ -193,9 +200,12 @@ python -m artifact_pipeline.strength_ladder \
 `generate-cfr-inputs.yml` run 45322543914, and these are the inputs
 `examples/fixed-play-inputs.json` pins. `--policy-manifest-sha256` makes the
 command refuse any other manifest. The November tables are the
-`expected_crib_points.client.json` and `expected_play_points.client.json`
-assets of this repository's `expected-crib-points` and
-`expected-play-points` releases, which the trainer app vendors. The June
+`expected_crib_points.client.json` asset of this repository's
+`expected-crib-points` release as uploaded on 2026-11-06 and the
+`expected_play_points.client.json` asset of `expected-play-points` as
+uploaded on 2026-11-25; the trainer vendors the same bytes at commit
+87bdc3f4. Those releases are replaced in place, so check a download against
+the digest below. The June
 tables are the trainer's `src/game/expectedCribPointsTable.json` at commit
 f3697d51 and `src/game/expectedPlayPointsTable.json` at commit 91d7bd7e. The
 reports record these digests:
@@ -210,11 +220,12 @@ reports record these digests:
 | crib table, June | `4cd8a9258d32973710361b9c2a764aea3b8c9a1178ab53e1c2aa38a53e030cc1` |
 | play table, June | `7420b1804f64a32a73edb2fcc7fe9f53fe427510755c8b2b3723142e503cca5c` |
 
-The pegging ladder was recorded at commit b10875a and the cross table at
-commit d01923a, both on Python 3.14.10. Later commits change only input
-checks and tests; a 300-pair cross table at the newest commit reproduced d01923a's games
-exactly. Workers change nothing but the time taken. They are forked, so more
-than one needs a platform with the fork start method. On an 8-core Apple M2
-laptop the pegging ladder (300,000 games) took 2 minutes 56 seconds, about a
-minute of it loading and verifying the policy, with a peak of about 770 MB.
-The cross table (1.5 million games) took 47 minutes, with a peak of 1.1 GB.
+The pegging ladder was recorded at commit b10875a and the cross table at commit
+d01923a, both on Python 3.14.10. Later commits change only input checks and
+tests: the cross-table command above with `--pairs 300` gave identical match
+statistics and provenance at d01923a and at 06cf7ea, whose code is this page's.
+Workers change nothing but the time taken. They are forked, so more than one
+needs a platform with the fork start method. On an 8-core Apple M2 laptop the
+recorded pegging ladder (300,000 games) took 2 minutes 56 seconds, about a
+minute of it loading and verifying the policy, with a peak of about 770 MB. The
+recorded cross table (1.5 million games) took 47 minutes, with a peak of 1.1 GB.
