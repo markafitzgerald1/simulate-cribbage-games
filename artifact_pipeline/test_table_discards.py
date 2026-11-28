@@ -253,12 +253,16 @@ class TestLoading(unittest.TestCase):
             load_play_table(table)
         table["5_5_T_J"][PONE]["mu"] -= 0.00015
         self.assertEqual(len(load_play_table(table)), 2 * 1820)
-        # A margin of the wrong sign is refused once it exceeds 1e-4 points.
+        # A margin of the wrong sign is refused however small it is.
         players = table["2_3_4_Q"][DEALER]["players"]
-        players[DEALER]["mu"], players[PONE]["mu"] = 3.0003, 3.0
-        table["2_3_4_Q"][DEALER]["mu"] = -0.0003
-        with self.assertRaisesRegex(ValueError, "2_3_4_Q Dealer"):
-            load_play_table(table)
+        players[DEALER]["mu"], players[PONE]["mu"] = 1.0001, 1.0
+        for margin, accepted in ((0.0001, True), (0.0, True), (-0.0001, False)):
+            table["2_3_4_Q"][DEALER]["mu"] = margin
+            if accepted:
+                self.assertEqual(len(load_play_table(table)), 2 * 1820)
+            else:
+                with self.assertRaisesRegex(ValueError, "2_3_4_Q Dealer"):
+                    load_play_table(table)
 
     def test_rejects_non_finite_or_boolean_means(self):
         for bad in (float("nan"), float("inf"), True):

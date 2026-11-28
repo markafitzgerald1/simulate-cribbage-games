@@ -43,8 +43,8 @@ RANK_LABELS = "A23456789TJQK"
 JACK = 10
 TIE_TOLERANCE = 1e-9
 # Published means carry four decimals, so a margin and its two rounded totals
-# disagree by at most 1.5e-4. The app allows 0.001; the tighter bound lets a
-# margin of the wrong sign through only when it is under 1e-4 points.
+# disagree by at most 1.5e-4; the app allows 0.001. Rounding never reverses
+# the order of two totals, so a margin of the other sign is refused outright.
 PLAY_TOLERANCE = 2e-4
 MATCHING_DISCARD = "matching_discard_suit"
 NON_MATCHING = "non_matching_discard_suit"
@@ -144,7 +144,7 @@ def load_play_table(
             other = _mean(
                 players.get(ROLES[1 - ROLES.index(role)]), f"{key} {role} players"
             )
-            if abs(own - other - margin) > PLAY_TOLERANCE:
+            if abs(own - other - margin) > PLAY_TOLERANCE or (own - other) * margin < 0:
                 raise ValueError(f"play margin disagrees with totals at {key} {role}")
             margins[(role, hand)] = margin
     return margins
