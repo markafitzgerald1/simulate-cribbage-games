@@ -921,12 +921,14 @@ class TestGoldenHarness(unittest.TestCase):
     def test_timeout_kills_the_whole_process_group(self) -> None:
         # The grandchild holds a file lock for as long as it lives, and says
         # when it has it, so no assertion depends on how fast processes start.
+        # It leaves a mark if it ever gets to exit on its own.
         grandchild = (
             "import fcntl, pathlib, time\n"
             "lock = open('alive.lock', 'w')\n"
             "fcntl.flock(lock, fcntl.LOCK_EX)\n"
             "pathlib.Path('ready').touch()\n"
             "time.sleep(60)\n"
+            "pathlib.Path('exited').touch()\n"
         )
         parent = (
             "import subprocess, sys, time\n"
@@ -968,6 +970,9 @@ class TestGoldenHarness(unittest.TestCase):
                             time.monotonic(), deadline, "grandchild survived"
                         )
                         time.sleep(0.05)
+            self.assertFalse(
+                Path(temp_dir, "exited").exists(), "grandchild was not killed"
+            )
 
     def test_any_other_exception_also_kills_the_child(self) -> None:
         for error in (RuntimeError, KeyboardInterrupt):
@@ -979,6 +984,12 @@ class TestGoldenHarness(unittest.TestCase):
                         autospec=True,
                         side_effect=error,
                     ) as communicate,
+                    patch.object(
+                        subprocess.Popen,
+                        "wait",
+                        autospec=True,
+                        side_effect=subprocess.Popen.wait,
+                    ) as wait,
                     self.assertRaises(error),
                 ):
                     run_in_process_group(
@@ -990,6 +1001,9 @@ class TestGoldenHarness(unittest.TestCase):
                     )
                 process = communicate.call_args.args[0]
                 self.assertEqual(process.returncode, -signal.SIGKILL)
+                # After Ctrl-C, ``Popen.__exit__`` does not call ``wait``, so
+                # only the runner's own reaping call reaches it.
+                wait.assert_any_call(process)
 
     def test_setup_runs_first_in_the_case_directory(self) -> None:
         done = subprocess.CompletedProcess([], 0, "", "")
