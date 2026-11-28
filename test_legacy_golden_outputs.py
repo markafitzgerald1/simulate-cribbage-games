@@ -28,12 +28,13 @@ Known recorded defects:
 - #267: in the second, fourth and later hands (where the players have swapped
   roles), simulation-based play, simulation-based discard and the
   play coach pass the nested simulation the scores in the game's original
-  seat order instead of the current hand's pone-dealer order. Cases B, C and
-  E reach an odd hand and record this.
+  seat order instead of the current hand's pone-dealer order. Cases B, C,
+  E and F reach an odd hand and record this.
 - #268: nested simulation-based play starts from the live score and then
   replays the starter and earlier pegging, so heels and earlier pegging
   points count twice. Case B shows the heels case; the pegging replay also
-  appears in case D's play run, case E and readme_552.
+  appears in case D's play run, case E and readme_552. Case F also uses
+  simulation-based play.
 
 README smoke-test coverage. Case names carry the README line number each
 command had when the suite was written (2026-11-26):
