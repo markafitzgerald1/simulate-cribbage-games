@@ -672,7 +672,6 @@ def simulate_game(
     first_dealer_play_based_on_simulations: Optional[int],
     coach_discard_simulated_hand_count: Optional[int],
     coach_play_simulated_hand_count: Optional[int],
-    tally_start_of_hand_position_results: bool,
     estimate_first_pone_incomplete_game_wins_and_game_points: bool,
     estimate_first_dealer_incomplete_game_wins_and_game_points: bool,
     start_of_hand_position_results_tallies: shelve.Shelf,
@@ -1081,7 +1080,7 @@ def simulate_game(
                     game_score,
                     dealt_hands[1],
                     DEALER,
-                    tally_start_of_hand_position_results,
+                    False,
                     (
                         estimate_first_pone_incomplete_game_wins_and_game_points
                         if hand_dealer_is_this_simulation_first_pone
@@ -2013,7 +2012,6 @@ def simulate_games(
                     first_dealer_play_based_on_simulations,
                     coach_discard_simulated_hand_count,
                     coach_play_simulated_hand_count,
-                    tally_start_of_hand_position_results,
                     estimate_first_pone_incomplete_game_wins_and_game_points,
                     estimate_first_dealer_incomplete_game_wins_and_game_points,
                     start_of_hand_position_results_tallies,

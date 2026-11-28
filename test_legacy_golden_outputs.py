@@ -610,6 +610,61 @@ def assert_case_matches_golden(test_case: unittest.TestCase, case_name: str) -> 
         test_case.fail(f"Golden output mismatch for {case_name}:\n{diff}")
 
 
+class TestPositionTallies(unittest.TestCase):
+    def test_dealer_discard_rollouts_do_not_tally(self) -> None:
+        from simulate_cribbage_games import GameScoreResultsTallies
+
+        args = [
+            "--first-dealer-discard-based-on-simulations",
+            "1",
+            "--tally-start-of-hand-position-results",
+            "--unlimited-hands-per-game",
+            "--game-count",
+            "1",
+        ]
+        code = SEED_PREFIX.format(script_path=repr(str(SIMULATOR_SCRIPT)), args=args)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = subprocess.run(
+                [sys.executable, "-c", code],
+                cwd=temp_dir,
+                env={**os.environ, "PYTHONHASHSEED": "0", "PYTHONIOENCODING": "utf-8"},
+                encoding="utf-8",
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                check=False,
+                timeout=CASE_TIMEOUT_SECONDS,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertRegex(result.stdout, "in order to select discard")
+            # Rollouts hide play actions, so only outer hands show a starter.
+            # Count increments to catch unfinished rollouts that write zeros.
+            hands_played = result.stdout.count("Cut/starter card is:")
+            self.assertEqual(
+                result.stdout.count("game results tallies incremented to"),
+                hands_played,
+            )
+            # The CLI pickles its tally type as __main__.GameScoreResultsTallies.
+            with (
+                patch.object(
+                    sys.modules["__main__"],
+                    "GameScoreResultsTallies",
+                    GameScoreResultsTallies,
+                    create=True,
+                ),
+                shelve.open(
+                    os.path.join(temp_dir, TALLY_SHELF_NAME), flag="r"
+                ) as shelf,
+            ):
+                self.assertEqual(
+                    sum(shelf["0-0[D]"][:2]),
+                    1,
+                    "the opening position should record only the completed game",
+                )
+                self.assertEqual(len(shelf), hands_played)
+                for position, tally in shelf.items():
+                    self.assertEqual(sum(tally[:2]), 1, position)
+
+
 class TestReadmeSmokeGoldenOutputsPart1(unittest.TestCase):
     """Golden checks for the first half of the README smoke tests."""
 

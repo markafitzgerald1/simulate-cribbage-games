@@ -55,7 +55,7 @@
     "column": 0,
     "symbol": "too-many-arguments",
     "message-id": "R0913",
-    "message": "Too many arguments (33/5)",
+    "message": "Too many arguments (32/5)",
     "type": "refactor",
     "obj": "simulate_game"
   },
@@ -75,7 +75,7 @@
     "column": 0,
     "symbol": "too-many-locals",
     "message-id": "R0914",
-    "message": "Too many local variables (96/15)",
+    "message": "Too many local variables (95/15)",
     "type": "refactor",
     "obj": "simulate_game"
   },
@@ -85,7 +85,7 @@
     "column": 0,
     "symbol": "too-many-positional-arguments",
     "message-id": "R0917",
-    "message": "Too many positional arguments (33/5)",
+    "message": "Too many positional arguments (32/5)",
     "type": "refactor",
     "obj": "simulate_game"
   },
@@ -101,7 +101,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 721,
+    "line": 720,
     "column": 4,
     "symbol": "too-many-nested-blocks",
     "message-id": "R1702",
@@ -111,7 +111,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 721,
+    "line": 720,
     "column": 4,
     "symbol": "too-many-nested-blocks",
     "message-id": "R1702",
@@ -121,7 +121,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 721,
+    "line": 720,
     "column": 4,
     "symbol": "too-many-nested-blocks",
     "message-id": "R1702",
@@ -131,7 +131,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 721,
+    "line": 720,
     "column": 4,
     "symbol": "too-many-nested-blocks",
     "message-id": "R1702",
@@ -141,7 +141,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 1721,
+    "line": 1720,
     "column": 4,
     "symbol": "no-else-return",
     "message-id": "R1705",
@@ -151,7 +151,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 1734,
+    "line": 1733,
     "column": 4,
     "symbol": "no-else-return",
     "message-id": "R1705",
@@ -161,7 +161,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 1755,
+    "line": 1754,
     "column": 11,
     "symbol": "consider-using-generator",
     "message-id": "R1728",
@@ -171,7 +171,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 1809,
+    "line": 1808,
     "column": 0,
     "symbol": "too-many-arguments",
     "message-id": "R0913",
@@ -181,7 +181,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 1809,
+    "line": 1808,
     "column": 0,
     "symbol": "too-many-branches",
     "message-id": "R0912",
@@ -191,7 +191,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 1809,
+    "line": 1808,
     "column": 0,
     "symbol": "too-many-locals",
     "message-id": "R0914",
@@ -201,7 +201,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 1809,
+    "line": 1808,
     "column": 0,
     "symbol": "too-many-positional-arguments",
     "message-id": "R0917",
@@ -211,7 +211,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 1809,
+    "line": 1808,
     "column": 0,
     "symbol": "too-many-statements",
     "message-id": "R0915",
@@ -221,7 +221,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 2112,
+    "line": 2110,
     "column": 16,
     "symbol": "too-many-boolean-expressions",
     "message-id": "R0916",
@@ -231,7 +231,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 2661,
+    "line": 2659,
     "column": 24,
     "symbol": "consider-using-generator",
     "message-id": "R1728",
@@ -241,7 +241,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 2674,
+    "line": 2672,
     "column": 16,
     "symbol": "no-else-break",
     "message-id": "R1723",
@@ -251,7 +251,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 2776,
+    "line": 2774,
     "column": 0,
     "symbol": "inconsistent-return-statements",
     "message-id": "R1710",
@@ -261,7 +261,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 2843,
+    "line": 2841,
     "column": 13,
     "symbol": "use-a-generator",
     "message-id": "R1729",
@@ -271,7 +271,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 2924,
+    "line": 2922,
     "column": 0,
     "symbol": "too-many-locals",
     "message-id": "R0914",
@@ -281,7 +281,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 3009,
+    "line": 3007,
     "column": 0,
     "symbol": "invalid-name",
     "message-id": "C0103",
@@ -291,7 +291,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 3010,
+    "line": 3008,
     "column": 0,
     "symbol": "invalid-name",
     "message-id": "C0103",
@@ -301,7 +301,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 3144,
+    "line": 3142,
     "column": 0,
     "symbol": "invalid-name",
     "message-id": "C0103",
@@ -311,7 +311,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 3145,
+    "line": 3143,
     "column": 0,
     "symbol": "invalid-name",
     "message-id": "C0103",
@@ -321,7 +321,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 3419,
+    "line": 3417,
     "column": 0,
     "symbol": "invalid-name",
     "message-id": "C0103",
@@ -331,7 +331,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 3422,
+    "line": 3420,
     "column": 0,
     "symbol": "too-many-arguments",
     "message-id": "R0913",
@@ -341,7 +341,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 3422,
+    "line": 3420,
     "column": 0,
     "symbol": "too-many-locals",
     "message-id": "R0914",
@@ -351,7 +351,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 3422,
+    "line": 3420,
     "column": 0,
     "symbol": "too-many-positional-arguments",
     "message-id": "R0917",
@@ -361,7 +361,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 3590,
+    "line": 3588,
     "column": 0,
     "symbol": "too-many-arguments",
     "message-id": "R0913",
@@ -371,7 +371,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 3590,
+    "line": 3588,
     "column": 0,
     "symbol": "too-many-locals",
     "message-id": "R0914",
@@ -381,7 +381,7 @@
   },
   {
     "path": "simulate_cribbage_games.py",
-    "line": 3590,
+    "line": 3588,
     "column": 0,
     "symbol": "too-many-positional-arguments",
     "message-id": "R0917",
