@@ -53,6 +53,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import difflib
+import fcntl
 import os
 from pathlib import Path
 import re
@@ -611,11 +612,12 @@ def run_in_process_group(
 ) -> subprocess.CompletedProcess[str]:
     """Run ``command`` in its own session and kill that whole group on failure.
 
-    ``subprocess.run`` kills only the direct child on timeout and then waits
-    for its output pipes to close, so a grandchild that inherited them (for
-    example a simulator worker process) keeps the test waiting and survives it.
-    Any other exception kills the group too: in its own session, the child no
-    longer receives a terminal's Ctrl-C.
+    ``subprocess.run`` kills only the direct child on timeout, so processes the
+    child started (for example simulator workers) survive it. Any other
+    exception while waiting kills the group too: in its own session, the child
+    no longer receives a terminal's Ctrl-C. A Ctrl-C that lands while the child
+    is still being launched can leave it to finish its finite run. The cleanup
+    is POSIX-only (macOS and Linux).
     """
     with subprocess.Popen(
         command,
@@ -632,6 +634,7 @@ def run_in_process_group(
         except BaseException:
             with contextlib.suppress(ProcessLookupError):
                 os.killpg(process.pid, signal.SIGKILL)
+            process.wait()
             raise
     return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
 
@@ -916,52 +919,77 @@ class TestGoldenHarness(unittest.TestCase):
                 self.assertEqual(popen.call_args.kwargs["stdin"], stdin)
 
     def test_timeout_kills_the_whole_process_group(self) -> None:
-        # The grandchild inherits the output pipes, as a worker process would.
+        # The grandchild holds a file lock for as long as it lives, and says
+        # when it has it, so no assertion depends on how fast processes start.
+        grandchild = (
+            "import fcntl, pathlib, time\n"
+            "lock = open('alive.lock', 'w')\n"
+            "fcntl.flock(lock, fcntl.LOCK_EX)\n"
+            "pathlib.Path('ready').touch()\n"
+            "time.sleep(60)\n"
+        )
         parent = (
             "import subprocess, sys, time\n"
-            "child = subprocess.Popen("
-            "[sys.executable, '-c', 'import time; time.sleep(20)'])\n"
-            "open('grandchild.pid', 'w').write(str(child.pid))\n"
-            "time.sleep(20)\n"
+            f"subprocess.Popen([sys.executable, '-c', {grandchild!r}])\n"
+            "time.sleep(60)\n"
         )
+        communicate = subprocess.Popen.communicate
+
         with tempfile.TemporaryDirectory() as temp_dir:
-            started = time.monotonic()
-            with self.assertRaises(subprocess.TimeoutExpired):
+
+            def time_out_once_ready(
+                process: subprocess.Popen[str], input_text: str | None, **_: float
+            ) -> tuple[str, str]:
+                deadline = time.monotonic() + 50
+                while not Path(temp_dir, "ready").exists():
+                    self.assertLess(time.monotonic(), deadline, "never became ready")
+                    time.sleep(0.05)
+                return communicate(process, input_text, timeout=0.1)
+
+            with (
+                patch.object(subprocess.Popen, "communicate", time_out_once_ready),
+                self.assertRaises(subprocess.TimeoutExpired),
+            ):
                 run_in_process_group(
                     [sys.executable, "-c", parent],
                     cwd=temp_dir,
                     env=os.environ.copy(),
                     input_text=None,
-                    timeout=5,
+                    timeout=120,
                 )
-            self.assertLess(time.monotonic() - started, 15)
-            grandchild = int(Path(temp_dir, "grandchild.pid").read_text("utf-8"))
-        # A killed orphan stays visible until the system reaps it.
-        deadline = time.monotonic() + 5
-        while time.monotonic() < deadline:
-            try:
-                os.kill(grandchild, 0)
-            except ProcessLookupError:
-                return
-            time.sleep(0.05)
-        self.fail(f"Grandchild {grandchild} survived the timeout")
+            with open(Path(temp_dir, "alive.lock"), encoding="utf-8") as lock:
+                deadline = time.monotonic() + 20
+                while True:
+                    try:
+                        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                        break
+                    except BlockingIOError:
+                        self.assertLess(
+                            time.monotonic(), deadline, "grandchild survived"
+                        )
+                        time.sleep(0.05)
 
     def test_any_other_exception_also_kills_the_child(self) -> None:
-        started = time.monotonic()
-        with (
-            patch.object(
-                subprocess.Popen, "communicate", side_effect=RuntimeError("stop")
-            ),
-            self.assertRaisesRegex(RuntimeError, "stop"),
-        ):
-            run_in_process_group(
-                [sys.executable, "-c", "import time; time.sleep(20)"],
-                cwd=str(REPO_ROOT),
-                env=os.environ.copy(),
-                input_text=None,
-                timeout=30,
-            )
-        self.assertLess(time.monotonic() - started, 15)
+        for error in (RuntimeError, KeyboardInterrupt):
+            with self.subTest(error=error.__name__):
+                with (
+                    patch.object(
+                        subprocess.Popen,
+                        "communicate",
+                        autospec=True,
+                        side_effect=error,
+                    ) as communicate,
+                    self.assertRaises(error),
+                ):
+                    run_in_process_group(
+                        [sys.executable, "-c", "import time; time.sleep(5)"],
+                        cwd=str(REPO_ROOT),
+                        env=os.environ.copy(),
+                        input_text=None,
+                        timeout=30,
+                    )
+                process = communicate.call_args.args[0]
+                self.assertEqual(process.returncode, -signal.SIGKILL)
 
     def test_setup_runs_first_in_the_case_directory(self) -> None:
         done = subprocess.CompletedProcess([], 0, "", "")
